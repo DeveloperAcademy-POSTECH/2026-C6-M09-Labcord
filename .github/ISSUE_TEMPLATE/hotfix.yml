@@ -1,0 +1,17 @@
+name: "🔨 긴급 버그 수정"
+description: "버그 수정에 대한 이슈를 작성해주세요!"
+labels: "🔨 Hotfix"
+
+body:
+    - type: textarea
+      attributes:
+        label: 🔨 버그 설명
+        description: 버그에 대한 설명과 해결 방안을 작성해주세요.
+        placeholder: 꼼꼼하게 적을수록 좋습니다!
+      validations:
+        required: true
+        
+    - type: textarea
+      attributes:
+        label: 🙋🏻 덧붙일 말
+        description: 더 하고 싶은 말이 있다면 작성해 주세요.
