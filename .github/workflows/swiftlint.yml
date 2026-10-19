@@ -21,7 +21,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install SwiftLint
+        run: brew install swiftlint
+
       - name: SwiftLint
-        uses: norio-nomura/action-swiftlint@3.2.1
-        with:
-          args: --strict
+        run: swiftlint --strict
