@@ -1,0 +1,29 @@
+name: Build
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+  push:
+    branches:
+      - develop
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build
+    runs-on: xcode-27
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build
+        run: |
+          xcodebuild build \
+            -project Researchers.xcodeproj \
+            -scheme Researchers \
+            -destination 'generic/platform=iOS Simulator'
