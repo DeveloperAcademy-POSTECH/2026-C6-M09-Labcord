@@ -10,7 +10,7 @@ on:
       - develop
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   lint:
@@ -20,9 +20,23 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
 
       - name: Install SwiftLint
         run: brew install swiftlint
+
+      - name: SwiftLint fix
+        if: github.event_name == 'pull_request'
+        run: |
+          swiftlint --fix || true
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "style: SwiftLint 자동 수정"
+            git push origin HEAD:${{ github.head_ref }}
+          fi
 
       - name: SwiftLint
         run: swiftlint --strict
