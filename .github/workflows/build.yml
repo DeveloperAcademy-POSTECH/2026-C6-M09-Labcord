@@ -15,16 +15,11 @@ permissions:
 jobs:
   build:
     name: build
-    runs-on: macos-latest
+    runs-on: xcode-27
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Select latest Xcode
-        run: |
-          sudo xcode-select -s "$(ls -dt /Applications/Xcode*.app | head -1)"
-          xcodebuild -version
 
       - name: Build
         run: |
