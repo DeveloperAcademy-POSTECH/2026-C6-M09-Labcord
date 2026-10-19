@@ -1,0 +1,27 @@
+name: SwiftLint
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+  push:
+    branches:
+      - develop
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: lint
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: SwiftLint
+        uses: norio-nomura/action-swiftlint@3.2.1
+        with:
+          args: --strict

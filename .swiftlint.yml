@@ -1,0 +1,17 @@
+# SwiftLint rules for Researchers
+# 기준: .agents/code-style.md
+
+opt_in_rules:
+  - empty_count
+  - first_where
+
+line_length:
+  warning: 99
+  error: 150
+
+trailing_whitespace: error
+trailing_newline: error
+colon: error
+comma: error
+
+reporter: github-actions-logging
