@@ -1,6 +1,3 @@
-# SwiftLint rules for Researchers
-# 기준: .agents/code-style.md
-
 opt_in_rules:
   - empty_count
   - first_where
