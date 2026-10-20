@@ -1,5 +1,5 @@
 //
-//  Empty.swift
+//  WatchConnectivityEmpty.swift
 //  Researchers
 //
 //  Created by 정홍섭 on 10/20/26.
