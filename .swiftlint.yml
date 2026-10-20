@@ -1,0 +1,17 @@
+opt_in_rules:
+  - empty_count
+  - first_where
+  - sorted_imports
+  - trailing_closure
+  - closure_spacing
+
+line_length:
+  warning: 99
+  error: 150
+
+trailing_whitespace: error
+trailing_newline: error
+colon: error
+comma: error
+
+reporter: github-actions-logging
