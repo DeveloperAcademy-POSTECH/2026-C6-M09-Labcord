@@ -6,8 +6,35 @@
 	objectVersion = 110;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		8E2E27333084877E0043EEB3 /* ResearchWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		8E2E27313084877E0043EEB3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8E06910D3080743D0081547E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E2E27283084877E0043EEB3;
+			remoteInfo = "ResearchWatch Watch App";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		8E2E27343084877E0043EEB3 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolder = Product;
+			files = (
+				8E2E27333084877E0043EEB3 /* ResearchWatch Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		8E0691153080743D0081547E /* Researchers.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Researchers.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ResearchWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -16,10 +43,20 @@
 			path = Researchers;
 			sourceTree = "<group>";
 		};
+		8E2E272A3084877E0043EEB3 /* ResearchWatch Watch App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "ResearchWatch Watch App";
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		8E0691123080743D0081547E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		8E2E27263084877E0043EEB3 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
 			);
@@ -31,6 +68,7 @@
 			isa = PBXGroup;
 			children = (
 				8E0691173080743D0081547E /* Researchers */,
+				8E2E272A3084877E0043EEB3 /* ResearchWatch Watch App */,
 				8E0691163080743D0081547E /* Products */,
 			);
 			sourceTree = "<group>";
@@ -39,6 +77,7 @@
 			isa = PBXGroup;
 			children = (
 				8E0691153080743D0081547E /* Researchers.app */,
+				8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -53,8 +92,12 @@
 				8E0691113080743D0081547E /* Sources */,
 				8E0691123080743D0081547E /* Frameworks */,
 				8E0691133080743D0081547E /* Resources */,
+				8E2E27343084877E0043EEB3 /* Embed Watch Content */,
 			);
 			buildRules = (
+			);
+			dependencies = (
+				8E2E27323084877E0043EEB3 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8E0691173080743D0081547E /* Researchers */,
@@ -62,6 +105,24 @@
 			name = Researchers;
 			productName = Researchers;
 			productReference = 8E0691153080743D0081547E /* Researchers.app */;
+			productType = "com.apple.product-type.application";
+		};
+		8E2E27283084877E0043EEB3 /* ResearchWatch Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8E2E27373084877E0043EEB3 /* Build configuration list for PBXNativeTarget "ResearchWatch Watch App" */;
+			buildPhases = (
+				8E2E27253084877E0043EEB3 /* Sources */,
+				8E2E27263084877E0043EEB3 /* Frameworks */,
+				8E2E27273084877E0043EEB3 /* Resources */,
+			);
+			buildRules = (
+			);
+			fileSystemSynchronizedGroups = (
+				8E2E272A3084877E0043EEB3 /* ResearchWatch Watch App */,
+			);
+			name = "ResearchWatch Watch App";
+			productName = "ResearchWatch Watch App";
+			productReference = 8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -75,6 +136,9 @@
 				LastUpgradeCheck = 2700;
 				TargetAttributes = {
 					8E0691143080743D0081547E = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					8E2E27283084877E0043EEB3 = {
 						CreatedOnToolsVersion = 27.0;
 					};
 				};
@@ -94,12 +158,18 @@
 			projectRoot = "";
 			targets = (
 				8E0691143080743D0081547E /* Researchers */,
+				8E2E27283084877E0043EEB3 /* ResearchWatch Watch App */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		8E0691133080743D0081547E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		8E2E27273084877E0043EEB3 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
 			);
@@ -112,7 +182,20 @@
 			files = (
 			);
 		};
+		8E2E27253084877E0043EEB3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		8E2E27323084877E0043EEB3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8E2E27283084877E0043EEB3 /* ResearchWatch Watch App */;
+			targetProxy = 8E2E27313084877E0043EEB3 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		8E06911E3080743E0081547E /* Debug configuration for PBXProject "Researchers" */ = {
@@ -241,7 +324,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = HJGS4LQ7XH;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -273,7 +356,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = HJGS4LQ7XH;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -298,6 +381,72 @@
 			};
 			name = Release;
 		};
+		8E2E27353084877E0043EEB3 /* Debug configuration for PBXNativeTarget "ResearchWatch Watch App" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = HJGS4LQ7XH;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = ResearchWatch;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.researchers.Researchers;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.researchers.Researchers.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 27.0;
+			};
+			name = Debug;
+		};
+		8E2E27363084877E0043EEB3 /* Release configuration for PBXNativeTarget "ResearchWatch Watch App" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = HJGS4LQ7XH;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = ResearchWatch;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.researchers.Researchers;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.researchers.Researchers.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 27.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -314,6 +463,14 @@
 			buildConfigurations = (
 				8E0691213080743E0081547E /* Debug configuration for PBXNativeTarget "Researchers" */,
 				8E0691223080743E0081547E /* Release configuration for PBXNativeTarget "Researchers" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		8E2E27373084877E0043EEB3 /* Build configuration list for PBXNativeTarget "ResearchWatch Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8E2E27353084877E0043EEB3 /* Debug configuration for PBXNativeTarget "ResearchWatch Watch App" */,
+				8E2E27363084877E0043EEB3 /* Release configuration for PBXNativeTarget "ResearchWatch Watch App" */,
 			);
 			defaultConfigurationName = Release;
 		};
