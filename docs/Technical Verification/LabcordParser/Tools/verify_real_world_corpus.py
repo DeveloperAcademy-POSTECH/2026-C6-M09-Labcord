@@ -5,7 +5,7 @@ import json
 from collections import Counter
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[4]
 FIXTURES = ROOT / 'ResearchersTests' / 'Fixtures' / 'RealWorld'
 FORMATS = {
     'txt', 'csv', 'json', 'xml', 'jpeg', 'png', 'heic', 'tiff', 'pdf',

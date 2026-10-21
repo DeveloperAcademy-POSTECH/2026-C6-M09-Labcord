@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[4]
 FIXTURES = ROOT / 'ResearchersTests/Fixtures/RealWorld'
 NS = {'p': 'http://www.hancom.co.kr/hwpml/2011/paragraph'}
 

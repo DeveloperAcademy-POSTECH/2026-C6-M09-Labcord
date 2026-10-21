@@ -5,7 +5,7 @@
 | 목적 | 경로 | 내용 |
 | --- | --- | --- |
 | 앱 기능·빌드 설정 | `Researchers/Services/DocumentParsing/`, `Researchers.xcodeproj/`의 관련 변경 | 파싱·OCR API, 형식별 구현, 승인된 의존성, 테스트 타깃·공유 scheme |
-| 회귀·재현 | `ResearchersTests/`, `scripts/DocumentParsing/` | 자체 생성 샘플, 외부 20형식 각 3개·대용량 PDF 3개, 테스트·계측·재현 도구 |
+| 회귀·재현 | `ResearchersTests/`, `docs/Technical Verification/LabcordParser/Tools/` | 자체 생성 샘플, 외부 20형식 각 3개·대용량 PDF 3개, 테스트·계측·재현 도구 |
 | 샘플 고지 | `ThirdPartyFixtures/` | 포함한 외부 샘플의 라이선스·NOTICE·출처 |
 | 지원·검증 기록 | 이 폴더의 API 안내·검증 보고서·수치 JSON·`Benchmarks/` | 실제 지원과 제약, 과거 실패·후보 비교, 최종 실기기 수치, 기준 소스 해시·복원 패치 |
 
@@ -21,7 +21,7 @@
 - `/tmp` 아래 원본 xcresult·Instruments trace·빌드 로그·별도 기준 프로젝트
 - DerivedData·서명 키·프로비저닝 프로파일·로컬 도구 캐시
 
-앞의 세 Markdown 파일은 삭제하거나 이동하지 않고 커밋 대상에서만 제외한다.
+앞의 세 Markdown 파일은 새 문서 폴더로 함께 이동하되 커밋 대상에서만 제외한다.
 `.gitignore`나 CI·린트 규칙을 완화하지 않는다.
 
 ## 커밋 구성

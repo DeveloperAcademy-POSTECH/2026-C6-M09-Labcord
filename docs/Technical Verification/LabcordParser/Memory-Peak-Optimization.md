@@ -141,7 +141,7 @@ footprint 차이와 일대일로 대응시키거나 누수 해결 증거로 사�
 - 할당기 진단: `/tmp/issue21-memory-heap-probe-before.xcresult`.
 
 ```sh
-python3 scripts/DocumentParsing/prepare_before_benchmark.py \
+python3 "docs/Technical Verification/LabcordParser/Tools/prepare_before_benchmark.py" \
   --baseline memory-peak --output /tmp/ResearchersMemoryBefore-고유이름
 xcodebuild test -project /tmp/ResearchersMemoryBefore-고유이름/Researchers.xcodeproj \
   -scheme Researchers -configuration Release -derivedDataPath /tmp/ResearchersMemoryBeforeDD-고유이름 \
@@ -183,7 +183,7 @@ xcodebuild test -project Researchers.xcodeproj -scheme Researchers \
 xcodebuild build -project Researchers.xcodeproj -scheme Researchers \
   -destination 'generic/platform=iOS Simulator'
 swiftlint lint --strict
-python3 scripts/DocumentParsing/verify_real_world_corpus.py
+python3 "docs/Technical Verification/LabcordParser/Tools/verify_real_world_corpus.py"
 ```
 
 로컬 증거: `/tmp/issue21-memory-peak-regression.xcresult`,

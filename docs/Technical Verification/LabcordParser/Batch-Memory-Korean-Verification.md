@@ -32,7 +32,7 @@
 
 ## 한국어 원본과 판정
 
-[원본 명세](../../ResearchersTests/Fixtures/RealWorld/LargeScans/Manifest.json)의
+[원본 명세](../../../ResearchersTests/Fixtures/RealWorld/LargeScans/Manifest.json)의
 `korean-1992.pdf`: 국립국어연구원, 1992, 「가나다 전화 자료집」.
 **125쪽·3,857,838바이트**의 공식 원본 전체를 변경 없이 사용했다.
 [개별 자료 페이지](https://www.korean.go.kr/front/reportData/reportDataView.do?mn_id=207&report_seq=94)에
@@ -75,8 +75,8 @@ XCTest 재실행마다 프로세스를 다시 띄웠다. OS·파일·Vision의 �
 사본에서 제외한다. 테스트 샘플과 벤치마크 본문은 동일하다.
 
 ```sh
-python3 scripts/DocumentParsing/verify_real_world_corpus.py
-python3 scripts/DocumentParsing/prepare_before_benchmark.py --output /tmp/ResearchersParserBefore-새이름
+python3 "docs/Technical Verification/LabcordParser/Tools/verify_real_world_corpus.py"
+python3 "docs/Technical Verification/LabcordParser/Tools/prepare_before_benchmark.py" --output /tmp/ResearchersParserBefore-새이름
 xcodebuild test -project /tmp/ResearchersParserBefore-새이름/Researchers.xcodeproj \
   -scheme Researchers -configuration Release \
   -destination 'platform=iOS,id=연결된_기기_UDID' \
@@ -187,7 +187,7 @@ xcodebuild test -project Researchers.xcodeproj -scheme Researchers -configuratio
   -parallel-testing-enabled NO -collect-test-diagnostics never \
   -only-testing:ResearchersTests/DocumentReleaseBatchBenchmarkTests/testKoreanMixedBatchConservativeMemory \
   -resultBundlePath /tmp/ResearchersMemory128-고유이름.xcresult ENABLE_TESTABILITY=YES
-python3 scripts/DocumentParsing/summarize_benchmark.py \
+python3 "docs/Technical Verification/LabcordParser/Tools/summarize_benchmark.py" \
   --run before-simulator=/tmp/기준버전.xcresult \
   --run after-conservative-simulator=/tmp/개선버전128.xcresult \
   --output /tmp/파싱비교.json
@@ -247,6 +247,6 @@ let options = DocumentParserOptions(
 | `ResearchersTests/DocumentParsing/PDF/` | 작업 예산·PNG·재사용·한국어·Release 벤치마크 및 기존 배치 검사 보강 |
 | `ResearchersTests/Support/PDF/` | 한국어 원본/문구 검증과 배치 수치 수집 |
 | `ResearchersTests/Fixtures/RealWorld/LargeScans/` | 한국어 원본·출처/권리/해시 명세 |
-| `scripts/DocumentParsing/prepare_before_benchmark.py` | 작업 트리를 보존하는 기준 버전 재현 |
-| `scripts/DocumentParsing/summarize_benchmark.py` | 수치 집계·동일 시나리오 전후 비교 |
-| `docs/LabcordParser/` | API·측정값·기준 패치/해시·초기 실패와 미완료 항목 |
+| `docs/Technical Verification/LabcordParser/Tools/prepare_before_benchmark.py` | 작업 트리를 보존하는 기준 버전 재현 |
+| `docs/Technical Verification/LabcordParser/Tools/summarize_benchmark.py` | 수치 집계·동일 시나리오 전후 비교 |
+| `docs/Technical Verification/LabcordParser/` | API·측정값·기준 패치/해시·초기 실패와 미완료 항목 |

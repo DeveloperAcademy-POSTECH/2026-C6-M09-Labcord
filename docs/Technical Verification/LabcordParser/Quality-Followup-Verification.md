@@ -50,7 +50,7 @@ DocInfo 143건, section 55건이며 합성 레코드의 XML 요소명을 따로 
 이번 XCTest는 별도로 두 원본을 다시 파싱하고 native 블록·OCR 문구 집합을 비교했다.
 
 ```sh
-python3 scripts/DocumentParsing/compare_noori_sources.py \
+python3 "docs/Technical Verification/LabcordParser/Tools/compare_noori_sources.py" \
   공개_샘플_파싱_JSON_폴더 --output /tmp/noori-comparison.json
 ```
 
@@ -74,8 +74,8 @@ python3 scripts/DocumentParsing/compare_noori_sources.py \
 표 ID가 없는 결과에서 같은 좌표·값이 여러 표에 반복되면 표 사이 소속까지 판별할 수 없다.
 
 ```sh
-python3 scripts/DocumentParsing/generate_golden_assertions.py
-python3 scripts/DocumentParsing/verify_real_world_corpus.py
+python3 "docs/Technical Verification/LabcordParser/Tools/generate_golden_assertions.py"
+python3 "docs/Technical Verification/LabcordParser/Tools/verify_real_world_corpus.py"
 ```
 
 재생성 결과: 60개, 셀 110개, 원본 텍스트 구간 251개.

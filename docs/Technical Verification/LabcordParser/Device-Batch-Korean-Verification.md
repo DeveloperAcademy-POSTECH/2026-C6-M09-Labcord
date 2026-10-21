@@ -27,7 +27,7 @@
 
 ## 원본과 검사 범위
 
-[원본 명세·라이선스](../../ResearchersTests/Fixtures/RealWorld/LargeScans/Manifest.json).
+[원본 명세·라이선스](../../../ResearchersTests/Fixtures/RealWorld/LargeScans/Manifest.json).
 외부 다운로드나 업로드 없이 이미 보관된 공식 원본 전체를 기기에서 처리했다.
 
 - 한국어 단일: 국립국어연구원 1992 「가나다 전화 자료집」 125쪽, 텍스트 층 없음,
@@ -111,8 +111,8 @@ PNG 크기 감소·예약 상한 준수만으로 이 과제가 완료됐다고 �
 ## 재현 명령
 
 ```sh
-python3 scripts/DocumentParsing/verify_real_world_corpus.py
-python3 scripts/DocumentParsing/prepare_before_benchmark.py --output /tmp/ResearchersParserBefore-고유이름
+python3 "docs/Technical Verification/LabcordParser/Tools/verify_real_world_corpus.py"
+python3 "docs/Technical Verification/LabcordParser/Tools/prepare_before_benchmark.py" --output /tmp/ResearchersParserBefore-고유이름
 xcodebuild test -project /tmp/ResearchersParserBefore-고유이름/Researchers.xcodeproj \
   -scheme Researchers -configuration Release -derivedDataPath /tmp/ResearchersBeforeDD-고유이름 \
   -destination 'platform=iOS,id=연결된_기기_UDID' \
@@ -153,11 +153,11 @@ API 시간은 줄었으나 냉각 대기를 포함한 전후 검증 묶음 소�
 본문·그림 바이너리·기기 이름/UDID를 기록하지 않는다.
 
 ```sh
-python3 scripts/DocumentParsing/summarize_benchmark.py \
+python3 "docs/Technical Verification/LabcordParser/Tools/summarize_benchmark.py" \
   --run before-device=/tmp/issue21-device-before-20261021b.xcresult \
   --run after-device=/tmp/issue21-device-after-20261021b.xcresult \
   --run after-conservative-device=/tmp/issue21-device-memory128-20261021b.xcresult \
-  --output docs/LabcordParser/Device-Batch-Korean-Metrics.json
+  --output "docs/Technical Verification/LabcordParser/Device-Batch-Korean-Metrics.json"
 ```
 
 ## 회귀·빌드·린트
