@@ -10,6 +10,8 @@
 		8E2E27333084877E0043EEB3 /* ResearchWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8E98D1AD30884D1500E68666 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 8E98D1AC30884D1500E68666 /* ComposableArchitecture */; };
 		8E98D1AF30884D4F00E68666 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 8E98D1AE30884D4F00E68666 /* ComposableArchitecture */; };
+		8EDAFE593088B37F00103B36 /* Shared in Frameworks */ = {isa = PBXBuildFile; productRef = 8EDAFE583088B37F00103B36 /* Shared */; };
+		8EDAFE5B3088B39D00103B36 /* Shared in Frameworks */ = {isa = PBXBuildFile; productRef = 8EDAFE5A3088B39D00103B36 /* Shared */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,12 +59,14 @@
 			isa = PBXFrameworksBuildPhase;
 			files = (
 				8E98D1AD30884D1500E68666 /* ComposableArchitecture in Frameworks */,
+				8EDAFE593088B37F00103B36 /* Shared in Frameworks */,
 			);
 		};
 		8E2E27263084877E0043EEB3 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
 				8E98D1AF30884D4F00E68666 /* ComposableArchitecture in Frameworks */,
+				8EDAFE5B3088B39D00103B36 /* Shared in Frameworks */,
 			);
 		};
 /* End PBXFrameworksBuildPhase section */
@@ -117,6 +121,7 @@
 			name = Researchers;
 			packageProductDependencies = (
 				8E98D1AC30884D1500E68666 /* ComposableArchitecture */,
+				8EDAFE583088B37F00103B36 /* Shared */,
 			);
 			productName = Researchers;
 			productReference = 8E0691153080743D0081547E /* Researchers.app */;
@@ -138,6 +143,7 @@
 			name = "ResearchWatch Watch App";
 			packageProductDependencies = (
 				8E98D1AE30884D4F00E68666 /* ComposableArchitecture */,
+				8EDAFE5A3088B39D00103B36 /* Shared */,
 			);
 			productName = "ResearchWatch Watch App";
 			productReference = 8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */;
@@ -172,6 +178,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				8E3F0AEF3085C6E200F857AB /* XCRemoteSwiftPackageReference "swift-composable-architecture" */,
+				8EDAFE573088B37F00103B36 /* XCLocalSwiftPackageReference "Packages/Shared" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8E0691163080743D0081547E /* Products */;
@@ -497,6 +504,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		8EDAFE573088B37F00103B36 /* XCLocalSwiftPackageReference "Packages/Shared" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Shared;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		8E3F0AEF3085C6E200F857AB /* XCRemoteSwiftPackageReference "swift-composable-architecture" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -518,6 +532,15 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8E3F0AEF3085C6E200F857AB /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
 			productName = ComposableArchitecture;
+		};
+		8EDAFE583088B37F00103B36 /* Shared */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Shared;
+		};
+		8EDAFE5A3088B39D00103B36 /* Shared */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8EDAFE573088B37F00103B36 /* XCLocalSwiftPackageReference "Packages/Shared" */;
+			productName = Shared;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
