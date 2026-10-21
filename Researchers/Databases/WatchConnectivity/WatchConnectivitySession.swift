@@ -12,7 +12,7 @@ import ComposableArchitecture
 final class WatchConnectivitySession: NSObject, WCSessionDelegate {
     private let lock = NSLock()
     private var stateObservers: [UUID: () -> Void] = [:]
-    var onUserInfoReceived: (([String: Any]) -> Void)?
+    private var userInfoObservers: [UUID: ([String: Any]) -> Void] = [:]
     
     var session: WCSession? {
         WCSession.isSupported() ? WCSession.default : nil
@@ -37,6 +37,25 @@ final class WatchConnectivitySession: NSObject, WCSessionDelegate {
     func removeStateObserver(_ id: UUID) {
         lock.lock()
         stateObservers.removeValue(forKey: id)
+        lock.unlock()
+    }
+
+    func addUserInfoObserver(
+        _ observer: @escaping ([String: Any]) -> Void
+    ) -> UUID {
+        let id = UUID()
+
+        lock.lock()
+        userInfoObservers[id] = observer
+        lock.unlock()
+
+        activate()
+        return id
+    }
+
+    func removeUserInfoObserver(_ id: UUID) {
+        lock.lock()
+        userInfoObservers.removeValue(forKey: id)
         lock.unlock()
     }
     
@@ -80,8 +99,12 @@ final class WatchConnectivitySession: NSObject, WCSessionDelegate {
         _ session: WCSession,
         didReceiveUserInfo userInfo: [String: Any]
     ) {
+        lock.lock()
+        let observers = Array(userInfoObservers.values)
+        lock.unlock()
+
         DispatchQueue.main.async {
-            self.onUserInfoReceived?(userInfo)
+            observers.forEach { $0(userInfo) }
         }
     }
     
