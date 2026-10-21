@@ -13,11 +13,11 @@ import WatchKit
 final class WatchBatteryClient {
     private let connectivity: WatchConnectivitySession
     private var observerID: UUID?
-    
+
     init(connectivity: WatchConnectivitySession) {
         self.connectivity = connectivity
     }
-    
+
     func start() {
         guard observerID == nil else { return }
 
@@ -26,16 +26,16 @@ final class WatchBatteryClient {
             guard userInfo[WatchBatteryMessage.requestKey] as? Bool == true else {
                 return
             }
-            
+
             sendBatteryLevel()
         }
     }
-    
+
     private func sendBatteryLevel() {
         let device = WKInterfaceDevice.current()
         device.isBatteryMonitoringEnabled = true
         let level = device.batteryLevel
-        
+
         connectivity.transferUserInfo([
             WatchBatteryMessage.levelKey: NSNumber(value: level)
         ])
@@ -45,7 +45,7 @@ final class WatchBatteryClient {
 extension WatchBatteryClient: DependencyKey {
     static var liveValue: WatchBatteryClient {
         @Dependency(\.watchConnectivitySession) var connectivity
-        
+
         return WatchBatteryClient(connectivity: connectivity)
     }
 }

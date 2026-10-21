@@ -10,7 +10,7 @@ let package = Package(
         .library(
             name: "Shared",
             targets: ["Shared"]
-        ),
+        )
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -18,8 +18,8 @@ let package = Package(
         .target(
             name: "Shared",
             swiftSettings: [
-                .enableUpcomingFeature("ApproachableConcurrency"),
+                .enableUpcomingFeature("ApproachableConcurrency")
             ],
-        ),
+        )
     ]
 )
