@@ -16,21 +16,21 @@ class WatchPairingClient: NSObject, WCSessionDelegate {
         self.onStatusChange = onStatusChange
         
         guard WCSession.isSupported() else {
-            publish()
+            sendCurrentStatus()
             return
         }
         
         let session = WCSession.default
         session.delegate = self
         
-        publish()
+        sendCurrentStatus()
         
         if session.activationState != .activated {
             session.activate()
         }
     }
     
-    private func publish() {
+    private func sendCurrentStatus() {
         let status: Bool?
         
         if !WCSession.isSupported() {
@@ -50,23 +50,23 @@ class WatchPairingClient: NSObject, WCSessionDelegate {
         activationDidCompleteWith state: WCSessionActivationState,
         error: Error?
     ) {
-        publish()
+        sendCurrentStatus()
     }
     
     func sessionWatchStateDidChange(_ session: WCSession) {
-        publish()
+        sendCurrentStatus()
     }
     
     func sessionReachabilityDidChange(_ session: WCSession) {
-        publish()
+        sendCurrentStatus()
     }
     
     func sessionDidBecomeInactive(_ session: WCSession) {
-        publish()
+        sendCurrentStatus()
     }
     
     func sessionDidDeactivate(_ session: WCSession) {
-        publish()
+        sendCurrentStatus()
         session.activate()
     }
     
