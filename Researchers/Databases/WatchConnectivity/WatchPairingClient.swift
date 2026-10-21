@@ -16,22 +16,30 @@ class WatchPairingClient: NSObject, WCSessionDelegate {
         self.onStatusChange = onStatusChange
         
         guard WCSession.isSupported() else {
-            publish(false)
+            publish()
             return
         }
         
         let session = WCSession.default
         session.delegate = self
         
-        if session.activationState == .activated {
-            publish(session.isPaired)
-        } else {
-            publish(nil)
+        publish()
+        
+        if session.activationState != .activated {
             session.activate()
         }
     }
     
-    private func publish(_ status: Bool?) {
+    private func publish() {
+        let status: Bool?
+        
+        if !WCSession.isSupported() {
+            status = false
+        } else {
+            let session = WCSession.default
+            status = session.activationState == .activated ? session.isPaired && session.isReachable : nil
+        }
+        
         DispatchQueue.main.async {
             self.onStatusChange?(status)
         }
@@ -42,20 +50,23 @@ class WatchPairingClient: NSObject, WCSessionDelegate {
         activationDidCompleteWith state: WCSessionActivationState,
         error: Error?
     ) {
-        publish(state == .activated ? session.isPaired : nil)
+        publish()
     }
     
     func sessionWatchStateDidChange(_ session: WCSession) {
-        guard session.activationState == .activated else { return }
-        publish(session.isPaired)
+        publish()
+    }
+    
+    func sessionReachabilityDidChange(_ session: WCSession) {
+        publish()
     }
     
     func sessionDidBecomeInactive(_ session: WCSession) {
-        publish(nil)
+        publish()
     }
     
     func sessionDidDeactivate(_ session: WCSession) {
-        publish(nil)
+        publish()
         session.activate()
     }
     
