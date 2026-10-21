@@ -38,7 +38,7 @@ struct WatchPairingView: View {
                         
                         HStack {
                             Text(
-                                store.isWatchReady.map { $0 ? "페어링됨" : "페어링 안됨" }
+                                store.isWatchReady.map { $0 ? "사용 가능" : "사용 불가능" }
                                 ?? "확인 중"
                             )
                             Text("75%")
