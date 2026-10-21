@@ -54,13 +54,12 @@ final class DocumentPDFParallelPerformanceTests: XCTestCase {
         try await Task.sleep(for: .milliseconds(20))
       }
     }
-    print("PDF_BENCH_START round=\(round) workers=\(workers)")
     let start = ContinuousClock.now
     let result: DocumentParseResult
     do {
       result = try await DocumentParser.parse(
-        .data(data, fileName: "100-pages.pdf"), options: .init(
-        maximumConcurrentPDFPages: workers))
+        .data(data, fileName: "100-pages.pdf"),
+        options: .init(maximumConcurrentPDFPages: workers))
     } catch {
       sampler.cancel()
       _ = await sampler.result
@@ -69,7 +68,6 @@ final class DocumentPDFParallelPerformanceTests: XCTestCase {
     let elapsed = DocumentFootprint.seconds(start.duration(to: .now))
     sampler.cancel()
     _ = await sampler.result
-    print("PDF_BENCH_END round=\(round) workers=\(workers) seconds=\(elapsed)")
     let metrics = try XCTUnwrap(result.metrics)
     XCTAssertEqual(Set(result.blocks.compactMap { $0.location.page }).count, 100)
     XCTAssertEqual(result.blocks.count, 100)
@@ -88,7 +86,6 @@ final class DocumentPDFParallelPerformanceTests: XCTestCase {
     ]
     if round == 0 {
       row["timings"] = timingRows(metrics)
-
     }
     return row
   }
