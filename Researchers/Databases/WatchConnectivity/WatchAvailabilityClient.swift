@@ -1,5 +1,5 @@
 //
-//  WatchPairingClient.swift
+//  WatchAvailabilityClient.swift
 //  Researchers
 //
 //  Created by 정홍섭 on 10/21/26.
@@ -9,7 +9,7 @@ import Foundation
 import WatchConnectivity
 import ComposableArchitecture
 
-class WatchPairingClient: NSObject, WCSessionDelegate {
+class WatchAvailabilityClient: NSObject, WCSessionDelegate {
     private var onStatusChange: ((Bool?) -> Void)?
     
     func startObservingStatus(onStatusChange: @escaping (Bool?) -> Void) {
@@ -85,13 +85,13 @@ class WatchPairingClient: NSObject, WCSessionDelegate {
     }
 }
 
-extension WatchPairingClient: DependencyKey {
-    static let liveValue: WatchPairingClient = WatchPairingClient()
+extension WatchAvailabilityClient: DependencyKey {
+    static let liveValue: WatchAvailabilityClient = WatchAvailabilityClient()
 }
 
 extension DependencyValues {
-    var watchPairingClient: WatchPairingClient {
-        get { self[WatchPairingClient.self] }
-        set { self[WatchPairingClient.self] = newValue }
+    var watchPairingClient: WatchAvailabilityClient {
+        get { self[WatchAvailabilityClient.self] }
+        set { self[WatchAvailabilityClient.self] = newValue }
     }
 }
