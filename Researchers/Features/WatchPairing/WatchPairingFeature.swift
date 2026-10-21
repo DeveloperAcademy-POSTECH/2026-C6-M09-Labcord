@@ -13,18 +13,23 @@ struct WatchPairingFeature {
     @ObservableState
     struct State: Equatable {
         var isWatchReady: Bool? = nil
+        var batteryLevel: Float? = nil
+        var didReciveBatteryResponse = false
     }
     
     enum Action: Equatable {
         case onAppear
         case onDisappear
         case watchReadinessChanged(Bool?)
+        case batteryLevelChanged(Float?)
     }
     
     @Dependency(\.watchPairingClient) var watchPairingClient
+    @Dependency(\.watchBatteryClient) var watchBatteryClient
     
     private nonisolated enum CancelID: Hashable, Sendable {
         case pairing
+        case battery
     }
     
     var body: some Reducer<State, Action> {
@@ -32,22 +37,44 @@ struct WatchPairingFeature {
             switch action {
             case .onAppear:
                 state.isWatchReady = nil
+                state.batteryLevel = nil
+                state.didReciveBatteryResponse = false
                 
-                return .run { send in
-                    let stream = await watchPairingClient.statusStream()
-                    
-                    for await status in stream {
-                        await send(.watchReadinessChanged(status))
+                return .merge(
+                    .run { send in
+                        let stream = await watchPairingClient.statusStream()
+                        
+                        for await status in stream {
+                            await send(.watchReadinessChanged(status))
+                        }
                     }
-                }
-                .cancellable(id: CancelID.pairing, cancelInFlight: true)
+                    .cancellable(id: CancelID.pairing, cancelInFlight: true),
+                    
+                    .run { send in
+                        let stream = await watchBatteryClient.batteryStream()
+                        await watchBatteryClient.requestBatteryLevel()
+                            
+                        for await level in stream {
+                            await send(.batteryLevelChanged(level))
+                        }
+                    }
+                    .cancellable(id: CancelID.battery, cancelInFlight: true),
+                )
                 
             case let .watchReadinessChanged(status):
                 state.isWatchReady = status
                 return .none
                 
+            case let .batteryLevelChanged(level):
+                state.batteryLevel = level
+                state.didReciveBatteryResponse = true
+                return .none
+                
             case .onDisappear:
-                return .cancel(id: CancelID.pairing)
+                return .merge(
+                    .cancel(id: CancelID.pairing),
+                    .cancel(id: CancelID.battery)
+                )
             }
         }
     }
