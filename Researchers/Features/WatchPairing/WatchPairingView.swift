@@ -34,7 +34,7 @@ struct WatchPairingView: View {
                 .foregroundStyle(.gray)
                 .overlay {
                     VStack {
-                        Text("Apple Watch")
+                        Text(store.watchDeviceName ?? "-")
                         
                         HStack {
                             Text(
@@ -44,6 +44,8 @@ struct WatchPairingView: View {
                             
                             if let level = store.batteryLevel {
                                 Text("\(Int((level * 100).rounded()))%")
+                            } else {
+                                Text("-")
                             }
                         }
                     }
