@@ -1,5 +1,5 @@
 {
-  "originHash" : "e7024a9cd3fa1c40fa4003b3b2b186c00ba720c787de8ba274caf8fc530677e8",
+  "originHash" : "a1cee2dff277b46ddf4210eef33c7f044387803102b26962418278330319bd3e",
   "pins" : [
     {
       "identity" : "combine-schedulers",
@@ -8,6 +8,33 @@
       "state" : {
         "revision" : "dcccb979a2183b8df3334237e3dc1ae2b4116a86",
         "version" : "1.2.0"
+      }
+    },
+    {
+      "identity" : "hwp-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/sboh1214/hwp-swift.git",
+      "state" : {
+        "revision" : "eebe90d160b3d437b97d0bb1ea7a5752f419f225",
+        "version" : "0.19.0"
+      }
+    },
+    {
+      "identity" : "olekit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/CoreOffice/OLEKit.git",
+      "state" : {
+        "revision" : "2cc7a98b4ac4e9ce022336258a3bc4ff6bfc285b",
+        "version" : "0.3.1"
+      }
+    },
+    {
+      "identity" : "opendocument.core",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/opendocument-app/OpenDocument.core",
+      "state" : {
+        "revision" : "77e2a0a6e4b33c33a5aee64551fcd0d7493c9101",
+        "version" : "7.5.2"
       }
     },
     {
@@ -125,6 +152,15 @@
       "state" : {
         "revision" : "79e4b74a295b6eb74a8b585e3a39d29e70c1dbd1",
         "version" : "603.0.2"
+      }
+    },
+    {
+      "identity" : "swiftsoup",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/scinfu/SwiftSoup.git",
+      "state" : {
+        "revision" : "e7f85f4d3dd91ca9a1e94d3328aa1ed5120a8c0f",
+        "version" : "2.14.3"
       }
     },
     {
