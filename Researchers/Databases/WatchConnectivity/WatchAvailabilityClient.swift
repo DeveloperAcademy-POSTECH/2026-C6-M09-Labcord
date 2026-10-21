@@ -12,7 +12,7 @@ import ComposableArchitecture
 class WatchPairingClient: NSObject, WCSessionDelegate {
     private var onStatusChange: ((Bool?) -> Void)?
     
-    func start(onStatusChange: @escaping (Bool?) -> Void) {
+    func startObservingStatus(onStatusChange: @escaping (Bool?) -> Void) {
         self.onStatusChange = onStatusChange
         
         guard WCSession.isSupported() else {
@@ -37,7 +37,7 @@ class WatchPairingClient: NSObject, WCSessionDelegate {
             status = false
         } else {
             let session = WCSession.default
-            status = session.activationState == .activated ? session.isPaired && session.isReachable : nil
+            status = session.activationState == .activated ? session.isPaired && session.isWatchAppInstalled : nil
         }
         
         DispatchQueue.main.async {
@@ -72,7 +72,7 @@ class WatchPairingClient: NSObject, WCSessionDelegate {
     
     func statusStream() -> AsyncStream<Bool?> {
         AsyncStream { continuation in
-            start { status in
+            startObservingStatus { status in
                 continuation.yield(status)
             }
             
