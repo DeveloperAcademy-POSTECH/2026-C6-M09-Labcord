@@ -9,7 +9,9 @@ import SwiftUI
 import ComposableArchitecture
 
 struct WatchPairingView: View {
-    let store: StoreOf<WatchPairingFeature>
+    @State private var store = Store(initialState: WatchPairingFeature.State()) {
+        WatchPairingFeature()
+    }
     
     var body: some View {
         VStack {
@@ -69,9 +71,5 @@ struct WatchPairingView: View {
 }
 
 #Preview {
-    WatchPairingView(
-        store: Store(initialState: WatchPairingFeature.State()) {
-            WatchPairingFeature()
-        }
-    )
+    WatchPairingView()
 }
