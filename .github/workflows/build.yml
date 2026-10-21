@@ -26,4 +26,5 @@ jobs:
           xcodebuild build \
             -project Researchers.xcodeproj \
             -scheme Researchers \
-            -destination 'generic/platform=iOS Simulator'
+            -destination 'generic/platform=iOS Simulator' \
+            -skipMacroValidation
