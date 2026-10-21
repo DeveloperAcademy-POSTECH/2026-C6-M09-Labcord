@@ -9,84 +9,46 @@ import Foundation
 import WatchConnectivity
 import ComposableArchitecture
 
-class WatchAvailabilityClient: NSObject, WCSessionDelegate {
-    private var onStatusChange: ((Bool?) -> Void)?
+final class WatchAvailabilityClient {
+    private let connectivity: WatchConnectivitySession
     
-    func startObservingStatus(onStatusChange: @escaping (Bool?) -> Void) {
-        self.onStatusChange = onStatusChange
-        
-        guard WCSession.isSupported() else {
-            sendCurrentStatus()
-            return
-        }
-        
-        let session = WCSession.default
-        session.delegate = self
-        
-        sendCurrentStatus()
-        
-        if session.activationState != .activated {
-            session.activate()
-        }
-    }
-    
-    private func sendCurrentStatus() {
-        let status: Bool?
-        
-        if !WCSession.isSupported() {
-            status = false
-        } else {
-            let session = WCSession.default
-            status = session.activationState == .activated ? session.isPaired && session.isWatchAppInstalled : nil
-        }
-        
-        DispatchQueue.main.async {
-            self.onStatusChange?(status)
-        }
-    }
-    
-    func session(
-        _ session: WCSession,
-        activationDidCompleteWith state: WCSessionActivationState,
-        error: Error?
-    ) {
-        sendCurrentStatus()
-    }
-    
-    func sessionWatchStateDidChange(_ session: WCSession) {
-        sendCurrentStatus()
-    }
-    
-    func sessionReachabilityDidChange(_ session: WCSession) {
-        sendCurrentStatus()
-    }
-    
-    func sessionDidBecomeInactive(_ session: WCSession) {
-        sendCurrentStatus()
-    }
-    
-    func sessionDidDeactivate(_ session: WCSession) {
-        sendCurrentStatus()
-        session.activate()
+    init(connectivity: WatchConnectivitySession) {
+        self.connectivity = connectivity
     }
     
     func statusStream() -> AsyncStream<Bool?> {
         AsyncStream { continuation in
-            startObservingStatus { status in
-                continuation.yield(status)
+            let observerID = connectivity.addStateObserver {
+                continuation.yield(self.currentReadiness())
             }
             
-            continuation.onTermination = { [weak self] _ in
-                DispatchQueue.main.async {
-                    self?.onStatusChange = nil
+            continuation.onTermination = { [connectivity] _ in
+                Task { @MainActor in
+                    connectivity.removeStateObserver(observerID)
                 }
             }
         }
     }
+    
+    private func currentReadiness() -> Bool? {
+        guard let session = connectivity.session else {
+            return false
+        }
+        
+        guard session.activationState == .activated else {
+            return nil
+        }
+        
+        return session.isPaired && session.isWatchAppInstalled
+    }
 }
 
 extension WatchAvailabilityClient: DependencyKey {
-    static let liveValue: WatchAvailabilityClient = WatchAvailabilityClient()
+    static var liveValue: WatchAvailabilityClient {
+        @Dependency(\.watchConnectivitySession) var connectivity
+        
+        return WatchAvailabilityClient(connectivity: connectivity)
+    }
 }
 
 extension DependencyValues {
