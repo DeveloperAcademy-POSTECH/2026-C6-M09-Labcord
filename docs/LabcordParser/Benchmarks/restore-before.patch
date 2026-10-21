@@ -1,0 +1,548 @@
+diff --git a/Researchers/Services/DocumentParsing/Core/DocumentParser.swift b/Researchers/Services/DocumentParsing/Core/DocumentParser.swift
+--- a/Researchers/Services/DocumentParsing/Core/DocumentParser.swift
++++ b/Researchers/Services/DocumentParsing/Core/DocumentParser.swift
+@@ -10,9 +10,7 @@
+     options: DocumentParserOptions = DocumentParserOptions(),
+     progress: ProgressHandler? = nil
+   ) async throws -> DocumentParseResult {
+-    try await DocumentOCR.$sessions.withValue(DocumentOCRSessionPool()) {
+-      try await parseInput(input, index: 0, options: options, progress: progress)
+-    }
++    try await parseInput(input, index: 0, options: options, progress: progress)
+   }
+ 
+   @concurrent public static func parseBatch(
+@@ -22,23 +20,10 @@
+   ) async throws -> [DocumentBatchResult] {
+     try Task.checkCancellation()
+     if inputs.isEmpty { return [] }
+-    let pool = DocumentPDFWorkPool(options: options)
+-    return try await DocumentOCR.$sessions.withValue(DocumentOCRSessionPool()) {
+-      try await DocumentPDFScheduling.$pool.withValue(pool) {
+-        let results = try await runBatch(inputs, options: options, progress: progress)
+-        let metrics = await pool.snapshot()
+-        return results.map { outcome in
+-          guard case .success(var result) = outcome else { return outcome }
+-          result.metrics?.batchScheduling = metrics
+-          return .success(result)
+-        }
+-      }
+-    }
+-  }
+-
+-  private static func runBatch(
+-    _ inputs: [DocumentInput], options: DocumentParserOptions, progress: ProgressHandler?
+-  ) async throws -> [DocumentBatchResult] {
++    var options = options
++    let documents = min(max(1, options.maximumConcurrentDocuments), inputs.count)
++    options.maximumConcurrentPDFPages = max(1, options.maximumConcurrentPDFPages / documents)
++    options.pdfWorkingMemoryTargetBytes = max(1, options.pdfWorkingMemoryTargetBytes / documents)
+     var results = [DocumentBatchResult?](repeating: nil, count: inputs.count)
+     var nextIndex = 0
+     try await withThrowingTaskGroup(of: (Int, DocumentBatchResult).self) { group in
+diff --git a/Researchers/Services/DocumentParsing/Images/OCR/DocumentOCR.swift b/Researchers/Services/DocumentParsing/Images/OCR/DocumentOCR.swift
+--- a/Researchers/Services/DocumentParsing/Images/OCR/DocumentOCR.swift
++++ b/Researchers/Services/DocumentParsing/Images/OCR/DocumentOCR.swift
+@@ -4,46 +4,23 @@
+ import Vision
+ 
+ nonisolated enum DocumentOCR {
+-  @TaskLocal static var sessions: DocumentOCRSessionPool?
+-
+   static func recognize(
+     image: CGImage,
+     orientation: CGImagePropertyOrientation,
+     location: DocumentLocation = DocumentLocation()
+   ) throws -> [DocumentBlock] {
+-    // 페이지 안의 다음 OCR 호출까지 Vision 임시 객체를 보유하지 않는다.
+-    return try autoreleasepool {
+-      try Task.checkCancellation()
+-      if let sessions {
+-        return try sessions.perform(image: image, orientation: orientation) {
+-          try blocks($0, image: image, orientation: orientation, location: location)
+-        }
+-      }
+-      let request = makeRequest()
+-      let handler = VNImageRequestHandler(cgImage: image, orientation: orientation)
+-      try handler.perform([request])
+-      try Task.checkCancellation()
+-      return try blocks(request.results ?? [], image: image, orientation: orientation,
+-                        location: location)
+-    }
+-  }
+-
+-  static func makeRequest() -> VNRecognizeTextRequest {
++    try Task.checkCancellation()
+     let request = VNRecognizeTextRequest()
+     request.recognitionLevel = .accurate
+     request.usesLanguageCorrection = true
+     request.recognitionLanguages = ["ko-KR", "en-US"]
+     request.automaticallyDetectsLanguage = true
+-    return request
+-  }
+-
+-  private static func blocks(
+-    _ source: [VNRecognizedTextObservation], image: CGImage,
+-    orientation: CGImagePropertyOrientation, location: DocumentLocation
+-  ) throws -> [DocumentBlock] {
++    let handler = VNImageRequestHandler(cgImage: image, orientation: orientation)
++    try handler.perform([request])
++    try Task.checkCancellation()
+     let enhanced = try DocumentNumericOCR.refine(
+-      image: image, orientation: orientation, observations: source)
+-    let observations = source.sorted {
++      image: image, orientation: orientation, observations: request.results ?? [])
++    let observations = (request.results ?? []).sorted {
+       if $0.boundingBox.midY != $1.boundingBox.midY {
+         return $0.boundingBox.midY > $1.boundingBox.midY
+       }
+diff --git a/Researchers/Services/DocumentParsing/Images/OCR/DocumentOCRSessionPool.swift b/Researchers/Services/DocumentParsing/Images/OCR/DocumentOCRSessionPool.swift
+deleted file mode 100644
+--- a/Researchers/Services/DocumentParsing/Images/OCR/DocumentOCRSessionPool.swift
++++ /dev/null
+@@ -1,45 +0,0 @@
+-import CoreGraphics
+-import Foundation
+-import ImageIO
+-import Synchronization
+-import Vision
+-
+-/// 호출 하나의 작업창 안에서만 공유한다. 대여한 세션은 한 OCR 호출만 사용한다.
+-/// 실행 동시성은 상위 문서/PDF 작업창이 제한하고, 완료한 세션은 최대 2개만 보관한다.
+-nonisolated final class DocumentOCRSessionPool: Sendable {
+-  private struct RecognitionState {
+-    let handler = VNSequenceRequestHandler()
+-    let request = DocumentOCR.makeRequest()
+-  }
+-
+-  private final class Session: Sendable {
+-    private let state = Mutex(RecognitionState())
+-
+-    func perform(
+-      image: CGImage, orientation: CGImagePropertyOrientation,
+-      convert: ([VNRecognizedTextObservation]) throws -> [DocumentBlock]
+-    ) throws -> [DocumentBlock] {
+-      try state.withLock { value in
+-        try Task.checkCancellation()
+-        try value.handler.perform([value.request], on: image, orientation: orientation)
+-        try Task.checkCancellation()
+-        return try convert(value.request.results ?? [])
+-      }
+-    }
+-  }
+-
+-  private let idle = Mutex<[Session]>([])
+-
+-  var cachedSessionCount: Int { idle.withLock { $0.count } }
+-
+-  func perform(
+-    image: CGImage, orientation: CGImagePropertyOrientation,
+-    convert: ([VNRecognizedTextObservation]) throws -> [DocumentBlock]
+-  ) throws -> [DocumentBlock] {
+-    let session = idle.withLock { $0.popLast() } ?? Session()
+-    // 실패·취소한 핸들러는 재사용하지 않고 해제한다.
+-    let result = try session.perform(image: image, orientation: orientation, convert: convert)
+-    idle.withLock { if $0.count < 2 { $0.append(session) } }
+-    return result
+-  }
+-}
+diff --git a/Researchers/Services/DocumentParsing/Models/DocumentParsingMetrics.swift b/Researchers/Services/DocumentParsing/Models/DocumentParsingMetrics.swift
+--- a/Researchers/Services/DocumentParsing/Models/DocumentParsingMetrics.swift
++++ b/Researchers/Services/DocumentParsing/Models/DocumentParsingMetrics.swift
+@@ -2,8 +2,7 @@
+ 
+ nonisolated public enum DocumentParsingStage: String, Sendable, CaseIterable {
+   case pdfOpen, pdfScan, pdfTables, pdfNativeText, pdfRender, pdfImages
+-  case pdfImageOCR, pdfPageOCR, pdfAssembly, pdfAwait, pdfSchedule
+-  case pdfPageOCRReuse
++  case pdfImageOCR, pdfPageOCR, pdfAssembly, pdfAwait
+ }
+ 
+ nonisolated public struct DocumentStageTiming: Sendable, Equatable {
+@@ -18,14 +17,6 @@
+   public let peakInFlightPages: Int
+   public let peakEstimatedWorkingBytes: Int
+   public let timings: [DocumentStageTiming]
+-  public var batchScheduling: DocumentBatchSchedulingMetrics?
+-}
+-
+-nonisolated public struct DocumentBatchSchedulingMetrics: Sendable, Equatable {
+-  public let peakInFlightPages: Int
+-  public let peakEstimatedWorkingBytes: Int
+-  public let activePages: Int
+-  public let waitingRequests: Int
+ }
+ 
+ nonisolated struct DocumentTiming: Sendable {
+diff --git a/Researchers/Services/DocumentParsing/Models/DocumentParsingModels.swift b/Researchers/Services/DocumentParsing/Models/DocumentParsingModels.swift
+--- a/Researchers/Services/DocumentParsing/Models/DocumentParsingModels.swift
++++ b/Researchers/Services/DocumentParsing/Models/DocumentParsingModels.swift
+@@ -191,7 +191,6 @@
+   public var maximumPDFOperators: Int
+   public var maximumConcurrentPDFPages: Int
+   public var pdfWorkingMemoryTargetBytes: Int
+-  public var maximumPDFImageBytes: Int
+ 
+   public init(
+     maximumInputBytes: Int = 100 * 1024 * 1024,
+@@ -203,8 +202,7 @@
+     maximumEmbeddedImages: Int = 128,
+     maximumPDFOperators: Int = 100_000,
+     maximumConcurrentPDFPages: Int = ProcessInfo.processInfo.activeProcessorCount,
+-    pdfWorkingMemoryTargetBytes: Int = 256 * 1024 * 1024,
+-    maximumPDFImageBytes: Int = 500 * 1024 * 1024
++    pdfWorkingMemoryTargetBytes: Int = 256 * 1024 * 1024
+   ) {
+     self.maximumInputBytes = max(1, maximumInputBytes)
+     self.maximumExpandedBytes = max(1, maximumExpandedBytes)
+@@ -216,7 +214,6 @@
+     self.maximumPDFOperators = max(1, maximumPDFOperators)
+     self.maximumConcurrentPDFPages = max(1, maximumConcurrentPDFPages)
+     self.pdfWorkingMemoryTargetBytes = max(1, pdfWorkingMemoryTargetBytes)
+-    self.maximumPDFImageBytes = max(1, maximumPDFImageBytes)
+   }
+ }
+ 
+diff --git a/Researchers/Services/DocumentParsing/PDF/Extraction/Images/DocumentPDFImageExtractor.swift b/Researchers/Services/DocumentParsing/PDF/Extraction/Images/DocumentPDFImageExtractor.swift
+--- a/Researchers/Services/DocumentParsing/PDF/Extraction/Images/DocumentPDFImageExtractor.swift
++++ b/Researchers/Services/DocumentParsing/PDF/Extraction/Images/DocumentPDFImageExtractor.swift
+@@ -31,7 +31,7 @@
+       }
+       result.inspectedImages += 1
+       guard let crop = DocumentPDFPageSpace.crop(bounds, from: raster),
+-        let png = DocumentPDFPNGEncoder.png(crop)
++        let png = DocumentImageEncoder.png(crop)
+       else {
+         result.warnings.append(
+           DocumentWarning(
+diff --git a/Researchers/Services/DocumentParsing/PDF/Extraction/Images/DocumentPDFPNGEncoder.swift b/Researchers/Services/DocumentParsing/PDF/Extraction/Images/DocumentPDFPNGEncoder.swift
+deleted file mode 100644
+--- a/Researchers/Services/DocumentParsing/PDF/Extraction/Images/DocumentPDFPNGEncoder.swift
++++ /dev/null
+@@ -1,71 +0,0 @@
+-import CoreGraphics
+-import Foundation
+-
+-/// 256색 이하의 불투명 이미지만 정확한 RGB 팔레트로 바꾼다. 양자화·리사이즈는 하지 않는다.
+-nonisolated enum DocumentPDFPNGEncoder {
+-  static func png(_ source: CGImage) -> Data? {
+-    autoreleasepool {
+-      if let image = indexed(source), let data = DocumentImageEncoder.png(image) { return data }
+-      return DocumentImageEncoder.png(source)
+-    }
+-  }
+-
+-  private static func supportsPalette(_ space: CGColorSpace) -> Bool {
+-    // 광색역 PNG의 팔레트 색 관리에는 반올림 차이가 있어 기존 인코더를 유지한다.
+-    (space.name as String?) == (CGColorSpace.sRGB as String)
+-      || CFEqual(space, CGColorSpaceCreateDeviceRGB())
+-  }
+-
+-  private static func indexed(_ source: CGImage) -> CGImage? {
+-    guard source.bitsPerComponent == 8, source.colorSpace?.model == .rgb,
+-      source.width > 0, source.height > 0,
+-      source.width <= Int.max / 4 / source.height,
+-      let space = source.colorSpace, supportsPalette(space),
+-      let context = CGContext(
+-        data: nil, width: source.width, height: source.height, bitsPerComponent: 8,
+-        bytesPerRow: source.width * 4, space: space,
+-        bitmapInfo: CGBitmapInfo.byteOrder32Big.rawValue
+-          | CGImageAlphaInfo.premultipliedLast.rawValue),
+-      let storage = context.data
+-    else { return nil }
+-    context.interpolationQuality = .none
+-    context.draw(source, in: CGRect(x: 0, y: 0, width: source.width, height: source.height))
+-    let pixels = storage.bindMemory(to: UInt8.self, capacity: source.width * source.height * 4)
+-    guard let palette = palette(pixels, count: source.width * source.height),
+-      let colorSpace = CGColorSpace(
+-        indexedBaseSpace: space, last: palette.colors.count / 3 - 1, colorTable: palette.colors),
+-      let provider = CGDataProvider(data: palette.indices as CFData)
+-    else { return nil }
+-    return CGImage(
+-      width: source.width, height: source.height, bitsPerComponent: 8, bitsPerPixel: 8,
+-      bytesPerRow: source.width, space: colorSpace, bitmapInfo: [], provider: provider,
+-      decode: nil, shouldInterpolate: false, intent: .defaultIntent)
+-  }
+-
+-  private static func palette(_ pixels: UnsafePointer<UInt8>, count: Int)
+-    -> (colors: [UInt8], indices: Data)? {
+-    var colors: [UInt8] = []
+-    var lookup: [UInt32: UInt8] = [:]
+-    var indices = Data(count: count)
+-    let success = indices.withUnsafeMutableBytes { storage -> Bool in
+-      let output = storage.bindMemory(to: UInt8.self)
+-      for index in 0..<count {
+-        let offset = index * 4
+-        guard pixels[offset + 3] == 255 else { return false }
+-        let color = UInt32(pixels[offset]) << 16 | UInt32(pixels[offset + 1]) << 8
+-          | UInt32(pixels[offset + 2])
+-        if let value = lookup[color] {
+-          output[index] = value
+-        } else {
+-          guard lookup.count < 256 else { return false }
+-          let value = UInt8(lookup.count)
+-          lookup[color] = value
+-          colors.append(contentsOf: [pixels[offset], pixels[offset + 1], pixels[offset + 2]])
+-          output[index] = value
+-        }
+-      }
+-      return true
+-    }
+-    return success ? (colors, indices) : nil
+-  }
+-}
+diff --git a/Researchers/Services/DocumentParsing/PDF/Pages/DocumentPDFPageParser.swift b/Researchers/Services/DocumentParsing/PDF/Pages/DocumentPDFPageParser.swift
+--- a/Researchers/Services/DocumentParsing/PDF/Pages/DocumentPDFPageParser.swift
++++ b/Researchers/Services/DocumentParsing/PDF/Pages/DocumentPDFPageParser.swift
+@@ -55,8 +55,7 @@
+     return DocumentPDFPreparedPage(
+       index: index, result: result, raster: DocumentPDFRaster(image: raster),
+       imageJobs: extracted.jobs, timing: timing,
+-      estimatedBytes: raster.bytesPerRow * raster.height * 3
+-        + DocumentPDFWorkingMemory.recognitionReserveBytes)
++      estimatedBytes: raster.bytesPerRow * raster.height * 3)
+   }
+ 
+   @concurrent static func recognize(
+@@ -73,7 +72,6 @@
+     try autoreleasepool {
+       var page = prepared
+       let native = page.result.blocks
+-      var recognizedFullPage = false
+       for job in page.imageJobs {
+         try Task.checkCancellation()
+         page.result.blocks.append(DocumentBlock(
+@@ -83,7 +81,6 @@
+             try DocumentPDFImageExtractor.recognize(
+               job.raster.image, location: job.location, bounds: job.location.bounds ?? .zero)
+           }
+-          recognizedFullPage = recognizedFullPage || job.covers(page.raster)
+           page.result.blocks.append(contentsOf: recognized.filter { !duplicate($0, in: native) })
+         } catch is CancellationError {
+           throw CancellationError()
+@@ -95,12 +92,8 @@
+       }
+       if let raster = page.raster {
+         let start = ContinuousClock.now
+-        if recognizedFullPage {
+-          page.timing.record(.pdfPageOCRReuse, page: page.index + 1, start: start)
+-        } else {
+-          try appendPageOCR(raster.image, index: page.index, result: &page.result)
+-          page.timing.record(.pdfPageOCR, page: page.index + 1, start: start)
+-        }
++        try appendPageOCR(raster.image, index: page.index, result: &page.result)
++        page.timing.record(.pdfPageOCR, page: page.index + 1, start: start)
+       }
+       page.raster = nil
+       page.imageJobs = []
+diff --git a/Researchers/Services/DocumentParsing/PDF/Pages/DocumentPDFPipeline.swift b/Researchers/Services/DocumentParsing/PDF/Pages/DocumentPDFPipeline.swift
+--- a/Researchers/Services/DocumentParsing/PDF/Pages/DocumentPDFPipeline.swift
++++ b/Researchers/Services/DocumentParsing/PDF/Pages/DocumentPDFPipeline.swift
+@@ -32,25 +32,15 @@
+         // 상한보다 큰 한 페이지는 해상도를 줄이지 않고 단독으로 처리한다.
+         let fits = inFlight == 0 || estimate <= max(0, memoryTarget - workingBytes)
+         if next < count, inFlight < workers, fits {
+-          let pool = DocumentPDFScheduling.pool
+-          let lease = try await DocumentPDFScheduling.acquire(
+-            estimatedBytes: estimate, page: next + 1, timing: &awaitTimings)
+-          let page: DocumentPDFPreparedPage
+-          do {
+-            try Task.checkCancellation()
+-            page = try prepare(index: next)
+-            if let lease { await pool?.resize(lease, actualBytes: page.estimatedBytes) }
+-          } catch {
+-            if let lease { await pool?.release(lease) }
+-            throw error
+-          }
+-          updateEstimate(page, estimatedBytes: estimate)
++          let page = try prepare(index: next)
++          let unscaled = max(1, Double(estimate) / estimateMultiplier)
++          estimateMultiplier = max(estimateMultiplier, Double(page.estimatedBytes) / unscaled)
+           workingBytes += page.estimatedBytes
+           inFlight += 1
+           peakPages = max(peakPages, inFlight)
+           peakBytes = max(peakBytes, workingBytes)
+           next += 1
+-          group.addTask { try await DocumentPDFScheduling.recognize(page, lease: lease) }
++          group.addTask { try await DocumentPDFPageParser.recognize(page) }
+           continue
+         }
+         let start = ContinuousClock.now
+@@ -68,17 +58,6 @@
+     return output.compactMap { $0 }
+   }
+ 
+-  private mutating func updateEstimate(_ page: DocumentPDFPreparedPage, estimatedBytes: Int) {
+-    let reserve = DocumentPDFWorkingMemory.recognitionReserveBytes
+-    let unscaled = max(1, Double(max(0, estimatedBytes - reserve)) / estimateMultiplier)
+-    let rasterBytes = max(0, page.estimatedBytes - reserve)
+-    estimateMultiplier = max(estimateMultiplier, Double(rasterBytes) / unscaled)
+-  }
+-
+-  private var imageBudget: Int {
+-    min(options.maximumExpandedBytes, options.maximumPDFImageBytes)
+-  }
+-
+   private mutating func prepare(index: Int) throws -> DocumentPDFPreparedPage {
+     do {
+       guard let page = document.page(at: index) else {
+@@ -88,7 +67,7 @@
+         try DocumentPDFPageParser.prepare(
+           page, index: index, options: options,
+           limits: (max(0, options.maximumEmbeddedImages - inspectedImages),
+-                   max(0, imageBudget - imageBytes)), origin: origin)
++                   max(0, options.maximumExpandedBytes - imageBytes)), origin: origin)
+       }
+       inspectedImages += prepared.result.inspectedImages
+       imageBytes += prepared.result.images.reduce(0) { $0 + $1.pngData.count }
+@@ -108,8 +87,7 @@
+     let area = size.width * size.height
+     guard area.isFinite, area > 0 else { return 0 }
+     let pixels = min(Double(max(1, options.maximumImagePixels)), Double(area) * 4)
+-    // RGBA/crop/인코딩과 Vision 작업 여유를 예약한다. 프로세스 메모리의 강제 상한은 아니다.
++    // 픽셀 RGBA + crop/인코딩/OCR 여유의 추정치다. Vision 내부 메모리의 강제 상한은 아니다.
+     return Int(min(Double(Int.max / 24), ceil(pixels * estimateMultiplier))) * 12
+-      + DocumentPDFWorkingMemory.recognitionReserveBytes
+   }
+ }
+diff --git a/Researchers/Services/DocumentParsing/PDF/Pages/DocumentPDFPreparedPage.swift b/Researchers/Services/DocumentParsing/PDF/Pages/DocumentPDFPreparedPage.swift
+--- a/Researchers/Services/DocumentParsing/PDF/Pages/DocumentPDFPreparedPage.swift
++++ b/Researchers/Services/DocumentParsing/PDF/Pages/DocumentPDFPreparedPage.swift
+@@ -10,14 +10,6 @@
+ nonisolated struct DocumentPDFImageJob: Sendable {
+   let raster: DocumentPDFRaster
+   let location: DocumentLocation
+-
+-  /// 작업은 같은 페이지 래스터의 crop에서만 생성된다. 전체 픽셀 영역이 같을 때만 재사용한다.
+-  func covers(_ pageRaster: DocumentPDFRaster?) -> Bool {
+-    guard let pageRaster else { return false }
+-    return location.bounds == CGRect(x: 0, y: 0, width: 1, height: 1)
+-      && raster.image.width == pageRaster.image.width
+-      && raster.image.height == pageRaster.image.height
+-  }
+ }
+ 
+ nonisolated struct DocumentPDFPreparedPage: Sendable {
+@@ -28,11 +20,3 @@
+   var timing: DocumentTiming
+   var estimatedBytes = 0
+ }
+-
+-/// Vision 내부 메모리의 강제 상한이 아닌 작업당 보수적인 예약 여유다.
+-nonisolated enum DocumentPDFWorkingMemory {
+-  // 배치는 여러 문서의 Vision 모델·중간 버퍼가 겹친다. 단일 문서의 작업창은 유지한다.
+-  static var recognitionReserveBytes: Int {
+-    (DocumentPDFScheduling.pool == nil ? 32 : 48) * 1024 * 1024
+-  }
+-}
+diff --git a/Researchers/Services/DocumentParsing/PDF/Pages/DocumentPDFWorkPool.swift b/Researchers/Services/DocumentParsing/PDF/Pages/DocumentPDFWorkPool.swift
+deleted file mode 100644
+--- a/Researchers/Services/DocumentParsing/PDF/Pages/DocumentPDFWorkPool.swift
++++ /dev/null
+@@ -1,106 +0,0 @@
+-import Foundation
+-
+-/// 배치 호출 하나가 소유한다. PDFKit 객체 없이 준비·OCR 작업의 수와 추정 바이트만 관리한다.
+-actor DocumentPDFWorkPool {
+-  private struct Waiter {
+-    let id: UUID
+-    let bytes: Int
+-    let continuation: CheckedContinuation<UUID, Error>
+-  }
+-
+-  private let maximumPages: Int
+-  private let targetBytes: Int
+-  private var active: [UUID: Int] = [:]
+-  private var waiting: [Waiter] = []
+-  private var bytes = 0
+-  private var peakPages = 0
+-  private var peakBytes = 0
+-
+-  init(options: DocumentParserOptions) {
+-    maximumPages = max(1, min(options.maximumConcurrentPDFPages,
+-                              ProcessInfo.processInfo.activeProcessorCount))
+-    targetBytes = max(1, options.pdfWorkingMemoryTargetBytes)
+-  }
+-
+-  func acquire(estimatedBytes: Int) async throws -> UUID {
+-    try Task.checkCancellation()
+-    let id = UUID()
+-    return try await withTaskCancellationHandler {
+-      try await withCheckedThrowingContinuation { continuation in
+-        waiting.append(Waiter(id: id, bytes: bounded(estimatedBytes), continuation: continuation))
+-        drain()
+-      }
+-    } onCancel: {
+-      // 취소 핸들러는 동기이므로 actor의 대기열 제거만 짧은 Task로 전달한다.
+-      Task { @concurrent in await self.cancel(id) }
+-    }
+-  }
+-
+-  func resize(_ id: UUID, actualBytes: Int) {
+-    guard let previous = active[id] else { return }
+-    let actual = bounded(actualBytes)
+-    bytes += actual - previous
+-    active[id] = actual
+-    peakBytes = max(peakBytes, bytes)
+-  }
+-
+-  func release(_ id: UUID) {
+-    guard let released = active.removeValue(forKey: id) else { return }
+-    bytes -= released
+-    drain()
+-  }
+-
+-  func snapshot() -> DocumentBatchSchedulingMetrics {
+-    DocumentBatchSchedulingMetrics(
+-      peakInFlightPages: peakPages, peakEstimatedWorkingBytes: peakBytes,
+-      activePages: active.count, waitingRequests: waiting.count)
+-  }
+-
+-  private func bounded(_ value: Int) -> Int {
+-    max(1, min(value, Int.max / (maximumPages + 1)))
+-  }
+-
+-  private func cancel(_ id: UUID) {
+-    guard let index = waiting.firstIndex(where: { $0.id == id }) else { return }
+-    waiting.remove(at: index).continuation.resume(throwing: CancellationError())
+-    drain()
+-  }
+-
+-  private func drain() {
+-    while let first = waiting.first, active.count < maximumPages {
+-      // 목표보다 큰 한 페이지도 단독으로 처리한다. FIFO로 큰 요청의 기아를 막는다.
+-      guard active.isEmpty || first.bytes <= max(0, targetBytes - bytes) else { return }
+-      waiting.removeFirst()
+-      active[first.id] = first.bytes
+-      bytes += first.bytes
+-      peakPages = max(peakPages, active.count)
+-      peakBytes = max(peakBytes, bytes)
+-      first.continuation.resume(returning: first.id)
+-    }
+-  }
+-}
+-
+-nonisolated enum DocumentPDFScheduling {
+-  @TaskLocal static var pool: DocumentPDFWorkPool?
+-
+-  static func acquire(
+-    estimatedBytes: Int, page: Int, timing: inout DocumentTiming
+-  ) async throws -> UUID? {
+-    guard let pool else { return nil }
+-    let start = ContinuousClock.now
+-    defer { timing.record(.pdfSchedule, page: page, start: start) }
+-    return try await pool.acquire(estimatedBytes: estimatedBytes)
+-  }
+-
+-  static func recognize(_ page: DocumentPDFPreparedPage, lease: UUID?) async throws
+-    -> DocumentPDFPreparedPage {
+-    do {
+-      let result = try await DocumentPDFPageParser.recognize(page)
+-      if let lease { await pool?.release(lease) }
+-      return result
+-    } catch {
+-      if let lease { await pool?.release(lease) }
+-      throw error
+-    }
+-  }
+-}

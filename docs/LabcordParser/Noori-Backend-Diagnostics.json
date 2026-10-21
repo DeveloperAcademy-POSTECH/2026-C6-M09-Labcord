@@ -1,0 +1,35 @@
+{
+  "docInfo": 143,
+  "fixture": "hwpx-02-noori",
+  "groups": {
+    "unknownRecord:unspecified": 198
+  },
+  "section": 55,
+  "total": 198,
+  "unknownElementNames": {
+    "autoSpacing": 47,
+    "backSlash": 20,
+    "curSz": 4,
+    "docOption": 1,
+    "effects": 4,
+    "flip": 4,
+    "grid": 1,
+    "imgDim": 4,
+    "layoutCompatibility": 1,
+    "lineNumberShape": 1,
+    "linkinfo": 1,
+    "offset": 7,
+    "orgSz": 4,
+    "pageBorderFill": 3,
+    "renderingInfo": 4,
+    "rotationInfo": 4,
+    "rotMatrix": 4,
+    "scaMatrix": 4,
+    "shapeComment": 3,
+    "slash": 20,
+    "tabItem": 39,
+    "trackchageConfig": 1,
+    "transMatrix": 4,
+    "typeInfo": 13
+  }
+}
