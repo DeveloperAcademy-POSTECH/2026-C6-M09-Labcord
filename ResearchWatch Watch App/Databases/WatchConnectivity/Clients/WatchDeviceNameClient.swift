@@ -14,7 +14,6 @@ final class WatchDeviceNameClient {
     func start() {
         guard observerID == nil else { return }
 
-        // The session keeps this handler alive for background launches.
         observerID = connectivity.addUserInfoObserver { [self] userInfo in
             guard userInfo[WatchDeviceNameMessage.requestKey] as? Bool == true else {
                 return
