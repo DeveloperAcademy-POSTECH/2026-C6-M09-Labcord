@@ -41,7 +41,10 @@ struct WatchPairingView: View {
                                 store.isWatchReady.map { $0 ? "사용 가능" : "사용 불가능" }
                                 ?? "확인 중"
                             )
-                            Text("75%")
+                            
+                            if let level = store.batteryLevel {
+                                Text("\(Int((level * 100).rounded()))%")
+                            }
                         }
                     }
                 }
