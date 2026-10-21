@@ -14,3 +14,11 @@
 | 실험대 비콘 자동 인식 | ☐ |  |  | • 연구원이 실험실 내 여러 테이블을 이동할 때 현재 위치를 실시간 추적 • 작업 중인 실험대에 거치된 특정 카메라 및 센서 기기를 앱에 자동으로 매핑 | CoreLocation, iBeacon (BLE 근접 측위) | P2 |
 | 얼굴/입모양 트래킹 (화자 보조) | ☐ |  |  | • 거치된 카메라 영상으로 발화자의 입모양 움직임을 실시간 감지 • 소음 환경에서 오디오 기반 화자 분리의 한계를 시각 데이터로 보완하여 정확도 향상 | Vision Framework (Face Tracking / 입모양 트래킹) | P2 |
 | 화자 분리 | ☐ | @wondrone0113 |  | • 2인까지만 구분되고 3인 이상에서 단일 화자로 뭉개지는 현상 해결 방안 검증 • 여러 연구원이 동시에 대화하며 협업할 때 발화자별 음성 분리 기록 가능 여부 확인 | 온디바이스 음성 클러스터링 알고리즘 | P2 |
+
+## 문서 파싱 검증 자료
+
+- [LabcordParser API·지원 범위](LabcordParser/Document-Parsing-Support.md)
+- [실기기 메모리 분석·비교](LabcordParser/Memory-Peak-Optimization.md)
+- [업로드 구성](LabcordParser/Publication-Contents.md)
+
+재현 스크립트는 `LabcordParser/Tools/`에 있다.

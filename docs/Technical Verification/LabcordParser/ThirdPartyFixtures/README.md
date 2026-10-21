@@ -4,7 +4,7 @@
 새 런타임 의존성이 아니다. 테스트는 네트워크에 접근하지 않는다.
 
 파일별 원본 URL, 고정 커밋, SHA-256, 라이선스 근거, 기대 결과는
-[RealWorldManifest.json](../../../ResearchersTests/Fixtures/RealWorld/RealWorldManifest.json)에 있다.
+[RealWorldManifest.json](../../../../ResearchersTests/Fixtures/RealWorld/RealWorldManifest.json)에 있다.
 원본 파일은 변환·재인코딩하지 않았다. 이 폴더의 LICENSE·NOTICE와 HWP별 원본
 README·manifest는 출처를 확인하고 고지를 보존하기 위한 사본이다.
 

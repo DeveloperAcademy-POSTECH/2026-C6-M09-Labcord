@@ -13,7 +13,7 @@
 | USGS Water Supply Paper 158 (1906) | 42 | 2,046,636 | 본문·표·지도·기존 OCR 층이 있는 스캔 |
 
 - 위 두 파일은 공식 USGS 원본 전체를 변경 없이 보관한다. 출처·권리·SHA-256은
-  [자산 명세](../../ResearchersTests/Fixtures/RealWorld/LargeScans/Manifest.json)를 따른다.
+  [자산 명세](../../../ResearchersTests/Fixtures/RealWorld/LargeScans/Manifest.json)를 따른다.
 - [USGS 권리 정책](https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits)에
   따른 미국 public domain 자료이며 출처를 표시했다. 제삼자 자료 일반에 확대 적용하지 않는다.
 - 42쪽 원본 전체를 1224×1584 썸네일로 렌더링한 래스터 전용 파생본도 실행한다.
@@ -44,7 +44,7 @@
 ## 재현 명령
 
 ```sh
-python3 scripts/DocumentParsing/verify_real_world_corpus.py
+python3 "docs/Technical Verification/LabcordParser/Tools/verify_real_world_corpus.py"
 xcodebuild test -project Researchers.xcodeproj -scheme Researchers \
   -destination 'platform=iOS,id=연결된_기기_UDID' \
   -parallel-testing-enabled NO -collect-test-diagnostics never \

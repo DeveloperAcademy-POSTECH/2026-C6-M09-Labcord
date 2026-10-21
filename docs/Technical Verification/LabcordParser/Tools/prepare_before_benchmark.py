@@ -7,8 +7,8 @@ import shutil
 import subprocess
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
-BASELINE = ROOT / 'docs' / 'LabcordParser' / 'Benchmarks'
+ROOT = Path(__file__).resolve().parents[4]
+BASELINE = Path(__file__).resolve().parents[1] / 'Benchmarks'
 
 
 def prepare(output, baseline='initial'):

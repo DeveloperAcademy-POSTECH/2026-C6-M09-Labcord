@@ -105,7 +105,7 @@ xcodebuild test -project Researchers.xcodeproj -scheme Researchers \
 xcodebuild build -project Researchers.xcodeproj -scheme Researchers \
   -destination 'generic/platform=iOS Simulator'
 swiftlint lint --strict
-python3 scripts/DocumentParsing/verify_real_world_corpus.py
+python3 "docs/Technical Verification/LabcordParser/Tools/verify_real_world_corpus.py"
 ```
 
 전체 100페이지 시험을 다시 실행하려면 `-skip-testing`을 빼거나 그 메서드를

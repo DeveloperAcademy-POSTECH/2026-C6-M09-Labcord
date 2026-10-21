@@ -4,8 +4,8 @@
 그림은 시스템 글꼴로 직접 만든 `IMAGE OCR MARKER 123` PNG이다. 글꼴 파일은 포함하지 않는다.
 
 `RealWorld/`에는 별도로 수집한 외부 원본 60개가 있다. 형식별 목록·기대 결과·검증 방법은
-[외부 코퍼스 안내](../../docs/LabcordParser/Real-World-Corpus.md), 출처와 라이선스 고지는
-[외부 자산 고지](../../docs/LabcordParser/ThirdPartyFixtures/README.md)에 기록한다.
+[외부 코퍼스 안내](../../docs/Technical%20Verification/LabcordParser/Real-World-Corpus.md), 출처와 라이선스 고지는
+[외부 자산 고지](../../docs/Technical%20Verification/LabcordParser/ThirdPartyFixtures/README.md)에 기록한다.
 
 | 파일 | 생성 방법 | 검증 대상 |
 | --- | --- | --- |
@@ -26,8 +26,8 @@ Hancom 편집기로 생성한 모든 버전·컨트롤의 호환성을 증명하
 테스트 실행과 앱 빌드는 이미 생성된 자산을 사용하므로 LibreOffice나 Pillow가 필요 없다.
 
 ```sh
-python3 scripts/DocumentParsing/generate_legacy_fixtures.py
-python3 scripts/DocumentParsing/generate_hwp_fixture.py
+python3 "docs/Technical Verification/LabcordParser/Tools/generate_legacy_fixtures.py"
+python3 "docs/Technical Verification/LabcordParser/Tools/generate_hwp_fixture.py"
 ```
 
 생성 환경은 LibreOfficeDev 26.8.0.0.alpha0, Python 3, Pillow이다.

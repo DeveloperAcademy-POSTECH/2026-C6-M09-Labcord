@@ -5,7 +5,7 @@ import sys
 sys.dont_write_bytecode = True
 from compound_fixture import make_compound, pack
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[4]
 DESTINATION = ROOT / 'ResearchersTests' / 'Fixtures'
 
 

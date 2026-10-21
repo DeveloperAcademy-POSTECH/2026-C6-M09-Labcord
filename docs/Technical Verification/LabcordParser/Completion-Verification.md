@@ -79,7 +79,7 @@ swiftlint lint --strict
 - 기존 MIT·MPL·LGPL 라이선스 구성은 유지한다. 배포 고지·소스 제공·재링크 조건을
   충족했다는 배포 승인이나 법률 검토를 이번 코드 검증으로 대신하지 않는다.
 
-자산 출처와 재생성 절차는 [검증 자산 안내](../../ResearchersTests/Fixtures/README.md)에 있다.
+자산 출처와 재생성 절차는 [검증 자산 안내](../../../ResearchersTests/Fixtures/README.md)에 있다.
 구현에 참고한 공개 API·형식 문서는 [Apple CGPDFScanner](https://developer.apple.com/documentation/coregraphics/cgpdfscanner),
 [CGPDFContentStream](https://developer.apple.com/documentation/coregraphics/cgpdfcontentstream),
 [Microsoft PPT persist directory](https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-ppt/5bda8009-6612-4679-a6eb-6fb83cbcf195),

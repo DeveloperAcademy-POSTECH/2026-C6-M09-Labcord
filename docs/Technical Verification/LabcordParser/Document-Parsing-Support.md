@@ -124,7 +124,7 @@ hwp-swift 0.19.0(LGPL 2.1), 기존 전이 의존성 OLEKit 0.3.1(MIT)을 사용�
 20개 파일 형식별 외부 원본 3개씩을 사용하는 테스트는
 [외부 코퍼스 검증](Real-World-Corpus.md)에 별도로 기록한다.
 
-생성 방법과 자산 출처는 [검증 자산 안내](../../ResearchersTests/Fixtures/README.md),
+생성 방법과 자산 출처는 [검증 자산 안내](../../../ResearchersTests/Fixtures/README.md),
 실제 검증 결과는 [보완 검증 기록](Completion-Verification.md)에 있다.
 
 ```sh
