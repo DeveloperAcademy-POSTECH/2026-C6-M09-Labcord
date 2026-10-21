@@ -13,6 +13,7 @@ struct WatchPairingFeature {
     @ObservableState
     struct State: Equatable {
         var isWatchReady: Bool? = nil
+        var watchDeviceName: String? = nil
         var batteryLevel: Float? = nil
         var didReciveBatteryResponse = false
     }
@@ -21,15 +22,18 @@ struct WatchPairingFeature {
         case onAppear
         case onDisappear
         case watchReadinessChanged(Bool?)
+        case deviceNameChanged(String)
         case batteryLevelChanged(Float?)
     }
     
     @Dependency(\.watchPairingClient) var watchPairingClient
     @Dependency(\.watchBatteryClient) var watchBatteryClient
+    @Dependency(\.watchDeviceNameClient) var watchDeviceNameClient
     
     private nonisolated enum CancelID: Hashable, Sendable {
         case pairing
         case battery
+        case deviceName
     }
     
     var body: some Reducer<State, Action> {
@@ -37,6 +41,7 @@ struct WatchPairingFeature {
             switch action {
             case .onAppear:
                 state.isWatchReady = nil
+                state.watchDeviceName = nil
                 state.batteryLevel = nil
                 state.didReciveBatteryResponse = false
                 
@@ -59,10 +64,27 @@ struct WatchPairingFeature {
                         }
                     }
                     .cancellable(id: CancelID.battery, cancelInFlight: true),
+
+                    .run { send in
+                        let stream = await watchDeviceNameClient.deviceNameStream()
+                        await watchDeviceNameClient.requestDeviceName()
+
+                        for await name in stream {
+                            await send(.deviceNameChanged(name))
+                        }
+                    }
+                    .cancellable(id: CancelID.deviceName, cancelInFlight: true)
                 )
                 
             case let .watchReadinessChanged(status):
                 state.isWatchReady = status
+                if status == false {
+                    state.watchDeviceName = nil
+                }
+                return .none
+
+            case let .deviceNameChanged(name):
+                state.watchDeviceName = name
                 return .none
                 
             case let .batteryLevelChanged(level):
@@ -73,7 +95,8 @@ struct WatchPairingFeature {
             case .onDisappear:
                 return .merge(
                     .cancel(id: CancelID.pairing),
-                    .cancel(id: CancelID.battery)
+                    .cancel(id: CancelID.battery),
+                    .cancel(id: CancelID.deviceName)
                 )
             }
         }
