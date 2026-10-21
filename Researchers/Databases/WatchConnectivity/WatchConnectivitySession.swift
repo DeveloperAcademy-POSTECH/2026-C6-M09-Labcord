@@ -12,6 +12,7 @@ import ComposableArchitecture
 final class WatchConnectivitySession: NSObject, WCSessionDelegate {
     private let lock = NSLock()
     private var stateObservers: [UUID: () -> Void] = [:]
+    var onUserInfoReceived: (([String: Any]) -> Void)?
     
     var session: WCSession? {
         WCSession.isSupported() ? WCSession.default : nil
@@ -73,6 +74,15 @@ final class WatchConnectivitySession: NSObject, WCSessionDelegate {
     
     func sessionReachabilityDidChange(_ session: WCSession) {
         notifyStateObservers()
+    }
+
+    func session(
+        _ session: WCSession,
+        didReceiveUserInfo userInfo: [String: Any]
+    ) {
+        DispatchQueue.main.async {
+            self.onUserInfoReceived?(userInfo)
+        }
     }
     
     func sessionDidBecomeInactive(_ session: WCSession) {
