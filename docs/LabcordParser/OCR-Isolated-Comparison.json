@@ -1,0 +1,65 @@
+[
+  {
+    "region": 0,
+    "scale": 2,
+    "values": [
+      "594.36"
+    ]
+  },
+  {
+    "region": 0,
+    "scale": 4,
+    "values": [
+      "594.36"
+    ]
+  },
+  {
+    "region": 0,
+    "scale": 6,
+    "values": [
+      "594.36"
+    ]
+  },
+  {
+    "region": 1,
+    "scale": 2,
+    "values": [
+      "5661.37"
+    ]
+  },
+  {
+    "region": 1,
+    "scale": 4,
+    "values": [
+      "5661.37"
+    ]
+  },
+  {
+    "region": 1,
+    "scale": 6,
+    "values": [
+      "5661.37"
+    ]
+  },
+  {
+    "region": 2,
+    "scale": 2,
+    "values": [
+      "55,661.37"
+    ]
+  },
+  {
+    "region": 2,
+    "scale": 4,
+    "values": [
+      "55,661.37"
+    ]
+  },
+  {
+    "region": 2,
+    "scale": 6,
+    "values": [
+      "55,661.37"
+    ]
+  }
+]

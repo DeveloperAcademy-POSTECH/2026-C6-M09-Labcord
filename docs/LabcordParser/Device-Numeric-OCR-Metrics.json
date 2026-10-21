@@ -1,0 +1,30 @@
+{
+  "edits": 0,
+  "exactMatches": 3,
+  "fixture": "real-jpeg-03",
+  "metric": "pixel-verified-currency-with-original",
+  "regions": [
+    {
+      "characterErrorRate": 0,
+      "editDistance": 0,
+      "expected": "$94.36",
+      "observed": "$94.36",
+      "region": 0
+    },
+    {
+      "characterErrorRate": 0,
+      "editDistance": 0,
+      "expected": "$661.37",
+      "observed": "$661.37",
+      "region": 1
+    },
+    {
+      "characterErrorRate": 0,
+      "editDistance": 0,
+      "expected": "$5,661.37",
+      "observed": "$5,661.37",
+      "region": 2
+    }
+  ],
+  "targets": 3
+}

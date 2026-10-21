@@ -1,0 +1,36 @@
+{
+  "afterFootprintBytes": 312298184,
+  "baselineFootprintBytes": 293292744,
+  "environment": "simulator",
+  "inputBytes": 57468,
+  "pages": 100,
+  "runs": [
+    {
+      "blocks": 100,
+      "iteration": 0,
+      "seconds": 68.12551875
+    },
+    {
+      "blocks": 100,
+      "iteration": 1,
+      "seconds": 56.654495792
+    },
+    {
+      "blocks": 100,
+      "iteration": 2,
+      "seconds": 46.001494667
+    },
+    {
+      "blocks": 100,
+      "iteration": 3,
+      "seconds": 44.534429625
+    },
+    {
+      "blocks": 100,
+      "iteration": 4,
+      "seconds": 50.10307675
+    }
+  ],
+  "sampledPeakFootprintBytes": 331844320,
+  "sampleIntervalMilliseconds": 20
+}

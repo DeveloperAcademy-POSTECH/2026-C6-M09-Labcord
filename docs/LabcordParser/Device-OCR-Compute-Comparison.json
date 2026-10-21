@@ -1,0 +1,44 @@
+[
+  {
+    "cpuOnly": false,
+    "seconds": 0.069453667,
+    "threshold": false,
+    "values": [
+      "$94.36",
+      "5661.37",
+      "55,661.37"
+    ]
+  },
+  {
+    "cpuOnly": true,
+    "seconds": 0.115091416,
+    "threshold": false,
+    "values": [
+      "$94.36",
+      "5661.37",
+      "55,661.37"
+    ]
+  },
+  {
+    "cpuOnly": false,
+    "seconds": 0.064124083,
+    "threshold": true,
+    "values": [
+      "$94.36.",
+      "60",
+      "5661.37",
+      "$5,661.37"
+    ]
+  },
+  {
+    "cpuOnly": true,
+    "seconds": 0.062192375,
+    "threshold": true,
+    "values": [
+      "$94.36.",
+      "60",
+      "5661.37",
+      "$5,661.37"
+    ]
+  }
+]
