@@ -6,12 +6,17 @@
 //
 
 import SwiftUI
+import ComposableArchitecture
 
 @main
 struct ResearchersApp: App {
     var body: some Scene {
         WindowGroup {
-            WatchPairingView()
+            WatchPairingView(
+                store: Store(initialState: WatchPairingFeature.State()) {
+                    WatchPairingFeature()
+                }
+            )
         }
     }
 }
