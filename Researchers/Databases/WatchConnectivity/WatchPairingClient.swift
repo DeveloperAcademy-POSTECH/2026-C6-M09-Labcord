@@ -7,6 +7,7 @@
 
 import Foundation
 import WatchConnectivity
+import ComposableArchitecture
 
 class WatchPairingClient: NSObject, WCSessionDelegate {
     private var onStatusChange: ((Bool?) -> Void)?
@@ -56,5 +57,30 @@ class WatchPairingClient: NSObject, WCSessionDelegate {
     func sessionDidDeactivate(_ session: WCSession) {
         publish(nil)
         session.activate()
+    }
+    
+    func statusStream() -> AsyncStream<Bool?> {
+        AsyncStream { continuation in
+            start { status in
+                continuation.yield(status)
+            }
+            
+            continuation.onTermination = { [weak self] _ in
+                DispatchQueue.main.async {
+                    self?.onStatusChange = nil
+                }
+            }
+        }
+    }
+}
+
+extension WatchPairingClient: DependencyKey {
+    static let liveValue: WatchPairingClient = WatchPairingClient()
+}
+
+extension DependencyValues {
+    var watchPairingClient: WatchPairingClient {
+        get { self[WatchPairingClient.self] }
+        set { self[WatchPairingClient.self] = newValue }
     }
 }
