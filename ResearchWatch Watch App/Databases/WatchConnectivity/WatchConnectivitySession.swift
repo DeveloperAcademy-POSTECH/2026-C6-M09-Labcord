@@ -70,7 +70,7 @@ final class WatchConnectivitySession: NSObject, WCSessionDelegate {
                 return
             }
             
-            try? await Task.sleep(for: .milliseconds(50))
+            try? await Task.sleep(for: .milliseconds(30))
         }
     }
 }
