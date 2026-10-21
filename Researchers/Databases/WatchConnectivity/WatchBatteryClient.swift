@@ -23,8 +23,7 @@ final class WatchBatteryClient {
         
         guard let session = connectivity.session else { return }
         
-        if session.activationState == .activated {
-            sendRequest(using: session)
+        if sendRequestIfReady(using: session) {
             return
         }
         
@@ -33,26 +32,25 @@ final class WatchBatteryClient {
         activationObserverID = connectivity.addStateObserver { [weak self] in
             guard let self,
                   let session = self.connectivity.session,
-                  session.activationState == .activated
-                    else { return }
+                  self.sendRequestIfReady(using: session) else { return }
             
             if let id = self.activationObserverID {
                 self.connectivity.removeStateObserver(id)
                 self.activationObserverID = nil
             }
-            
-            self.sendRequest(using: session)
         }
     }
     
-    private func sendRequest(using session: WCSession) {
-        guard session.isPaired, session.isWatchAppInstalled else {
-            return
-        }
+    @discardableResult
+    private func sendRequestIfReady(using session: WCSession) -> Bool {
+        guard session.activationState == .activated,
+              session.isPaired,
+              session.isWatchAppInstalled else { return false }
         
         session.transferUserInfo([
             WatchBatteryMessage.requestKey: true
         ])
+        return true
     }
     
     func batteryStream() -> AsyncStream<Float?> {
