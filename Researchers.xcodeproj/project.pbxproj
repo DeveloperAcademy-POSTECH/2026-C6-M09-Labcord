@@ -8,11 +8,11 @@
 
 /* Begin PBXBuildFile section */
 		8E1069213089B22000BF375F /* DeviceKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8E1069203089B22000BF375F /* DeviceKit */; };
+		8E1069243089B5F400BF375F /* Shared in Frameworks */ = {isa = PBXBuildFile; productRef = 8E1069233089B5F400BF375F /* Shared */; };
+		8E1069263089B61600BF375F /* Shared in Frameworks */ = {isa = PBXBuildFile; productRef = 8E1069253089B61600BF375F /* Shared */; };
 		8E2E27333084877E0043EEB3 /* ResearchWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8E98D1AD30884D1500E68666 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 8E98D1AC30884D1500E68666 /* ComposableArchitecture */; };
 		8E98D1AF30884D4F00E68666 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 8E98D1AE30884D4F00E68666 /* ComposableArchitecture */; };
-		8EDAFE593088B37F00103B36 /* Shared in Frameworks */ = {isa = PBXBuildFile; productRef = 8EDAFE583088B37F00103B36 /* Shared */; };
-		8EDAFE5B3088B39D00103B36 /* Shared in Frameworks */ = {isa = PBXBuildFile; productRef = 8EDAFE5A3088B39D00103B36 /* Shared */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -60,15 +60,15 @@
 			isa = PBXFrameworksBuildPhase;
 			files = (
 				8E98D1AD30884D1500E68666 /* ComposableArchitecture in Frameworks */,
-				8EDAFE593088B37F00103B36 /* Shared in Frameworks */,
+				8E1069243089B5F400BF375F /* Shared in Frameworks */,
 			);
 		};
 		8E2E27263084877E0043EEB3 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
 				8E98D1AF30884D4F00E68666 /* ComposableArchitecture in Frameworks */,
-				8EDAFE5B3088B39D00103B36 /* Shared in Frameworks */,
 				8E1069213089B22000BF375F /* DeviceKit in Frameworks */,
+				8E1069263089B61600BF375F /* Shared in Frameworks */,
 			);
 		};
 /* End PBXFrameworksBuildPhase section */
@@ -123,7 +123,7 @@
 			name = Researchers;
 			packageProductDependencies = (
 				8E98D1AC30884D1500E68666 /* ComposableArchitecture */,
-				8EDAFE583088B37F00103B36 /* Shared */,
+				8E1069233089B5F400BF375F /* Shared */,
 			);
 			productName = Researchers;
 			productReference = 8E0691153080743D0081547E /* Researchers.app */;
@@ -145,8 +145,8 @@
 			name = "ResearchWatch Watch App";
 			packageProductDependencies = (
 				8E98D1AE30884D4F00E68666 /* ComposableArchitecture */,
-				8EDAFE5A3088B39D00103B36 /* Shared */,
 				8E1069203089B22000BF375F /* DeviceKit */,
+				8E1069253089B61600BF375F /* Shared */,
 			);
 			productName = "ResearchWatch Watch App";
 			productReference = 8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */;
@@ -181,8 +181,8 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				8E3F0AEF3085C6E200F857AB /* XCRemoteSwiftPackageReference "swift-composable-architecture" */,
-				8EDAFE573088B37F00103B36 /* XCLocalSwiftPackageReference "Packages/Shared" */,
 				8E10691F3089B22000BF375F /* XCRemoteSwiftPackageReference "DeviceKit" */,
+				8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8E0691163080743D0081547E /* Products */;
@@ -356,7 +356,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = HJGS4LQ7XH;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -388,7 +388,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = HJGS4LQ7XH;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -420,7 +420,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = HJGS4LQ7XH;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = ResearchWatch;
@@ -453,7 +453,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = HJGS4LQ7XH;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = ResearchWatch;
@@ -509,9 +509,9 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		8EDAFE573088B37F00103B36 /* XCLocalSwiftPackageReference "Packages/Shared" */ = {
+		8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/Shared;
+			relativePath = Packages/ResearchersModules;
 		};
 /* End XCLocalSwiftPackageReference section */
 
@@ -540,6 +540,15 @@
 			package = 8E10691F3089B22000BF375F /* XCRemoteSwiftPackageReference "DeviceKit" */;
 			productName = DeviceKit;
 		};
+		8E1069233089B5F400BF375F /* Shared */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Shared;
+		};
+		8E1069253089B61600BF375F /* Shared */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */;
+			productName = Shared;
+		};
 		8E98D1AC30884D1500E68666 /* ComposableArchitecture */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8E3F0AEF3085C6E200F857AB /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
@@ -549,15 +558,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8E3F0AEF3085C6E200F857AB /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
 			productName = ComposableArchitecture;
-		};
-		8EDAFE583088B37F00103B36 /* Shared */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = Shared;
-		};
-		8EDAFE5A3088B39D00103B36 /* Shared */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8EDAFE573088B37F00103B36 /* XCLocalSwiftPackageReference "Packages/Shared" */;
-			productName = Shared;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

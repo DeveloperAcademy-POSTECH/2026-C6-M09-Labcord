@@ -2,6 +2,7 @@ import ComposableArchitecture
 import Foundation
 import Shared
 import WatchKit
+import DeviceKit
 
 final class WatchDeviceNameClient {
     private let connectivity: WatchConnectivitySession
@@ -24,8 +25,11 @@ final class WatchDeviceNameClient {
     }
 
     private func sendDeviceName() {
+        let modelName = Device.realDevice(from: .current).description
+            .replacingOccurrences(of: #"\d+mm$"#, with: "", options: .regularExpression )
+        
         connectivity.transferUserInfo([
-            WatchDeviceNameMessage.nameKey: WKInterfaceDevice.current().model
+            WatchDeviceNameMessage.nameKey: modelName
         ])
     }
 }
