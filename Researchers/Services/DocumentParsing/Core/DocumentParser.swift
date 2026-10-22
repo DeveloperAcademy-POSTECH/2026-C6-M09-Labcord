@@ -165,7 +165,7 @@ nonisolated public enum DocumentParser {
     case .docx, .xlsx, .pptx, .doc, .xls, .ppt:
       return try DocumentOfficeParser.parse(data: data, format: format, options: options)
     case .hwp, .hwpx:
-      throw DocumentParsingError.unsupportedFormat
+      return try DocumentHWPParser.parse(data: data, format: format, options: options)
     case .image:
       throw DocumentParsingError.unsupportedFormat
     }
