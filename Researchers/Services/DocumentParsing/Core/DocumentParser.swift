@@ -161,7 +161,7 @@ nonisolated public enum DocumentParser {
         options: options
       )
     case .pdf:
-      throw DocumentParsingError.unsupportedFormat
+      return try await DocumentPDFParser.parse(data, options: options, progress: progress)
     case .docx, .xlsx, .pptx, .doc, .xls, .ppt:
       throw DocumentParsingError.unsupportedFormat
     case .hwp, .hwpx:
