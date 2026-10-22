@@ -1,6 +1,8 @@
 import Foundation
 import PDFKit
 
+/// PDF 열기·페이지 파이프라인·최종 결과 조합을 담당한다.
+/// 페이지 작업 완료 순서와 관계없이 페이지·좌표 순으로 블록을 정리한다.
 nonisolated enum DocumentPDFParser {
   static func parse(
     _ data: Data,

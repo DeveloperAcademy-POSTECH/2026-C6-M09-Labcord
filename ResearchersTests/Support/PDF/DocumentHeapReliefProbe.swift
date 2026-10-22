@@ -5,6 +5,7 @@ import Synchronization
 @testable import Researchers
 
 /// 할당기에서 반환할 수 있는 빈 페이지가 고점에 기여하는지 진단한다. 앱 코드에는 쓰지 않는다.
+/// 메모리 반환 가능성을 비교하는 테스트 전용 진단이다. 제품 파서에 주기적인 메모리 정리를 추가하는 코드가 아니다.
 nonisolated final class DocumentHeapReliefProbe: Sendable {
   private struct State: Sendable {
     var started = false

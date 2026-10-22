@@ -4,6 +4,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 컨테이너 형식의 본문·표·그림과 임시 파일 수명을 확인한다. 바이트 슬라이스 입력도 원본과 같이 읽혀야 한다.
 final class DocumentContainerParsingTests: XCTestCase {
   func testOfficeParsingRemovesItsTemporaryDirectory() async throws {
     let directory = FileManager.default.temporaryDirectory

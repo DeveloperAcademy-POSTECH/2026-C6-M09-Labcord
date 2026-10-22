@@ -1,6 +1,8 @@
 import Foundation
 import ImageIO
 
+/// 백엔드 결과에 구형 Word 표·PPT 그룹 표·OfficeArt 그림을 보완한다.
+/// 원본 스트림 위치는 남기지만 본문과 그림의 정확한 인라인 순서는 확정하지 않는다.
 nonisolated enum DocumentLegacyOfficeSupplement {
   static func extract(
     data: Data, format: DocumentFormat, base: DocumentParseResult, options: DocumentParserOptions,

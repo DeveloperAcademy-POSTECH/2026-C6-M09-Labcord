@@ -3,6 +3,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 공용 페이지 슬롯·바이트 예약의 대여·취소·반환을 확인한다. 큰 페이지가 영원히 대기하거나 예약이 남으면 안 된다.
 final class DocumentPDFWorkPoolTests: XCTestCase {
   func testCapacityReturnsToRemainingDocument() async throws {
     let pool = DocumentPDFWorkPool(options: .init(

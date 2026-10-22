@@ -2,6 +2,8 @@ import CoreGraphics
 import Foundation
 import PDFKit
 
+/// 연결된 가로·세로 선분에서 격자를 찾고, 경계가 없는 이웃 칸을 병합 셀로 묶는다.
+/// 텍스트 선택이 가능한 PDF용이며 스캔 이미지의 표 셀을 복원하지 않는다.
 nonisolated enum DocumentPDFTableExtractor {
   struct Result {
     var blocks: [DocumentBlock] = []
@@ -99,6 +101,7 @@ nonisolated enum DocumentPDFTableExtractor {
     }
   }
 
+  /// 짧게 끊긴 선분도 이어진 경계인지 확인한다. 선 하나의 길이만 보고 셀을 병합하지 않는다.
   private static func covers(
     _ lines: [Line], vertical: Bool, at coordinate: CGFloat, from lower: CGFloat, to upper: CGFloat
   ) -> Bool {
@@ -167,6 +170,7 @@ nonisolated enum DocumentPDFTableExtractor {
     return result
   }
 
+  /// 이웃 칸 사이에 경계선이 없으면 같은 라벨로 묶는다. 비직사각형 병합은 상위 단계에서 거부한다.
   private static func mergeCells(
     columnEdges: [CGFloat], rowEdges: [CGFloat], lines: [Line]
   ) -> [Int] {

@@ -7,6 +7,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 대용량 원본 로딩·공통 검증·단계 수치·임시 폴더 확인을 모은다. 프로세스 메모리 표본과 작업 예약은 다른 지표다.
 nonisolated enum DocumentScanStressSupport {
   static func digest(_ data: Data) -> String {
     SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()

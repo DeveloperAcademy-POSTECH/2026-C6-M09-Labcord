@@ -4,6 +4,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 20형식마다 외부 원본 3개를 해시·출처·부분 정답과 대조한다. 생성 샘플만으로 실제 형식 호환성을 주장하지 않는다.
 final class DocumentRealWorldCorpusTests: XCTestCase {
   func testCorpusCoversEveryFileFormatWithThreeDistinctFiles() throws {
     let fixtures = try loadManifest()

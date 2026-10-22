@@ -2,9 +2,19 @@ import CoreGraphics
 import Foundation
 import ImageIO
 
+/// 화면과 독립된 문서 파싱 진입점이다. 형식별 파서는 이 타입을 통해 호출한다.
+/// 로컬 입력을 텍스트·블록·그림·경고로 반환하며 파일 형식 변환이나 저장은 수행하지 않는다.
 nonisolated public enum DocumentParser {
+  /// 진행 이벤트는 작업 스레드에서 호출될 수 있다. UI 갱신은 호출 측에서 MainActor로 전달한다.
   public typealias ProgressHandler = @Sendable (DocumentProgress) -> Void
 
+  /// 문서 하나를 읽는다. 입력의 보안 접근과 OCR 세션은 이 호출이 끝날 때까지 유지한다.
+  /// - Parameters:
+  ///   - input: 로컬 URL, 파일명 힌트가 있는 Data, 또는 방향이 지정된 CGImage.
+  ///   - options: 문서별 입력 크기·그림·페이지 작업 한도.
+  ///   - progress: 선택적 진행 콜백. MainActor에서 실행된다고 가정하면 안 된다.
+  /// - Returns: 본문·블록·그림·복구 가능한 실패 경고를 포함한 결과.
+  /// - Throws: 열기·형식·암호화 오류. 취소는 DocumentParsingError.cancelled로 정규화한다.
   @concurrent public static func parse(
     _ input: DocumentInput,
     options: DocumentParserOptions = DocumentParserOptions(),
@@ -15,6 +25,13 @@ nonisolated public enum DocumentParser {
     }
   }
 
+  /// 여러 입력을 제한된 동시성으로 처리하고 입력과 같은 순서로 결과를 반환한다.
+  /// 개별 문서 실패는 failure에 남기며, 배치 전체 취소는 호출자에게 오류로 전파한다.
+  /// - Parameters:
+  ///   - inputs: 서로 다른 형식을 섞을 수 있는 원본 배열.
+  ///   - options: 문서 동시성과 배치 안에서 공유할 PDF 작업 예산.
+  ///   - progress: inputIndex로 문서를 구분하는 진행 콜백. 문서 간 이벤트는 섞일 수 있다.
+  /// - Returns: 입력 인덱스와 일대일로 대응하는 성공·실패 배열.
   @concurrent public static func parseBatch(
     _ inputs: [DocumentInput],
     options: DocumentParserOptions = DocumentParserOptions(),
@@ -36,6 +53,7 @@ nonisolated public enum DocumentParser {
     }
   }
 
+  /// 작업이 끝날 때마다 다음 입력을 보충한다. 결과는 완료 순서 대신 원래 인덱스에 넣는다.
   private static func runBatch(
     _ inputs: [DocumentInput], options: DocumentParserOptions, progress: ProgressHandler?
   ) async throws -> [DocumentBatchResult] {
@@ -81,6 +99,7 @@ nonisolated public enum DocumentParser {
     }
   }
 
+  /// 모든 형식의 성공 외 종료 경로를 모아 실패·취소 진행 이벤트를 일관되게 보낸다.
   private static func parseInput(
     _ input: DocumentInput,
     index: Int,
@@ -150,6 +169,7 @@ nonisolated public enum DocumentParser {
     var image: (CGImage, CGImagePropertyOrientation)?
   }
 
+  /// URL 입력만 기준 디렉터리를 보존한다. Data의 파일명은 로컬 참조 그림을 읽을 권한이 아니다.
   private static func read(_ input: DocumentInput, options: DocumentParserOptions) throws
     -> PreparedInput {
     switch input {

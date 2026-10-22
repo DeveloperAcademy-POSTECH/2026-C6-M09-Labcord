@@ -1,6 +1,8 @@
 import Foundation
 import OLEKit
 
+/// HWP·구형 Office가 공유하는 CFB/OLE 컨테이너를 읽는다.
+/// 스트림 이름으로 문서 종류를 구분하고, 깊이·항목 수·누적 바이트를 제한한다.
 nonisolated enum DocumentCompoundFile {
   static func identify(_ data: Data) throws -> DocumentFormat {
     let file = try open(data)
@@ -51,6 +53,7 @@ nonisolated enum DocumentCompoundFile {
     }
   }
 
+  /// OLEKit이 읽지 못하는 빈 MiniFAT 표현만 사본에서 보정한다. 유효한 스트림 데이터는 바꾸지 않는다.
   private static func normalizeEmptyMiniFAT(_ data: Data) -> Data {
     let reader = DocumentBinaryReader(data: data)
     guard reader.uint32(60) == 0xFFFF_FFFE, reader.uint32(64) == 0,
@@ -73,6 +76,7 @@ nonisolated enum DocumentCompoundFile {
   }
 }
 
+/// 구형 바이너리 파서가 공유하는 little-endian 읽기 도우미. 범위를 벗어난 읽기는 nil이다.
 nonisolated struct DocumentBinaryReader {
   let data: Data
 

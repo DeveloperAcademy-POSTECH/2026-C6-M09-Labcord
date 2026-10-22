@@ -3,6 +3,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 확장자나 ZIP 안의 우연한 문자열만으로 형식을 오판하지 않는지 손상·위장 컨테이너로 확인한다.
 final class DocumentArchiveValidationTests: XCTestCase {
   func testFormatDetectionReadsDirectoryBeyondFirst512KiB() throws {
     let archive = DocumentArchiveFixtureBuilder.make([

@@ -2,6 +2,8 @@ import Foundation
 import PDFKit
 
 /// PDFKit 접근과 이미지 예산 할당은 한 작업에서 수행하고, 불변 래스터 OCR만 병렬화한다.
+/// 문서 안에서는 다음 페이지를 순서대로 준비하고 끝난 OCR 결과를 인덱스로 보관한다.
+/// 그래서 실행 순서가 달라져도 이미지 보존 예산과 반환 페이지 순서는 일정하다.
 nonisolated struct DocumentPDFPipeline {
   let document: PDFDocument
   let options: DocumentParserOptions
@@ -68,6 +70,7 @@ nonisolated struct DocumentPDFPipeline {
     return output.compactMap { $0 }
   }
 
+  /// 실제 준비한 래스터가 예상보다 크면 다음 페이지의 예약량을 보수적으로 올린다.
   private mutating func updateEstimate(_ page: DocumentPDFPreparedPage, estimatedBytes: Int) {
     let reserve = DocumentPDFWorkingMemory.recognitionReserveBytes
     let unscaled = max(1, Double(max(0, estimatedBytes - reserve)) / estimateMultiplier)
@@ -79,6 +82,7 @@ nonisolated struct DocumentPDFPipeline {
     min(options.maximumExpandedBytes, options.maximumPDFImageBytes)
   }
 
+  /// 이미지 개수·PNG 바이트를 원본 페이지 순서대로 차감한다. 페이지 실패는 위치 경고로 복구한다.
   private mutating func prepare(index: Int) throws -> DocumentPDFPreparedPage {
     do {
       guard let page = document.page(at: index) else {

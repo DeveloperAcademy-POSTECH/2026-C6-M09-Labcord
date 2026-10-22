@@ -2,6 +2,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 위치·순서·신뢰도·PNG 바이트가 달라지면 지문도 달라지는지 확인해 전후 비교의 누락을 막는다.
 final class DocumentResultFingerprintTests: XCTestCase {
   func testBlockFingerprintIncludesPositionOrderAndConfidence() {
     let block = DocumentBlock(

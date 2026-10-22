@@ -1,6 +1,8 @@
 import Foundation
 
 /// 배치 호출 하나가 소유한다. PDFKit 객체 없이 준비·OCR 작업의 수와 추정 바이트만 관리한다.
+/// 대여 UUID로 작업을 추적해 성공·실패 어느 경로에서도 같은 예약을 반환할 수 있게 한다.
+/// 대기 요청은 FIFO로 처리하며 별도로 시작한 parse 호출들 사이의 전역 제한은 아니다.
 actor DocumentPDFWorkPool {
   private struct Waiter {
     let id: UUID
@@ -22,6 +24,7 @@ actor DocumentPDFWorkPool {
     targetBytes = max(1, options.pdfWorkingMemoryTargetBytes)
   }
 
+  /// 슬롯과 바이트 예산이 준비될 때까지 기다린다. 획득한 예약의 반환은 호출 측 책임이다.
   func acquire(estimatedBytes: Int) async throws -> UUID {
     try Task.checkCancellation()
     let id = UUID()
@@ -36,6 +39,7 @@ actor DocumentPDFWorkPool {
     }
   }
 
+  /// 페이지 준비 후 알게 된 실제 추정량으로 예약을 갱신한다. OS가 강제하는 메모리 상한은 아니다.
   func resize(_ id: UUID, actualBytes: Int) {
     guard let previous = active[id] else { return }
     let actual = bounded(actualBytes)
@@ -80,6 +84,7 @@ actor DocumentPDFWorkPool {
   }
 }
 
+/// 공용 풀을 자식 OCR 작업에 전달하고, 성공·오류 모두에서 대여한 예약을 반환한다.
 nonisolated enum DocumentPDFScheduling {
   @TaskLocal static var pool: DocumentPDFWorkPool?
 

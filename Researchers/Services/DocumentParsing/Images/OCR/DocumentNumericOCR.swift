@@ -4,6 +4,8 @@ import ImageIO
 import Vision
 
 /// 작은 숫자 OCR의 통화 기호 혼동을 별도 픽셀 인식으로 재확인한다.
+/// 작은 이미지의 낮은 신뢰도 통화 기호만 제한적으로 재인식한다.
+/// 문자열을 임의 치환하지 않고, 숫자 부분이 같은 더 나은 인식 후보가 있을 때만 채택한다.
 nonisolated enum DocumentNumericOCR {
   struct Candidate {
     let text: String
@@ -72,6 +74,7 @@ nonisolated enum DocumentNumericOCR {
     return request.results ?? []
   }
 
+  /// 대안이 실제로 $를 인식했고 나머지 숫자·구분자와 신뢰도 조건까지 맞는 경우만 보완한다.
   static func accepts(
     _ original: String, confidence: Float, alternative: String, alternativeConfidence: Float
   ) -> Bool {
@@ -91,6 +94,7 @@ nonisolated enum DocumentNumericOCR {
     return area / max(0.000001, first.width * first.height + second.width * second.height - area)
   }
 
+  /// 원본을 수정하지 않고 별도 흑백 인식 입력을 만든다. 대상 이미지는 refine에서 크기를 제한한다.
   static func threshold(_ image: CGImage, cutoff: UInt8 = 150) -> CGImage? {
     var bytes = [UInt8](repeating: 255, count: image.width * image.height * 4)
     return bytes.withUnsafeMutableBytes { buffer in

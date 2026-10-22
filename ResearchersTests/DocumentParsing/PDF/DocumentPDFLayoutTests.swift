@@ -4,6 +4,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 회전·중첩 Form·반복 그림·병합 셀 등에서 표시 위치와 읽기 순서 경고를 확인한다.
 final class DocumentPDFLayoutTests: XCTestCase {
   func testNestedFormMatrixAndPageRotationLocateImage() async throws {
     for (rotation, expected) in [

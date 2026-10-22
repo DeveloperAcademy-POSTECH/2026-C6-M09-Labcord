@@ -3,6 +3,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 공식 한국어 125쪽 스캔을 끝까지 읽고 일부 수동 기준 문구를 확인한다. 전체 문자 오류율 검사는 아니다.
 final class DocumentKoreanScanTests: XCTestCase {
   func testOriginalKoreanScanReleasePerformanceAndAnchors() async throws {
     executionTimeAllowance = 900

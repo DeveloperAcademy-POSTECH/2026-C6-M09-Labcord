@@ -3,6 +3,8 @@ import CoreHwp
 import Foundation
 import ImageIO
 
+/// HWP 섹션·문단·표·컨트롤을 원본 순서로 순회하는 문서별 상태다.
+/// 문단·셀의 논리적 위치와 실제 페이지 조판 좌표는 구분해서 다룬다.
 nonisolated struct DocumentHWPParseContext {
   let options: DocumentParserOptions
   var blocks: [DocumentBlock] = []
@@ -59,6 +61,7 @@ nonisolated struct DocumentHWPParseContext {
     try appendControls(paragraph, location: location)
   }
 
+  /// 셀 주소·병합 범위를 보존하고 셀 안의 그림 컨트롤에는 같은 논리적 앵커를 넘긴다.
   mutating func append(_ table: HwpTable, part: String?) throws {
     blocks.append(
       DocumentBlock(
@@ -115,6 +118,7 @@ nonisolated struct DocumentHWPParseContext {
     }
   }
 
+  /// 탭과 공백 제어 문자를 본문에 반영하고 그림·표 같은 컨트롤 레코드는 텍스트에서 제외한다.
   func paragraphText(_ paragraph: HwpParagraph) -> String {
     let units = (paragraph.paraText?.charArray ?? []).compactMap { character -> UInt16? in
       if character.value == 9 { return 9 }

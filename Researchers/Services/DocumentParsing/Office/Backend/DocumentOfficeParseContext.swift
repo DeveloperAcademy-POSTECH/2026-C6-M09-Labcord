@@ -4,6 +4,8 @@ import ImageIO
 import OdrCore
 import SwiftSoup
 
+/// OpenDocument.core의 문서 트리를 순회하며 블록·그림·경고를 누적한다.
+/// 시트·슬라이드·페이지 이름은 part로 보존하되 백엔드가 주지 않은 기하 앵커를 만들지 않는다.
 nonisolated struct DocumentOfficeParseContext {
   let options: DocumentParserOptions
   let format: DocumentFormat
@@ -13,6 +15,7 @@ nonisolated struct DocumentOfficeParseContext {
   var imageBytes = 0
   var imageAttempts = 0
 
+  /// 문서 트리에서 셀을 얻지 못한 경우에만 로컬 HTML 변환 결과의 표를 보완 경로로 사용한다.
   mutating func extractSpreadsheetHTML(from decoded: DecodedFile) {
     do {
       let service = try HtmlTranslator.translate(file: decoded, config: HtmlConfig())
@@ -137,6 +140,7 @@ nonisolated struct DocumentOfficeParseContext {
     }
   }
 
+  /// 문단·셀에서 텍스트를 이미 읽었으므로 하위 트리는 그림만 순회해 본문 중복을 피한다.
   private mutating func visitImages(in element: OdrCore.Element, part: String?) throws {
     for child in element.children {
       try Task.checkCancellation()
@@ -148,6 +152,7 @@ nonisolated struct DocumentOfficeParseContext {
     }
   }
 
+  /// 문서 내부 그림만 읽는다. 디코딩·OCR 실패는 경고로 남기고 다른 요소의 처리는 계속한다.
   private mutating func appendImage(_ image: OdrCore.Image, part: String?) throws {
     try Task.checkCancellation()
     guard imageAttempts < options.maximumEmbeddedImages else {

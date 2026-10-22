@@ -1,5 +1,6 @@
 import Foundation
 
+/// 본문·표·그림 참조가 있는 최소 HWPX를 직접 만든다. 실제 편집기의 모든 기능을 대표하는 샘플은 아니다.
 nonisolated enum DocumentHWPXFixture {
   static func make(imageData: Data) -> Data {
     DocumentArchiveFixtureBuilder.make([

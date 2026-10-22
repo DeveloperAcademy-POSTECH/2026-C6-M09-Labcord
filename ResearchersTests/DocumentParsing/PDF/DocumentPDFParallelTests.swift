@@ -4,6 +4,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 직렬·병렬 결과, 이미지 예산, 진행률, 취소를 비교한다. 작업창 제한 때문에 OCR 대상이 빠져서는 안 된다.
 final class DocumentPDFParallelTests: XCTestCase {
   func testParallelNativeScannedMixedResultsMatchSerialIncludingImageBudget() async throws {
     let data = try DocumentPDFParallelFixture.make()

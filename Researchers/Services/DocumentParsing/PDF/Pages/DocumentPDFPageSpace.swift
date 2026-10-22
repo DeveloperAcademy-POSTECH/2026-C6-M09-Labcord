@@ -3,6 +3,8 @@ import Foundation
 import ImageIO
 import PDFKit
 
+/// PDF 원본 좌표와 앱의 좌상단 정규화 좌표 사이를 변환한다.
+/// MediaBox 원점과 페이지 회전을 같은 변환에 반영해 본문·표·그림의 위치를 맞춘다.
 nonisolated struct DocumentPDFPageSpace {
   let page: CGPDFPage
   let size: CGSize
@@ -17,6 +19,7 @@ nonisolated struct DocumentPDFPageSpace {
       .mediaBox, rect: CGRect(origin: .zero, size: size), rotate: 0, preserveAspectRatio: true)
   }
 
+  /// PDF 좌표를 회전 반영 후 0...1 좌표로 바꾸고 페이지 바깥 영역을 잘라낸다.
   func normalized(_ source: CGRect) -> CGRect {
     let rect = source.applying(transform)
     return CGRect(
@@ -26,6 +29,7 @@ nonisolated struct DocumentPDFPageSpace {
     .intersection(CGRect(x: 0, y: 0, width: 1, height: 1))
   }
 
+  /// 정규화된 표시 영역을 PDFKit 텍스트 선택에 사용할 원본 좌표로 되돌린다.
   func source(_ normalized: CGRect) -> CGRect {
     CGRect(
       x: normalized.minX * size.width, y: (1 - normalized.maxY) * size.height,
@@ -34,6 +38,7 @@ nonisolated struct DocumentPDFPageSpace {
     .applying(transform.inverted())
   }
 
+  /// 기본 2배 크기를 픽셀 한도 안에서 렌더링하고 PDFKit과 수명이 분리된 비트맵 사본을 만든다.
   func render(_ source: PDFPage, maximumPixels: Int) -> CGImage? {
     let area = size.width * size.height
     guard area.isFinite, area > 0, maximumPixels > 0 else { return nil }

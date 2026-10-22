@@ -4,6 +4,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 작업창 크기와 실행 순서를 바꿔 PDF 단계별 시간을 기록한다. 겹치는 단계 시간을 합쳐 전체 시간으로 해석하지 않는다.
 final class DocumentPDFParallelPerformanceTests: XCTestCase {
   func testCompareSerialAndParallelStageTimesOnHundredPages() async throws {
     let data = DocumentPDFParallelFixture.hundredPages()

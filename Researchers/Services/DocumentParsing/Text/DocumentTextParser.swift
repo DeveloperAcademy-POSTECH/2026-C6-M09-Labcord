@@ -1,5 +1,7 @@
 import Foundation
 
+/// 텍스트 디코딩과 형식별 블록 추출을 연결한다.
+/// HTML·Markdown의 참조 그림 OCR은 본문 뒤에 붙이므로 인라인 순서 차이를 경고로 남긴다.
 nonisolated enum DocumentTextParser {
   static func parse(
     _ data: Data,
@@ -45,6 +47,7 @@ nonisolated enum DocumentTextParser {
     }
   }
 
+  /// 그림 하나의 실패는 본문을 버리지 않고 위치 경고로 남긴다. 취소 오류는 계속 전파한다.
   private static func appendReferencedImages(
     to blocks: inout [DocumentBlock],
     text: String,

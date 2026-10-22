@@ -4,6 +4,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 텍스트 계열의 구조와 로컬 그림 OCR을 확인한다. 전체 텍스트는 블록에서 일관되게 만들어져야 한다.
 final class DocumentParsingTests: XCTestCase {
   func testTextAndCSVKeepStructuredTextConsistent() async throws {
     let textResult = try await DocumentParser.parse(

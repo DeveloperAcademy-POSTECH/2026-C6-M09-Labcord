@@ -4,6 +4,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 숫자·통화 기호의 재인식 조건과 원본 스크린샷의 부분 정답을 확인한다. 모든 숫자 오류의 보정을 의미하지 않는다.
 final class DocumentNumericOCRTests: XCTestCase {
   func testCharacterErrorRateCountsCurrencySubstitutions() {
     XCTAssertEqual(distance("$661.37", "S661.37"), 1)

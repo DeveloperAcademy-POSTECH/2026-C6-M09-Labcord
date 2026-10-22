@@ -3,6 +3,8 @@ import CoreHwp
 import Foundation
 import ImageIO
 
+/// 본문의 그림 참조를 BinData와 연결해 이미지·설명·OCR을 추가한다.
+/// 앵커를 찾지 못한 바이너리는 마지막에 읽고 위치가 불확실하다는 경고를 남긴다.
 extension DocumentHWPParseContext {
   nonisolated mutating func appendPictures(
     _ components: [HwpShapeComponent], property: HwpCommonCtrlProperty?,
@@ -30,6 +32,7 @@ extension DocumentHWPParseContext {
     }
   }
 
+  /// 문단·셀 순회에서 참조되지 않은 BinData도 마지막에 처리해 읽을 수 있는 그림을 버리지 않는다.
   nonisolated mutating func appendEmbeddedImages(_ items: [HwpBinaryData]) throws {
     for item in items where !visitedImages.contains(item.name) {
       try Task.checkCancellation()

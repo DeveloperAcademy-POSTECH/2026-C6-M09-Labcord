@@ -1,5 +1,7 @@
 import Foundation
 
+/// 구형 PPT의 길이 기반 레코드를 경계 검사와 함께 읽는다.
+/// 편집 이력을 따라 현재 슬라이드만 찾으므로 이전 편집본을 중복 슬라이드로 읽지 않는다.
 nonisolated struct DocumentPPTRecords {
   struct Record {
     let type: Int
@@ -48,6 +50,7 @@ nonisolated struct DocumentPPTRecords {
     return output
   }
 
+  /// 최신 편집부터 persist ID 매핑을 채워 현재 문서가 참조하는 슬라이드만 반환한다.
   func liveSlides(currentUser: Data) throws -> [Record] {
     guard var edit = DocumentBinaryReader(data: currentUser).uint32(16) else {
       throw DocumentParsingError.malformedDocument

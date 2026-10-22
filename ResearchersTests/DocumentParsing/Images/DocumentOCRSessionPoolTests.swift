@@ -3,6 +3,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 새 Vision 요청과 재사용 세션의 결과·실패·병렬 접근·해제 수명을 비교한다. 이전 그림의 텍스트가 남으면 안 된다.
 final class DocumentOCRSessionPoolTests: XCTestCase {
   func testReusedSessionMatchesFreshRecognitionAndDoesNotKeepPreviousText() throws {
     let pool = DocumentOCRSessionPool()

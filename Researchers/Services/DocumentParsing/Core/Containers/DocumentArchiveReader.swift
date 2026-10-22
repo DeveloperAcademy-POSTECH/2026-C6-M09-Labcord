@@ -2,6 +2,8 @@ import Foundation
 import zlib
 
 /// ZIP의 XML 파트만 메모리에서 읽는다. 실제 inflate 출력에도 상한을 적용한다.
+/// 파일 시스템에 풀지 않고 검증된 XML 항목만 읽는다.
+/// 중앙 디렉터리와 로컬 헤더가 일치하고 CRC가 맞아야 항목을 채택한다.
 nonisolated enum DocumentArchiveReader {
   static func xmlEntries(
     _ data: Data, options: DocumentParserOptions
@@ -39,6 +41,7 @@ nonisolated enum DocumentArchiveReader {
     return result
   }
 
+  /// 로컬 헤더의 이름·압축 방식·플래그를 중앙 디렉터리와 대조한 뒤 해당 바이트만 자른다.
   private static func compressedBytes(
     _ data: Data, entry: DocumentArchiveGuard.CentralDirectoryEntry, end: Int
   ) throws -> Data {
@@ -60,6 +63,7 @@ nonisolated enum DocumentArchiveReader {
     return Data(data[start..<finish])
   }
 
+  /// ZIP의 raw DEFLATE를 작은 버퍼로 해제한다. 선언된 크기보다 출력이 커지면 즉시 중단한다.
   private static func expand(_ data: Data, limit: Int) throws -> Data {
     var stream = z_stream()
     guard inflateInit2_(

@@ -3,6 +3,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 인용 CSV·빈 Markdown 셀·중첩 HTML·참조 그림 실패 등 이전 경계 사례가 다시 깨지지 않는지 확인한다.
 final class DocumentParsingRegressionTests: XCTestCase {
   func testCSVPreservesRowsAndQuotedFieldsWithWindowsLineEndings() async throws {
     let csv = "Name,Note\r\nAda,\"first\r\nsecond\"\r\nGrace,\"a\"\"b\"\r\n"

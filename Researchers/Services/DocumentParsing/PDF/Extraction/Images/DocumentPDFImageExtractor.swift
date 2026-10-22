@@ -2,6 +2,8 @@ import CoreGraphics
 import Foundation
 import ImageIO
 
+/// PDF에 실제 표시된 그림 영역을 페이지 래스터에서 잘라 PNG와 OCR 작업으로 만든다.
+/// 원본 JPEG·필터 스트림의 직접 추출이 아니라 표시 영역의 래스터화 결과를 반환한다.
 nonisolated enum DocumentPDFImageExtractor {
   struct Result: Sendable {
     var blocks: [DocumentBlock] = []
@@ -56,6 +58,7 @@ nonisolated enum DocumentPDFImageExtractor {
     return (result, jobs)
   }
 
+  /// 잘라낸 그림 안의 OCR 좌표를 그림의 페이지 위치·크기에 맞춰 다시 변환한다.
   static func recognize(
     _ crop: CGImage, location: DocumentLocation, bounds: CGRect
   ) throws -> [DocumentBlock] {

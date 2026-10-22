@@ -4,6 +4,7 @@ import Foundation
 import ImageIO
 import UIKit
 
+/// 시스템 글꼴로 OCR 그림과 PDF·TIFF를 만든다. 글꼴 파일이나 외부 문서를 테스트 자산으로 복제하지 않는다.
 nonisolated enum DocumentImageFixtures {
   static func textImage(_ text: String) -> CGImage? {
     let width = 1200

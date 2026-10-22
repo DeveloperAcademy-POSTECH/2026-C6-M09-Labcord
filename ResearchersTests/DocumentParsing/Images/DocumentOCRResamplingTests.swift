@@ -6,6 +6,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 임계값·부분 영역·리샘플링 후보를 별도로 비교한다. 진단 결과가 곧 제품 채택 설정은 아니다.
 final class DocumentOCRResamplingTests: XCTestCase {
   func testCompareThresholdAndCandidates() throws {
     let url = try XCTUnwrap(Bundle(for: Self.self).url(

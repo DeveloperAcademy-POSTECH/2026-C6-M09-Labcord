@@ -3,6 +3,7 @@ import XCTest
 
 @testable import Researchers
 
+/// ZIP 헤더·CRC·실제 해제량과 HWPX XML의 엔티티·ID 충돌을 검사한다. 위험 입력은 결과 생성 전에 거부해야 한다.
 final class DocumentArchiveReaderTests: XCTestCase {
   func testStoredXMLIsReadWithChecksumAndNonXMLIsExcluded() throws {
     let data = DocumentArchiveFixtureBuilder.make([

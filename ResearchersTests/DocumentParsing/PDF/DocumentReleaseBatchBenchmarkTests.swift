@@ -3,6 +3,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 실제 한국어·영문 혼합 배치의 Release 측정이다. 냉각 대기가 있는 비교 실행과 계측용 진단 실행을 구분한다.
 final class DocumentReleaseBatchBenchmarkTests: XCTestCase {
   func testReleaseMixedBatch() async throws { try await benchmark(korean: false) }
 

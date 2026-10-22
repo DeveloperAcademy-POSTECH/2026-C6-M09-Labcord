@@ -1,6 +1,8 @@
 import CoreGraphics
 import Foundation
 
+/// 구형 PPT의 그룹 도형 중 사각 영역을 채우는 텍스트 도형을 표 후보로 읽는다.
+/// 도형의 앵커로 행·열을 추론하며 다른 본문 요소와의 인라인 순서는 별도로 보장하지 않는다.
 nonisolated enum DocumentPPTTableParser {
   private struct Cell {
     let text: String
@@ -52,6 +54,7 @@ nonisolated enum DocumentPPTTableParser {
     }
   }
 
+  /// 도형 앵커와 텍스트 atom을 함께 읽어 표 셀 후보를 만든다. 글꼴·장식은 공통 텍스트에 포함하지 않는다.
   private static func cell(
     _ shape: DocumentPPTRecords.Record, records: DocumentPPTRecords
   ) throws -> Cell? {

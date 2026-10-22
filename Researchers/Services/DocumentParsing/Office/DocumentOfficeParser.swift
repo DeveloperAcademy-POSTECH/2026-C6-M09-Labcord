@@ -1,6 +1,8 @@
 import Foundation
 import OdrCore
 
+/// Office 백엔드를 호출한 뒤 앱의 공통 결과 모델로 변환한다.
+/// 경로 입력이 필요한 백엔드 때문에 임시 파일을 사용하며 함수 종료 시 디렉터리를 지운다.
 nonisolated enum DocumentOfficeParser {
   static func parse(
     data: Data,

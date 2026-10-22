@@ -3,7 +3,10 @@ import Foundation
 import ImageIO
 import Vision
 
+/// 모든 형식에서 공통으로 사용하는 온디바이스 Vision OCR이다.
+/// 한영 인식 결과를 좌상단 기준 좌표와 읽기 순서가 있는 블록으로 변환한다.
 nonisolated enum DocumentOCR {
+  /// parse·parseBatch가 만든 풀을 자식 작업에 전달한다. 전역으로 모든 문서의 세션을 공유하지 않는다.
   @TaskLocal static var sessions: DocumentOCRSessionPool?
 
   static func recognize(
@@ -28,6 +31,7 @@ nonisolated enum DocumentOCR {
     }
   }
 
+  /// 새 핸들러와 재사용 핸들러 모두 같은 한영·정확도·언어 보정 설정을 사용한다.
   static func makeRequest() -> VNRecognizeTextRequest {
     let request = VNRecognizeTextRequest()
     request.recognitionLevel = .accurate
@@ -37,6 +41,7 @@ nonisolated enum DocumentOCR {
     return request
   }
 
+  /// Vision의 좌하단 원점을 좌상단으로 뒤집는다. 부분 그림의 페이지 좌표 변환은 호출 측이 담당한다.
   private static func blocks(
     _ source: [VNRecognizedTextObservation], image: CGImage,
     orientation: CGImagePropertyOrientation, location: DocumentLocation

@@ -4,6 +4,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 같은 내용의 HWP·HWPX를 비교해 표 병합·그림 설명·논리적 앵커·복구 진단이 보존되는지 확인한다.
 final class DocumentHWPComparisonTests: XCTestCase {
   func testNooriNativeTextCellsAndImageCountsAgree() async throws {
     let hwp = try source("real-hwp-01-noori", format: "hwp")

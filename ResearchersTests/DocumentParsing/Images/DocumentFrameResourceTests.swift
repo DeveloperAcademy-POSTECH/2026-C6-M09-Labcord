@@ -4,6 +4,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 프레임·페이지·연산 한도에 걸려도 앞서 읽은 결과와 위치 경고가 유지되는지 확인한다.
 final class DocumentFrameResourceTests: XCTestCase {
   func testTIFFPageLimitKeepsFirstFrameAndWarningLocation() async throws {
     let image = try XCTUnwrap(DocumentImageFixtures.textImage("KEPT FRAME 123"))

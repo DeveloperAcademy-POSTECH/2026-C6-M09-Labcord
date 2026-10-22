@@ -1,5 +1,7 @@
 import Foundation
 
+/// 구형 Word의 piece table을 따라 본문을 복원하고 셀·행 제어 문자를 해석한다.
+/// 복잡한 중첩·병합 표의 전체 조판을 복원하는 파서는 아니다.
 nonisolated enum DocumentLegacyWordParser {
   static func parse(_ streams: [String: Data]) -> [DocumentBlock]? {
     guard let body = streams["WordDocument"] else { return nil }
@@ -17,6 +19,7 @@ nonisolated enum DocumentLegacyWordParser {
     return blocks(text)
   }
 
+  /// piece마다 압축 플래그에 따라 1바이트 문자와 UTF-16을 구분하고 본문 문자 길이까지만 읽는다.
   private static func pieceText(_ clx: Data, document: DocumentBinaryReader) -> String? {
     let reader = DocumentBinaryReader(data: clx)
     var cursor = 0

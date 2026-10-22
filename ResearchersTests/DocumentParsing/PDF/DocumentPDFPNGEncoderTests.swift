@@ -5,6 +5,7 @@ import XCTest
 
 @testable import Researchers
 
+/// PNG 용량만 비교하지 않고 디코딩한 픽셀·색 공간을 대조해 팔레트 최적화의 무손실 조건을 확인한다.
 final class DocumentPDFPNGEncoderTests: XCTestCase {
   func testPalettePNGPreservesEveryDecodedPixel() throws {
     for colors in [1, 16, 256] {

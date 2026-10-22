@@ -7,6 +7,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 공개 Swift 사용 예제를 URL·Data·CGImage·혼합 배치·취소로 실행한다. 형식별 부분 정답과 실제 경고도 함께 확인한다.
 final class DocumentAPIUsageTests: XCTestCase {
   func testURLAndDataExamplesAcrossAllFormats() async throws {
     let fixtures = try loadFixtures()

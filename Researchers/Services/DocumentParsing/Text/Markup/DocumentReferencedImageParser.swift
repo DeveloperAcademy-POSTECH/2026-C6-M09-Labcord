@@ -1,6 +1,8 @@
 import Foundation
 import SwiftSoup
 
+/// 내장 base64 그림과 기준 디렉터리 안의 상대 경로 그림만 OCR한다.
+/// 원격 주소·절대 경로·기준 폴더 밖을 가리키는 참조는 자동으로 읽지 않는다.
 nonisolated enum DocumentReferencedImageParser {
   static func recognize(
     _ reference: String,
@@ -37,6 +39,7 @@ nonisolated enum DocumentReferencedImageParser {
     }
   }
 
+  /// 상대 경로는 심볼릭 링크를 해석한 뒤 기준 디렉터리 안에 있는지 다시 확인한다.
   private static func imageData(
     for reference: String,
     baseDirectory: URL?,

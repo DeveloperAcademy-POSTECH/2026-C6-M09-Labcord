@@ -3,7 +3,10 @@ import Foundation
 import ImageIO
 import PDFKit
 
+/// 한 페이지를 직렬 준비 단계와 병렬 OCR 단계로 나눈다.
+/// PDFKit 객체는 준비 단계에 남기고 OCR 작업에는 불변 래스터와 위치만 전달한다.
 nonisolated enum DocumentPDFPageParser {
+  /// 본문·표·그림 위치를 읽고 래스터를 만든다. 표 영역의 본문은 셀 텍스트와 겹치지 않게 제외한다.
   static func prepare(
     _ page: PDFPage, index: Int, options: DocumentParserOptions,
     limits: (images: Int, bytes: Int), origin: ContinuousClock.Instant
@@ -67,6 +70,7 @@ nonisolated enum DocumentPDFPageParser {
     }
   }
 
+  /// 그림 OCR이 페이지 전체와 정확히 같은 픽셀 영역을 읽은 경우에만 전체 페이지 OCR을 재사용한다.
   @concurrent private static func performRecognition(
     _ prepared: DocumentPDFPreparedPage
   ) async throws -> DocumentPDFPreparedPage {
@@ -158,6 +162,7 @@ nonisolated enum DocumentPDFPageParser {
     }
   }
 
+  /// 공간적으로 겹치는 기존 블록만 비교해 같은 문구의 중복 OCR을 제거한다.
   private static func duplicate(_ candidate: DocumentBlock, in blocks: [DocumentBlock]) -> Bool {
     guard candidate.kind == .imageOCR, let bounds = candidate.location.bounds else { return false }
     let related = blocks.filter { block in

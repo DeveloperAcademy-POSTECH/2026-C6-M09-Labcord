@@ -1,6 +1,8 @@
 import Foundation
 import ImageIO
 
+/// JPEG·PNG·HEIC·TIFF를 프레임 순서대로 OCR한다.
+/// 한 프레임이 실패해도 다른 프레임의 결과를 보존하고, 전부 실패했을 때만 오류를 던진다.
 nonisolated enum DocumentRasterParser {
   static func parse(
     _ data: Data,
@@ -57,6 +59,7 @@ nonisolated enum DocumentRasterParser {
     return DocumentParseResult(format: format, blocks: blocks, warnings: warnings)
   }
 
+  /// 프레임 하나의 디코딩·OCR 임시 객체를 정리한 뒤 다음 프레임으로 넘어간다.
   private static func recognize(
     _ source: CGImageSource, index: Int, options: DocumentParserOptions, location: DocumentLocation
   ) throws -> [DocumentBlock] {

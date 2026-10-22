@@ -1,6 +1,8 @@
 import CoreFoundation
 import Foundation
 
+/// 바이트 시그니처 → 컨테이너 내부 구조 → 텍스트 내용 순으로 형식을 판별한다.
+/// 파일명은 텍스트 형식의 힌트로만 사용하므로 확장자만 바꾼 바이너리를 신뢰하지 않는다.
 nonisolated enum DocumentFormatDetector {
   static func detect(
     data: Data,
@@ -14,6 +16,7 @@ nonisolated enum DocumentFormatDetector {
     throw DocumentParsingError.unsupportedFormat
   }
 
+  /// BOM·UTF-16 패턴을 먼저 확인한다. 레거시 문자셋 선택은 휴리스틱이므로 완전한 판별은 아니다.
   static func decodeText(_ data: Data) -> String? {
     if data.starts(with: [0xFF, 0xFE]) || data.starts(with: [0xFE, 0xFF]) {
       return String(data: data, encoding: .utf16)
@@ -122,6 +125,7 @@ nonisolated enum DocumentFormatDetector {
     return byExtension[ext]
   }
 
+  /// ZIP인지 확인한 뒤 검증된 항목 이름으로 OOXML과 HWPX를 구분한다.
   private static func detectZipPackage(
     _ data: Data,
     options: DocumentParserOptions
@@ -148,6 +152,7 @@ nonisolated enum DocumentFormatDetector {
     }
   }
 
+  /// 디코딩됐다는 이유만으로 바이너리를 TXT로 취급하지 않도록 제어 문자 비율을 확인한다.
   private static func isPlausible(_ text: String) -> Bool {
     guard !text.isEmpty else { return false }
     let controls = text.unicodeScalars.filter {

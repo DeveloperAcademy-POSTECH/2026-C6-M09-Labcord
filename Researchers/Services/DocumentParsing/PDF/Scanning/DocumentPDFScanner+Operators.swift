@@ -1,7 +1,10 @@
 import CoreGraphics
 import Foundation
 
+/// PDF 연산자를 스캐너 상태 갱신에 연결한다.
+/// 좌표는 현재 변환 행렬을 적용해 페이지 공간으로 모으고 클립은 사각 경계로 근사한다.
 nonisolated extension DocumentPDFScanner {
+  /// q/Q는 그래픽 상태 저장·복원, cm은 행렬 합성, Do는 외부 그림 또는 중첩 Form 그리기다.
   static func registerGraphics(on table: CGPDFOperatorTableRef) {
     CGPDFOperatorTableSetCallback(table, "q") { scanner, info in
       guard let state = DocumentPDFScanner.context(scanner, info) else { return }
@@ -71,6 +74,7 @@ nonisolated extension DocumentPDFScanner {
     }
   }
 
+  /// 실제로 그린 선만 표 후보로 남긴다. 클립은 경로의 사각 경계로 근사하므로 복잡한 윤곽과 다를 수 있다.
   static func registerPainting(on table: CGPDFOperatorTableRef) {
     for name in ["S", "s", "B", "B*", "b", "b*"] {
       CGPDFOperatorTableSetCallback(table, name) { scanner, info in

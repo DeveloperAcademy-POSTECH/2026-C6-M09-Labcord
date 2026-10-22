@@ -4,6 +4,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 외부 호출자가 의존하는 실행 문맥·배치 순서·개별 실패·취소 이벤트 계약을 확인한다.
 final class DocumentParserTests: XCTestCase {
   @MainActor
   func testParsingLeavesMainActorBeforeReportingProgress() async throws {

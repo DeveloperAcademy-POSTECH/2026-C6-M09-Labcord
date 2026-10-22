@@ -3,6 +3,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 부분 정답 목록이 코퍼스와 맞는지, 텍스트·셀 순서·그림 누락을 실제로 검출하는지 확인한다.
 final class DocumentGoldenValidationTests: XCTestCase {
   func testGoldenIDsCoverExactlyTheCorpus() throws {
     let url = try XCTUnwrap(Bundle(for: Self.self).url(

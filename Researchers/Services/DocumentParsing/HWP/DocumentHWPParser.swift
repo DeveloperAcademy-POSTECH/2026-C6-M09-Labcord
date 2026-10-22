@@ -3,6 +3,8 @@ import CoreHwp
 import Foundation
 import ImageIO
 
+/// CoreHwp로 문서를 읽고 본문·표·그림과 복구 진단을 공통 모델에 담는다.
+/// 읽기 가능한 부분을 복구해도 누락된 요소의 진단은 경고로 보존한다.
 nonisolated enum DocumentHWPParser {
   static func parse(
     data: Data,
@@ -33,6 +35,7 @@ nonisolated enum DocumentHWPParser {
       format: format, blocks: context.blocks, warnings: context.warnings, images: context.images)
   }
 
+  /// 원시 payload 보관은 끄고 제한된 부분 복구를 사용한다. 복구 진단은 parse에서 경고로 전달한다.
   private static func loadFile(
     _ data: Data,
     format: DocumentFormat,

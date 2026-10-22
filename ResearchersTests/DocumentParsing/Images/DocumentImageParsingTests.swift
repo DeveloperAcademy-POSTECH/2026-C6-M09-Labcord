@@ -4,6 +4,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 직접 이미지 OCR과 일반·스캔·혼합 PDF를 확인한다. 같은 본문이 OCR 결과로 중복 추가되지 않아야 한다.
 final class DocumentImageParsingTests: XCTestCase {
   func testImageOCRReturnsNormalizedLocationAndConfidence() async throws {
     let image = try XCTUnwrap(DocumentImageFixtures.textImage("LABCORD 123"))

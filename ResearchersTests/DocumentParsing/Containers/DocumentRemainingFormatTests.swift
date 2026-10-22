@@ -6,6 +6,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 실제 바이너리 Office·HWP 샘플과 다중 프레임 TIFF의 본문·표·그림·부분 실패를 확인한다.
 final class DocumentRemainingFormatTests: XCTestCase {
   func testBinaryHWPBodyTableAndImage() async throws {
     for name in ["BinarySample", "BinaryCompressed"] {

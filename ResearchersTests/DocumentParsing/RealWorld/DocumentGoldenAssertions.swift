@@ -3,6 +3,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 검증된 원본 해시와 부분 정답만 비교한다. 파서 출력 자체를 다시 정답으로 만드는 도우미가 아니다.
 nonisolated enum DocumentGoldenAssertions {
   struct Entry: Decodable {
     let id: String

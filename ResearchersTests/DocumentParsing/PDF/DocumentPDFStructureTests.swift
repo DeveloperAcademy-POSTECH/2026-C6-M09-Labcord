@@ -4,6 +4,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 텍스트가 있는 PDF의 표 셀과 삽입 이미지에 실제 페이지 위치가 연결되는지 확인한다.
 final class DocumentPDFStructureTests: XCTestCase {
   func testNativeTableCellsAndEmbeddedImagePositions() async throws {
     let label = try XCTUnwrap(DocumentImageFixtures.textImage("IMAGE OCR MARKER 123"))

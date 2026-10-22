@@ -20,6 +20,8 @@ nonisolated struct DocumentPDFImageJob: Sendable {
   }
 }
 
+/// OCR 작업 하나에 필요한 래스터·그림 작업·부분 결과를 묶는다.
+/// 인덱스는 0부터 시작하며, 외부에 반환하는 페이지 번호로 바꿀 때 1을 더한다.
 nonisolated struct DocumentPDFPreparedPage: Sendable {
   let index: Int
   var result = DocumentPDFImageExtractor.Result()

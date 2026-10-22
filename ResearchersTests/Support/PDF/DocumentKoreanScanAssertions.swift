@@ -4,6 +4,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 한국어 원본 해시·페이지 수와 선택한 페이지의 기준 문구를 확인한다. 전 페이지 정답 데이터를 제공하지는 않는다.
 nonisolated enum DocumentKoreanScanAssertions {
   static func verifyOriginal(_ url: URL) throws {
     let data = try Data(contentsOf: url)

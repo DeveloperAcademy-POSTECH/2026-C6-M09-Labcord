@@ -1,5 +1,7 @@
 import Foundation
 
+/// ZIP을 열기 전에 중앙 디렉터리의 크기·경로·암호화 여부를 검사한다.
+/// 선언된 크기 검증과 실제 압축 해제량 검증은 별개이며, 후자는 ArchiveReader에서도 확인한다.
 nonisolated enum DocumentArchiveGuard {
   private static let endSignature: UInt32 = 0x0605_4B50
   private static let entrySignature: UInt32 = 0x0201_4B50
@@ -20,6 +22,7 @@ nonisolated enum DocumentArchiveGuard {
     )
   }
 
+  /// ZIP 끝 레코드를 뒤에서 찾는다. 주석 길이와 디렉터리 경계가 실제 입력 크기와 맞아야 한다.
   static func readDirectory(_ data: Data) throws -> ArchiveDirectory {
     guard data.count >= 22 else { throw DocumentParsingError.malformedDocument }
     let lowerBound = max(0, data.count - 65_557)
@@ -43,6 +46,7 @@ nonisolated enum DocumentArchiveGuard {
     return ArchiveDirectory(entryCount: Int(entryCount), start: start, end: end)
   }
 
+  /// 항목 수·해제 크기를 누적하고 중복 경로와 경로 탈출을 거부한다.
   private static func validateEntries(
     _ data: Data,
     directory: ArchiveDirectory,

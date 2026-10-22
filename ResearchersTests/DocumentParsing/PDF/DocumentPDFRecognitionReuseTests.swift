@@ -4,6 +4,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 전체 페이지와 정확히 같은 그림만 OCR을 재사용하는지 확인한다. 부분 그림과 예산 제한은 별도로 처리해야 한다.
 final class DocumentPDFRecognitionReuseTests: XCTestCase {
   func testFullPageReuseAndLimitedImageFallbackKeepText() async throws {
     let renderer = UIGraphicsImageRenderer(size: CGSize(width: 612, height: 792))

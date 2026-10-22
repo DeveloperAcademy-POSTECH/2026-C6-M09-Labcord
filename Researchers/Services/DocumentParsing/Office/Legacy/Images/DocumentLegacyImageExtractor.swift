@@ -1,6 +1,8 @@
 import Foundation
 import ImageIO
 
+/// CFB 스트림의 OfficeArt 그림 레코드에서 지원되는 래스터 바이트를 찾는다.
+/// 셀·도형의 기하 앵커 대신 스트림 이름과 바이트 위치를 원본 위치로 보존한다.
 nonisolated enum DocumentLegacyImageExtractor {
   struct Image {
     let data: Data
@@ -43,6 +45,7 @@ nonisolated enum DocumentLegacyImageExtractor {
     return result
   }
 
+  /// Excel의 DrawingGroup 뒤에 이어진 CONTINUE 레코드를 붙여 OfficeArt 그림 데이터를 복원한다.
   private static func drawingGroup(_ workbook: Data) -> Data {
     let reader = DocumentBinaryReader(data: workbook)
     var cursor = 0

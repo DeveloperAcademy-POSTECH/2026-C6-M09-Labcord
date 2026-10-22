@@ -1,5 +1,6 @@
 import Foundation
 
+/// 본문·셀·슬라이드 텍스트를 확인할 작은 OOXML 문서를 만든다. 외부 원본 코퍼스와 역할을 구분한다.
 nonisolated enum DocumentOfficeFixtures {
   static func word() -> Data {
     DocumentArchiveFixtureBuilder.make([

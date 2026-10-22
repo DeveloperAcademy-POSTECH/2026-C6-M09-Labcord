@@ -1,6 +1,8 @@
 import Foundation
 import SwiftSoup
 
+/// 브라우저 렌더링 없이 DOM 순서대로 제목·본문·목록·표를 추출한다.
+/// 스크립트와 스타일은 실행하지 않으며 CSS로 배치된 시각적 순서는 복원하지 않는다.
 nonisolated enum DocumentHTMLParser {
   static func parseHTML(_ html: String) throws -> [DocumentBlock] {
     let document = try SwiftSoup.parse(html)
@@ -12,6 +14,7 @@ nonisolated enum DocumentHTMLParser {
     return blocks
   }
 
+  /// 인라인 텍스트를 모으다가 블록 요소를 만나면 먼저 내보내 DOM의 앞뒤 순서를 유지한다.
   private static func appendContent(
     _ element: Element,
     prefix: String = "",

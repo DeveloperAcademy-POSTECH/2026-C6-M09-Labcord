@@ -1,5 +1,6 @@
 import Foundation
 
+/// PDF 그리기 연산을 직접 작성해 중첩 Form·변환·반복 배치를 원하는 위치에 재현한다.
 nonisolated enum DocumentPDFRawFixture {
   static func nestedImages(rotation: Int = 0, repeated: Bool = false) -> Data {
     let command =

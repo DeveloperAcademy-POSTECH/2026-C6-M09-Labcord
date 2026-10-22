@@ -1,6 +1,8 @@
 import CoreGraphics
 import Foundation
 
+/// PDF 그리기 연산을 따라가 표 선분과 그림의 표시 위치를 수집한다.
+/// 그래픽 상태·중첩 Form을 추적하지만 임의의 복잡한 클립 윤곽까지 복원하지는 않는다.
 nonisolated final class DocumentPDFScanner {
   struct Segment {
     let start: CGPoint
@@ -56,6 +58,7 @@ nonisolated final class DocumentPDFScanner {
     if !CGPDFScannerScan(scanner), !limited, !Task.isCancelled { malformed = true }
   }
 
+  /// 모든 등록 콜백에서 연산 한도와 취소를 확인한다. 한도를 넘으면 스캐너 자체를 멈춘다.
   static func context(
     _ scanner: CGPDFScannerRef,
     _ info: UnsafeMutableRawPointer?
@@ -122,6 +125,7 @@ nonisolated final class DocumentPDFScanner {
     }
   }
 
+  /// 중첩 Form의 변환·클립·경로 상태는 방문 후 복원한다. 같은 Form의 반복 배치는 각각 추적한다.
   private func scanForm(_ stream: CGPDFStreamRef, parent: CGPDFContentStreamRef) {
     guard depth < 16, visited.insert(stream).inserted else {
       limited = true

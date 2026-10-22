@@ -2,6 +2,8 @@ import CoreGraphics
 import Foundation
 
 /// 256색 이하의 불투명 이미지만 정확한 RGB 팔레트로 바꾼다. 양자화·리사이즈는 하지 않는다.
+/// 정확히 표현할 수 있는 팔레트가 없으면 일반 PNG 인코더로 돌아간다.
+/// PNG 바이트 크기만 줄이며 OCR에 전달하는 원본 래스터는 바꾸지 않는다.
 nonisolated enum DocumentPDFPNGEncoder {
   static func png(_ source: CGImage) -> Data? {
     autoreleasepool {
@@ -42,6 +44,7 @@ nonisolated enum DocumentPDFPNGEncoder {
       decode: nil, shouldInterpolate: false, intent: .defaultIntent)
   }
 
+  /// 투명 픽셀이 없고 실제 색이 256개 이하일 때만 색을 그대로 인덱스에 대응시킨다.
   private static func palette(_ pixels: UnsafePointer<UInt8>, count: Int)
     -> (colors: [UInt8], indices: Data)? {
     var colors: [UInt8] = []

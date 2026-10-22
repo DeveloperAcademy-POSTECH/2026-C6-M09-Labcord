@@ -1,7 +1,10 @@
 import Foundation
 
 /// CoreHwp가 합성 unknown record에서 버리는 그림 설명을 원본 XML에서 보완한다.
+/// 설명은 OCR 텍스트가 아니라 그림의 원본 메타데이터다.
+/// XML의 개체 ID로 설명을 연결하며 서로 충돌하는 설명과 엔티티 선언은 거부한다.
 nonisolated enum DocumentHWPXDescriptions {
+  /// 외부 엔티티 해석을 끄는 것에 더해 UTF-8·16·32의 DTD·엔티티 선언 자체도 거부한다.
   static func read(_ data: Data, options: DocumentParserOptions) throws -> [UInt32: String] {
     let entries = try DocumentArchiveReader.xmlEntries(data, options: options)
     var result: [UInt32: String] = [:]

@@ -6,6 +6,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 같은 이미지에서 대비·실행 장치 설정에 따른 OCR 후보를 비교하는 진단용 검사다. 앱의 기본 설정을 바꾸지 않는다.
 final class DocumentOCRDeviceTests: XCTestCase {
   func testCompareContrastThresholds() throws {
     let url = try XCTUnwrap(Bundle(for: Self.self).url(

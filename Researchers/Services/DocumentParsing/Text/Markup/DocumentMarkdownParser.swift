@@ -1,5 +1,7 @@
 import Foundation
 
+/// 줄 단위로 제목·본문·파이프 표를 읽는 제한된 Markdown 파서다.
+/// 전체 방언을 렌더링하지 않으며 그림 OCR은 별도 참조 이미지 처리 단계에서 수행한다.
 nonisolated enum DocumentMarkdownParser {
   static func parseMarkdown(_ text: String) -> [DocumentBlock] {
     let lines = text.components(separatedBy: .newlines)
@@ -87,6 +89,7 @@ nonisolated enum DocumentMarkdownParser {
       }
   }
 
+  /// 양 끝 구분자는 제거하되 비어 있는 셀은 남겨 원본 열 번호가 밀리지 않게 한다.
   private static func tableCells(_ line: String) -> [String] {
     var value = line.trimmingCharacters(in: .whitespaces)
     if value.hasPrefix("|") { value.removeFirst() }

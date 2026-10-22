@@ -6,6 +6,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 생성한 100페이지 PDF의 시간·메모리와 취소·정리 수치를 기록한다. 단일 실행을 기기 전체의 성능 보장치로 사용하지 않는다.
 final class DocumentPerformanceTests: XCTestCase {
   func testHundredPagePDFReportsTimeAndSampledFootprint() async throws {
     let renderer = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 612, height: 792))

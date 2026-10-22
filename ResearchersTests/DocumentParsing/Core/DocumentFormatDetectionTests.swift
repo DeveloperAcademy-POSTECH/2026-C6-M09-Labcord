@@ -3,6 +3,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 텍스트 인코딩과 Markdown·HTML의 판별 경계를 확인한다. 비슷한 바이트 패턴을 다른 인코딩으로 오인하지 않아야 한다.
 final class DocumentFormatDetectionTests: XCTestCase {
   func testUTF16WithAndWithoutBOMKeepsMixedText() throws {
     let text = "한글 English document"

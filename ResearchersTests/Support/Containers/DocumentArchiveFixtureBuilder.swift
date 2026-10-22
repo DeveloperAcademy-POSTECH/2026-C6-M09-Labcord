@@ -1,5 +1,6 @@
 import Foundation
 
+/// 테스트에 필요한 작은 ZIP을 직접 만든다. 컨테이너의 필드 하나를 바꿔 위험 입력을 재현할 때도 사용한다.
 struct DocumentArchiveFixtureBuilder {
   static func make(_ files: [(String, Data)]) -> Data {
     var output = Data()

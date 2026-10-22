@@ -4,6 +4,7 @@ import Foundation
 @testable import Researchers
 
 /// 본문이나 이미지 바이트를 로그에 남기지 않고 결과의 모든 의미 필드를 비교한다.
+/// 비교에 필요한 위치·메타데이터·PNG 전체를 순서대로 해시한다. 본문이나 그림 바이트를 로그로 노출하지 않는다.
 nonisolated enum DocumentResultFingerprint {
   static func blocks(_ blocks: [DocumentBlock]) -> String {
     var hash = SHA256()

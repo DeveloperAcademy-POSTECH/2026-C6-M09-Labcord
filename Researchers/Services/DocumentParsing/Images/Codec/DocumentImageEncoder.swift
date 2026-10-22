@@ -2,6 +2,8 @@ import CoreGraphics
 import Foundation
 import ImageIO
 
+/// 추출한 비트맵을 방향 메타데이터가 포함된 PNG로 보관한다.
+/// 원본 압축 스트림을 그대로 돌려주는 기능은 아니다.
 nonisolated enum DocumentImageEncoder {
   static func png(
     _ image: CGImage, orientation: CGImagePropertyOrientation = .up

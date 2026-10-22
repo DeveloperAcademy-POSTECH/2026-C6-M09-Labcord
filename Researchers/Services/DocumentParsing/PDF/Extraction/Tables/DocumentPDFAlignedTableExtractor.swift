@@ -2,6 +2,8 @@ import CoreGraphics
 import Foundation
 import PDFKit
 
+/// 선이 없는 PDF에서 반복된 문자 정렬을 표 후보로 추론한다.
+/// 같은 열이 3행 이상 이어져야 채택하며 확정된 표 구조가 아니라는 경고를 함께 반환한다.
 nonisolated enum DocumentPDFAlignedTableExtractor {
   static func extract(
     page: PDFPage, pageIndex: Int, space: DocumentPDFPageSpace

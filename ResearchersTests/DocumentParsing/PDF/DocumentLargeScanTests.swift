@@ -5,6 +5,7 @@ import XCTest
 
 @testable import Researchers
 
+/// 공식 대용량 PDF와 혼합 배치의 원본 해시·순서·한도·취소·정리를 확인하고 수치를 남긴다.
 final class DocumentLargeScanTests: XCTestCase {
   func testLargeScanOriginalHashesAndPageCounts() throws {
     let hashes = [
