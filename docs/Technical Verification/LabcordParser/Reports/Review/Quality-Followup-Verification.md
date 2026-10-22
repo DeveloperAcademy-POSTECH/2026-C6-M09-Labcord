@@ -9,8 +9,8 @@
 
 ## 1. 누리 HWP·HWPX 원본 대조
 
-[원본 대조 집계](Noori-Source-Comparison.json),
-[백엔드 진단 집계](Noori-Backend-Diagnostics.json).
+[원본 대조 집계](../Corpus/Noori-Source-Comparison.json),
+[백엔드 진단 집계](../Corpus/Noori-Backend-Diagnostics.json).
 
 | 항목 | 원본 HWPX | HWP 결과 | HWPX 결과 |
 | --- | --- | --- | --- |
@@ -83,7 +83,7 @@ python3 "docs/Technical Verification/LabcordParser/Tools/verify_real_world_corpu
 
 ## 3. 숫자·금액 OCR 측정
 
-[현재 측정 JSON](Numeric-OCR-Metrics.json).
+[현재 측정 JSON](../OCR/Numeric-OCR-Metrics.json).
 `DocumentNumericOCRTests`는 원본 대출 계산기 화면의 금액 영역 3개를 육안 대조해
 정답으로 고정하고 위치 기반으로 실제 Vision 결과를 대응한다.
 공백·통화·숫자를 자동 교정하지 않으며 Levenshtein 문자 오류율을 기록한다.
@@ -105,7 +105,7 @@ python3 "docs/Technical Verification/LabcordParser/Tools/verify_real_world_corpu
 
 ## 4. 실기기 검증 계획
 
-[기기별 성능·취소 검증 계획](Device-Performance-Plan.md)에 실행 전제·명령·행렬·
+[기기별 성능·취소 검증 계획](../Performance/Baseline/Device-Performance-Plan.md)에 실행 전제·명령·행렬·
 측정 도구·성공/실패 조건·결과표를 작성했다.
 연결된 iPhone 17은 확인했지만 이 작업에서 앱 설치·실기기 실행은 하지 않았다.
 요청한 네 번째 작업은 계획 작성이며, 실기기 메모리·시간·취소 지연은 미측정이다.

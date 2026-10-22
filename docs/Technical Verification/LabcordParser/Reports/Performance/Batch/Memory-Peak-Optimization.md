@@ -132,8 +132,8 @@ footprint 차이와 일대일로 대응시키거나 누수 해결 증거로 사�
 
 ## 원자료와 재현
 
-- 최종 소스 명세: [45개 파일 해시](Benchmarks/Memory-Peak-After-Source-SHA256.json).
-- 원본 소스 명세: [44개 파일 해시](Benchmarks/Memory-Peak-Before-Source-SHA256.json).
+- 최종 소스 명세: [45개 파일 해시](../../../Benchmarks/Memory-Peak-After-Source-SHA256.json).
+- 원본 소스 명세: [44개 파일 해시](../../../Benchmarks/Memory-Peak-Before-Source-SHA256.json).
 - 원본 번들: `/tmp/issue21-memory-peak-before-final.xcresult`.
 - 후보 번들: `/tmp/issue21-memory-peak-after-final.xcresult`.
 - 원본 VM 진단: `/tmp/issue21-memory-vm2-before.trace`, 24MiB.

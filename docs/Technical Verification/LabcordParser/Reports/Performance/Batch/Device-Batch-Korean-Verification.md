@@ -7,7 +7,7 @@
 
 ## 측정 조건
 
-- [기준 소스 명세](Benchmarks/Before-Source-SHA256.json)의 개선 전 Swift 파일 42개를
+- [기준 소스 명세](../../../Benchmarks/Before-Source-SHA256.json)의 개선 전 Swift 파일 42개를
   `prepare_before_benchmark.py`로 별도 프로젝트에 복원하고 전체 파일 집합·해시를 확인했다.
   현재 작업 트리의 파서를 교체하지 않았다. 개선 전후 테스트 본문·원본 샘플은 동일하다.
 - 세 시나리오를 같은 순서로 한 묶음에 실행하고, 이 묶음을 3회 반복했다.
@@ -27,7 +27,7 @@
 
 ## 원본과 검사 범위
 
-[원본 명세·라이선스](../../../ResearchersTests/Fixtures/RealWorld/LargeScans/Manifest.json).
+[원본 명세·라이선스](../../../../../../ResearchersTests/Fixtures/RealWorld/LargeScans/Manifest.json).
 외부 다운로드나 업로드 없이 이미 보관된 공식 원본 전체를 기기에서 처리했다.
 
 - 한국어 단일: 국립국어연구원 1992 「가나다 전화 자료집」 125쪽, 텍스트 층 없음,
@@ -157,7 +157,7 @@ python3 "docs/Technical Verification/LabcordParser/Tools/summarize_benchmark.py"
   --run before-device=/tmp/issue21-device-before-20261021b.xcresult \
   --run after-device=/tmp/issue21-device-after-20261021b.xcresult \
   --run after-conservative-device=/tmp/issue21-device-memory128-20261021b.xcresult \
-  --output "docs/Technical Verification/LabcordParser/Device-Batch-Korean-Metrics.json"
+  --output "docs/Technical Verification/LabcordParser/Reports/Performance/Batch/Device-Batch-Korean-Metrics.json"
 ```
 
 ## 회귀·빌드·린트

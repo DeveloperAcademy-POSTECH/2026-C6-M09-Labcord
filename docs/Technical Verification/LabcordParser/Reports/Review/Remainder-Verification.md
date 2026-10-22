@@ -1,7 +1,7 @@
 # 잔여 파싱 기능 보완 및 검증
 
 이후 임시 개발 팀 지정으로 실기기 실행을 완료했다. 서명 차단 상태와 이전 숫자 OCR
-설명은 당시 기록이며, 최신 상태는 [실기기 검증](Physical-Device-Verification.md)을 따른다.
+설명은 당시 기록이며, 최신 상태는 [실기기 검증](../Performance/Baseline/Physical-Device-Verification.md)을 따른다.
 
 2026-10-21. 병합 셀·그림 설명·논리 앵커·금액 OCR을 구현하고 계측 테스트를 추가했다.
 기존 변경을 보존했으며 의존성·OS 최소 버전·Swift 언어 모드·서명 설정은 변경하지 않았다.
@@ -67,7 +67,7 @@ xcodebuild test -project Researchers.xcodeproj -scheme Researchers \
   OCR 시작 이벤트 뒤의 지연 요청이며 Vision 내부의 정확한 실행 위치를 보장하지 않는다.
 - 환경을 simulator/physical-device로 명시하고 본문·개인 파일을 첨부하지 않는다.
 
-[실기기 계획](Device-Performance-Plan.md)의 전체 행렬을 수행했다는 뜻은 아니다.
+[실기기 계획](../Performance/Baseline/Device-Performance-Plan.md)의 전체 행렬을 수행했다는 뜻은 아니다.
 반복·표본 메모리·취소 자동 계측을 준비하고 시뮬레이터에서 실제 실행한 범위를 보고한다.
 
 ## 검증 결과
@@ -76,7 +76,7 @@ xcodebuild test -project Researchers.xcodeproj -scheme Researchers \
   그림 중 3개는 표 셀에 있고 하나는 일반 문단에 있다. 처음 셀 그림 2개로 작성한
   기대값은 XML/실제 컨트롤 대조 후 3개로 바로잡았다.
 - 금액 OCR: 기존 1/3에서 **3/3**, 합산 문자 오류율 **2/22에서 0/22**.
-  [원래 측정](Numeric-OCR-Metrics.json)과 [개선 후 측정](Numeric-OCR-Enhanced-Metrics.json)을
+  [원래 측정](../OCR/Numeric-OCR-Metrics.json)과 [개선 후 측정](../OCR/Numeric-OCR-Enhanced-Metrics.json)을
   따로 보존한다. 이 작은 원본의 개선이며 일반 정확도 100% 주장이 아니다.
 - 성능 시험: 100페이지 PDF 5회 모두 페이지 100개·블록 100개 결과 검사 통과.
   호출 시간은 68.126/56.654/46.001/44.534/50.103초. 첫 반복 이후 4회 중앙값
@@ -85,9 +85,9 @@ xcodebuild test -project Researchers.xcodeproj -scheme Researchers \
 - 시뮬레이터 프로세스 physical footprint: baseline **279.71MiB**, 표본 최대
   **316.47MiB**, 마지막 결과 처리 후 **297.83MiB**. 이전 테스트의 캐시·테스트 호스트도
   포함하므로 파서 단독 메모리 또는 실기기 요구량으로 일반화하지 않는다.
-  [성능 수치](Simulator-Performance-Metrics.json).
+  [성능 수치](../Performance/Baseline/Simulator-Performance-Metrics.json).
 - 20프레임 TIFF 취소 요청→반환 **292ms**, 임시 폴더 추가 0개.
-  [취소·정리 수치](Simulator-Cancellation-Metrics.json). 단일 시행이며 실기기 보장치가 아니다.
+  [취소·정리 수치](../Performance/Baseline/Simulator-Cancellation-Metrics.json). 단일 시행이며 실기기 보장치가 아니다.
 - 실기기는 서명 단계에서 차단되어 성능·정확도·취소 결과가 없다.
 
 최초 전체 실행은 84개 중 XML 엔티티 선언 거부 검사 1개가 실패했다. Foundation이

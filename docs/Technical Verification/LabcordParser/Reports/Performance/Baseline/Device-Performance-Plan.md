@@ -1,7 +1,7 @@
 # 실기기 성능·취소 검증 계획
 
 이 문서는 계획 수립 시점의 기록이다. 이후 실기기 실행 시도·계측 결과는
-[잔여 보완 검증](Remainder-Verification.md)을 따른다.
+[잔여 보완 검증](../../Review/Remainder-Verification.md)을 따른다.
 
 ## 범위와 현재 상태
 

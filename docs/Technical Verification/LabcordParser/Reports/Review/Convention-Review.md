@@ -41,7 +41,7 @@ Notion 본문에는 별도의 Swift 들여쓰기·헤더·MARK 세부 규칙이 
 - 이번 변경의 `git diff --check` 통과.
 
 대용량·반복 성능 시나리오는 이번 스타일 검토에서 다시 실행하지 않았다.
-이번 일반 회귀의 제외 목록·서명 실행 방식은 [최대 메모리 검증](Memory-Peak-Optimization.md)의
+이번 일반 회귀의 제외 목록·서명 실행 방식은 [최대 메모리 검증](../Performance/Batch/Memory-Peak-Optimization.md)의
 최종 회귀 명령과 동일하다. 앱 소스가 같으므로 기존 시간·메모리 측정은 과거 실행 기록으로 보존한다.
 
 실행 증거는 로컬 `/tmp/issue21-convention-final.xcresult`,

@@ -32,7 +32,7 @@
 
 ## 한국어 원본과 판정
 
-[원본 명세](../../../ResearchersTests/Fixtures/RealWorld/LargeScans/Manifest.json)의
+[원본 명세](../../../../../../ResearchersTests/Fixtures/RealWorld/LargeScans/Manifest.json)의
 `korean-1992.pdf`: 국립국어연구원, 1992, 「가나다 전화 자료집」.
 **125쪽·3,857,838바이트**의 공식 원본 전체를 변경 없이 사용했다.
 [개별 자료 페이지](https://www.korean.go.kr/front/reportData/reportDataView.do?mn_id=207&report_seq=94)에
@@ -68,8 +68,8 @@ XCTest 재실행마다 프로세스를 다시 띄웠다. OS·파일·Vision의 �
 
 ## 재현과 후속 실기기 명령
 
-개선 전 파서 42개 파일의 SHA-256을 [기준 소스 명세](Benchmarks/Before-Source-SHA256.json)에,
-현재 버전에서 기준 버전으로 돌아가는 패치를 [기준 패치](Benchmarks/restore-before.patch)에 보관했다.
+개선 전 파서 42개 파일의 SHA-256을 [기준 소스 명세](../../../Benchmarks/Before-Source-SHA256.json)에,
+현재 버전에서 기준 버전으로 돌아가는 패치를 [기준 패치](../../../Benchmarks/restore-before.patch)에 보관했다.
 아래 스크립트는 저장소 밖의 **새 경로에만** 프로젝트를 복사하며 현재 작업 트리를 수정하거나
 기존 경로를 덮어쓰지 않는다. 기준 파서 전체 파일 집합·해시를 검사한 뒤 신규 API 전용 테스트만
 사본에서 제외한다. 테스트 샘플과 벤치마크 본문은 동일하다.

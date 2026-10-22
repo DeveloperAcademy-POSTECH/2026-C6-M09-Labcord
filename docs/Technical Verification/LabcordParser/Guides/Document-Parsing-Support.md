@@ -122,10 +122,10 @@ hwp-swift 0.19.0(LGPL 2.1), 기존 전이 의존성 OLEKit 0.3.1(MIT)을 사용�
 ## 검증
 
 20개 파일 형식별 외부 원본 3개씩을 사용하는 테스트는
-[외부 코퍼스 검증](Real-World-Corpus.md)에 별도로 기록한다.
+[외부 코퍼스 검증](../Reports/Corpus/Real-World-Corpus.md)에 별도로 기록한다.
 
-생성 방법과 자산 출처는 [검증 자산 안내](../../../ResearchersTests/Fixtures/README.md),
-실제 검증 결과는 [보완 검증 기록](Completion-Verification.md)에 있다.
+생성 방법과 자산 출처는 [검증 자산 안내](../../../../ResearchersTests/Fixtures/README.md),
+실제 검증 결과는 [보완 검증 기록](../Reports/Review/Completion-Verification.md)에 있다.
 
 ```sh
 xcodebuild test -project Researchers.xcodeproj -scheme Researchers \
@@ -155,10 +155,10 @@ swiftlint lint --strict
   반환하고 나머지 숫자·구분자가 동일하며 신뢰도가 낮아지지 않은 경우만 채택한다.
   원본 문자열은 `DocumentBlock.ocrOriginalText`에 보존한다. 문자열 치환으로
   `$`를 만들어 내지 않으며 모든 숫자 오류를 보정한다는 보장은 없다.
-- 성능·오류 재현과 실기기 실행 상태는 [잔여 보완 검증](Remainder-Verification.md)을 따른다.
+- 성능·오류 재현과 실기기 실행 상태는 [잔여 보완 검증](../Reports/Review/Remainder-Verification.md)을 따른다.
 
 실제 iPhone 17의 최종 88개 테스트·측정값과 임시 서명 방식은
-[실기기 검증](Physical-Device-Verification.md)에 기록했다. 저장소 서명 설정은 변경하지 않았다.
+[실기기 검증](../Reports/Performance/Baseline/Physical-Device-Verification.md)에 기록했다. 저장소 서명 설정은 변경하지 않았다.
 
 ## PDF 병렬 처리와 단계별 시간
 
@@ -221,13 +221,13 @@ PDF 결과의 metrics에는 PDF 처리 경과 시간, 최대 진행 중 페이�
 
 병렬 페이지 시간은 겹치므로 단계 합계가 경과 시간보다 클 수 있다. pdfAwait도 자식 OCR과
 겹치는 부모 대기 시간이다. 단계 합계를 서로 더해 전체 실행 시간으로 해석하지 않는다.
-측정값·성능 비교·검증 명령은 [PDF 병렬 검증](PDF-Parallel-Verification.md)에 기록한다.
+측정값·성능 비교·검증 명령은 [PDF 병렬 검증](../Reports/Performance/PDF/PDF-Parallel-Verification.md)에 기록한다.
 
 실제 204쪽 스캔 원본·42쪽 래스터 전용 입력·7개 혼합 배치의 실기기 검증은
-[대용량 스캔·배치 검증](Large-Scan-Batch-Verification.md)에 별도로 기록한다.
+[대용량 스캔·배치 검증](../Reports/Performance/Batch/Large-Scan-Batch-Verification.md)에 별도로 기록한다.
 
 공용 작업 예산·PNG 메모리 개선과 한국어 실제 스캔 검증의 최신 상태는
-[배치·메모리·한국어 검증](Batch-Memory-Korean-Verification.md)을 따른다.
+[배치·메모리·한국어 검증](../Reports/Performance/Batch/Batch-Memory-Korean-Verification.md)을 따른다.
 
 ## OCR 수명과 최신 검증
 
@@ -236,7 +236,7 @@ Mutex로 보호하고 유휴 세션은 최대 2개만 보관한다. 다른 세�
 실패·취소한 세션은 버린다. 호출이 끝나면 풀을 해제하며 전역 영구 캐시는 두지 않는다.
 
 직전 실기기 버전과 결과 전체 지문을 비교한 최신 메모리 보완·110개 회귀 결과는
-[최대 메모리 분석·개선](Memory-Peak-Optimization.md)을 따른다. 과거 보고서의 다른 실행
+[최대 메모리 분석·개선](../Reports/Performance/Batch/Memory-Peak-Optimization.md)을 따른다. 과거 보고서의 다른 실행
 순서·기준 버전과 최신 수치를 섞어 개선율을 계산하지 않는다.
 
 ## 코드 주석과 측정 기준

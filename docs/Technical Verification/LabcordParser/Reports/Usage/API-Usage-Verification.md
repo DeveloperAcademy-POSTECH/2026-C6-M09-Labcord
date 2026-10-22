@@ -65,8 +65,8 @@ API 예제 5개를 포함해 **일반 회귀 115개 통과·실패 0개**, XCTes
 
 ## 코드와 재현
 
-[실행한 Swift 테스트](../../../ResearchersTests/DocumentParsing/RealWorld/DocumentAPIUsageTests.swift),
-[입력별 수치·지문](API-Usage-Metrics.json), [원본 명세](Real-World-Corpus.md).
+[실행한 Swift 테스트](../../../../../ResearchersTests/DocumentParsing/RealWorld/DocumentAPIUsageTests.swift),
+[입력별 수치·지문](API-Usage-Metrics.json), [원본 명세](../Corpus/Real-World-Corpus.md).
 본문·이미지 바이트를 로그나 수치 JSON에 넣지 않고 개수·경고 코드·해시만 보관했다.
 
 ```sh
@@ -79,7 +79,7 @@ xcodebuild test -project Researchers.xcodeproj -scheme Researchers \
 swiftlint lint --strict
 ```
 
-전체 일반 회귀는 [기존 회귀 명령](Memory-Peak-Optimization.md)의 제외 목록으로 실행했다.
+전체 일반 회귀는 [기존 회귀 명령](../Performance/Batch/Memory-Peak-Optimization.md)의 제외 목록으로 실행했다.
 새 스크립트·의존성을 추가하지 않았으며 앱 파서 45개 소스 해시는 기존 측정 버전과 같다.
 strict lint는 101개 파일·위반 0개다.
 

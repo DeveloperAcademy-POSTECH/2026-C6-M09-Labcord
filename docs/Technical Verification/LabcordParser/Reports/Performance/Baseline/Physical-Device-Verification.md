@@ -47,9 +47,9 @@ xcodebuild test -project Researchers.xcodeproj -scheme Researchers \
 4. CPU/자동 실행과 전처리 비교 테스트 2개를 추가했다. 운영 OCR의 실행 장치를 CPU로
    강제하지 않는다. 새 의존성 없이 Vision/CoreML 시스템 API로 비교했다.
 
-[금액 결과](Device-Numeric-OCR-Metrics.json),
-[실행 장치 비교](Device-OCR-Compute-Comparison.json),
-[밝기 비교](Device-OCR-Contrast-Comparison.json).
+[금액 결과](../../OCR/Device-Numeric-OCR-Metrics.json),
+[실행 장치 비교](../../OCR/Device-OCR-Compute-Comparison.json),
+[밝기 비교](../../OCR/Device-OCR-Contrast-Comparison.json).
 
 ## 최종 실기기 결과
 

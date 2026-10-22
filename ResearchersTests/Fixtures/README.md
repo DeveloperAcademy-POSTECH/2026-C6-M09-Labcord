@@ -4,7 +4,7 @@
 그림은 시스템 글꼴로 직접 만든 `IMAGE OCR MARKER 123` PNG이다. 글꼴 파일은 포함하지 않는다.
 
 `RealWorld/`에는 별도로 수집한 외부 원본 60개가 있다. 형식별 목록·기대 결과·검증 방법은
-[외부 코퍼스 안내](../../docs/Technical%20Verification/LabcordParser/Real-World-Corpus.md), 출처와 라이선스 고지는
+[외부 코퍼스 안내](../../docs/Technical%20Verification/LabcordParser/Reports/Corpus/Real-World-Corpus.md), 출처와 라이선스 고지는
 [외부 자산 고지](../../docs/Technical%20Verification/LabcordParser/ThirdPartyFixtures/README.md)에 기록한다.
 
 | 파일 | 생성 방법 | 검증 대상 |

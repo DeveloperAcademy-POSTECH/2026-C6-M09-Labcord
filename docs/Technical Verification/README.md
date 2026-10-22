@@ -17,8 +17,5 @@
 
 ## 문서 파싱 검증 자료
 
-- [LabcordParser API·지원 범위](LabcordParser/Document-Parsing-Support.md)
-- [실기기 메모리 분석·비교](LabcordParser/Memory-Peak-Optimization.md)
-- [업로드 구성](LabcordParser/Publication-Contents.md)
-
+[LabcordParser 안내](LabcordParser/README.md)에서 API 사용법, 형식별 지원과 검증 결과를 볼 수 있다.
 재현 스크립트는 `LabcordParser/Tools/`에 있다.

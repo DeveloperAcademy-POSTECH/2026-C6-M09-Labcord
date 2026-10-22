@@ -1,7 +1,7 @@
 # PDF 병렬 처리와 단계별 시간 검증
 
 이 문서는 공용 배치 예산 도입 전의 기록이다. 최신 구현과 측정·미완료 항목은
-[배치·메모리·한국어 검증](Batch-Memory-Korean-Verification.md)을 따른다.
+[배치·메모리·한국어 검증](../Batch/Batch-Memory-Korean-Verification.md)을 따른다.
 
 2026-10-21. iOS 27.0·Swift 언어 모드 5.0과 기존 의존성을 유지했다.
 PDF 전체 페이지 OCR·삽입 이미지 OCR·원본 텍스트·표·PNG 보존을 그대로 수행한다.
@@ -31,7 +31,7 @@ flowchart LR
   OCR이 먼저 끝난 페이지에 예산이 먼저 배정되는 문제를 막는다.
 - 문단·표·이미지 블록, 위치·경고를 원본 페이지 순서로 조합한다. 진행률은 완료된 페이지
   개수 기준으로 단조 증가한다. 취소 시 자식에도 전파하지만 동기 Vision 내부 즉시 중단은 보장하지 않는다.
-- PDF 결과에 metrics를 추가했다. 공개 API는 [지원 문서](Document-Parsing-Support.md)의
+- PDF 결과에 metrics를 추가했다. 공개 API는 [지원 문서](../../../Guides/Document-Parsing-Support.md)의
   PDF 병렬 처리 절을 따른다. 단계별 시간은 문서 내용을 로그에 남기지 않고 수치로 반환한다.
 - 기존 HWP 이미지 확장 메서드 3개의 actor 격리를 명시적 nonisolated로 정리했다.
   동기 비 UI 파싱 코드의 MainActor 호출 경고를 제거했으며 언어 모드를 바꾸지 않았다.
@@ -173,4 +173,4 @@ swiftlint lint --strict
 ## 실제 대용량 입력의 후속 검증
 
 위 표의 자체 생성 문서와 구분하여 실제 USGS 스캔 원본 204쪽 및 혼합 배치를 검증했다.
-결과·권리·원본 해시·실행 명령은 [대용량 검증](Large-Scan-Batch-Verification.md)을 따른다.
+결과·권리·원본 해시·실행 명령은 [대용량 검증](../Batch/Large-Scan-Batch-Verification.md)을 따른다.
