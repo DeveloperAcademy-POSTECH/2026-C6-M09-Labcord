@@ -24,6 +24,7 @@ final class WatchBatteryClient {
         guard let session = connectivity.session else { return }
 
         if sendRequestIfReady(using: session) {
+            cancelRequest()
             return
         }
 
@@ -31,14 +32,18 @@ final class WatchBatteryClient {
 
         activationObserverID = connectivity.addStateObserver { [weak self] in
             guard let self,
+                  self.activationObserverID != nil,
                   let session = self.connectivity.session,
                   self.sendRequestIfReady(using: session) else { return }
 
-            if let id = self.activationObserverID {
-                self.connectivity.removeStateObserver(id)
-                self.activationObserverID = nil
-            }
+            self.cancelRequest()
         }
+    }
+
+    func cancelRequest() {
+        guard let id = activationObserverID else { return }
+        connectivity.removeStateObserver(id)
+        activationObserverID = nil
     }
 
     @discardableResult

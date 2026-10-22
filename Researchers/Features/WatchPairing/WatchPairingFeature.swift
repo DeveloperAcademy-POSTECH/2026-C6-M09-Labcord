@@ -93,6 +93,9 @@ struct WatchPairingFeature {
                 return .none
 
             case .onDisappear:
+                watchBatteryClient.cancelRequest()
+                watchDeviceNameClient.cancelRequest()
+
                 return .merge(
                     .cancel(id: CancelID.pairing),
                     .cancel(id: CancelID.battery),
