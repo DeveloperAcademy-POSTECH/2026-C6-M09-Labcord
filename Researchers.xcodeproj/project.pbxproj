@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8E1069213089B22000BF375F /* DeviceKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8E1069203089B22000BF375F /* DeviceKit */; };
 		8E2E27333084877E0043EEB3 /* ResearchWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8E98D1AD30884D1500E68666 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 8E98D1AC30884D1500E68666 /* ComposableArchitecture */; };
 		8E98D1AF30884D4F00E68666 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 8E98D1AE30884D4F00E68666 /* ComposableArchitecture */; };
@@ -67,6 +68,7 @@
 			files = (
 				8E98D1AF30884D4F00E68666 /* ComposableArchitecture in Frameworks */,
 				8EDAFE5B3088B39D00103B36 /* Shared in Frameworks */,
+				8E1069213089B22000BF375F /* DeviceKit in Frameworks */,
 			);
 		};
 /* End PBXFrameworksBuildPhase section */
@@ -144,6 +146,7 @@
 			packageProductDependencies = (
 				8E98D1AE30884D4F00E68666 /* ComposableArchitecture */,
 				8EDAFE5A3088B39D00103B36 /* Shared */,
+				8E1069203089B22000BF375F /* DeviceKit */,
 			);
 			productName = "ResearchWatch Watch App";
 			productReference = 8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */;
@@ -179,6 +182,7 @@
 			packageReferences = (
 				8E3F0AEF3085C6E200F857AB /* XCRemoteSwiftPackageReference "swift-composable-architecture" */,
 				8EDAFE573088B37F00103B36 /* XCLocalSwiftPackageReference "Packages/Shared" */,
+				8E10691F3089B22000BF375F /* XCRemoteSwiftPackageReference "DeviceKit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8E0691163080743D0081547E /* Products */;
@@ -512,6 +516,14 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		8E10691F3089B22000BF375F /* XCRemoteSwiftPackageReference "DeviceKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/devicekit/DeviceKit";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.9.0;
+			};
+		};
 		8E3F0AEF3085C6E200F857AB /* XCRemoteSwiftPackageReference "swift-composable-architecture" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/pointfreeco/swift-composable-architecture";
@@ -523,6 +535,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		8E1069203089B22000BF375F /* DeviceKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E10691F3089B22000BF375F /* XCRemoteSwiftPackageReference "DeviceKit" */;
+			productName = DeviceKit;
+		};
 		8E98D1AC30884D1500E68666 /* ComposableArchitecture */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8E3F0AEF3085C6E200F857AB /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
