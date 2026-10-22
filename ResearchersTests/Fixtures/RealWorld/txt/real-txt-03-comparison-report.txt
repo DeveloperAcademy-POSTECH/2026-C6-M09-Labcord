@@ -1,0 +1,14 @@
+=== Language Detection Comparison Report ===
+
+Test sentences: 1,446,486 total  (264,096 short <= 50 chars, 1,182,390 full)
+Shared languages: 123  (1,146,734 sentences)
+
+Model heap (approx):
+  Bigram:  ~2.0 MB
+  OpenNLP: ~79.1 MB
+
+Strict accuracy (exact language match):
+Detector               All       Short        Full      Time(ms)      Sent/sec
+----------------------------------------------------------------------------------
+Bigram             94.81%     92.96%     95.22%       2,932 ms     493,344
+OpenNLP            71.10%     64.22%     72.63%      11,180 ms     129,382

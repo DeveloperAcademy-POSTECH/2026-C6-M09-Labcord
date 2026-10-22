@@ -1,0 +1,699 @@
+[
+  {
+    "id": "real-csv-01", "sha256": "37a7bb0f1306ccbf1a974f26855474ac986066db5f10bac9ff1894ab88d5d3b0",
+    "textAnchors": ["Record Number","Square of the Record Number"], "orderedText": [], "cells": [], "sourceTextRuns": [],
+    "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-csv-02", "sha256": "dda474221217313f8b3d03b141bb1a86ef5e84961be56446a060a74ab8c0cff8", "textAnchors": ["HSSF","Handler"],
+    "orderedText": [], "cells": [], "sourceTextRuns": [],
+    "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님 Local excerpt: Retain complete source CSV records 1, 2, 3, 4, 5, 6, 7, 8; serialize CSV quoting with LF line endings.; original source SHA-256: cc16a2413d0ef5489d5253167452afa372475c431603c499e4ad3a0b95a280b2."
+  },
+  {
+    "id": "real-csv-03", "sha256": "5d9a167e9806cd3aca268d583d880e07aea35e35fa112e207dff9d6c0879595d",
+    "textAnchors": ["Handler NoScratchpad","XSSF"], "orderedText": [], "cells": [], "sourceTextRuns": [],
+    "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님 Local excerpt: Retain complete source CSV records 1, 2, 3, 4, 5, 6, 7, 8; serialize CSV quoting with LF line endings.; original source SHA-256: 1f83a93b545d3f81bc65a9072bac59fd9ffe1fbb69611d46e170cb461f8dcf44."
+  },
+  {
+    "id": "real-doc-01", "sha256": "717585c0a88f20862c86220163dd03da87cd743970354c6b29add32725f2e833",
+    "textAnchors": ["I am a test document"], "orderedText": [], "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-doc-02", "sha256": "67d7fe8e0555c16516354498a5935f24eeef90beb5efbf526f93a1d6c734da43",
+    "textAnchors": ["This text is below the table"],
+    "orderedText": ["This is a Word document","Cell 1,1","Cell 1,2","Cell 1,3","Cell 2,1","Cell 2,2","Cell 2,3"],
+    "cells": [
+      {"row": 1,"column": 1,"text": "Cell 1,1"},
+      {"row": 1,"column": 2,"text": "Cell 1,2"},
+      {"row": 1,"column": 3,"text": "Cell 1,3"},
+      {"row": 2,"column": 1,"text": "Cell 2,1"},
+      {"row": 2,"column": 2,"text": "Cell 2,2"},
+      {"row": 2,"column": 3,"text": "Cell 2,3"}
+    ],
+    "sourceTextRuns": [], "evidence": "원문에서 명시한 2행 3열 및 셀 라벨"
+  },
+  {
+    "id": "real-doc-03", "sha256": "84a68678fc525e763beabab7e79240e2bbf4cd6b7766eed3364681d38fed2457", "textAnchors": [], "orderedText": [],
+    "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-docx-01", "sha256": "ea2c517bd7be4628887eb97f630334b93b894f4522d2c0adae263e602d76df92",
+    "textAnchors": ["I am a test document"], "orderedText": [], "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-docx-02", "sha256": "69666500a7dd00600da64cc7676f8939c84df8804967ec2fc75567fad41f21a9", "textAnchors": ["Pole","slove"],
+    "orderedText": [], "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-docx-03", "sha256": "c1eecbca7de9f99e21c677e1d5b045eaa1d5a442eff4c82f0cbe9af93726a070",
+    "textAnchors": ["Sheet with various pictures"], "orderedText": [], "cells": [], "sourceTextRuns": [],
+    "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-heic-01", "sha256": "f40b97f76a281c56e90b502762ef66ff9d34ea61696c8350257b5dc6a8797e0d", "textAnchors": [], "orderedText": [],
+    "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-heic-02", "sha256": "7f8b363e4936c0666a25f64f3a92fda10bd8e5453be4592530b65a55dd98f3f2", "textAnchors": [], "orderedText": [],
+    "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-heic-03", "sha256": "4e5f21ca074c4c981c0f9d94786263fc374dd8412a643355a01bed62fad43d80", "textAnchors": [], "orderedText": [],
+    "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-html-01", "sha256": "6729aeeceac7417319c6da00525c7863ff90794a60b300fbf6c74df028b98743", "textAnchors": ["Apache Tika"],
+    "orderedText": [], "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-html-02", "sha256": "c97a3dd5de2f42255d8d36e156060c732941bb0aa36b7cff2dd3ac2a5492c703",
+    "textAnchors": ["some content","some other content"], "orderedText": [], "cells": [], "sourceTextRuns": [],
+    "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-html-03", "sha256": "eaa04e14c52095a821391f0d5e2dd7f18d37961fb0b15c5a6973c5fcb12f0bf5",
+    "textAnchors": ["This is a sample text"], "orderedText": [], "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "hwp-01-noori", "sha256": "d4b9f0d59bafa4b550db142ef3b50f570ffee7cdcbd9a290eac26779172f262a",
+    "textAnchors": ["누리","보도일시","담당부서","거대공공연구정책과","과학기술정보통신부"], "orderedText": [],
+    "cells": [
+      {"row": 1,"column": 1,"text": "보도일시","rowSpan": 1,"columnSpan": 1},
+      {"row": 1,"column": 2,"text": "2018. 9. 4.(화) 조간\n(온라인 9. 3. \n12:00\n)\n부터 보도해 주시기 바랍니다.","rowSpan": 1,"columnSpan": 3},
+      {"row": 2,"column": 1,"text": "배포일시","rowSpan": 1,"columnSpan": 1},
+      {"row": 2,"column": 2,"text": "2018. 9. 3.(월) 09:00","rowSpan": 1,"columnSpan": 1},
+      {"row": 2,"column": 3,"text": "담당부서","rowSpan": 1,"columnSpan": 1},
+      {"row": 2,"column": 4,"text": "거대공공연구정책과","rowSpan": 1,"columnSpan": 1},
+      {"row": 3,"column": 1,"text": "담당과장","rowSpan": 1,"columnSpan": 1},
+      {"row": 3,"column": 2,"text": "장인숙(02-2110-2430)","rowSpan": 1,"columnSpan": 1},
+      {"row": 3,"column": 3,"text": "담 당 자","rowSpan": 1,"columnSpan": 1},
+      {"row": 3,"column": 4,"text": "용찬재 사무관(02-2110-2428)","rowSpan": 1,"columnSpan": 1},
+      {
+        "row": 1, "column": 1,
+        "text": "우리가 독자 개발하여 최초 발사하는 한국형발사체,\n국민이 정한 그 이름은 ｢누리｣\n“세상”의 옛말로, 우주까지 확장된 새로운 세상을 연다는 의미 -\n명칭공모전에 1만건 이상 응모, 뜨거운 관심 보여 -",
+        "rowSpan": 1, "columnSpan": 1
+      },
+      {
+        "row": 1, "column": 2, "text": "이 자료에 대하여 더욱 자세한 내용을 원하시면\n과학기술정보통신부 용찬재 사무관(☎ 02-2110-2428)에게 연락주시기 바랍니다.", "rowSpan": 1,
+        "columnSpan": 1
+      },
+      {"row": 1,"column": 1,"text": "붙임","rowSpan": 1,"columnSpan": 1},
+      {"row": 1,"column": 3,"text": "한국형발사체(누리호)와 시험발사체 비교","rowSpan": 1,"columnSpan": 1},
+      {"row": 1,"column": 1,"text": "구 분","rowSpan": 1,"columnSpan": 1},
+      {"row": 1,"column": 2,"text": "한국형발사체(누리호)","rowSpan": 1,"columnSpan": 1},
+      {"row": 1,"column": 3,"text": "시험발사체","rowSpan": 1,"columnSpan": 1},
+      {"row": 2,"column": 1,"text": "형 상","rowSpan": 1,"columnSpan": 1},
+      {"row": 3,"column": 1,"text": "목 적","rowSpan": 1,"columnSpan": 1},
+      {"row": 3,"column": 2,"text": "1.5톤급 실용위성을\n \n지구저궤도\n(600~800km)\n에 투입","rowSpan": 1,"columnSpan": 1},
+      {"row": 3,"column": 3,"text": "한국형발사체 75톤급 엔진의 비행성능 검증","rowSpan": 1,"columnSpan": 1},
+      {"row": 4,"column": 1,"text": "총 길이","rowSpan": 1,"columnSpan": 1},
+      {"row": 4,"column": 2,"text": "47.2 m","rowSpan": 1,"columnSpan": 1},
+      {"row": 4,"column": 3,"text": "25.8 m","rowSpan": 1,"columnSpan": 1},
+      {"row": 5,"column": 1,"text": "최대 직경","rowSpan": 1,"columnSpan": 1},
+      {"row": 5,"column": 2,"text": "3.5 m","rowSpan": 1,"columnSpan": 1},
+      {"row": 5,"column": 3,"text": "2.6 m","rowSpan": 1,"columnSpan": 1},
+      {"row": 6,"column": 1,"text": "이륙 중량","rowSpan": 1,"columnSpan": 1},
+      {"row": 6,"column": 2,"text": "200 톤","rowSpan": 1,"columnSpan": 1},
+      {"row": 6,"column": 3,"text": "52.1 톤","rowSpan": 1,"columnSpan": 1},
+      {"row": 7,"column": 1,"text": "탑재체 중량","rowSpan": 1,"columnSpan": 1},
+      {"row": 7,"column": 2,"text": "1.5 톤","rowSpan": 1,"columnSpan": 1},
+      {"row": 7,"column": 3,"text": "-","rowSpan": 1,"columnSpan": 1},
+      {"row": 8,"column": 1,"text": "단 수","rowSpan": 1,"columnSpan": 1},
+      {"row": 8,"column": 2,"text": "3단","rowSpan": 1,"columnSpan": 1},
+      {"row": 8,"column": 3,"text": "1단","rowSpan": 1,"columnSpan": 1}
+    ],
+    "sourceTextRuns": [
+      "보도일시",
+      "2018. 9. 4.(화) 조간",
+      "(온라인 9. 3. ",
+      "12:00",
+      ")",
+      "부터 보도해 주시기 바랍니다.",
+      "배포일시",
+      "2018. 9. 3.(월) 09:00",
+      "담당부서",
+      "거대공공연구정책과",
+      "담당과장",
+      "장인숙(02-2110-2430)",
+      "담 당 자",
+      " 용찬재 사무관(02-2110-2428)",
+      "우리가 독자 개발하여 최초 발사하는 한국형발사체,",
+      "국민이 정한 그 이름은 ｢누리｣",
+      "“세상”의 옛말로, 우주까지 확장된 새로운 세상을 연다는 의미 -",
+      "명칭공모전에 1만건 이상 응모, 뜨거운 관심 보여 -",
+      "□ ",
+      "과학기술정보통신부",
+      "(장관 유영민, 이하 ‘과기정통부’)",
+      "는 우리나라 최초로 ",
+      "순수 우리기술로",
+      " 개발 중인 ",
+      "한국형발사체",
+      "(KSLV-2)",
+      "의 새로운 이름",
+      "으로",
+      "“누리”가 선정",
+      "되었다고 밝혔다.",
+      "  o 한국형발사체는 1.5톤급 실용위성을 지구 저궤도(600km~800km)",
+      "까지 쏘아 올릴 수 있는 3단형 우주발사체로, 연간 130여개 기관",
+      "이",
+      " 참여하여 2021년 발사를 목표로 개발하고 있다",
+      ".",
+      "  o 올해 10월에는 한국형발사체의 핵심부품인 75톤 액체엔진의 비행성능을 확인하기 위해 시험발사체를 발사할 예정이다.",
+      "□ 과기정통부는 한국항공우주연구원",
+      "(원장 임철호, 이하 ‘항우연’)",
+      "과 함께 ",
+      "그간 별도의 명칭 없이 ‘한국형발사체’라 불려온 우리 발사체의 새로",
+      "운 이름을 선정하기 위해 ",
+      "대국민 명칭 공모전을 실시",
+      "하였다.",
+      "  o",
+      " 4월 27일부터 5월 31일까지 실시한 동 명칭 공모에는",
+      " 약 6,300여명의 ",
+      "국민이 참여하여 총 10,000건 이상의 응모작을 제출",
+      "하여 뜨거운",
+      " 관심을 보였다. ",
+      "  o 명칭선정절차는 제출된 응모작에 대해 ",
+      "네이미스트, 카피라이터, 국어교사 등 외부 전문가가",
+      " 주제와의 적합성, 상징성, 참신성, 발음 및 기억의 용의성 등을 기준으로 ",
+      "후보작을 선별",
+      "한 후,",
+      "  o ",
+      "발사체 개발에 직접 참여",
+      "하고 있는 연구자, 산업체 관계자 약 ",
+      "400명의 선호도 조사를 통해 최종 선정",
+      "하는 절차로 진행되었다.",
+      "□ 이러한",
+      " 절차를 거쳐 한국형발사체의 ",
+      "새로운 명칭은 ‘누리’로 결정",
+      "되",
+      "었으며, 동 명칭은 앞으로 우리나라 독자 발사체인",
+      " ‘한국형발사체’의",
+      " 공식 명칭으로 사용",
+      "될 예정이다.",
+      "  o 동 명칭을 제출한 경상대학교 에너지기계공학과 백승엽 학생은 ",
+      "‘",
+      "누리’는 ‘세상’의 옛말",
+      "로 ",
+      "우주로까지 확장된 새로운 세상을 ",
+      "연다는",
+      "의미",
+      "로, 우리 손으로 만든 발사체로 온 우주를 누비고 미래",
+      " 발전을 ",
+      "누리길 희망하는 마음을 담았다고 밝혔다.",
+      "  o ",
+      "백승엽학생에게는 오는 9월 7일(금)에 과기정통부 장관상과 함께 소정의",
+      " 상금이 수여될 예정이다. ",
+      "□ ",
+      "과기정통부 거대공공연구정책관은 “명칭 공모전을 통해 우리국민의 ",
+      "우주에 대한 높은 관심을 확인",
+      "할 수 있었다”며 “새로운 이름에 걸맞게 무한한 가능성을 갖고 있는 ",
+      "우주공간을 우리 발사체로 직접 개척할 수 있도록 최선을 다할 것",
+      "” 이라고 밝혔다.",
+      "이 자료에 대하여 더욱 자세한 내용을 원하시면",
+      "과학기술정보통신부 용찬재 사무관(☎ 02-2110-2428)에게 연락주시기 바랍니다.",
+      "붙임",
+      " 한국형발사체(누리호)와 시험발사체 비교",
+      "구 분",
+      "한국형발사체(누리호)",
+      "시험발사체",
+      "형 상",
+      "목 적",
+      "1.5톤급 실용위성을",
+      "지구저궤도",
+      "(600~800km)",
+      "에 투입",
+      "한국형발사체 75톤급 엔진의 비행성능 검증",
+      "총 길이",
+      "47.2 m",
+      "25.8 m",
+      "최대 직경",
+      "3.5 m",
+      "2.6 m",
+      "이륙 중량",
+      "200 톤",
+      "52.1 톤",
+      "탑재체 중량",
+      "1.5 톤",
+      "-",
+      "단 수 ",
+      "3단",
+      "1단"
+    ],
+    "evidence": "동일 누리 보도자료의 HWPX XML 대조; HWP 바이너리 전체 조판 정답은 아님", "exactImages": 4
+  },
+  {
+    "id": "hwp-02-space-width", "sha256": "cd95d67cb1751d0d404e149d21c9cf985ac0700afb78559aba2a42e7e4cca8c9",
+    "textAnchors": ["#249 space-width","가나 ab cd 12 #1","ab cd 가나 다라 #2","가나 ab cd #5"], "orderedText": [], "cells": [],
+    "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "hwp-03-gonggongnuri", "sha256": "464eb24cc987bf3b268bed2bef475d5a6fa26b16f2761c48a886ee50b3961e8d", "textAnchors": ["공공누리"],
+    "orderedText": [], "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "hwpx-01-space-width", "sha256": "d4f41d455ba24641429625aae9fdadc83861346e34f205a93551537dd42288c5",
+    "textAnchors": ["#249 space-width","가나 ab cd 12 #1","ab cd 가나 다라 #2","ab cd ef #7"], "orderedText": [], "cells": [],
+    "sourceTextRuns": [
+      "#249 space-width",
+      "가나 ab cd 12",
+      " #1",
+      "ab cd 가나 다라",
+      " #2",
+      " ab  cd",
+      " #3",
+      "ab cd 가나",
+      " #4",
+      "가나 ab cd",
+      " #5",
+      "가나",
+      " ab",
+      " #6",
+      "abcdef",
+      " #7"
+    ],
+    "evidence": "원본 HWPX section XML의 hp:t 및 cellAddr; 공백만 정규화"
+  },
+  {
+    "id": "hwpx-02-noori", "sha256": "b70f72cf0e33cc1ef582158e21f0c2bddc3400ad73029c1d31d0f8effaffb8c7",
+    "textAnchors": ["누리","보도일시","거대공공연구정책과","과학기술정보통신부","조간"], "orderedText": [],
+    "cells": [
+      {"row": 1,"column": 1,"text": "보도일시","rowSpan": 1,"columnSpan": 1},
+      {"row": 1,"column": 2,"text": "2018. 9. 4.(화) 조간\n(온라인 9. 3. \n12:00\n)\n부터 보도해 주시기 바랍니다.","rowSpan": 1,"columnSpan": 3},
+      {"row": 2,"column": 1,"text": "배포일시","rowSpan": 1,"columnSpan": 1},
+      {"row": 2,"column": 2,"text": "2018. 9. 3.(월) 09:00","rowSpan": 1,"columnSpan": 1},
+      {"row": 2,"column": 3,"text": "담당부서","rowSpan": 1,"columnSpan": 1},
+      {"row": 2,"column": 4,"text": "거대공공연구정책과","rowSpan": 1,"columnSpan": 1},
+      {"row": 3,"column": 1,"text": "담당과장","rowSpan": 1,"columnSpan": 1},
+      {"row": 3,"column": 2,"text": "장인숙(02-2110-2430)","rowSpan": 1,"columnSpan": 1},
+      {"row": 3,"column": 3,"text": "담 당 자","rowSpan": 1,"columnSpan": 1},
+      {"row": 3,"column": 4,"text": "용찬재 사무관(02-2110-2428)","rowSpan": 1,"columnSpan": 1},
+      {
+        "row": 1, "column": 1,
+        "text": "우리가 독자 개발하여 최초 발사하는 한국형발사체,\n국민이 정한 그 이름은 ｢누리｣\n“세상”의 옛말로, 우주까지 확장된 새로운 세상을 연다는 의미 -\n명칭공모전에 1만건 이상 응모, 뜨거운 관심 보여 -",
+        "rowSpan": 1, "columnSpan": 1
+      },
+      {
+        "row": 1, "column": 2, "text": "이 자료에 대하여 더욱 자세한 내용을 원하시면\n과학기술정보통신부 용찬재 사무관(☎ 02-2110-2428)에게 연락주시기 바랍니다.", "rowSpan": 1,
+        "columnSpan": 1
+      },
+      {"row": 1,"column": 1,"text": "붙임","rowSpan": 1,"columnSpan": 1},
+      {"row": 1,"column": 3,"text": "한국형발사체(누리호)와 시험발사체 비교","rowSpan": 1,"columnSpan": 1},
+      {"row": 1,"column": 1,"text": "구 분","rowSpan": 1,"columnSpan": 1},
+      {"row": 1,"column": 2,"text": "한국형발사체(누리호)","rowSpan": 1,"columnSpan": 1},
+      {"row": 1,"column": 3,"text": "시험발사체","rowSpan": 1,"columnSpan": 1},
+      {"row": 2,"column": 1,"text": "형 상","rowSpan": 1,"columnSpan": 1},
+      {"row": 3,"column": 1,"text": "목 적","rowSpan": 1,"columnSpan": 1},
+      {"row": 3,"column": 2,"text": "1.5톤급 실용위성을\n \n지구저궤도\n(600~800km)\n에 투입","rowSpan": 1,"columnSpan": 1},
+      {"row": 3,"column": 3,"text": "한국형발사체 75톤급 엔진의 비행성능 검증","rowSpan": 1,"columnSpan": 1},
+      {"row": 4,"column": 1,"text": "총 길이","rowSpan": 1,"columnSpan": 1},
+      {"row": 4,"column": 2,"text": "47.2 m","rowSpan": 1,"columnSpan": 1},
+      {"row": 4,"column": 3,"text": "25.8 m","rowSpan": 1,"columnSpan": 1},
+      {"row": 5,"column": 1,"text": "최대 직경","rowSpan": 1,"columnSpan": 1},
+      {"row": 5,"column": 2,"text": "3.5 m","rowSpan": 1,"columnSpan": 1},
+      {"row": 5,"column": 3,"text": "2.6 m","rowSpan": 1,"columnSpan": 1},
+      {"row": 6,"column": 1,"text": "이륙 중량","rowSpan": 1,"columnSpan": 1},
+      {"row": 6,"column": 2,"text": "200 톤","rowSpan": 1,"columnSpan": 1},
+      {"row": 6,"column": 3,"text": "52.1 톤","rowSpan": 1,"columnSpan": 1},
+      {"row": 7,"column": 1,"text": "탑재체 중량","rowSpan": 1,"columnSpan": 1},
+      {"row": 7,"column": 2,"text": "1.5 톤","rowSpan": 1,"columnSpan": 1},
+      {"row": 7,"column": 3,"text": "-","rowSpan": 1,"columnSpan": 1},
+      {"row": 8,"column": 1,"text": "단 수","rowSpan": 1,"columnSpan": 1},
+      {"row": 8,"column": 2,"text": "3단","rowSpan": 1,"columnSpan": 1},
+      {"row": 8,"column": 3,"text": "1단","rowSpan": 1,"columnSpan": 1}
+    ],
+    "sourceTextRuns": [
+      "보도일시",
+      "2018. 9. 4.(화) 조간",
+      "(온라인 9. 3. ",
+      "12:00",
+      ")",
+      "부터 보도해 주시기 바랍니다.",
+      "배포일시",
+      "2018. 9. 3.(월) 09:00",
+      "담당부서",
+      "거대공공연구정책과",
+      "담당과장",
+      "장인숙(02-2110-2430)",
+      "담 당 자",
+      " 용찬재 사무관(02-2110-2428)",
+      "우리가 독자 개발하여 최초 발사하는 한국형발사체,",
+      "국민이 정한 그 이름은 ｢누리｣",
+      "“세상”의 옛말로, 우주까지 확장된 새로운 세상을 연다는 의미 -",
+      "명칭공모전에 1만건 이상 응모, 뜨거운 관심 보여 -",
+      "□ ",
+      "과학기술정보통신부",
+      "(장관 유영민, 이하 ‘과기정통부’)",
+      "는 우리나라 최초로 ",
+      "순수 우리기술로",
+      " 개발 중인 ",
+      "한국형발사체",
+      "(KSLV-2)",
+      "의 새로운 이름",
+      "으로",
+      "“누리”가 선정",
+      "되었다고 밝혔다.",
+      "  o 한국형발사체는 1.5톤급 실용위성을 지구 저궤도(600km~800km)",
+      "까지 쏘아 올릴 수 있는 3단형 우주발사체로, 연간 130여개 기관",
+      "이",
+      " 참여하여 2021년 발사를 목표로 개발하고 있다",
+      ".",
+      "  o 올해 10월에는 한국형발사체의 핵심부품인 75톤 액체엔진의 비행성능을 확인하기 위해 시험발사체를 발사할 예정이다.",
+      "□ 과기정통부는 한국항공우주연구원",
+      "(원장 임철호, 이하 ‘항우연’)",
+      "과 함께 ",
+      "그간 별도의 명칭 없이 ‘한국형발사체’라 불려온 우리 발사체의 새로",
+      "운 이름을 선정하기 위해 ",
+      "대국민 명칭 공모전을 실시",
+      "하였다.",
+      "  o",
+      " 4월 27일부터 5월 31일까지 실시한 동 명칭 공모에는",
+      " 약 6,300여명의 ",
+      "국민이 참여하여 총 10,000건 이상의 응모작을 제출",
+      "하여 뜨거운",
+      " 관심을 보였다. ",
+      "  o 명칭선정절차는 제출된 응모작에 대해 ",
+      "네이미스트, 카피라이터, 국어교사 등 외부 전문가가",
+      " 주제와의 적합성, 상징성, 참신성, 발음 및 기억의 용의성 등을 기준으로 ",
+      "후보작을 선별",
+      "한 후,",
+      "  o ",
+      "발사체 개발에 직접 참여",
+      "하고 있는 연구자, 산업체 관계자 약 ",
+      "400명의 선호도 조사를 통해 최종 선정",
+      "하는 절차로 진행되었다.",
+      "□ 이러한",
+      " 절차를 거쳐 한국형발사체의 ",
+      "새로운 명칭은 ‘누리’로 결정",
+      "되",
+      "었으며, 동 명칭은 앞으로 우리나라 독자 발사체인",
+      " ‘한국형발사체’의",
+      " 공식 명칭으로 사용",
+      "될 예정이다.",
+      "  o 동 명칭을 제출한 경상대학교 에너지기계공학과 백승엽 학생은 ",
+      "‘",
+      "누리’는 ‘세상’의 옛말",
+      "로 ",
+      "우주로까지 확장된 새로운 세상을 ",
+      "연다는",
+      "의미",
+      "로, 우리 손으로 만든 발사체로 온 우주를 누비고 미래",
+      " 발전을 ",
+      "누리길 희망하는 마음을 담았다고 밝혔다.",
+      "  o ",
+      "백승엽학생에게는 오는 9월 7일(금)에 과기정통부 장관상과 함께 소정의",
+      " 상금이 수여될 예정이다. ",
+      "□ ",
+      "과기정통부 거대공공연구정책관은 “명칭 공모전을 통해 우리국민의 ",
+      "우주에 대한 높은 관심을 확인",
+      "할 수 있었다”며 “새로운 이름에 걸맞게 무한한 가능성을 갖고 있는 ",
+      "우주공간을 우리 발사체로 직접 개척할 수 있도록 최선을 다할 것",
+      "” 이라고 밝혔다.",
+      "이 자료에 대하여 더욱 자세한 내용을 원하시면",
+      "과학기술정보통신부 용찬재 사무관(☎ 02-2110-2428)에게 연락주시기 바랍니다.",
+      "붙임",
+      " 한국형발사체(누리호)와 시험발사체 비교",
+      "구 분",
+      "한국형발사체(누리호)",
+      "시험발사체",
+      "형 상",
+      "목 적",
+      "1.5톤급 실용위성을",
+      "지구저궤도",
+      "(600~800km)",
+      "에 투입",
+      "한국형발사체 75톤급 엔진의 비행성능 검증",
+      "총 길이",
+      "47.2 m",
+      "25.8 m",
+      "최대 직경",
+      "3.5 m",
+      "2.6 m",
+      "이륙 중량",
+      "200 톤",
+      "52.1 톤",
+      "탑재체 중량",
+      "1.5 톤",
+      "-",
+      "단 수 ",
+      "3단",
+      "1단"
+    ],
+    "evidence": "원본 HWPX section XML의 hp:t 및 cellAddr; 공백만 정규화", "exactImages": 4
+  },
+  {
+    "id": "hwpx-03-column", "sha256": "91e8cf2062e9f7b2401a046bbf64bba086db76f2e09dfdeed9f32251993a0957",
+    "textAnchors": ["Lorem ipsum dolor sit amet","consectetur adipiscing elit","Ut enim ad minim veniam"], "orderedText": [], "cells": [],
+    "sourceTextRuns": [
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+    ],
+    "evidence": "원본 HWPX section XML의 hp:t 및 cellAddr; 공백만 정규화"
+  },
+  {
+    "id": "real-jpeg-01", "sha256": "1724d82608851b23c69d099b157dab55ace62c0eb01088ca4ffc7cacb7056778", "textAnchors": ["Marketing"],
+    "orderedText": [], "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-jpeg-02", "sha256": "184e23d02a5b77a512c590ce36fecde2be5855ff8d7dac716f046e6c81994d93", "textAnchors": ["Weekly Timesheet"],
+    "orderedText": [], "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-jpeg-03", "sha256": "5c0ad9efa1dda1443dd4427f8e2460c53bd4f6c95a02406e1b947b953d1b3ef5",
+    "textAnchors": ["Simple Loan Calculator"], "orderedText": [], "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-json-01", "sha256": "4f0e64c85c3c2c8507946201c57788b89f122e45e9d3a24b8c2f43ae21423428",
+    "textAnchors": ["content-handler-factory","TEXT"], "orderedText": [], "cells": [], "sourceTextRuns": [],
+    "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님 Local reformatted: Compact JSON whitespace only; preserve every key, value, array entry, and array order.; original source SHA-256: 464f9519928aef193063054b5eeaea01dc65603ba3917d8260ce4215ebc7e118."
+  },
+  {
+    "id": "real-json-02", "sha256": "d681713bf6240e110f5732673fdf667216f7b1667ade8135b60fbc90629431f0",
+    "textAnchors": ["iso19115:access-constraints"], "orderedText": [], "cells": [], "sourceTextRuns": [],
+    "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님 Local excerpt: Retain JSON array entries 1, 2, 3, 30.; original source SHA-256: e841c665ff1d954346bba0f7437ac85960f5e6c6366696be9e09ae87ee8ac3ec."
+  },
+  {
+    "id": "real-json-03", "sha256": "ef1f4586392763d55c32e95498ba48a4aefe28ef6339ce74dda5903d65b0ef66", "textAnchors": ["application/pdf"],
+    "orderedText": [], "cells": [], "sourceTextRuns": [],
+    "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님 Local reformatted: Compact JSON whitespace only; preserve every key, value, array entry, and array order.; original source SHA-256: 243930715ec6a92ff8f8d9e5f328740dd223a9505abaeada41b9461dedbc9b93."
+  },
+  {
+    "id": "real-markdown-01", "sha256": "47108268624320605d099cba85eab2a0a6e3b92ec188bbd8ec47815dc417a802",
+    "textAnchors": ["Welcome to Apache Tika"], "orderedText": [], "cells": [], "sourceTextRuns": [],
+    "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님 Local excerpt: Retain the original prefix before '## Using Tika from AI Agents', including any inline license notice and complete code fences.; original source SHA-256: 4d960b82f0f6521dd1a98d3bcb676d8aa596ddce841e520253738617538db4f3."
+  },
+  {
+    "id": "real-markdown-02", "sha256": "7a88ad6f72b8db97ce99d0831ba0344340b852750132ba765c9c2685d2b91195",
+    "textAnchors": ["tika-metadata-schema"], "orderedText": [], "cells": [], "sourceTextRuns": [],
+    "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님 Local excerpt: Retain the original prefix before '## `metadata-keys.json`', including any inline license notice and complete code fences.; original source SHA-256: 5c622431c9c69df479f9ba54f2b9fb3d4092d8fd6c43adbbbdbed6769b31e7f5."
+  },
+  {
+    "id": "real-markdown-03", "sha256": "389e4533ca8c9d20aad28615312c5ae69124f496d83487f08583ab8a5b2554b6",
+    "textAnchors": ["Apache Tika Server"], "orderedText": [], "cells": [], "sourceTextRuns": [],
+    "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님 Local excerpt: Retain the original prefix before 'Running via Docker', including any inline license notice and complete code fences.; original source SHA-256: 5851f9c1719a4f3b665500dc0c992f46e50a376977d47e4e41aa5dda36fefdf4."
+  },
+  {
+    "id": "real-pdf-01", "sha256": "8035bc3f748d8b97b8a9978bd812197bf40cf2b294a7e9b30e39d7167ddc720e",
+    "textAnchors": ["Apache Tika","Content Analysis Toolkit"], "orderedText": [], "cells": [], "sourceTextRuns": [],
+    "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-pdf-02", "sha256": "ca4e1851095ea410a7c5dbbfa064fef7c4b36da3ef0d49bddf29619e88b301de",
+    "textAnchors": ["Happy New Year","2003"], "orderedText": [], "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-pdf-03", "sha256": "b61a9f3ebbd959518c1b07e27ff89f8530f4671824ac2b6071d051d0d2a300d5",
+    "textAnchors": ["Left column line 1","Right column line 2"],
+    "orderedText": ["Left column line 1","Right column line 1","Left column line 2","Right column line 2"], "cells": [],
+    "sourceTextRuns": [], "evidence": "원본 PDF 행 기준 위→아래·왼쪽→오른쪽 순서; 단 기준 읽기 정책과 구분"
+  },
+  {
+    "id": "real-png-01", "sha256": "c0a18e27f3213057ff050ed453577a8291c6a030af1a2b66d8f6ed4c82fd9afe",
+    "textAnchors": ["Memory","Read Files"], "orderedText": [], "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-png-02", "sha256": "c32ebd117ffafa9ff7465632df139b549a7d70f7f7649b055b6938e8489aad02", "textAnchors": [], "orderedText": [],
+    "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-png-03", "sha256": "b8ef9dee62e853432869f6960ed628e21a2f4a8126d5ca5aa4745de05823e7e3",
+    "textAnchors": ["Attachment apartments"], "orderedText": [], "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-ppt-01", "sha256": "64275a6685b8f267827178037dcc59de927475e56385725916f4c6039c7ce7f6",
+    "textAnchors": ["Title of the first slide"], "orderedText": [], "cells": [], "sourceTextRuns": [],
+    "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-ppt-02", "sha256": "5318e8486f47c7d9e838eaa4edfe385ba27d7d0ce145364792df53488430e98c", "textAnchors": [], "orderedText": [],
+    "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님", "exactImages": 2
+  },
+  {
+    "id": "real-ppt-03", "sha256": "307cb62b279b1b1014058f26866d905e1f80ac649ecedeb63604371d807233dd", "textAnchors": ["First page title"],
+    "orderedText": [], "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-pptx-01", "sha256": "bfb4b2f07c9233afd2f32aa5781d849d0c7d225bf03721a10becf487b481d828",
+    "textAnchors": ["Title of the first slide"], "orderedText": [], "cells": [], "sourceTextRuns": [],
+    "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-pptx-02", "sha256": "fb0245f28e32e5137da6f9c2a9c35c5a8694a71c35d675ab671a595c1b93d72d", "textAnchors": ["Text 1","Text 16"],
+    "orderedText": [
+      "Text 1",
+      "Text 2",
+      "Text 3",
+      "Text 4",
+      "Text 5",
+      "Text 6",
+      "Text 7",
+      "Text 8",
+      "Text 9",
+      "Text 10",
+      "Text 11",
+      "Text 12",
+      "Text 13",
+      "Text 14",
+      "Text 15",
+      "Text 16",
+      "Text 1",
+      "Text 2",
+      "Text 3",
+      "Text 4",
+      "Text 5",
+      "Text 6",
+      "Text 7",
+      "Text 8",
+      "Text 9",
+      "Text 10",
+      "Text 11",
+      "Text 12",
+      "Text 13",
+      "Text 14",
+      "Text 15",
+      "Text 16"
+    ],
+    "cells": [
+      {"row": 1,"column": 1,"text": "Text 1"},
+      {"row": 1,"column": 2,"text": "Text 2"},
+      {"row": 1,"column": 3,"text": "Text 3"},
+      {"row": 1,"column": 4,"text": "Text 4"},
+      {"row": 2,"column": 1,"text": "Text 5"},
+      {"row": 2,"column": 2,"text": "Text 6"},
+      {"row": 2,"column": 3,"text": "Text 7"},
+      {"row": 2,"column": 4,"text": "Text 8"},
+      {"row": 3,"column": 1,"text": "Text 9"},
+      {"row": 3,"column": 2,"text": "Text 10"},
+      {"row": 3,"column": 3,"text": "Text 11"},
+      {"row": 3,"column": 4,"text": "Text 12"},
+      {"row": 4,"column": 1,"text": "Text 13"},
+      {"row": 4,"column": 2,"text": "Text 14"},
+      {"row": 4,"column": 3,"text": "Text 15"},
+      {"row": 4,"column": 4,"text": "Text 16"},
+      {"row": 1,"column": 1,"text": "Text 1"},
+      {"row": 1,"column": 2,"text": "Text 2"},
+      {"row": 1,"column": 3,"text": "Text 3"},
+      {"row": 1,"column": 4,"text": "Text 4"},
+      {"row": 2,"column": 1,"text": "Text 5"},
+      {"row": 2,"column": 2,"text": "Text 6"},
+      {"row": 2,"column": 3,"text": "Text 7"},
+      {"row": 2,"column": 4,"text": "Text 8"},
+      {"row": 3,"column": 1,"text": "Text 9"},
+      {"row": 3,"column": 2,"text": "Text 10"},
+      {"row": 3,"column": 3,"text": "Text 11"},
+      {"row": 3,"column": 4,"text": "Text 12"},
+      {"row": 4,"column": 1,"text": "Text 13"},
+      {"row": 4,"column": 2,"text": "Text 14"},
+      {"row": 4,"column": 3,"text": "Text 15"},
+      {"row": 4,"column": 4,"text": "Text 16"}
+    ],
+    "sourceTextRuns": [], "evidence": "원본 PPTX slide XML의 표 행·셀·텍스트"
+  },
+  {
+    "id": "real-pptx-03", "sha256": "54ae7677fd2813a815160cc72bd8960a4e482690dfc369b392868521c9b61549", "textAnchors": ["First page title"],
+    "orderedText": [], "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-rtf-01", "sha256": "e57b9bfba4d11d1b8b15dd347ed514beab04ccb54146a882e9398ca843afb43d",
+    "textAnchors": ["A short ordered list","A short unordered list"], "orderedText": [], "cells": [], "sourceTextRuns": [],
+    "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-rtf-02", "sha256": "99dc05c1bcbddf00e3421b04fabd6014c62194ea4fe82b67b25045667a90669b",
+    "textAnchors": ["ゾルゲと尾崎","古書店で処刑記録見つかる"], "orderedText": [], "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-rtf-03", "sha256": "72e21862e0d72073f6c0678edb7af8a9b82d4b1e785705a3f6ba589fb1961152", "textAnchors": ["Duck: cat:"],
+    "orderedText": [], "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-tiff-01", "sha256": "04c72da5af0ec9e3f2e96d70cf674f0c42255aeacd3fd23243010a7c208d11bc", "textAnchors": [], "orderedText": [],
+    "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-tiff-02", "sha256": "3e425e4682be75c2a0ebb2f4168f9782df3da1580e7e72b00140b228110fdd90",
+    "textAnchors": ["Multipage","TIFF","Example","Page 1","Page 2"], "orderedText": [], "cells": [], "sourceTextRuns": [],
+    "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-tiff-03", "sha256": "9006e4b5615beb93d5ff99a79ed62551a523ec8b0e2f881b074589d28c47b119", "textAnchors": [], "orderedText": [],
+    "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-txt-01", "sha256": "63938ca12a4b47454ce9b522d6e83377f51d62bf8fb938a6aefc1a7e7b1dd691", "textAnchors": ["Release 4.2.0"],
+    "orderedText": [], "cells": [], "sourceTextRuns": [],
+    "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님 Local excerpt: Retain the release heading and first three complete change-list paragraphs.; original source SHA-256: 1f39675f7bd76da1efb88ee4c4256d0e525c9ae9facab9aa64a705397f961dd5."
+  },
+  {
+    "id": "real-txt-02", "sha256": "3f2326fbaae834a9237b7763781e22fa6437f57b56dd11d0b2fa0e41f9ac50c6",
+    "textAnchors": ["English: ABC Category","não contabilize"], "orderedText": [], "cells": [], "sourceTextRuns": [],
+    "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-txt-03", "sha256": "349699a667344b31dbbffba14bd7b9226cfb012786e3e1502699a495623e414b",
+    "textAnchors": ["Language Detection Comparison Report"], "orderedText": [], "cells": [], "sourceTextRuns": [],
+    "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님 Local excerpt: Retain the report heading, input counts, memory summary, and first accuracy table.; original source SHA-256: e7e5995cf5ffb10f1b1111829cac13cc80e4fb05d5d1f70a62ca6a5e53ba7a1a."
+  },
+  {
+    "id": "real-xls-01", "sha256": "271c06d988bfe033afdc69733c5ba09e95658ebff571bfca189b567e678631dc",
+    "textAnchors": ["Principal","Rate","Term"], "orderedText": [], "cells": [], "sourceTextRuns": [],
+    "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-xls-02", "sha256": "ed34698a6c9bd269acb80874e820edd8cdbd246a3f939544a44ebeb3d2cb888c", "textAnchors": ["Bedrooms"],
+    "orderedText": [], "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-xls-03", "sha256": "33f08ed32503437615af7ca8d5413ffa22df33ceb6765c51e200039f71452f6a", "textAnchors": [], "orderedText": [],
+    "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-xlsx-01", "sha256": "3b17486d4015b124423d38966a0aa88757b2177087941a905704b634204aed4e",
+    "textAnchors": ["Tokyo, Japan","Population"], "orderedText": [], "cells": [], "sourceTextRuns": [],
+    "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-xlsx-02", "sha256": "094b2facaf85870a3230a3b097b82b4bedd7659583e34977d196d04be3211367", "textAnchors": ["FULL RATE PRSI"],
+    "orderedText": [], "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-xlsx-03", "sha256": "f0ef1d61c9f3d8b27b18a876b8e24676314c6450ed64a725a7bfaa603fdd67e3", "textAnchors": ["Field1"],
+    "orderedText": [], "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  },
+  {
+    "id": "real-xml-01", "sha256": "52a489f3d60c8400503c3edbcabf6a46c7dfbcb535a7309369bd4053cfd0eb51", "textAnchors": ["org.apache.tika"],
+    "orderedText": [], "cells": [], "sourceTextRuns": [],
+    "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님 Local excerpt: Retain XML project nodes modelVersion, parent, artifactId, packaging, name, modules, description; limit modules/dependencies to first two entries; preserve the original license preamble and namespaces.; original source SHA-256: fe94e1dad85f8107fcda48016a2c1010db4aaf16c50e0a10923f7edd32381b1e."
+  },
+  {
+    "id": "real-xml-02", "sha256": "05099f8fb8daf4e1a6538528bd7192c51300196d8d153dd6b668f654a7f4a95a", "textAnchors": ["tika-core"],
+    "orderedText": [], "cells": [], "sourceTextRuns": [],
+    "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님 Local excerpt: Retain XML project nodes modelVersion, parent, artifactId, packaging, name, dependencies, properties, description; limit modules/dependencies to first two entries; preserve the original license preamble and namespaces.; original source SHA-256: f4714510f7768fb53259430313fdecac3f4a87c2df5b04782251e5fe37393e07."
+  },
+  {
+    "id": "real-xml-03", "sha256": "54df44e623cfc9423f7907da9ebeb8777f6c68e07bbcd5b866329c8e3fd4cdcb", "textAnchors": [], "orderedText": [],
+    "cells": [], "sourceTextRuns": [], "evidence": "기존 원본 대조 문구; 전체 문서 정답은 아님"
+  }
+]

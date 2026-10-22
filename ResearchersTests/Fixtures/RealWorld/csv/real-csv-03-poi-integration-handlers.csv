@@ -1,0 +1,8 @@
+﻿File Part,Handler NoScratchpad,Handler
+.xls,HSSF,,,
+.xlsx,XSSF,,,
+.xlsm,XSSF,,,
+.xltx,XSSF,,,
+.xlsb,XSSFB,,,
+document/52117.doc,HPSF,OWPF,,
+document/Bug49933.doc,HPSF,OWPF,,
