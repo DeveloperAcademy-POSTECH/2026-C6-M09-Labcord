@@ -30,8 +30,9 @@ public final class WatchBatteryClient {
     }
 
     public func batteryStream() -> AsyncStream<Float?> {
-        WatchResponseStream.make(connectivity: connectivity) { userInfo -> Float?? in
-            guard let number = userInfo[WatchBatteryMessage.levelKey] as? NSNumber else {
+        WatchResponseStream.make(connectivity: connectivity) { [requestSender] userInfo -> Float?? in
+            guard requestSender.matchesResponse(userInfo),
+                  let number = userInfo[WatchBatteryMessage.levelKey] as? NSNumber else {
                 return nil
             }
 
