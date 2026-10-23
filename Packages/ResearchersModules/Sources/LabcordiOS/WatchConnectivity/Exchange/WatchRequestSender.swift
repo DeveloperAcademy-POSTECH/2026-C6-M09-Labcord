@@ -13,6 +13,7 @@ final class WatchRequestSender {
     private let connectivity: WatchConnectivitySession
     private let requestKey: String
     private var activationObserverID: UUID?
+    private var currentRequestID: String?
 
     init(connectivity: WatchConnectivitySession, requestKey: String) {
         self.connectivity = connectivity
@@ -20,12 +21,13 @@ final class WatchRequestSender {
     }
 
     func request() {
+        currentRequestID = UUID().uuidString
         connectivity.activate()
 
         guard let session = connectivity.session else { return }
 
         if sendRequestIfReady(using: session) {
-            cancel()
+            stopObservingActivation()
             return
         }
 
@@ -37,11 +39,21 @@ final class WatchRequestSender {
                   let session = self.connectivity.session,
                   self.sendRequestIfReady(using: session) else { return }
 
-            self.cancel()
+            self.stopObservingActivation()
         }
     }
 
     func cancel() {
+        currentRequestID = nil
+        stopObservingActivation()
+    }
+
+    func matchesResponse(_ userInfo: [String: Any]) -> Bool {
+        guard let currentRequestID else { return false }
+        return userInfo[WatchRequestMessage.requestIDKey] as? String == currentRequestID
+    }
+
+    private func stopObservingActivation() {
         guard let id = activationObserverID else { return }
         connectivity.removeStateObserver(id)
         activationObserverID = nil
@@ -52,7 +64,11 @@ final class WatchRequestSender {
               session.isPaired,
               session.isWatchAppInstalled else { return false }
 
-        session.transferUserInfo([requestKey: true])
+        guard let currentRequestID else { return false }
+        session.transferUserInfo([
+            requestKey: true,
+            WatchRequestMessage.requestIDKey: currentRequestID
+        ])
         return true
     }
 }
