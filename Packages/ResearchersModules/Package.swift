@@ -23,8 +23,14 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/pointfreeco/swift-composable-architecture", from: "1.26.2"),
-        .package(url: "https://github.com/devicekit/DeviceKit", from: "5.9.0")
+        .package(
+            url: "https://github.com/pointfreeco/swift-composable-architecture",
+            from: "1.26.2"
+        ),
+        .package(
+            url: "https://github.com/devicekit/DeviceKit",
+            from: "5.9.0"
+        )
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.

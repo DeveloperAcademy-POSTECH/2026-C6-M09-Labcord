@@ -38,7 +38,8 @@ public enum Typography {
     public static let title3Bold = title3.weight(.bold)
 
     public static let headline = TypographyStyle(
-        font: .custom("PretendardVariable-Regular", size: 17, relativeTo: .headline).weight(.semibold),
+        font: .custom("PretendardVariable-Regular", size: 17, relativeTo: .headline)
+            .weight(.semibold),
         lineHeight: .exact(points: 22),
         letterSpacing: -0.43
     )
