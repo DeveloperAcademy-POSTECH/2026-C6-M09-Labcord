@@ -9,6 +9,7 @@ import Foundation
 
 private struct UserInfoDelivery: @unchecked Sendable {
     let userInfo: [String: Any]
+    let observers: [([String: Any]) -> Void]
     let completion: () -> Void
 }
 
@@ -36,14 +37,18 @@ public final class WatchConnectivityObserverStore: @unchecked Sendable {
         _ userInfo: [String: Any],
         completion: @escaping () -> Void = {}
     ) {
-        let delivery = UserInfoDelivery(userInfo: userInfo, completion: completion)
+        lock.lock()
+        let observers = Array(userInfoObservers.values)
+        lock.unlock()
 
-        DispatchQueue.main.async { [self, delivery] in
-            self.lock.lock()
-            let observers = Array(self.userInfoObservers.values)
-            self.lock.unlock()
+        let delivery = UserInfoDelivery(
+            userInfo: userInfo,
+            observers: observers,
+            completion: completion
+        )
 
-            observers.forEach { $0(delivery.userInfo) }
+        DispatchQueue.main.async { [delivery] in
+            delivery.observers.forEach { $0(delivery.userInfo) }
             delivery.completion()
         }
     }
