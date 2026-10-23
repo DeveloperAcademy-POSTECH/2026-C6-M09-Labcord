@@ -31,8 +31,9 @@ public final class WatchDeviceNameClient {
     }
 
     public func deviceNameStream() -> AsyncStream<String> {
-        WatchResponseStream.make(connectivity: connectivity) { userInfo in
-            guard let name = userInfo[WatchDeviceNameMessage.nameKey] as? String,
+        WatchResponseStream.make(connectivity: connectivity) { [requestSender] userInfo in
+            guard requestSender.matchesResponse(userInfo),
+                  let name = userInfo[WatchDeviceNameMessage.nameKey] as? String,
                   !name.isEmpty else { return nil }
             return name
         }
