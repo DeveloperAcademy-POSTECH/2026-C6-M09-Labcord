@@ -29,7 +29,12 @@ final class WatchRequestResponder {
 
         observerID = connectivity.addUserInfoObserver { [self] userInfo in
             guard userInfo[requestKey] as? Bool == true else { return }
-            connectivity.transferUserInfo(response())
+
+            var responseInfo = response()
+            if let requestID = userInfo[WatchRequestMessage.requestIDKey] as? String {
+                responseInfo[WatchRequestMessage.requestIDKey] = requestID
+            }
+            connectivity.transferUserInfo(responseInfo)
         }
     }
 }
