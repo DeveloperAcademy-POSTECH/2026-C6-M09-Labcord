@@ -7,7 +7,7 @@
 
 import ComposableArchitecture
 import Foundation
-import Shared
+import LabcordShared
 import WatchConnectivity
 
 final class WatchBatteryClient {

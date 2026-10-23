@@ -1,7 +1,7 @@
 import ComposableArchitecture
 import DeviceKit
 import Foundation
-import Shared
+import LabcordShared
 import WatchKit
 
 final class WatchDeviceNameClient {
