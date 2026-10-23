@@ -7,13 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		8E1069213089B22000BF375F /* DeviceKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8E1069203089B22000BF375F /* DeviceKit */; };
 		8E1069BA308A776B00BF375F /* LabcordKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8E1069B9308A776B00BF375F /* LabcordKit */; };
 		8E1069BC308A7AAD00BF375F /* LabcordKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8E1069BB308A7AAD00BF375F /* LabcordKit */; };
-		A10C00103000000000000001 /* LabcordiOS in Frameworks */ = {isa = PBXBuildFile; productRef = A10C00103000000000000002 /* LabcordiOS */; };
 		8E2E27333084877E0043EEB3 /* ResearchWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8E98D1AD30884D1500E68666 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 8E98D1AC30884D1500E68666 /* ComposableArchitecture */; };
 		8E98D1AF30884D4F00E68666 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 8E98D1AE30884D4F00E68666 /* ComposableArchitecture */; };
+		A10C00103000000000000001 /* LabcordiOS in Frameworks */ = {isa = PBXBuildFile; productRef = A10C00103000000000000002 /* LabcordiOS */; };
+		A10C00103000000000000003 /* LabcordWatchOS in Frameworks */ = {isa = PBXBuildFile; productRef = A10C00103000000000000004 /* LabcordWatchOS */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -70,7 +70,7 @@
 			files = (
 				8E98D1AF30884D4F00E68666 /* ComposableArchitecture in Frameworks */,
 				8E1069BA308A776B00BF375F /* LabcordKit in Frameworks */,
-				8E1069213089B22000BF375F /* DeviceKit in Frameworks */,
+				A10C00103000000000000003 /* LabcordWatchOS in Frameworks */,
 			);
 		};
 /* End PBXFrameworksBuildPhase section */
@@ -148,8 +148,8 @@
 			name = "ResearchWatch Watch App";
 			packageProductDependencies = (
 				8E98D1AE30884D4F00E68666 /* ComposableArchitecture */,
-				8E1069203089B22000BF375F /* DeviceKit */,
 				8E1069B9308A776B00BF375F /* LabcordKit */,
+				A10C00103000000000000004 /* LabcordWatchOS */,
 			);
 			productName = "ResearchWatch Watch App";
 			productReference = 8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */;
@@ -184,7 +184,6 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				8E3F0AEF3085C6E200F857AB /* XCRemoteSwiftPackageReference "swift-composable-architecture" */,
-				8E10691F3089B22000BF375F /* XCRemoteSwiftPackageReference "DeviceKit" */,
 				8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -519,14 +518,6 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		8E10691F3089B22000BF375F /* XCRemoteSwiftPackageReference "DeviceKit" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/devicekit/DeviceKit";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 5.9.0;
-			};
-		};
 		8E3F0AEF3085C6E200F857AB /* XCRemoteSwiftPackageReference "swift-composable-architecture" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/pointfreeco/swift-composable-architecture";
@@ -538,11 +529,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		8E1069203089B22000BF375F /* DeviceKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8E10691F3089B22000BF375F /* XCRemoteSwiftPackageReference "DeviceKit" */;
-			productName = DeviceKit;
-		};
 		8E1069B9308A776B00BF375F /* LabcordKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */;
@@ -553,11 +539,6 @@
 			package = 8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */;
 			productName = LabcordKit;
 		};
-		A10C00103000000000000002 /* LabcordiOS */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */;
-			productName = LabcordiOS;
-		};
 		8E98D1AC30884D1500E68666 /* ComposableArchitecture */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8E3F0AEF3085C6E200F857AB /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
@@ -567,6 +548,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8E3F0AEF3085C6E200F857AB /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
 			productName = ComposableArchitecture;
+		};
+		A10C00103000000000000002 /* LabcordiOS */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */;
+			productName = LabcordiOS;
+		};
+		A10C00103000000000000004 /* LabcordWatchOS */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */;
+			productName = LabcordWatchOS;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

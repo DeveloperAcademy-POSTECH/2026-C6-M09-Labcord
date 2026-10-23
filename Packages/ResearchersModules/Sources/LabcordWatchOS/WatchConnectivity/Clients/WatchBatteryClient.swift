@@ -1,6 +1,6 @@
 //
 //  WatchBatteryClient.swift
-//  ResearchWatch Watch App
+//  labcord-package-swift
 //
 //  Created by 정홍섭 on 10/21/26.
 //
@@ -10,7 +10,7 @@ import Foundation
 import LabcordShared
 import WatchKit
 
-final class WatchBatteryClient {
+public final class WatchBatteryClient {
     private let connectivity: WatchConnectivitySession
     private var observerID: UUID?
 
@@ -18,7 +18,7 @@ final class WatchBatteryClient {
         self.connectivity = connectivity
     }
 
-    func start() {
+    public func start() {
         guard observerID == nil else { return }
 
         // The session keeps this handler alive for background launches.
@@ -43,7 +43,7 @@ final class WatchBatteryClient {
 }
 
 extension WatchBatteryClient: DependencyKey {
-    static var liveValue: WatchBatteryClient {
+    public static var liveValue: WatchBatteryClient {
         @Dependency(\.watchConnectivitySession) var connectivity
 
         return WatchBatteryClient(connectivity: connectivity)
@@ -51,7 +51,7 @@ extension WatchBatteryClient: DependencyKey {
 }
 
 extension DependencyValues {
-    var watchBatteryClient: WatchBatteryClient {
+    public var watchBatteryClient: WatchBatteryClient {
         get { self[WatchBatteryClient.self] }
         set { self[WatchBatteryClient.self] = newValue }
     }

@@ -1,6 +1,6 @@
 //
 //  WatchConnectivitySession.swift
-//  ResearchWatch Watch App
+//  labcord-package-swift
 //
 //  Created by 정홍섭 on 10/21/26.
 //
@@ -9,7 +9,7 @@ import ComposableArchitecture
 import Foundation
 import WatchConnectivity
 
-final class WatchConnectivitySession: NSObject, WCSessionDelegate {
+public final class WatchConnectivitySession: NSObject, WCSessionDelegate {
     private let deliveryLock = NSLock()
     private var handlingUserInfoCount = 0
     private var lastHandledUserInfoAt: Date?
@@ -61,13 +61,13 @@ final class WatchConnectivitySession: NSObject, WCSessionDelegate {
         }
     }
 
-    func session(
+    public func session(
         _ session: WCSession,
         activationDidCompleteWith state: WCSessionActivationState,
         error: Error?
     ) {}
 
-    func session(
+    public func session(
         _ session: WCSession,
         didReceiveUserInfo userInfo: [String: Any]
     ) {
@@ -89,7 +89,7 @@ final class WatchConnectivitySession: NSObject, WCSessionDelegate {
         }
     }
 
-    func waitForPendingUserInfo() async {
+    public func waitForPendingUserInfo() async {
         activate()
         let start = Date()
         let deadline = start.addingTimeInterval(5)
@@ -115,11 +115,11 @@ final class WatchConnectivitySession: NSObject, WCSessionDelegate {
 }
 
 extension WatchConnectivitySession: DependencyKey {
-    static let liveValue = WatchConnectivitySession()
+    public static let liveValue = WatchConnectivitySession()
 }
 
 extension DependencyValues {
-    var watchConnectivitySession: WatchConnectivitySession {
+    public var watchConnectivitySession: WatchConnectivitySession {
         get { self[WatchConnectivitySession.self] }
         set { self[WatchConnectivitySession.self] = newValue }
     }
