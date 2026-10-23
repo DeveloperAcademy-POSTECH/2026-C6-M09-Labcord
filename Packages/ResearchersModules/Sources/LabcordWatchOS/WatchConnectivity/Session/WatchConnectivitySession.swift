@@ -7,13 +7,14 @@
 
 import ComposableArchitecture
 import Foundation
+import LabcordShared
 import WatchConnectivity
 
-public final class WatchConnectivitySession: NSObject, WCSessionDelegate {
+public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionManaging {
     private let deliveryLock = NSLock()
     private var handlingUserInfoCount = 0
     private var lastHandledUserInfoAt: Date?
-    private var userInfoObservers: [UUID: ([String: Any]) -> Void] = [:]
+    public let observerStore = WatchConnectivityObserverStore()
 
     private func deliveryState(since start: Date) -> (isHandling: Bool, handledRecently: Bool) {
         deliveryLock.lock()
@@ -22,43 +23,6 @@ public final class WatchConnectivitySession: NSObject, WCSessionDelegate {
             handlingUserInfoCount > 0,
             lastHandledUserInfoAt.map { $0 >= start.addingTimeInterval(-1) } ?? false
         )
-    }
-
-    var session: WCSession? {
-        WCSession.isSupported() ? WCSession.default : nil
-    }
-
-    @discardableResult
-    func addUserInfoObserver(_ observer: @escaping ([String: Any]) -> Void) -> UUID {
-        let id = UUID()
-
-        deliveryLock.lock()
-        userInfoObservers[id] = observer
-        deliveryLock.unlock()
-
-        activate()
-        return id
-    }
-
-    func removeUserInfoObserver(_ id: UUID) {
-        deliveryLock.lock()
-        userInfoObservers.removeValue(forKey: id)
-        deliveryLock.unlock()
-    }
-
-    func transferUserInfo(_ userInfo: [String: Any]) {
-        guard let session, session.activationState == .activated else { return }
-        session.transferUserInfo(userInfo)
-    }
-
-    func activate() {
-        guard let session else { return }
-
-        session.delegate = self
-
-        if session.activationState == .notActivated {
-            session.activate()
-        }
     }
 
     public func session(
@@ -75,13 +39,7 @@ public final class WatchConnectivitySession: NSObject, WCSessionDelegate {
         handlingUserInfoCount += 1
         deliveryLock.unlock()
 
-        DispatchQueue.main.async {
-            self.deliveryLock.lock()
-            let observers = Array(self.userInfoObservers.values)
-            self.deliveryLock.unlock()
-
-            observers.forEach { $0(userInfo) }
-
+        observerStore.deliverUserInfo(userInfo) {
             self.deliveryLock.lock()
             self.handlingUserInfoCount -= 1
             self.lastHandledUserInfoAt = Date()

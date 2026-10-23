@@ -1,36 +1,32 @@
+//
+//  WatchDeviceNameClient.swift
+//  labcord-package-swift
+//
+//  Created by 정홍섭 on 10/21/26.
+//
+
 import ComposableArchitecture
 import DeviceKit
 import Foundation
 import LabcordShared
-import WatchKit
 
 public final class WatchDeviceNameClient {
-    private let connectivity: WatchConnectivitySession
-    private var observerID: UUID?
+    private let responder: WatchRequestResponder
 
     init(connectivity: WatchConnectivitySession) {
-        self.connectivity = connectivity
-    }
+        self.responder = WatchRequestResponder(
+            connectivity: connectivity,
+            requestKey: WatchDeviceNameMessage.requestKey
+        ) {
+            let modelName = Device.realDevice(from: .current).description
+                .replacingOccurrences(of: #"\d+mm$"#, with: "", options: .regularExpression)
 
-    public func start() {
-        guard observerID == nil else { return }
-
-        observerID = connectivity.addUserInfoObserver { [self] userInfo in
-            guard userInfo[WatchDeviceNameMessage.requestKey] as? Bool == true else {
-                return
-            }
-
-            sendDeviceName()
+            return [WatchDeviceNameMessage.nameKey: modelName]
         }
     }
 
-    private func sendDeviceName() {
-        let modelName = Device.realDevice(from: .current).description
-            .replacingOccurrences(of: #"\d+mm$"#, with: "", options: .regularExpression )
-
-        connectivity.transferUserInfo([
-            WatchDeviceNameMessage.nameKey: modelName
-        ])
+    public func start() {
+        responder.start()
     }
 }
 

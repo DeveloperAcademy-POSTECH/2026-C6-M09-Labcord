@@ -5,40 +5,28 @@
 //  Created by 정홍섭 on 10/21/26.
 //
 
+#if os(watchOS)
 import ComposableArchitecture
 import Foundation
 import LabcordShared
 import WatchKit
 
 public final class WatchBatteryClient {
-    private let connectivity: WatchConnectivitySession
-    private var observerID: UUID?
+    private let responder: WatchRequestResponder
 
     init(connectivity: WatchConnectivitySession) {
-        self.connectivity = connectivity
-    }
-
-    public func start() {
-        guard observerID == nil else { return }
-
-        // The session keeps this handler alive for background launches.
-        observerID = connectivity.addUserInfoObserver { [self] userInfo in
-            guard userInfo[WatchBatteryMessage.requestKey] as? Bool == true else {
-                return
-            }
-
-            sendBatteryLevel()
+        self.responder = WatchRequestResponder(
+            connectivity: connectivity,
+            requestKey: WatchBatteryMessage.requestKey
+        ) {
+            let device = WKInterfaceDevice.current()
+            device.isBatteryMonitoringEnabled = true
+            return [WatchBatteryMessage.levelKey: NSNumber(value: device.batteryLevel)]
         }
     }
 
-    private func sendBatteryLevel() {
-        let device = WKInterfaceDevice.current()
-        device.isBatteryMonitoringEnabled = true
-        let level = device.batteryLevel
-
-        connectivity.transferUserInfo([
-            WatchBatteryMessage.levelKey: NSNumber(value: level)
-        ])
+    public func start() {
+        responder.start()
     }
 }
 
@@ -56,3 +44,4 @@ extension DependencyValues {
         set { self[WatchBatteryClient.self] = newValue }
     }
 }
+#endif

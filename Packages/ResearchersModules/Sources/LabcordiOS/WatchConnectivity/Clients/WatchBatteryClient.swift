@@ -1,6 +1,6 @@
 //
 //  WatchBatteryClient.swift
-//  Researchers
+//  labcord-package-swift
 //
 //  Created by 정홍섭 on 10/21/26.
 //
@@ -8,73 +8,35 @@
 import ComposableArchitecture
 import Foundation
 import LabcordShared
-import WatchConnectivity
 
 public final class WatchBatteryClient {
     private let connectivity: WatchConnectivitySession
-    private var activationObserverID: UUID?
+    private let requestSender: WatchRequestSender
 
     init(connectivity: WatchConnectivitySession) {
         self.connectivity = connectivity
+        self.requestSender = WatchRequestSender(
+            connectivity: connectivity,
+            requestKey: WatchBatteryMessage.requestKey
+        )
     }
 
     public func requestBatteryLevel() {
-        connectivity.activate()
-
-        guard let session = connectivity.session else { return }
-
-        if sendRequestIfReady(using: session) {
-            cancelRequest()
-            return
-        }
-
-        guard activationObserverID == nil else { return }
-
-        activationObserverID = connectivity.addStateObserver { [weak self] in
-            guard let self,
-                  self.activationObserverID != nil,
-                  let session = self.connectivity.session,
-                  self.sendRequestIfReady(using: session) else { return }
-
-            self.cancelRequest()
-        }
+        requestSender.request()
     }
 
     public func cancelRequest() {
-        guard let id = activationObserverID else { return }
-        connectivity.removeStateObserver(id)
-        activationObserverID = nil
-    }
-
-    @discardableResult
-    private func sendRequestIfReady(using session: WCSession) -> Bool {
-        guard session.activationState == .activated,
-              session.isPaired,
-              session.isWatchAppInstalled else { return false }
-
-        session.transferUserInfo([
-            WatchBatteryMessage.requestKey: true
-        ])
-        return true
+        requestSender.cancel()
     }
 
     public func batteryStream() -> AsyncStream<Float?> {
-        AsyncStream { continuation in
-            let observerID = connectivity.addUserInfoObserver { userInfo in
-                guard let number = userInfo[WatchBatteryMessage.levelKey] as? NSNumber
-                        else { return }
-
-                let level = number.floatValue
-                continuation.yield(
-                    (0...1).contains(level) ? level : nil
-                )
+        WatchResponseStream.make(connectivity: connectivity) { userInfo -> Float?? in
+            guard let number = userInfo[WatchBatteryMessage.levelKey] as? NSNumber else {
+                return nil
             }
 
-            continuation.onTermination = { [connectivity] _ in
-                Task { @MainActor in
-                    connectivity.removeUserInfoObserver(observerID)
-                }
-            }
+            let level = number.floatValue
+            return .some((0...1).contains(level) ? level : nil)
         }
     }
 }

@@ -1,5 +1,5 @@
 //
-//  WatchConnectivitySession.swift
+//  labcord-package-swift.swift
 //  Researchers
 //
 //  Created by 정홍섭 on 10/21/26.
@@ -7,16 +7,13 @@
 
 import ComposableArchitecture
 import Foundation
+import LabcordShared
 import WatchConnectivity
 
-public final class WatchConnectivitySession: NSObject, WCSessionDelegate {
+public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionManaging {
     private let lock = NSLock()
     private var stateObservers: [UUID: () -> Void] = [:]
-    private var userInfoObservers: [UUID: ([String: Any]) -> Void] = [:]
-
-    var session: WCSession? {
-        WCSession.isSupported() ? WCSession.default : nil
-    }
+    public let observerStore = WatchConnectivityObserverStore()
 
     func addStateObserver(_ observer: @escaping () -> Void) -> UUID {
         let id = UUID()
@@ -38,35 +35,6 @@ public final class WatchConnectivitySession: NSObject, WCSessionDelegate {
         lock.lock()
         stateObservers.removeValue(forKey: id)
         lock.unlock()
-    }
-
-    func addUserInfoObserver(
-        _ observer: @escaping ([String: Any]) -> Void
-    ) -> UUID {
-        let id = UUID()
-
-        lock.lock()
-        userInfoObservers[id] = observer
-        lock.unlock()
-
-        activate()
-        return id
-    }
-
-    func removeUserInfoObserver(_ id: UUID) {
-        lock.lock()
-        userInfoObservers.removeValue(forKey: id)
-        lock.unlock()
-    }
-
-    func activate() {
-        guard let session else { return }
-
-        session.delegate = self
-
-        if session.activationState == .notActivated {
-            session.activate()
-        }
     }
 
     private func notifyStateObservers() {
@@ -99,13 +67,7 @@ public final class WatchConnectivitySession: NSObject, WCSessionDelegate {
         _ session: WCSession,
         didReceiveUserInfo userInfo: [String: Any]
     ) {
-        lock.lock()
-        let observers = Array(userInfoObservers.values)
-        lock.unlock()
-
-        DispatchQueue.main.async {
-            observers.forEach { $0(userInfo) }
-        }
+        observerStore.deliverUserInfo(userInfo)
     }
 
     public func sessionDidBecomeInactive(_ session: WCSession) {

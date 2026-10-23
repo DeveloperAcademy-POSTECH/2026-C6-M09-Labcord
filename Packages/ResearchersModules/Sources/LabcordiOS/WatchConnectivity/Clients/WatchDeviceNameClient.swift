@@ -1,70 +1,40 @@
+//
+//  WatchDeviceNameClient.swift
+//  labcord-package-swift
+//
+//  Created by 정홍섭 on 10/21/26.
+//
+
+
 import ComposableArchitecture
 import Foundation
 import LabcordShared
-import WatchConnectivity
 
 public final class WatchDeviceNameClient {
     private let connectivity: WatchConnectivitySession
-    private var activationObserverID: UUID?
+    private let requestSender: WatchRequestSender
 
     init(connectivity: WatchConnectivitySession) {
         self.connectivity = connectivity
+        self.requestSender = WatchRequestSender(
+            connectivity: connectivity,
+            requestKey: WatchDeviceNameMessage.requestKey
+        )
     }
 
     public func requestDeviceName() {
-        connectivity.activate()
-
-        guard let session = connectivity.session else { return }
-
-        if sendRequestIfReady(using: session) {
-            cancelRequest()
-            return
-        }
-
-        guard activationObserverID == nil else { return }
-
-        activationObserverID = connectivity.addStateObserver { [weak self] in
-            guard let self,
-                  self.activationObserverID != nil,
-                  let session = self.connectivity.session,
-                  self.sendRequestIfReady(using: session) else { return }
-
-            self.cancelRequest()
-        }
+        requestSender.request()
     }
 
     public func cancelRequest() {
-        guard let id = activationObserverID else { return }
-        connectivity.removeStateObserver(id)
-        activationObserverID = nil
-    }
-
-    @discardableResult
-    private func sendRequestIfReady(using session: WCSession) -> Bool {
-        guard session.activationState == .activated,
-              session.isPaired,
-              session.isWatchAppInstalled else { return false }
-
-        session.transferUserInfo([
-            WatchDeviceNameMessage.requestKey: true
-        ])
-        return true
+        requestSender.cancel()
     }
 
     public func deviceNameStream() -> AsyncStream<String> {
-        AsyncStream { continuation in
-            let observerID = connectivity.addUserInfoObserver { userInfo in
-                guard let name = userInfo[WatchDeviceNameMessage.nameKey] as? String,
-                      !name.isEmpty else { return }
-
-                continuation.yield(name)
-            }
-
-            continuation.onTermination = { [connectivity] _ in
-                Task { @MainActor in
-                    connectivity.removeUserInfoObserver(observerID)
-                }
-            }
+        WatchResponseStream.make(connectivity: connectivity) { userInfo in
+            guard let name = userInfo[WatchDeviceNameMessage.nameKey] as? String,
+                  !name.isEmpty else { return nil }
+            return name
         }
     }
 }

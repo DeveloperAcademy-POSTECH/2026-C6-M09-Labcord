@@ -1,6 +1,6 @@
 //
 //  WatchAvailabilityClient.swift
-//  Researchers
+//  labcord-package-swift
 //
 //  Created by 정홍섭 on 10/21/26.
 //
