@@ -11,7 +11,7 @@ public struct TypographyStyle: ViewModifier {
     private let font: Font
     private let lineHeight: AttributedString.LineHeight
     private let letterSpacing: CGFloat
-    
+
     public init(
         font: Font,
         lineHeight: AttributedString.LineHeight,
@@ -21,14 +21,14 @@ public struct TypographyStyle: ViewModifier {
         self.lineHeight = lineHeight
         self.letterSpacing = letterSpacing
     }
-    
+
     public func body(content: Content) -> some View {
         content
             .font(font)
             .lineHeight(lineHeight)
             .tracking(letterSpacing)
     }
-    
+
     public func weight(_ weight: Font.Weight) -> Self {
         Self(
             font: font.weight(weight),
