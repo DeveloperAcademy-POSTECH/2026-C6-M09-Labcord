@@ -9,7 +9,7 @@ import ComposableArchitecture
 import Foundation
 import WatchConnectivity
 
-final class WatchConnectivitySession: NSObject, WCSessionDelegate {
+public final class WatchConnectivitySession: NSObject, WCSessionDelegate {
     private let lock = NSLock()
     private var stateObservers: [UUID: () -> Void] = [:]
     private var userInfoObservers: [UUID: ([String: Any]) -> Void] = [:]
@@ -79,7 +79,7 @@ final class WatchConnectivitySession: NSObject, WCSessionDelegate {
         }
     }
 
-    func session(
+    public func session(
         _ session: WCSession,
         activationDidCompleteWith state: WCSessionActivationState,
         error: Error?
@@ -87,15 +87,15 @@ final class WatchConnectivitySession: NSObject, WCSessionDelegate {
         notifyStateObservers()
     }
 
-    func sessionWatchStateDidChange(_ session: WCSession) {
+    public func sessionWatchStateDidChange(_ session: WCSession) {
         notifyStateObservers()
     }
 
-    func sessionReachabilityDidChange(_ session: WCSession) {
+    public func sessionReachabilityDidChange(_ session: WCSession) {
         notifyStateObservers()
     }
 
-    func session(
+    public func session(
         _ session: WCSession,
         didReceiveUserInfo userInfo: [String: Any]
     ) {
@@ -108,22 +108,22 @@ final class WatchConnectivitySession: NSObject, WCSessionDelegate {
         }
     }
 
-    func sessionDidBecomeInactive(_ session: WCSession) {
+    public func sessionDidBecomeInactive(_ session: WCSession) {
         notifyStateObservers()
     }
 
-    func sessionDidDeactivate(_ session: WCSession) {
+    public func sessionDidDeactivate(_ session: WCSession) {
         notifyStateObservers()
         session.activate()
     }
 }
 
 extension WatchConnectivitySession: DependencyKey {
-    static let liveValue = WatchConnectivitySession()
+    public static let liveValue = WatchConnectivitySession()
 }
 
 extension DependencyValues {
-    var watchConnectivitySession: WatchConnectivitySession {
+    public var watchConnectivitySession: WatchConnectivitySession {
         get { self[WatchConnectivitySession.self] }
         set { self[WatchConnectivitySession.self] = newValue }
     }

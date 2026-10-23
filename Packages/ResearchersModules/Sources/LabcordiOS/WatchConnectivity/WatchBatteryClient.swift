@@ -10,7 +10,7 @@ import Foundation
 import LabcordShared
 import WatchConnectivity
 
-final class WatchBatteryClient {
+public final class WatchBatteryClient {
     private let connectivity: WatchConnectivitySession
     private var activationObserverID: UUID?
 
@@ -18,7 +18,7 @@ final class WatchBatteryClient {
         self.connectivity = connectivity
     }
 
-    func requestBatteryLevel() {
+    public func requestBatteryLevel() {
         connectivity.activate()
 
         guard let session = connectivity.session else { return }
@@ -40,7 +40,7 @@ final class WatchBatteryClient {
         }
     }
 
-    func cancelRequest() {
+    public func cancelRequest() {
         guard let id = activationObserverID else { return }
         connectivity.removeStateObserver(id)
         activationObserverID = nil
@@ -58,7 +58,7 @@ final class WatchBatteryClient {
         return true
     }
 
-    func batteryStream() -> AsyncStream<Float?> {
+    public func batteryStream() -> AsyncStream<Float?> {
         AsyncStream { continuation in
             let observerID = connectivity.addUserInfoObserver { userInfo in
                 guard let number = userInfo[WatchBatteryMessage.levelKey] as? NSNumber
@@ -80,14 +80,14 @@ final class WatchBatteryClient {
 }
 
 extension WatchBatteryClient: DependencyKey {
-    static var liveValue: WatchBatteryClient {
+    public static var liveValue: WatchBatteryClient {
         @Dependency(\.watchConnectivitySession) var connectivity
         return WatchBatteryClient(connectivity: connectivity)
     }
 }
 
 extension DependencyValues {
-    var watchBatteryClient: WatchBatteryClient {
+    public var watchBatteryClient: WatchBatteryClient {
         get { self[WatchBatteryClient.self] }
         set { self[WatchBatteryClient.self] = newValue }
     }

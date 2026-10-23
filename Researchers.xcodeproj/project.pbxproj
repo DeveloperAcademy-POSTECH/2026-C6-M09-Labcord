@@ -10,6 +10,7 @@
 		8E1069213089B22000BF375F /* DeviceKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8E1069203089B22000BF375F /* DeviceKit */; };
 		8E1069BA308A776B00BF375F /* LabcordKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8E1069B9308A776B00BF375F /* LabcordKit */; };
 		8E1069BC308A7AAD00BF375F /* LabcordKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8E1069BB308A7AAD00BF375F /* LabcordKit */; };
+		A10C00103000000000000001 /* LabcordiOS in Frameworks */ = {isa = PBXBuildFile; productRef = A10C00103000000000000002 /* LabcordiOS */; };
 		8E2E27333084877E0043EEB3 /* ResearchWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8E98D1AD30884D1500E68666 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 8E98D1AC30884D1500E68666 /* ComposableArchitecture */; };
 		8E98D1AF30884D4F00E68666 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 8E98D1AE30884D4F00E68666 /* ComposableArchitecture */; };
@@ -61,6 +62,7 @@
 			files = (
 				8E98D1AD30884D1500E68666 /* ComposableArchitecture in Frameworks */,
 				8E1069BC308A7AAD00BF375F /* LabcordKit in Frameworks */,
+				A10C00103000000000000001 /* LabcordiOS in Frameworks */,
 			);
 		};
 		8E2E27263084877E0043EEB3 /* Frameworks */ = {
@@ -124,6 +126,7 @@
 			packageProductDependencies = (
 				8E98D1AC30884D1500E68666 /* ComposableArchitecture */,
 				8E1069BB308A7AAD00BF375F /* LabcordKit */,
+				A10C00103000000000000002 /* LabcordiOS */,
 			);
 			productName = Researchers;
 			productReference = 8E0691153080743D0081547E /* Researchers.app */;
@@ -549,6 +552,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */;
 			productName = LabcordKit;
+		};
+		A10C00103000000000000002 /* LabcordiOS */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */;
+			productName = LabcordiOS;
 		};
 		8E98D1AC30884D1500E68666 /* ComposableArchitecture */ = {
 			isa = XCSwiftPackageProductDependency;

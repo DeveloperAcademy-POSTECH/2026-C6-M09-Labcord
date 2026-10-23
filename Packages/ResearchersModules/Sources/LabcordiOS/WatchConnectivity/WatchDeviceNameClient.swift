@@ -3,7 +3,7 @@ import Foundation
 import LabcordShared
 import WatchConnectivity
 
-final class WatchDeviceNameClient {
+public final class WatchDeviceNameClient {
     private let connectivity: WatchConnectivitySession
     private var activationObserverID: UUID?
 
@@ -11,7 +11,7 @@ final class WatchDeviceNameClient {
         self.connectivity = connectivity
     }
 
-    func requestDeviceName() {
+    public func requestDeviceName() {
         connectivity.activate()
 
         guard let session = connectivity.session else { return }
@@ -33,7 +33,7 @@ final class WatchDeviceNameClient {
         }
     }
 
-    func cancelRequest() {
+    public func cancelRequest() {
         guard let id = activationObserverID else { return }
         connectivity.removeStateObserver(id)
         activationObserverID = nil
@@ -51,7 +51,7 @@ final class WatchDeviceNameClient {
         return true
     }
 
-    func deviceNameStream() -> AsyncStream<String> {
+    public func deviceNameStream() -> AsyncStream<String> {
         AsyncStream { continuation in
             let observerID = connectivity.addUserInfoObserver { userInfo in
                 guard let name = userInfo[WatchDeviceNameMessage.nameKey] as? String,
@@ -70,14 +70,14 @@ final class WatchDeviceNameClient {
 }
 
 extension WatchDeviceNameClient: DependencyKey {
-    static var liveValue: WatchDeviceNameClient {
+    public static var liveValue: WatchDeviceNameClient {
         @Dependency(\.watchConnectivitySession) var connectivity
         return WatchDeviceNameClient(connectivity: connectivity)
     }
 }
 
 extension DependencyValues {
-    var watchDeviceNameClient: WatchDeviceNameClient {
+    public var watchDeviceNameClient: WatchDeviceNameClient {
         get { self[WatchDeviceNameClient.self] }
         set { self[WatchDeviceNameClient.self] = newValue }
     }

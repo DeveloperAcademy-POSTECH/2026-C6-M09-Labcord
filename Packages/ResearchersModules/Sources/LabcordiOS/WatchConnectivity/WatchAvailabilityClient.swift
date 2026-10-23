@@ -9,14 +9,14 @@ import ComposableArchitecture
 import Foundation
 import WatchConnectivity
 
-final class WatchAvailabilityClient {
+public final class WatchAvailabilityClient {
     private let connectivity: WatchConnectivitySession
 
     init(connectivity: WatchConnectivitySession) {
         self.connectivity = connectivity
     }
 
-    func statusStream() -> AsyncStream<Bool?> {
+    public func statusStream() -> AsyncStream<Bool?> {
         AsyncStream { continuation in
             let observerID = connectivity.addStateObserver {
                 continuation.yield(self.currentReadiness())
@@ -44,7 +44,7 @@ final class WatchAvailabilityClient {
 }
 
 extension WatchAvailabilityClient: DependencyKey {
-    static var liveValue: WatchAvailabilityClient {
+    public static var liveValue: WatchAvailabilityClient {
         @Dependency(\.watchConnectivitySession) var connectivity
 
         return WatchAvailabilityClient(connectivity: connectivity)
@@ -52,7 +52,7 @@ extension WatchAvailabilityClient: DependencyKey {
 }
 
 extension DependencyValues {
-    var watchPairingClient: WatchAvailabilityClient {
+    public var watchPairingClient: WatchAvailabilityClient {
         get { self[WatchAvailabilityClient.self] }
         set { self[WatchAvailabilityClient.self] = newValue }
     }
