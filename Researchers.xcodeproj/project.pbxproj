@@ -12,6 +12,7 @@
 		8E2E27333084877E0043EEB3 /* ResearchWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8E98D1AD30884D1500E68666 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 8E98D1AC30884D1500E68666 /* ComposableArchitecture */; };
 		8E98D1AF30884D4F00E68666 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 8E98D1AE30884D4F00E68666 /* ComposableArchitecture */; };
+		D2A14CBF6A6E4A4A8F01C325 /* CoreHwp in Frameworks */ = {isa = PBXBuildFile; productRef = D2A14CBF6A6E4A4A8F01C329 /* CoreHwp */; };
 		A10C00103000000000000001 /* LabcordiOS in Frameworks */ = {isa = PBXBuildFile; productRef = A10C00103000000000000002 /* LabcordiOS */; };
 		A10C00103000000000000003 /* LabcordWatchOS in Frameworks */ = {isa = PBXBuildFile; productRef = A10C00103000000000000004 /* LabcordWatchOS */; };
 /* End PBXBuildFile section */
@@ -61,6 +62,7 @@
 			isa = PBXFrameworksBuildPhase;
 			files = (
 				8E98D1AD30884D1500E68666 /* ComposableArchitecture in Frameworks */,
+				D2A14CBF6A6E4A4A8F01C325 /* CoreHwp in Frameworks */,
 				8E1069BC308A7AAD00BF375F /* LabcordKit in Frameworks */,
 				A10C00103000000000000001 /* LabcordiOS in Frameworks */,
 			);
@@ -127,6 +129,7 @@
 				8E98D1AC30884D1500E68666 /* ComposableArchitecture */,
 				8E1069BB308A7AAD00BF375F /* LabcordKit */,
 				A10C00103000000000000002 /* LabcordiOS */,
+				D2A14CBF6A6E4A4A8F01C329 /* CoreHwp */,
 			);
 			productName = Researchers;
 			productReference = 8E0691153080743D0081547E /* Researchers.app */;
@@ -185,6 +188,7 @@
 			packageReferences = (
 				8E3F0AEF3085C6E200F857AB /* XCRemoteSwiftPackageReference "swift-composable-architecture" */,
 				8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */,
+				D2A14CBF6A6E4A4A8F01C327 /* XCRemoteSwiftPackageReference "hwp-swift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8E0691163080743D0081547E /* Products */;
@@ -526,6 +530,13 @@
 				minimumVersion = 1.26.2;
 			};
 		};
+
+		D2A14CBF6A6E4A4A8F01C327 /* XCRemoteSwiftPackageReference "hwp-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sboh1214/hwp-swift.git";
+			requirement = { kind = upToNextMinorVersion; minimumVersion = 0.19.0; };
+		};
+
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -549,6 +560,13 @@
 			package = 8E3F0AEF3085C6E200F857AB /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
 			productName = ComposableArchitecture;
 		};
+
+		D2A14CBF6A6E4A4A8F01C329 /* CoreHwp */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D2A14CBF6A6E4A4A8F01C327 /* XCRemoteSwiftPackageReference "hwp-swift" */;
+			productName = CoreHwp;
+		};
+
 		A10C00103000000000000002 /* LabcordiOS */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */;

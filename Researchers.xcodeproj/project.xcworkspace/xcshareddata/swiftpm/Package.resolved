@@ -20,6 +20,24 @@
       }
     },
     {
+      "identity" : "hwp-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/sboh1214/hwp-swift.git",
+      "state" : {
+        "revision" : "eebe90d160b3d437b97d0bb1ea7a5752f419f225",
+        "version" : "0.19.0"
+      }
+    },
+    {
+      "identity" : "olekit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/CoreOffice/OLEKit.git",
+      "state" : {
+        "revision" : "2cc7a98b4ac4e9ce022336258a3bc4ff6bfc285b",
+        "version" : "0.3.1"
+      }
+    },
+    {
       "identity" : "swift-case-paths",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/swift-case-paths",
