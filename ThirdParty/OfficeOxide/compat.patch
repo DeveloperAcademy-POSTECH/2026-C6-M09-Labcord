@@ -1,0 +1,119 @@
+--- a/src/ppt/table.rs
++++ b/src/ppt/table.rs
+@@ -31,6 +31,8 @@
+ pub struct TableCellData {
+     pub left: i32,
+     pub top: i32,
++    pub right: i32,
++    pub bottom: i32,
+     pub runs: Vec<TextRun>,
+ }
+ 
+@@ -100,18 +102,17 @@
+ /// layout, overlapping shapes) bails out to the existing flat-paragraph
+ /// behavior rather than guessing.
+ pub fn build_table(cells: &[TableCellData]) -> Option<TableBlock> {
+-    if cells.len() < 4 {
++    if cells.len() < 2 {
+         return None;
+     }
+     let row_centers = cluster_positions(cells.iter().map(|c| c.top).collect());
+     let col_centers = cluster_positions(cells.iter().map(|c| c.left).collect());
+-    if row_centers.len() < 2 || col_centers.len() < 2 {
+-        return None;
+-    }
+-    if cells.len() != row_centers.len() * col_centers.len() {
+-        return None;
+-    }
+-
++    let area: f64 = cells.iter().map(|c|
++        (i64::from(c.right)-i64::from(c.left)).max(0) as f64 *
++        (i64::from(c.bottom)-i64::from(c.top)).max(0) as f64).sum();
++    let width = i64::from(cells.iter().map(|c| c.right).max()?) - i64::from(cells.iter().map(|c| c.left).min()?);
++    let height = i64::from(cells.iter().map(|c| c.bottom).max()?) - i64::from(cells.iter().map(|c| c.top).min()?);
++    if area <= 0.0 || (width as f64 * height as f64 - area).abs() / area >= 0.03 { return None; }
+     let mut grid: Vec<Vec<Option<Vec<TextRun>>>> =
+         vec![vec![None; col_centers.len()]; row_centers.len()];
+     for cell in cells {
+@@ -122,14 +123,12 @@
+         }
+         grid[r][c] = Some(cell.runs.clone());
+     }
+-    if grid.iter().flatten().any(Option::is_none) {
+-        return None; // a slot with no cell at all — not fully populated
+-    }
++
+ 
+     Some(TableBlock {
+         rows: grid
+             .into_iter()
+-            .map(|row| row.into_iter().map(Option::unwrap).collect())
++            .map(|row| row.into_iter().map(Option::unwrap_or_default).collect())
+             .collect(),
+     })
+ }
+--- a/src/ppt/text.rs
++++ b/src/ppt/text.rs
+@@ -1413,7 +1413,7 @@
+             &mut Vec::new(),
+             &mut Vec::new(),
+         );
+-        cells.push(super::table::TableCellData { left, top, runs });
++        cells.push(super::table::TableCellData { left, top, right: i32::from_le_bytes(anchor.data[8..12].try_into().ok()?), bottom: i32::from_le_bytes(anchor.data[12..16].try_into().ok()?), runs });
+     }
+     super::table::build_table(&cells)
+ }
+--- a/src/convert_doc.rs
++++ b/src/convert_doc.rs
+@@ -275,7 +275,7 @@
+     // Extracted pictures never reached the IR, so every image in a legacy
+     // document was silently dropped on conversion even though the bytes
+     // were already in hand.
+-    crate::convert_xls::append_legacy_images(&mut sections, doc.images());
++
+ 
+     // Embedded OLE objects — at minimum, recognize each
+     // object exists and surface its identity, even without extracting
+--- a/src/convert_ppt.rs
++++ b/src/convert_ppt.rs
+@@ -296,7 +296,7 @@
+     // Every picture shape successfully resolved to a specific image
+     // — excluded from the old whole-file dump-onto-last-
+     // slide fallback below, so an image isn't attached twice.
+-    let mut resolved_image_indices = std::collections::HashSet::new();
++    let _resolved_image_indices = std::collections::HashSet::<usize>::new();
+ 
+     for (slide_idx, slide) in doc.slides.iter().enumerate() {
+         let mut elements = Vec::new();
+@@ -424,16 +424,6 @@
+         // `pib` property — attached to the slide that
+         // actually contains the shape, instead of every image in the
+         // whole file landing on whichever slide happened to be last.
+-        for &idx in &slide.image_refs {
+-            if let Some(img) = doc.images().get(idx) {
+-                resolved_image_indices.insert(idx);
+-                elements.push(Element::Image(Image {
+-                    data: Some(img.data.clone()),
+-                    format: ImageFormat::from_blip(&img.format),
+-                    ..Default::default()
+-                }));
+-            }
+-        }
+ 
+         // Embedded/linked/ActiveX OLE objects — at minimum,
+         // recognize the object exists and surface its identity, even
+@@ -487,13 +477,7 @@
+     // still-imperfect leftover case: masters, unresolved/complex
+     // references, etc.) still reaches the IR rather than vanishing —
+     // just without a specific slide to attribute it to.
+-    let leftover_images: Vec<crate::cfb::blip::BlipImage> = doc
+-        .images()
+-        .iter()
+-        .filter(|img| !resolved_image_indices.contains(&img.index))
+-        .cloned()
+-        .collect();
+-    crate::convert_xls::append_legacy_images(&mut sections, &leftover_images);
++
+ 
+     // The deck's title falls back to the first *slide's* title, never to
+     // the master section below.
