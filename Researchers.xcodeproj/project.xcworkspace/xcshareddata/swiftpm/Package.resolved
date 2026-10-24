@@ -38,6 +38,15 @@
       }
     },
     {
+      "identity" : "opendocument.core",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/opendocument-app/OpenDocument.core",
+      "state" : {
+        "revision" : "77e2a0a6e4b33c33a5aee64551fcd0d7493c9101",
+        "version" : "7.5.2"
+      }
+    },
+    {
       "identity" : "swift-case-paths",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/swift-case-paths",

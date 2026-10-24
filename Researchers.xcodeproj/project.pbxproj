@@ -12,7 +12,9 @@
 		8E2E27333084877E0043EEB3 /* ResearchWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8E98D1AD30884D1500E68666 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 8E98D1AC30884D1500E68666 /* ComposableArchitecture */; };
 		8E98D1AF30884D4F00E68666 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 8E98D1AE30884D4F00E68666 /* ComposableArchitecture */; };
+		A210FF000000000000000001 = {isa = PBXBuildFile; fileRef = A210FF000000000000000002; };
 		D2A14CBF6A6E4A4A8F01C321 /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = D2A14CBF6A6E4A4A8F01C323 /* SwiftSoup */; };
+		D2A14CBF6A6E4A4A8F01C324 /* OdrCore in Frameworks */ = {isa = PBXBuildFile; productRef = D2A14CBF6A6E4A4A8F01C328 /* OdrCore */; };
 		D2A14CBF6A6E4A4A8F01C325 /* CoreHwp in Frameworks */ = {isa = PBXBuildFile; productRef = D2A14CBF6A6E4A4A8F01C329 /* CoreHwp */; };
 		A10C00103000000000000001 /* LabcordiOS in Frameworks */ = {isa = PBXBuildFile; productRef = A10C00103000000000000002 /* LabcordiOS */; };
 		A10C00103000000000000003 /* LabcordWatchOS in Frameworks */ = {isa = PBXBuildFile; productRef = A10C00103000000000000004 /* LabcordWatchOS */; };
@@ -41,6 +43,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		A210FF000000000000000002 = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = ThirdParty/OfficeOxide/OfficeOxide.xcframework; sourceTree = SOURCE_ROOT; };
 		8E0691153080743D0081547E /* Researchers.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Researchers.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ResearchWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -64,6 +67,8 @@
 			files = (
 				8E98D1AD30884D1500E68666 /* ComposableArchitecture in Frameworks */,
 				D2A14CBF6A6E4A4A8F01C321 /* SwiftSoup in Frameworks */,
+				D2A14CBF6A6E4A4A8F01C324 /* OdrCore in Frameworks */,
+				A210FF000000000000000001,
 				D2A14CBF6A6E4A4A8F01C325 /* CoreHwp in Frameworks */,
 				8E1069BC308A7AAD00BF375F /* LabcordKit in Frameworks */,
 				A10C00103000000000000001 /* LabcordiOS in Frameworks */,
@@ -83,6 +88,7 @@
 		8E06910C3080743D0081547E = {
 			isa = PBXGroup;
 			children = (
+				A210FF000000000000000002 /* OfficeOxide.xcframework */,
 				8E0691173080743D0081547E /* Researchers */,
 				8E2E272A3084877E0043EEB3 /* ResearchWatch Watch App */,
 				8E98D1AB30884D1500E68666 /* Frameworks */,
@@ -132,6 +138,7 @@
 				8E1069BB308A7AAD00BF375F /* LabcordKit */,
 				A10C00103000000000000002 /* LabcordiOS */,
 				D2A14CBF6A6E4A4A8F01C323 /* SwiftSoup */,
+				D2A14CBF6A6E4A4A8F01C328 /* OdrCore */,
 				D2A14CBF6A6E4A4A8F01C329 /* CoreHwp */,
 			);
 			productName = Researchers;
@@ -192,6 +199,7 @@
 				8E3F0AEF3085C6E200F857AB /* XCRemoteSwiftPackageReference "swift-composable-architecture" */,
 				8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */,
 				D2A14CBF6A6E4A4A8F01C322 /* XCRemoteSwiftPackageReference "SwiftSoup" */,
+				D2A14CBF6A6E4A4A8F01C326 /* XCRemoteSwiftPackageReference "OpenDocument.core" */,
 				D2A14CBF6A6E4A4A8F01C327 /* XCRemoteSwiftPackageReference "hwp-swift" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -543,6 +551,11 @@
 			};
 		};
 
+		D2A14CBF6A6E4A4A8F01C326 /* XCRemoteSwiftPackageReference "OpenDocument.core" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/opendocument-app/OpenDocument.core";
+			requirement = { kind = upToNextMajorVersion; minimumVersion = 7.4.0; };
+		};
 		D2A14CBF6A6E4A4A8F01C327 /* XCRemoteSwiftPackageReference "hwp-swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/sboh1214/hwp-swift.git";
@@ -578,6 +591,11 @@
 			productName = SwiftSoup;
 		};
 
+		D2A14CBF6A6E4A4A8F01C328 /* OdrCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D2A14CBF6A6E4A4A8F01C326 /* XCRemoteSwiftPackageReference "OpenDocument.core" */;
+			productName = OdrCore;
+		};
 		D2A14CBF6A6E4A4A8F01C329 /* CoreHwp */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = D2A14CBF6A6E4A4A8F01C327 /* XCRemoteSwiftPackageReference "hwp-swift" */;
