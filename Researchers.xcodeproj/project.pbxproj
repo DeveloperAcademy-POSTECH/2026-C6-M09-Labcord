@@ -28,13 +28,6 @@
 			remoteGlobalIDString = 8E2E27283084877E0043EEB3;
 			remoteInfo = "ResearchWatch Watch App";
 		};
-		8E3F0AEF3085C6E200F857B9 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 8E06910D3080743D0081547E /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 8E0691143080743D0081547E;
-			remoteInfo = Researchers;
-		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -47,26 +40,11 @@
 			);
 			name = "Embed Watch Content";
 		};
-		8E3F0AEF3085C6E200F857BA /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		8E3F0AEF3085C6E200F857BB /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		A210FF000000000000000002 = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = ThirdParty/OfficeOxide/OfficeOxide.xcframework; sourceTree = SOURCE_ROOT; };
 		8E0691153080743D0081547E /* Researchers.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Researchers.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		8E3F0AEF3085C6E200F857B8 /* ResearchersTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ResearchersTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ResearchWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -74,15 +52,6 @@
 		8E0691173080743D0081547E /* Researchers */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Researchers;
-			sourceTree = "<group>";
-		};
-		8E3F0AEF3085C6E200F857B1 /* ResearchersTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			explicitFolders = (
-				Fixtures/RealWorld,
-				Fixtures/Licenses,
-			);
-			path = ResearchersTests;
 			sourceTree = "<group>";
 		};
 		8E2E272A3084877E0043EEB3 /* ResearchWatch Watch App */ = {
@@ -105,13 +74,6 @@
 				A10C00103000000000000001 /* LabcordiOS in Frameworks */,
 			);
 		};
-		8E3F0AEF3085C6E200F857B5 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		8E2E27263084877E0043EEB3 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
@@ -128,7 +90,6 @@
 			children = (
 				A210FF000000000000000002 /* OfficeOxide.xcframework */,
 				8E0691173080743D0081547E /* Researchers */,
-				8E3F0AEF3085C6E200F857B1 /* ResearchersTests */,
 				8E2E272A3084877E0043EEB3 /* ResearchWatch Watch App */,
 				8E98D1AB30884D1500E68666 /* Frameworks */,
 				8E0691163080743D0081547E /* Products */,
@@ -139,7 +100,6 @@
 			isa = PBXGroup;
 			children = (
 				8E0691153080743D0081547E /* Researchers.app */,
-				8E3F0AEF3085C6E200F857B8 /* ResearchersTests.xctest */,
 				8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */,
 			);
 			name = Products;
@@ -185,27 +145,6 @@
 			productReference = 8E0691153080743D0081547E /* Researchers.app */;
 			productType = "com.apple.product-type.application";
 		};
-		8E3F0AEF3085C6E200F857B2 /* ResearchersTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 8E3F0AEF3085C6E200F857B3 /* Build configuration list for PBXNativeTarget "ResearchersTests" */;
-			buildPhases = (
-				8E3F0AEF3085C6E200F857BA /* Sources */,
-				8E3F0AEF3085C6E200F857B5 /* Frameworks */,
-				8E3F0AEF3085C6E200F857BB /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				8E3F0AEF3085C6E200F857BC /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				8E3F0AEF3085C6E200F857B1 /* ResearchersTests */,
-			);
-			name = ResearchersTests;
-			productName = ResearchersTests;
-			productReference = 8E3F0AEF3085C6E200F857B8 /* ResearchersTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
-		};
 		8E2E27283084877E0043EEB3 /* ResearchWatch Watch App */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8E2E27373084877E0043EEB3 /* Build configuration list for PBXNativeTarget "ResearchWatch Watch App" */;
@@ -242,9 +181,6 @@
 					8E0691143080743D0081547E = {
 						CreatedOnToolsVersion = 27.0;
 					};
-					8E3F0AEF3085C6E200F857B2 = {
-						CreatedOnToolsVersion = 27.0;
-					};
 					8E2E27283084877E0043EEB3 = {
 						CreatedOnToolsVersion = 27.0;
 					};
@@ -272,7 +208,6 @@
 			projectRoot = "";
 			targets = (
 				8E0691143080743D0081547E /* Researchers */,
-				8E3F0AEF3085C6E200F857B2 /* ResearchersTests */,
 				8E2E27283084877E0043EEB3 /* ResearchWatch Watch App */,
 			);
 		};
@@ -309,11 +244,6 @@
 			isa = PBXTargetDependency;
 			target = 8E2E27283084877E0043EEB3 /* ResearchWatch Watch App */;
 			targetProxy = 8E2E27313084877E0043EEB3 /* PBXContainerItemProxy */;
-		};
-		8E3F0AEF3085C6E200F857BC /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 8E0691143080743D0081547E /* Researchers */;
-			targetProxy = 8E3F0AEF3085C6E200F857B9 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -501,36 +431,6 @@
 			};
 			name = Release;
 		};
-		8E3F0AEF3085C6E200F857BD /* Debug configuration for PBXNativeTarget "ResearchersTests" */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.researchers.ResearchersTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Researchers.app/Researchers";
-			};
-			name = Debug;
-		};
-		8E3F0AEF3085C6E200F857BE /* Release configuration for PBXNativeTarget "ResearchersTests" */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.researchers.ResearchersTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Researchers.app/Researchers";
-			};
-			name = Release;
-		};
 		8E2E27353084877E0043EEB3 /* Debug configuration for PBXNativeTarget "ResearchWatch Watch App" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -621,14 +521,6 @@
 			buildConfigurations = (
 				8E2E27353084877E0043EEB3 /* Debug configuration for PBXNativeTarget "ResearchWatch Watch App" */,
 				8E2E27363084877E0043EEB3 /* Release configuration for PBXNativeTarget "ResearchWatch Watch App" */,
-			);
-			defaultConfigurationName = Release;
-		};
-		8E3F0AEF3085C6E200F857B3 /* Build configuration list for PBXNativeTarget "ResearchersTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				8E3F0AEF3085C6E200F857BD /* Debug configuration for PBXNativeTarget "ResearchersTests" */,
-				8E3F0AEF3085C6E200F857BE /* Release configuration for PBXNativeTarget "ResearchersTests" */,
 			);
 			defaultConfigurationName = Release;
 		};
