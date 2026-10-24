@@ -52,26 +52,6 @@
              .collect(),
      })
  }
-@@ -142,8 +141,19 @@
-         TableCellData {
-             left,
-             top,
-+            right: left.saturating_add(100),
-+            bottom: top.saturating_add(50),
-             runs: Vec::new(),
-         }
-+    }
-+
-+    #[test]
-+    fn test_labcord_compatibility() {
-+        assert!(build_table(&[cell(0, 0), cell(100, 0)]).is_some());
-+        assert!(build_table(&[cell(0, 0), cell(200, 0)]).is_none());
-+        let mut merged = cell(0, 0);
-+        merged.right = 200;
-+        assert!(build_table(&[merged, cell(0, 50), cell(100, 50)]).is_some());
-     }
- 
-     /// Child anchors are raw `i32`s from the file. Subtracting the extremes
 --- a/src/ppt/text.rs
 +++ b/src/ppt/text.rs
 @@ -1413,7 +1413,7 @@
