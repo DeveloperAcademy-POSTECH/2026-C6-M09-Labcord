@@ -17,13 +17,13 @@ public final class Experiment {
     public var endedAt: Date?
     public var status: ExperimentStatus
     public var procedure: ExperimentProtocol?
-    
+
     @Relationship(deleteRule: .cascade)
     public var pauses: [Pause] = []
-    
+
     @Relationship(deleteRule: .cascade)
     public var records: [ExperimentRecord] = []
-    
+
     public init(
         id: UUID = UUID(),
         title: String,

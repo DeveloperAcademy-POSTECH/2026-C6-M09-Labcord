@@ -13,7 +13,7 @@ public struct ExperimentProtocol: Codable {
     public var samples: [String]
     public var glossaryTerms: [String]
     public var units: [String]
-    
+
     public init(
         timerSeconds: [Int] = [],
         materials: [String] = [],

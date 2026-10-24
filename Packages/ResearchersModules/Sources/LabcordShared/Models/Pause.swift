@@ -13,7 +13,7 @@ public final class Pause {
     public var id: UUID
     public var pausedAt: Date
     public var resumedAt: Date?
-    
+
     public init(id: UUID = UUID(), pausedAt: Date, resumedAt: Date? = nil) {
         self.id = id
         self.pausedAt = pausedAt
