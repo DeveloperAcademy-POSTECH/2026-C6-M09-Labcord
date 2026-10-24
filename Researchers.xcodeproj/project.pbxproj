@@ -49,9 +49,9 @@
 			path = Researchers;
 			sourceTree = "<group>";
 		};
-		8E2E272A3084877E0043EEB3 /* ResearchWatch Watch App */ = {
+		8E2E272A3084877E0043EEB3 /* ResearchWatchApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "ResearchWatch Watch App";
+			path = ResearchWatchApp;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -80,7 +80,7 @@
 			isa = PBXGroup;
 			children = (
 				8E0691173080743D0081547E /* Researchers */,
-				8E2E272A3084877E0043EEB3 /* ResearchWatch Watch App */,
+				8E2E272A3084877E0043EEB3 /* ResearchWatchApp */,
 				8E98D1AB30884D1500E68666 /* Frameworks */,
 				8E0691163080743D0081547E /* Products */,
 			);
@@ -143,7 +143,7 @@
 			buildRules = (
 			);
 			fileSystemSynchronizedGroups = (
-				8E2E272A3084877E0043EEB3 /* ResearchWatch Watch App */,
+				8E2E272A3084877E0043EEB3 /* ResearchWatchApp */,
 			);
 			name = "ResearchWatch Watch App";
 			packageProductDependencies = (
