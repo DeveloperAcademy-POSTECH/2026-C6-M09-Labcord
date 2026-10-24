@@ -4,24 +4,69 @@
 import PackageDescription
 
 let package = Package(
-    name: "ResearchersModules", // researchers-sdk-ios, researchers-package-swift
+    name: "labcord-package-swift",
     platforms: [.iOS(.v26), .watchOS(.v26)],
     products: [
         // Products define the executables and libraries a package produces,
         // making them visible to other packages.
         .library(
-            name: "Shared", // UniversalKit, UniversalFramework
-            targets: ["Shared"]
-        ) // ios& watchos 공통 | ios 전용 | watchos 전용 으로 라이브러리 분리가능~!
+            name: "LabcordKit",
+            targets: ["LabcordShared", "LabcordDesignSystem"]
+        ),
+        .library(
+            name: "LabcordiOS",
+            targets: ["LabcordiOS"]
+        ),
+        .library(
+            name: "LabcordWatchOS",
+            targets: ["LabcordWatchOS"]
+        )
+    ],
+    dependencies: [
+        .package(
+            url: "https://github.com/pointfreeco/swift-composable-architecture",
+            from: "1.26.2"
+        ),
+        .package(
+            url: "https://github.com/devicekit/DeviceKit",
+            from: "5.9.0"
+        )
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "Shared", // 공통 모델 등등
+            name: "LabcordShared",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency")
             ],
+        ),
+        .target(
+            name: "LabcordDesignSystem",
+            resources: [.process("Recources")]
+        ),
+        .target(
+            name: "LabcordiOS",
+            dependencies: [
+                "LabcordShared",
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture")
+            ],
+            swiftSettings: [
+                .defaultIsolation(MainActor.self),
+                .swiftLanguageMode(.v5)
+            ]
+        ),
+        .target(
+            name: "LabcordWatchOS",
+            dependencies: [
+                "LabcordShared",
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+                .product(name: "DeviceKit", package: "DeviceKit")
+            ],
+            swiftSettings: [
+                .defaultIsolation(MainActor.self),
+                .swiftLanguageMode(.v5)
+            ]
         )
     ]
 )

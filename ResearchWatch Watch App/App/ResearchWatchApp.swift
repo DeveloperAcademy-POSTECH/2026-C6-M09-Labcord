@@ -8,6 +8,7 @@
 import SwiftUI
 
 import ComposableArchitecture
+import LabcordWatchOS
 
 @main
 struct ResearchWatchApp: App {
