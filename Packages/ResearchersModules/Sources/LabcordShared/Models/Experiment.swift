@@ -14,8 +14,8 @@ public final class Experiment {
     public var title: String
     public var createdAt: Date
     public var startedAt: Date?
-    public var endedAt: Date?
-    public var status: ExperimentStatus
+    public private(set) var endedAt: [Date] = []
+    public private(set) var status: ExperimentStatus
     public var procedure: ExperimentProtocol?
 
     @Relationship(deleteRule: .cascade)
@@ -24,12 +24,15 @@ public final class Experiment {
     @Relationship(deleteRule: .cascade)
     public var records: [ExperimentRecord] = []
 
+    @Relationship(deleteRule: .cascade)
+    public private(set) var statusHistory: [ExperimentStatusEntry] = []
+
     public init(
         id: UUID = UUID(),
         title: String,
         createdAt: Date = .now,
         startedAt: Date? = nil,
-        endedAt: Date? = nil,
+        endedAt: [Date] = [],
         pauses: [Pause] = [],
         status: ExperimentStatus = .preparing,
         procedure: ExperimentProtocol? = nil,
@@ -44,5 +47,6 @@ public final class Experiment {
         self.status = status
         self.procedure = procedure
         self.records = records
+        self.statusHistory = [ExperimentStatusEntry(status: status, date: createdAt)]
     }
 }
