@@ -1,19 +1,20 @@
 //
 //  WatchConnectivitySession.swift
-//  ResearchWatch Watch App
+//  labcord-package-swift
 //
 //  Created by 정홍섭 on 10/21/26.
 //
 
 import ComposableArchitecture
 import Foundation
+import LabcordShared
 import WatchConnectivity
 
-final class WatchConnectivitySession: NSObject, WCSessionDelegate {
+public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionManaging {
     private let deliveryLock = NSLock()
     private var handlingUserInfoCount = 0
     private var lastHandledUserInfoAt: Date?
-    private var userInfoObservers: [UUID: ([String: Any]) -> Void] = [:]
+    public let observerStore = WatchConnectivityObserverStore()
 
     private func deliveryState(since start: Date) -> (isHandling: Bool, handledRecently: Bool) {
         deliveryLock.lock()
@@ -24,50 +25,13 @@ final class WatchConnectivitySession: NSObject, WCSessionDelegate {
         )
     }
 
-    var session: WCSession? {
-        WCSession.isSupported() ? WCSession.default : nil
-    }
-
-    @discardableResult
-    func addUserInfoObserver(_ observer: @escaping ([String: Any]) -> Void) -> UUID {
-        let id = UUID()
-
-        deliveryLock.lock()
-        userInfoObservers[id] = observer
-        deliveryLock.unlock()
-
-        activate()
-        return id
-    }
-
-    func removeUserInfoObserver(_ id: UUID) {
-        deliveryLock.lock()
-        userInfoObservers.removeValue(forKey: id)
-        deliveryLock.unlock()
-    }
-
-    func transferUserInfo(_ userInfo: [String: Any]) {
-        guard let session, session.activationState == .activated else { return }
-        session.transferUserInfo(userInfo)
-    }
-
-    func activate() {
-        guard let session else { return }
-
-        session.delegate = self
-
-        if session.activationState == .notActivated {
-            session.activate()
-        }
-    }
-
-    func session(
+    public func session(
         _ session: WCSession,
         activationDidCompleteWith state: WCSessionActivationState,
         error: Error?
     ) {}
 
-    func session(
+    public func session(
         _ session: WCSession,
         didReceiveUserInfo userInfo: [String: Any]
     ) {
@@ -75,13 +39,7 @@ final class WatchConnectivitySession: NSObject, WCSessionDelegate {
         handlingUserInfoCount += 1
         deliveryLock.unlock()
 
-        DispatchQueue.main.async {
-            self.deliveryLock.lock()
-            let observers = Array(self.userInfoObservers.values)
-            self.deliveryLock.unlock()
-
-            observers.forEach { $0(userInfo) }
-
+        observerStore.deliverUserInfo(userInfo) {
             self.deliveryLock.lock()
             self.handlingUserInfoCount -= 1
             self.lastHandledUserInfoAt = Date()
@@ -89,7 +47,7 @@ final class WatchConnectivitySession: NSObject, WCSessionDelegate {
         }
     }
 
-    func waitForPendingUserInfo() async {
+    public func waitForPendingUserInfo() async {
         activate()
         let start = Date()
         let deadline = start.addingTimeInterval(5)
@@ -115,11 +73,11 @@ final class WatchConnectivitySession: NSObject, WCSessionDelegate {
 }
 
 extension WatchConnectivitySession: DependencyKey {
-    static let liveValue = WatchConnectivitySession()
+    public static let liveValue = WatchConnectivitySession()
 }
 
 extension DependencyValues {
-    var watchConnectivitySession: WatchConnectivitySession {
+    public var watchConnectivitySession: WatchConnectivitySession {
         get { self[WatchConnectivitySession.self] }
         set { self[WatchConnectivitySession.self] = newValue }
     }
