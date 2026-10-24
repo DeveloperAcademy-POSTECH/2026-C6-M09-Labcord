@@ -36,15 +36,15 @@ public final class WatchConnectivityObserverStore: @unchecked Sendable {
         _ userInfo: [String: Any],
         completion: @escaping () -> Void = {}
     ) {
-        let delivery = UserInfoDelivery(userInfo: userInfo, completion: completion)
+        let message = UserInfoDelivery(userInfo: userInfo, completion: completion)
 
-        DispatchQueue.main.async { [self, delivery] in
+        DispatchQueue.main.async { [self, message] in
             lock.lock()
             let observers = Array(userInfoObservers.values)
             lock.unlock()
 
-            observers.forEach { $0(delivery.userInfo) }
-            delivery.completion()
+            observers.forEach { $0(message.userInfo) }
+            message.completion()
         }
     }
 }
