@@ -1,5 +1,5 @@
 //
-//  ExperimentSetup.swift
+//  ExperimentSetupView.swift
 //  Researchers
 //
 //  Created by 정홍섭 on 10/24/26.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct ExperimentSetup: View {
+struct ExperimentSetupView: View {
     var body: some View {
         ZStack {
             Color(.black)
@@ -42,5 +42,5 @@ struct ExperimentSetup: View {
 }
 
 #Preview {
-    ExperimentSetup()
+    ExperimentSetupView()
 }
