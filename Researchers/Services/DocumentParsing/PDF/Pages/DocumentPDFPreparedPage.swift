@@ -35,6 +35,6 @@ nonisolated struct DocumentPDFPreparedPage: Sendable {
 nonisolated enum DocumentPDFWorkingMemory {
   // 배치는 여러 문서의 Vision 모델·중간 버퍼가 겹친다. 단일 문서의 작업창은 유지한다.
   static var recognitionReserveBytes: Int {
-    32 * 1024 * 1024
+    (DocumentPDFScheduling.pool == nil ? 32 : 48) * 1024 * 1024
   }
 }
