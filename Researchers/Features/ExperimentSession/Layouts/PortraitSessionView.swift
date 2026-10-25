@@ -29,7 +29,7 @@ struct PortraitSessionView: View {
                     Spacer()
                 }
 
-                PortraitSessionDockView(
+                PortraitSessionSheetView(
                     store: store,
                     compactHeight: screenHeight * 0.127,
                     expandedHeight: screenHeight * 0.3890160183,
