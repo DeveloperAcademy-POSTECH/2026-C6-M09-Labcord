@@ -15,12 +15,15 @@ struct ExperimentSessionFeature {
         var cameraPermission = CameraPermssionFeature.State()
         var cameraErrorMessage: String?
         var previewConnector: CameraPreviewConnector?
+        var isCameraSwitching = false
     }
     
     enum Action: Equatable {
         case timerTabSelected(TimerTab)
         case cameraPermission(CameraPermssionFeature.Action)
         case cameraStarted(CameraPreviewConnector)
+        case cameraSwitchRequested
+        case cameraSwitched(CameraPreviewConnector)
         case cameraStartFailed(String)
         case cameraErrorDismissed
     }
@@ -54,7 +57,27 @@ struct ExperimentSessionFeature {
                 state.previewConnector = connector
                 return .none
 
+            case .cameraSwitchRequested:
+                guard state.previewConnector != nil, !state.isCameraSwitching else { return .none }
+                state.isCameraSwitching = true
+                return .run { send in
+                    do {
+                        try await cameraSessionClient.switchCamera()
+                        let connector = await cameraSessionClient.previewConnector()
+                        await send(.cameraSwitched(connector))
+                    } catch {
+                        await send(.cameraStartFailed(error.localizedDescription))
+                    }
+                }
+
+            case let .cameraSwitched(connector):
+                state.isCameraSwitching = false
+                state.cameraErrorMessage = nil
+                state.previewConnector = connector
+                return .none
+
             case let .cameraStartFailed(message):
+                state.isCameraSwitching = false
                 state.cameraErrorMessage = message
                 return .none
 
