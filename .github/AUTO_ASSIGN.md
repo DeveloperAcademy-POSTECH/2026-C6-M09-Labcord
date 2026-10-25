@@ -55,5 +55,6 @@ Issue와 PR의 유형 라벨은 각 항목의 제목으로 결정한다. `feat: 
 `pull_request_target`은 base 인라인 스크립트와 API 데이터만 사용하고 PR 코드를 checkout/실행하지 않는다.
 본문만 수정한 이벤트는 처리하지 않는다.
 
-별도 테스트 파일이나 전용 테스트 워크플로는 없다. 기존 Build·SwiftLint·Main Branch Guard와
-앱 XCTest/샘플은 변경하지 않는다.
+별도 테스트 파일이나 전용 테스트 워크플로는 없다. Build·Main Branch Guard와
+앱 XCTest/샘플은 변경하지 않는다. SwiftLint는 PR의 head 저장소·커밋을 checkout해
+포크 PR도 strict 검사를 실행하며, 자동 수정 커밋·푸시는 같은 저장소 PR에만 적용한다.
