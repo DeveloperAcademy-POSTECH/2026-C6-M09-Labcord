@@ -51,6 +51,8 @@ jobs:
                   return False, True, 'SwiftLint 설정 또는 워크플로'
               if path.endswith('.swift'):
                   return True, True, 'Swift 소스'
+              if path.rsplit('/', 1)[-1] == '.gitignore':
+                  return False, False, '문서·협업 설정'
               app_roots = ('researchers/', 'researchwatchapp/', 'packages/', 'researchers.xcodeproj/')
               build_files = (
                   '.xcconfig', '.entitlements', '.plist', '.storyboard', '.xib',
@@ -60,7 +62,7 @@ jobs:
                   or '.xcodeproj/' in path or '.xcworkspace/' in path or '.xcassets/' in path):
                   return True, False, '프로젝트·패키지·리소스'
               metadata = {
-                  '.gitignore', '.github/codeowners', '.coderabbit.yaml', '.coderabbit.yml',
+                  '.github/codeowners', '.coderabbit.yaml', '.coderabbit.yml',
                   '.github/workflows/auto-assign.yml', '.github/workflows/main-branch-guard.yml'
               }
               if (path.startswith(('docs/', '.github/issue_template/'))
