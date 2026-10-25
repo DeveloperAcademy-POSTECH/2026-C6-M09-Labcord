@@ -11,6 +11,7 @@ struct SessionHeaderView: View {
     var body: some View {
         HStack(spacing: 19) {
             Text("촉매 반응 조건 비교 실험 A")
+                .lineLimit(1)
                 .font(.title2.bold())
 
             Spacer()
