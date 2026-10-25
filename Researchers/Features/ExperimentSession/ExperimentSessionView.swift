@@ -7,19 +7,25 @@
 
 import ComposableArchitecture
 import SwiftUI
+import LabcordiOS
 
 struct ExperimentSessionView: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
-
+    
     @State private var store = Store(initialState: ExperimentSessionFeature.State()) {
         ExperimentSessionFeature()
     }
-
+    
     var body: some View {
-        if verticalSizeClass == .compact {
-            LandscapeSessionView(store: store)
-        } else {
-            PortraitSessionView(store: store)
+        Group {
+            if verticalSizeClass == .compact {
+                LandscapeSessionView(store: store)
+            } else {
+                PortraitSessionView(store: store)
+            }
+        }
+        .task {
+            store.send(.cameraPermission(.request))
         }
     }
 }
