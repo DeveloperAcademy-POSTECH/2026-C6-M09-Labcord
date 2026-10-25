@@ -1,0 +1,23 @@
+name: Auto Assign Rules
+
+on:
+  pull_request:
+    branches: [develop]
+    paths:
+      - .github/workflows/auto-assign.yml
+      - .github/workflows/auto-assign-test.yml
+      - .github/tests/auto-assign.test.cjs
+  push:
+    branches: ['ci/#31-Devin']
+
+permissions:
+  contents: read
+
+jobs:
+  rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: node --test .github/tests/auto-assign.test.cjs

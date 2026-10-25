@@ -1,0 +1,119 @@
+name: Auto Assign
+
+on:
+  issues:
+    types: [opened]
+  pull_request_target:
+    types: [opened]
+
+permissions: {}
+
+concurrency:
+  group: auto-assign-${{ github.repository }}-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  assign:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      # Deliberately no checkout: only this base-branch script and API data run.
+      - uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const number = context.payload.issue?.number ?? context.payload.pull_request?.number;
+            const params = { owner, repo, issue_number: number };
+            const isPR = Boolean(context.payload.pull_request);
+            // Confirmed from upstream issues/PRs: #31, #29, #30 (2026-10-25).
+            // Add other teammates only after confirming their account/label pair.
+            const members = { hellosunghyun: '데빈', junghongseop: '테오', wondrone0113: '원' };
+            const types = {
+              feat: '💻 Feat', fix: '🐞 Fix', style: '🎨 Style', design: '🎨 Style',
+              docs: '📘 Docs', chore: '📄 Chore', refactor: '🔨 Refactor',
+              ci: '⚙️ CI', test: '🧪 Test', add: '➕ Add', hotfix: '🔨 HotFix',
+              deploy: '🚀 deploy'
+            };
+            // build/perf/rename/remove have no dedicated upstream label; do not guess.
+            const typeLabels = new Set(Object.values(types));
+            const memberLabels = new Set(['데빈', '테오', '원', '로렌스', '린', '블레어']);
+            const recoverable = new Set([403, 404, 410, 422]);
+            const attempt = async (description, operation) => {
+              try { return await operation(); }
+              catch (error) {
+                if (!recoverable.has(error.status)) throw error;
+                core.warning(`${description}: HTTP ${error.status}; skipped`);
+              }
+            };
+            const current = await github.rest.issues.get(params);
+            const item = current.data;
+            if (item.user?.type === 'Bot' || /\[bot\]$/i.test(item.user?.login ?? '')) {
+              core.info('Bot author: skipped');
+              return;
+            }
+            const available = await github.paginate(github.rest.issues.listLabelsForRepo, {
+              owner, repo, per_page: 100
+            });
+            const known = new Set(available.map(label => label.name));
+            const inherited = new Set();
+            if (isPR) {
+              const numbers = new Set();
+              // Capture the entire reference so foreign repos cannot become local #N.
+              const pattern = /\b(?:close[sd]?|fix(?:es|ed)?|resolve[sd]?):?\s+((?:https:\/\/github\.com\/[^\s<>),]+)|(?:[\w.-]+\/[\w.-]+)?#\d+)\b/gi;
+              for (const match of (item.body ?? '').matchAll(pattern)) {
+                const ref = match[1];
+                let issueNumber;
+                if (/^#\d+$/.test(ref)) issueNumber = Number(ref.slice(1));
+                else {
+                  const qualified = ref.match(/^([\w.-]+)\/([\w.-]+)#(\d+)$/);
+                  const url = ref.match(/^https:\/\/github\.com\/([\w.-]+)\/([\w.-]+)\/issues\/(\d+)$/i);
+                  const parts = qualified ?? url;
+                  if (parts && parts[1].toLowerCase() === owner.toLowerCase()
+                    && parts[2].toLowerCase() === repo.toLowerCase()) issueNumber = Number(parts[3]);
+                }
+                if (Number.isSafeInteger(issueNumber) && issueNumber > 0) numbers.add(issueNumber);
+              }
+              // Official body references take priority; branch is a fallback only.
+              if (!numbers.size && context.payload.pull_request.head.repo?.full_name?.toLowerCase()
+                === `${owner}/${repo}`.toLowerCase()) {
+                const branch = context.payload.pull_request.head.ref.match(/^[a-z]+\/#(\d+)-/i);
+                if (branch) numbers.add(Number(branch[1]));
+              }
+              for (const linkedNumber of numbers) {
+                const response = await attempt(`Read linked issue #${linkedNumber}`, () =>
+                  github.rest.issues.get({ owner, repo, issue_number: linkedNumber }));
+                if (!response || response.data.pull_request) continue;
+                if (response.data.html_url?.toLowerCase()
+                  !== `https://github.com/${owner}/${repo}/issues/${linkedNumber}`.toLowerCase()) {
+                  core.warning(`Linked issue #${linkedNumber} moved outside this repository; skipped`);
+                  continue;
+                }
+                for (const label of response.data.labels ?? []) inherited.add(label.name);
+              }
+            }
+            const desired = new Set(inherited);
+            const prefix = item.title.match(/^([a-z]+)(?:\/#\d+)?:\s*/i)?.[1].toLowerCase();
+            if (![...inherited].some(label => typeLabels.has(label)) && types[prefix]) {
+              desired.add(types[prefix]);
+            }
+            if (![...inherited].some(label => memberLabels.has(label)) && members[item.user?.login]) {
+              desired.add(members[item.user.login]);
+            }
+            const existing = new Set((item.labels ?? []).map(label => label.name));
+            const missing = [...desired].filter(label => !known.has(label));
+            if (missing.length) core.warning(`Unavailable labels (not created): ${missing.join(', ')}`);
+            const labels = [...desired].filter(label => known.has(label) && !existing.has(label));
+            if (labels.length) await attempt('Add labels', () => github.rest.issues.addLabels({ ...params, labels }));
+            if (!(item.assignees ?? []).length && item.user?.login) {
+              const eligible = await attempt('Check assignee', () => github.rest.issues.checkUserCanBeAssigned({
+                owner, repo, assignee: item.user.login
+              }));
+              if (eligible) {
+                // Re-read to avoid replacing a manually assigned user during this run.
+                const latest = await github.rest.issues.get(params);
+                if (!(latest.data.assignees ?? []).length) await attempt('Assign author', () =>
+                  github.rest.issues.addAssignees({ ...params, assignees: [item.user.login] }));
+              }
+            }
