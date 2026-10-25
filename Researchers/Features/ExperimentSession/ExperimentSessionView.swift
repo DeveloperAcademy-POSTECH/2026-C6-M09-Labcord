@@ -8,8 +8,14 @@
 import SwiftUI
 
 struct ExperimentSessionView: View {
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        if verticalSizeClass == .compact {
+            LandscapeSessionView()
+        } else {
+            PortraitSessionView()
+        }
     }
 }
 
