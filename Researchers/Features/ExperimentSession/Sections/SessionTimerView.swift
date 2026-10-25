@@ -19,7 +19,11 @@ struct SessionTimerView: View {
                         store.send(.timerTabSelected(.configured))
                     } label: {
                         Text("세팅된 타이머")
-                            .foregroundStyle(store.selectedTimerTab == .active ? Color.gray : Color.white)
+                            .foregroundStyle(
+                                store.selectedTimerTab == .active
+                                ? Color.gray
+                                : Color.white
+                            )
                             .font(.body.weight(.semibold))
                     }
                     .buttonStyle(.plain)
@@ -29,7 +33,11 @@ struct SessionTimerView: View {
                     } label: {
                         HStack(spacing: 8) {
                             Text("진행중인 타이머")
-                                .foregroundStyle(store.selectedTimerTab == .active ? Color.white : Color.gray)
+                                .foregroundStyle(
+                                    store.selectedTimerTab == .active
+                                    ? Color.white
+                                    : Color.gray
+                                )
                                 .font(.body.weight(.semibold))
 
                             Text("3")
