@@ -10,7 +10,7 @@ import SwiftUI
 
 struct ExperimentSessionView: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
-    
+
     @State private var store = Store(initialState: ExperimentSessionFeature.State()) {
         ExperimentSessionFeature()
     }

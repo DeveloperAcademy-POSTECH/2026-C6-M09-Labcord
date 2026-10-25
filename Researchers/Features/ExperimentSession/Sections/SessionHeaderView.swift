@@ -12,20 +12,20 @@ struct SessionHeaderView: View {
         HStack(spacing: 19) {
             Text("촉매 반응 조건 비교 실험 A")
                 .font(.title2.bold())
-            
+
             Spacer()
-            
+
             Button {
-                
+
             } label: {
                 Image(systemName: "stop.fill")
                     .frame(width: 40, height: 40)
             }
             .buttonStyle(.glass)
             .buttonBorderShape(.circle)
-            
+
             Button {
-                
+
             } label: {
                 Image(systemName: "pause.fill")
                     .frame(width: 40, height: 40)

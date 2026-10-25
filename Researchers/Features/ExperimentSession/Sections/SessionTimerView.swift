@@ -23,7 +23,7 @@ struct SessionTimerView: View {
                             .font(.body.weight(.semibold))
                     }
                     .buttonStyle(.plain)
-                    
+
                     Button {
                         store.send(.timerTabSelected(.active))
                     } label: {
@@ -39,17 +39,17 @@ struct SessionTimerView: View {
                     }
                     .buttonStyle(.plain)
                 }
-                
+
                 Spacer()
-                
+
                 Button {
-                    
+
                 } label: {
                     Image(systemName: "plus")
                         .foregroundStyle(.blue)
                 }
             }
-            
+
             Rectangle()
                 .foregroundStyle(.gray.opacity(0.2))
                 .frame(height: 91)

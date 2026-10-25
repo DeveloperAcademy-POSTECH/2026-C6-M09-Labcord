@@ -13,10 +13,10 @@ struct SessionCaptureView: View {
             Rectangle()
                 .frame(maxWidth: 401, maxHeight: 215)
                 .cornerRadius(15)
-            
+
             HStack(spacing: 24) {
                 Button {
-                    
+
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "record.circle")
@@ -30,9 +30,9 @@ struct SessionCaptureView: View {
                 .foregroundStyle(.black)
                 .buttonStyle(.borderedProminent)
                 .tint(.white)
-                
+
                 Button {
-                    
+
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "camera.viewfinder")
@@ -46,9 +46,9 @@ struct SessionCaptureView: View {
                 .foregroundStyle(.black)
                 .buttonStyle(.borderedProminent)
                 .tint(.white)
-                
+
                 Button {
-                    
+
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "video.fill")
