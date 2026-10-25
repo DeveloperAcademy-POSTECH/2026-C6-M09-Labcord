@@ -28,8 +28,12 @@ jobs:
             const params = { owner, repo, issue_number: number };
             const isPR = Boolean(context.payload.pull_request);
             // Confirmed from upstream issues/PRs: #31, #29, #30 (2026-10-25).
+            // Ryuhwagodong -> 로렌스 confirmed directly by the user (2026-10-25).
             // Add other teammates only after confirming their account/label pair.
-            const members = { hellosunghyun: '데빈', junghongseop: '테오', wondrone0113: '원' };
+            const members = {
+              hellosunghyun: '데빈', junghongseop: '테오', wondrone0113: '원',
+              Ryuhwagodong: '로렌스'
+            };
             const types = {
               feat: '💻 Feat', fix: '🐞 Fix', style: '🎨 Style', design: '🎨 Style',
               docs: '📘 Docs', chore: '📄 Chore', refactor: '🔨 Refactor',
