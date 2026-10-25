@@ -43,23 +43,9 @@ struct ExperimentSessionView: View {
             }
             .ignoresSafeArea()
         }
+        .background(.black)
         .task {
             store.send(.cameraPermission(.request))
-        }
-        .alert(
-            "카메라를 시작할 수 없어요",
-            isPresented: Binding(
-                get: { store.cameraErrorMessage != nil },
-                set: { isPresented in
-                    if !isPresented {
-                        store.send(.cameraErrorDismissed)
-                    }
-                }
-            )
-        ) {
-            Button("확인", role: .cancel) {}
-        } message: {
-            Text(store.cameraErrorMessage ?? "")
         }
     }
 }
