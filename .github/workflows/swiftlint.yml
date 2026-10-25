@@ -13,21 +13,29 @@ permissions:
   contents: write
 
 jobs:
+  changes:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/detect-changes.yml
+
   lint:
     name: lint
+    needs: changes
+    if: ${{ always() && !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.lint == 'true') }}
     runs-on: macos-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Install SwiftLint
         run: brew install swiftlint
 
       - name: SwiftLint fix
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         run: |
           swiftlint --fix || true
           if ! git diff --quiet; then

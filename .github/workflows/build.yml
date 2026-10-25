@@ -13,8 +13,15 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/detect-changes.yml
+
   build:
     name: build
+    needs: changes
+    if: ${{ always() && !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.build == 'true') }}
     runs-on: xcode-27
 
     steps:
