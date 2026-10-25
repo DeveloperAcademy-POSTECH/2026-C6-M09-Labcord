@@ -5,14 +5,48 @@
 //  Created by 정홍섭 on 10/25/26.
 //
 
+import ComposableArchitecture
 import SwiftUI
 
 struct PortraitSessionView: View {
+    let store: StoreOf<ExperimentSessionFeature>
+
     var body: some View {
-        Text("세로 모드")
+        GeometryReader { geo in
+            let screenHeight = geo.size.height
+                + geo.safeAreaInsets.top
+                + geo.safeAreaInsets.bottom
+
+            ZStack {
+                Rectangle()
+                    .ignoresSafeArea()
+                    .foregroundStyle(.gray)
+
+                VStack {
+                    SessionHeaderView()
+                        .padding(16)
+
+                    Spacer()
+                }
+
+                PortraitSessionSheetView(
+                    store: store,
+                    compactHeight: screenHeight * 0.127,
+                    expandedHeight: screenHeight * 0.3890160183,
+                    bottomInset: geo.safeAreaInsets.bottom
+                )
+            }
+            .foregroundStyle(.white)
+        }
     }
 }
 
 #Preview {
-    PortraitSessionView()
+    PortraitSessionView(
+        store: Store(
+            initialState: ExperimentSessionFeature.State()
+        ) {
+            ExperimentSessionFeature()
+        }
+    )
 }

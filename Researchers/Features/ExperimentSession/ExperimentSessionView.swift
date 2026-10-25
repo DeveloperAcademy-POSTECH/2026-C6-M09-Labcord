@@ -19,7 +19,7 @@ struct ExperimentSessionView: View {
         if verticalSizeClass == .compact {
             LandscapeSessionView(store: store)
         } else {
-            PortraitSessionView()
+            PortraitSessionView(store: store)
         }
     }
 }
