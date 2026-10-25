@@ -23,7 +23,6 @@ PR 본문의 공식 연결 키워드와 같은 저장소 Issue 참조를 우선�
 기본 브랜치에 반영된 후 새 이벤트부터 동작한다. `pull_request_target`은 base의 인라인
 스크립트만 실행하며 PR 코드 checkout/실행과 PR 문자열의 셸 삽입은 없다.
 
-규칙 검증: `node --test .github/tests/auto-assign.test.cjs`.
-테스트는 실제 워크플로의 인라인 스크립트를 API mock으로 실행한다. GitHub 쓰기나
-테스트 Issue 생성은 없다. `Auto Assign Rules` CI는 읽기 권한만 가진 별도 PR 작업이다.
-앱 XCTest나 샘플을 추가하지 않으며 기존 Build/SwiftLint/Main Branch Guard는 유지한다.
+사용자 요청에 따라 이 작업에서 추가했던 테스트 파일과 전용 테스트 워크플로는 제거했다.
+현재 이 자동화의 별도 테스트 파일이나 실행 설정은 없다. 기존 Build/SwiftLint/
+Main Branch Guard는 유지하며 앱 XCTest나 샘플을 추가하지 않는다.
