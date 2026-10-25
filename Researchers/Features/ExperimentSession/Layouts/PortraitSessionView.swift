@@ -18,9 +18,8 @@ struct PortraitSessionView: View {
                 + geo.safeAreaInsets.bottom
 
             ZStack {
-                Rectangle()
+                Color.clear
                     .ignoresSafeArea()
-                    .foregroundStyle(.gray)
 
                 VStack {
                     SessionHeaderView()
