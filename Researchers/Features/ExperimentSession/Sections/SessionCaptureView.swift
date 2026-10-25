@@ -10,13 +10,13 @@ import SwiftUI
 struct SessionCaptureView: View {
     var body: some View {
         VStack(spacing: 20) {
-            Rectangle()
-                .frame(maxWidth: 401, maxHeight: 215)
-                .cornerRadius(15)
-
+            Color.clear
+                .frame(width: 401, height: 215)
+                .anchorPreference(key: CameraPreviewAnchorKey.self, value: .bounds) { $0 }
+            
             HStack(spacing: 24) {
                 Button {
-
+                    
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "record.circle")
@@ -30,9 +30,9 @@ struct SessionCaptureView: View {
                 .foregroundStyle(.black)
                 .buttonStyle(.borderedProminent)
                 .tint(.white)
-
+                
                 Button {
-
+                    
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "camera.viewfinder")
@@ -46,9 +46,9 @@ struct SessionCaptureView: View {
                 .foregroundStyle(.black)
                 .buttonStyle(.borderedProminent)
                 .tint(.white)
-
+                
                 Button {
-
+                    
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "video.fill")
