@@ -24,6 +24,11 @@ nonisolated public struct CameraPreviewConnector: @unchecked Sendable {
     }
 
     @MainActor
+    public func detach() {
+        storage.detach()
+    }
+
+    @MainActor
     public func updateLayout(in view: UIView) {
         storage.updateLayout(in: view)
     }
@@ -31,7 +36,7 @@ nonisolated public struct CameraPreviewConnector: @unchecked Sendable {
 
 extension CameraPreviewConnector: Equatable {
     public static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.session === rhs.session
+        lhs.storage === rhs.storage
     }
 }
 
@@ -86,6 +91,14 @@ nonisolated private final class CameraPreviewStorage: @unchecked Sendable {
         if let rotationCoordinator {
             applyRotation(rotationCoordinator.videoRotationAngleForHorizonLevelPreview)
         }
+    }
+
+    @MainActor
+    func detach() {
+        rotationObservation = nil
+        rotationCoordinator = nil
+        previewLayer?.removeFromSuperlayer()
+        previewLayer = nil
     }
 
     @MainActor
