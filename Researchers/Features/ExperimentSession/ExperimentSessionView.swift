@@ -24,9 +24,51 @@ struct ExperimentSessionView: View {
                 PortraitSessionView(store: store)
             }
         }
+        .backgroundPreferenceValue(CameraPreviewAnchorKey.self) { anchor in
+            GeometryReader { geometry in
+                if let connector = store.previewConnector {
+                    let frame = verticalSizeClass == .compact
+                        ? anchor.map { geometry[$0] } ?? CGRect(origin: .zero, size: geometry.size)
+                        : CGRect(origin: .zero, size: geometry.size)
+                    CameraPreviewView(connector: connector)
+                        .frame(width: frame.width, height: frame.height)
+                        .clipShape(
+                            RoundedRectangle(
+                                cornerRadius: verticalSizeClass == .compact ? 15 : 0
+                            )
+                        )
+                        .position(x: frame.midX, y: frame.midY)
+                        .allowsHitTesting(false)
+                }
+            }
+            .ignoresSafeArea()
+        }
         .task {
             store.send(.cameraPermission(.request))
         }
+        .alert(
+            "카메라를 시작할 수 없어요",
+            isPresented: Binding(
+                get: { store.cameraErrorMessage != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        store.send(.cameraErrorDismissed)
+                    }
+                }
+            )
+        ) {
+            Button("확인", role: .cancel) {}
+        } message: {
+            Text(store.cameraErrorMessage ?? "")
+        }
+    }
+}
+
+struct CameraPreviewAnchorKey: PreferenceKey {
+    static var defaultValue: Anchor<CGRect>? { nil }
+
+    static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) {
+        value = nextValue() ?? value
     }
 }
 
