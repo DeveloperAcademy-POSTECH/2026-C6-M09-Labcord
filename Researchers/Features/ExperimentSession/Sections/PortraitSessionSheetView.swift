@@ -1,5 +1,5 @@
 //
-//  PortraitSessionDockView.swift
+//  PortraitSessionSheetView.swift
 //  Researchers
 //
 //  Created by 정홍섭 on 10/25/26.
@@ -8,7 +8,7 @@
 import ComposableArchitecture
 import SwiftUI
 
-struct PortraitSessionDockView: View {
+struct PortraitSessionSheetView: View {
     let store: StoreOf<ExperimentSessionFeature>
     let compactHeight: CGFloat
     let expandedHeight: CGFloat
