@@ -16,7 +16,7 @@ struct PortraitSessionSheetView: View {
 
     @State private var collapseProgress: CGFloat = 0
     @State private var dragStartProgress: CGFloat?
-    
+
     private var panelDragGesture: some Gesture {
         DragGesture(minimumDistance: 0, coordinateSpace: .global)
             .onChanged { value in
@@ -55,7 +55,7 @@ struct PortraitSessionSheetView: View {
         VStack(spacing: 16) {
             HStack(spacing: 12) {
                 Button {
-                    
+
                 } label: {
                     VStack(spacing: 10) {
                         Image(systemName: "record.circle")
@@ -70,9 +70,9 @@ struct PortraitSessionSheetView: View {
                 }
                 .foregroundStyle(.white)
                 .buttonStyle(.plain)
-                
+
                 Button {
-                    
+
                 } label: {
                     VStack(spacing: 10) {
                         Image(systemName: "camera.viewfinder")
@@ -87,9 +87,9 @@ struct PortraitSessionSheetView: View {
                 }
                 .foregroundStyle(.white)
                 .buttonStyle(.plain)
-                
+
                 Button {
-                    
+
                 } label: {
                     VStack(spacing: 10) {
                         Image(systemName: "video.fill")
