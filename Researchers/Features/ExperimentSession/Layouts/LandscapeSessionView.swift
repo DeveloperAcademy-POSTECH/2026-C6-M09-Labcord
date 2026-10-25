@@ -13,7 +13,7 @@ struct LandscapeSessionView: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            Color(.black)
+            Color.clear
 
             VStack(alignment: .leading, spacing: 020) {
                 SessionHeaderView()
