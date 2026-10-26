@@ -18,7 +18,7 @@ AGENTS.md                              공통 원칙·저장소 지도·작업�
 └── verify-change/
     ├── SKILL.md                        변경별 검증 기준·명령·결과 보고
     └── scripts/check_agent_docs.sh     Bash 문서 형식·로컬 파일 링크 검사
-docs/agent-rules.md                     출처·차이·인식 검증·관리 방법
+docs/agent-rules.md                     적용 기준·인식 검증·관리 방법
 ```
 
 가까운 협업 절차인 Git·PR을 하나로 묶고, 일반 문서 작업을 위한 별도 Skill은 만들지 않았습니다.
@@ -26,66 +26,38 @@ docs/agent-rules.md                     출처·차이·인식 검증·관리 �
 에이전트를 쓰지 않는 팀원은 기존 Xcode·Git 작업을 그대로 할 수 있습니다.
 이 파일들은 hook·자동 실행·패키지 설치·CI 변경을 추가하지 않습니다.
 
-## 출처와 적용 범위
+## 팀 규칙의 적용 위치
 
-기준 자료는 [Notion 개발 컨벤션](https://sassy-cloth-fbe.notion.site/3fa06046c66e804eb90bcfb3d7341498)입니다.
-이번 반영은 테오가 작성한 컨벤션의 사용자 제공 ZIP 사본을 기준으로 했습니다.
-원문 작성일 표기는 2026-10-15, export의 관측일 표기는 2026-10-26입니다.
-온라인 Notion의 현재 내용까지 대조했다는 의미는 아닙니다.
-
-| 원문 항목 | 반영 위치·분류 |
+| 규칙 | 관리 위치 |
 | --- | --- |
-| Branch | git-workflow: 브랜치 형식 |
-| Commit·Commit Message | git-workflow: 종류와 커밋 형식 |
-| Pattern/Architecture·개발 사용 기술 | architecture: Swift·TCA·SwiftData |
-| Issue·Pull Request | git-workflow: 제목 형식·기존 PR 템플릿 |
-| Git·Code Review | git-workflow: Git Flow 참고·CodeRabbit·팀원 승인 |
-| Code Style | code-style: StyleShare·API 이름·로컬 lint 설정 |
-| 폴더 구조·운영 규칙 1 | architecture: 책임은 유지하고 현재 경로로 매핑 |
-| Feature 작성 규칙 2 | architecture: View/Feature 역할·내부 참조 제한 |
-| 데이터 저장과 전송 3 | architecture: iPhone 저장·Watch 전송·완료 상태·중복 방지 |
-| Shared와 DesignSystem 기준 4 | architecture: 공통화 시점·UI 책임·패키지 연결 |
-| 자동 생성 연결 문서 목록 | 필요 시 원문 링크로 참조; 각각을 새 팀 정책으로 승격하지 않음 |
-| 이슈 #32의 실행·생략 기준 | verify-change: 변경 종류별 빌드·SwiftLint |
-| 항상 필요한 적용·보고 원칙 | AGENTS.md; 명령·상세 절차는 Skill로 분리 |
+| 브랜치·커밋·이슈·PR | git-workflow: 이름·제목·템플릿 |
+| Git·코드 리뷰 | git-workflow: Git Flow·CodeRabbit·팀원 승인 |
+| Swift 스타일 | code-style: 이름·레이아웃·로컬 lint 설정 |
+| Feature와 모듈 | architecture: View/Feature 역할·내부 참조 제한·모듈 경계 |
+| 저장과 전송 | architecture: iPhone 저장·Watch 전송·완료 상태·중복 방지 |
+| 공통 코드와 디자인 | architecture: 공통화 시점·UI 책임·패키지 연결 |
+| 변경별 검증 | verify-change: 빌드·SwiftLint 실행·생략·결과 보고 |
+| 공통 원칙 | AGENTS.md; 명령·상세 절차는 Skill로 분리 |
 
-ZIP에 포함된 TCA·Dependencies·Navigation·Testing·Swift API 설계 등 연결 문서는
-상세 기술 참고자료입니다. 모든 예제나 `main` 브랜치 API를 팀의 필수 규칙으로 옮기지 않습니다.
 현재 의존성은 [Package.resolved](../Researchers.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved),
 모듈 구성은 [Package.swift](../Packages/ResearchersModules/Package.swift)를 확인합니다.
 
-`deep-research-report (2).md`는 짧은 공통 Rules, 필요할 때 읽는 Skills,
-결정론적 보조 검사라는 **설계 사례**로 참고했습니다.
-검증되지 않은 모델 성능·출시일·제품별 자동 탐색 주장은 저장소 규칙에 반영하지 않았습니다.
+## 현재 구현과 적용 기준
 
-### 원문 사본 식별
-
-아래 SHA-256은 ZIP 전체가 아닌 추출된 파일의 원본 바이트 기준입니다.
-
-| 파일 | SHA-256 |
+| 항목 | 현재 설정·적용 |
 | --- | --- |
-| `개발 컨벤션.md` | `00fa25cbd528454a740e1c0cef2c4cc77f40c028e12e106977ae94194545ce52` |
-| ZIP의 `0003--StyleShare-…가이드.md` | `ae75895dd8a0c11e5f11d6da876155443310a07c359ba68cc27d791a1d11b233` |
+| Watch 앱 경로 | 소스는 `ResearchWatchApp/`, 스킴은 `ResearchWatch Watch App` |
+| 로컬 패키지 | 단일 `Packages/ResearchersModules/Package.swift` 아래 네 개 타깃 |
+| 기기별 저장·통신 | 기기별 구현은 `LabcordiOS`·`LabcordWatchOS`에도 있음. 새 저장 구현의 경로는 해당 작업에서 팀과 확인 |
+| SwiftData | `LabcordShared/Models`의 모델 선언과 iPhone의 저장 실행 책임을 구분. Watch에 저장 구현을 새로 두거나 기존 모델을 자동 이동하지 않음 |
+| 들여쓰기 | 스타일 가이드는 2 spaces, 기존 Swift는 주로 4 spaces. 적용 기준은 팀 확인 사항이며 일괄 포맷 변경하지 않음 |
+| import 배치 | 스타일 가이드와 기존 코드 배치에 차이가 있음. `.swiftlint.yml`의 `sorted_imports`도 확인하며 새 우선순위를 임의 확정하지 않음 |
+| 줄 길이 | warning 99·error 150이고 `--strict`는 warning도 실패 처리 |
+| 도구·SDK | Package의 iOS/watchOS 최소 26, 프로젝트 배포 대상 27.0, CI runner `xcode-27`, Swift tools 6.4 |
+| TCA API | 잠긴 버전은 1.26.2. 사용하는 API의 지원 여부를 확인 |
 
-전체 ZIP을 저장소에 복제하지 않습니다. 해시는 다음 export와의 비교 기준이며,
-온라인 문서 변경이나 규칙의 의미 차이를 자동 감지하지 않습니다.
-
-## 원문과 현재 구현의 차이
-
-| 원문·참고자료 | 현재 저장소·처리 |
-| --- | --- |
-| `ResearchWatch Watch App/` | 소스 경로는 `ResearchWatchApp/`, 스킴 이름은 `ResearchWatch Watch App` |
-| `Packages/Shared`, `Packages/DesignSystem` | 단일 `Packages/ResearchersModules/Package.swift` 아래 네 개 타깃. 경로 변경을 지시하지 않음 |
-| 앱별 `Data`/`Database` 표기 혼재 | 기기별 구현은 `LabcordiOS`·`LabcordWatchOS`에도 있음. 새 저장 구현의 경로 결정은 해당 작업에서 팀과 확인 |
-| Watch에 SwiftData 저장을 두지 않음 | `LabcordShared/Models`의 기존 모델 선언과 기기의 실제 저장 실행 책임은 구분. 기존 모델을 자동 이동하지 않음 |
-| StyleShare 들여쓰기 2 spaces | 기존 Swift는 주로 4 spaces. 팀 적용 기준 확인 사항이며 이번 작업에서 포맷을 바꾸지 않음 |
-| StyleShare 내장 import 후 외부 import 그룹 | 기존 코드 배치와 차이가 있음. `.swiftlint.yml`의 `sorted_imports`도 함께 확인하며 새 우선순위를 임의 확정하지 않음 |
-| StyleShare 최대 99자 | 로컬 설정은 warning 99·error 150이고 `--strict`는 warning도 실패 처리 |
-| Package의 iOS/watchOS 최소 26 | Xcode 프로젝트 배포 대상은 27.0, CI runner는 `xcode-27`, Swift tools는 6.4 |
-| TCA 연결 문서의 `main` 예제 | 현재 잠긴 TCA는 1.26.2. 의존성 버전과 API 지원 여부를 별도로 확인 |
-
-차이는 숨기거나 원문을 덮어써서 해결하지 않습니다. 영향받는 구현 작업에서는 팀의 선택을 확인하고,
-합의된 변경을 Notion과 해당 Skill에 함께 반영합니다. 이 목록 자체는 새 팀 정책이 아닙니다.
+규칙과 구현에 차이가 있으면 영향받는 작업에서 팀의 선택을 확인합니다.
+합의된 변경은 해당 Skill과 이 가이드에 함께 반영합니다. 이 표 자체는 새 팀 정책이 아닙니다.
 
 ## 에이전트 지원과 검증
 
@@ -135,7 +107,7 @@ Agent Skills의 `SKILL.md` + `name`·`description` frontmatter 구조를 사용�
   이름 불일치, 절차 절 누락, 깨진 로컬 링크, Skill 인덱스 누락)을 검사해 정상은 exit 0,
   잘못된 입력은 모두 exit 1로 구분했습니다. 임시 사본은 제거했습니다.
   Linux의 Bash 5.2에서 실행했으며, macOS·Bash 3.2에서의 실제 실행은 미검증입니다.
-- `git diff --check` 통과. 원문 SHA-256 두 개를 재대조했고 일치했습니다.
+- `git diff --check` 통과.
 - 실개발 시나리오 결과:
 
   | 확인한 요청·실제 파일 | 관찰한 규칙 적용 |
@@ -153,9 +125,9 @@ Agent Skills의 `SKILL.md` + `name`·`description` frontmatter 구조를 사용�
 
 ## 규칙을 수정하는 방법
 
-1. Notion의 최신 내용과 이번 출처 표를 비교합니다. 새 export를 받았다면 파일 SHA-256도 비교하되,
-   관측일·자동 생성 링크만 달라진 것인지 규칙의 의미가 달라진 것인지 본문을 확인합니다.
-2. 항상 필요한 원칙은 AGENTS, 작업별 절차는 해당 Skill, 출처·차이·지원 현황은 이 가이드에 반영합니다.
+1. 팀 합의와 저장소 설정을 확인하고 변경할 규칙의 적용 범위를 정합니다.
+   기존 규칙과 충돌하는 결정은 팀에 확인합니다.
+2. 항상 필요한 원칙은 AGENTS, 작업별 절차는 해당 Skill, 적용 기준·지원 현황은 이 가이드에 반영합니다.
    새로운 작업군이 생기기 전에는 Skill을 나누거나 추가하지 않습니다.
 3. 같은 규칙을 여러 문서에 복사하지 않고 상대 링크로 연결합니다.
    Skill은 사용 시점·팀 규칙·절차·주의사항과 예외·결과 검증을 포함합니다.
@@ -164,7 +136,7 @@ Agent Skills의 `SKILL.md` + `name`·`description` frontmatter 구조를 사용�
    형식을 확장한다면 아래 보조 검사도 함께 갱신합니다.
 5. 문서 검사와 관련 시나리오를 실행합니다. 도구별 자동 인식을 확인했다면
    도구·버전·날짜·실행 방식·관찰 결과를 남깁니다. 수동 로딩 성공을 자동 탐색 성공으로 기록하지 않습니다.
-6. 새 실행 기준·규칙 변경은 팀과 확인하고 Notion도 갱신합니다.
+6. 새 실행 기준·규칙 변경은 팀과 확인한 뒤 관련 문서에 일관되게 반영합니다.
    [git-workflow](../.agents/skills/git-workflow/SKILL.md)에 따라 PR을 준비합니다.
 
 ```sh
@@ -174,10 +146,5 @@ git diff --check
 ```
 
 보조 검사는 name·description 필수 항목, 필수 절, AGENTS의 Skill 링크와 단순 상대 파일 링크를 확인합니다.
-일반 YAML/Agent Skills 전체 명세, URL 인코딩된 링크·앵커·외부 URL 응답·Notion 동기화·자동 탐색·규칙 준수는 검사하지 않습니다.
-규칙 변경 PR에서는 위 시나리오와 원문 대조도 함께 검토합니다.
-
-참고 규격: [Agent Skills specification](https://agentskills.io/specification),
-[Codex Skills](https://developers.openai.com/codex/skills/),
-[Codex AGENTS.md](https://developers.openai.com/codex/guides/agents-md/).
-이번 환경에서는 이 공식 사이트의 본문 조회가 403으로 제한되어 제품별 지원을 추가로 단정하지 않았습니다.
+일반 YAML/Agent Skills 전체 명세, URL 인코딩된 링크·앵커·외부 URL 응답·자동 탐색·규칙 준수는 검사하지 않습니다.
+규칙 변경 PR에서는 위 시나리오와 팀 규칙의 적용 범위도 함께 검토합니다.

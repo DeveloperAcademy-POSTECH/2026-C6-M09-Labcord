@@ -26,7 +26,7 @@ Feature 구성·화면 연결·의존성, 저장소, WatchConnectivity 또는 �
 
 ## 절차
 
-1. [현재 경로 매핑](../../../docs/agent-rules.md#원문과-현재-구현의-차이)을 보고 영향받는 기기를 식별합니다.
+1. [현재 구현과 적용 기준](../../../docs/agent-rules.md#현재-구현과-적용-기준)을 보고 영향받는 기기를 식별합니다.
 2. View·Feature·기기별 Client·공유 모델/메시지 중 어느 책임인지 정합니다.
    `Packages/ResearchersModules/Package.swift`와 관련 소스의 기존 구현을 먼저 확인합니다.
 3. TCA 작업은 State·Action·Reducer와 의존성 경계를 확인합니다.
@@ -37,8 +37,8 @@ Feature 구성·화면 연결·의존성, 저장소, WatchConnectivity 또는 �
 
 ## 주의사항과 예외
 
-- Notion의 폴더 그림은 설계 의도를 설명합니다. 실제 `ResearchWatchApp/`와
-  `Packages/ResearchersModules/Sources/`를 임의로 옮기지 않습니다.
+- 현재 소스 경로인 `ResearchWatchApp/`와 `Packages/ResearchersModules/Sources/`를
+  이 Skill 적용만을 위해 임의로 옮기지 않습니다.
 - 현재 `LabcordShared/Models`에는 SwiftData 모델 선언이 있습니다.
   선언 위치와 저장 실행 책임을 구분하고, 이 Skill 적용만을 위해 모델을 옮기지 않습니다.
 - 새 Dependency나 TestStore 테스트는 변경 동작에 필요한 범위에서 도입합니다.
