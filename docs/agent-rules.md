@@ -110,7 +110,7 @@ Agent Skills의 `SKILL.md` + `name`·`description` frontmatter 구조를 사용�
 | `.swiftlint.yml`만 수정 | verify-change; SwiftLint 실행, 앱 빌드는 필수 아님 |
 | 리소스/프로젝트/의존성 변경 | verify-change; 영향 대상 빌드. Swift 변경도 있다면 lint 추가 |
 | Linux에서 Swift 변경 검증 | 필요한 검사 선택 후 Xcode/SwiftLint 부재를 미실행으로 보고; 성공으로 표시하지 않음 |
-| PR 작성·리뷰 | git-workflow·verify-change; 작성자 검증 후 개요·변경 내용·리뷰 포인트와 다이어그램 작성. 이슈는 문장 안에 연결하고 리뷰어 재검증 요청 제외 |
+| PR 작성·리뷰 | git-workflow·verify-change; 기존 템플릿 제목과 작성 주석에 따라 개요·작업 내용·리뷰 중점을 설명하고 다이어그램 첨부. 이슈는 문장 안에 연결하고 리뷰어 재검증 요청 제외 |
 | Swift 스타일 설명만 요청 | code-style; 변경 없이 검사·빌드를 강제하지 않음 |
 
 ## 규칙을 수정하는 방법
