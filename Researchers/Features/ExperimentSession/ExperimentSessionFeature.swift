@@ -10,6 +10,7 @@ struct ExperimentSessionFeature {
     @ObservableState
     struct State: Equatable {
         var selectedTimerTab: TimerTab = .configured
+        var timerSeconds: [Int] = [5400, 120, 10, 5, 120, 30, 60, 900, 2000, 2500, 3000, 150]
     }
 
     enum Action: Equatable {
