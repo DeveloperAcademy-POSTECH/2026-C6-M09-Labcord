@@ -1,0 +1,157 @@
+name: Auto Assign
+
+on:
+  issues:
+    types: [opened, assigned, unassigned, edited]
+  pull_request_target:
+    types: [opened, assigned, unassigned, edited]
+
+permissions: {}
+
+concurrency:
+  group: auto-assign-${{ github.repository }}-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  assign:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      # Deliberately no checkout: only this base-branch script and API data run.
+      - uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const number = context.payload.issue?.number ?? context.payload.pull_request?.number;
+            const params = { owner, repo, issue_number: number };
+            const isPR = Boolean(context.payload.pull_request);
+            const normalize = value => value.normalize('NFC').toLowerCase();
+            const updateType = context.payload.action === 'opened'
+              || (context.payload.action === 'edited' && Boolean(context.payload.changes?.title));
+            if (context.payload.action === 'edited' && !updateType) return;
+            // Confirmed from upstream issues/PRs: #31, #29, #30 (2026-10-25).
+            // Ryuhwagodong -> 로렌스 confirmed directly by the user (2026-10-25).
+            // Add other teammates only after confirming their account/label pair.
+            const members = {
+              hellosunghyun: '데빈', junghongseop: '테오', wondrone0113: '원',
+              Ryuhwagodong: '로렌스'
+            };
+            const types = {
+              feat: '💻 Feat', fix: '🐞 Fix', style: '🎨 Style', design: '🎨 Style',
+              docs: '📘 Docs', chore: '📄 Chore', refactor: '🔨 Refactor',
+              ci: '⚙️ CI', test: '🧪 Test', add: '➕ Add', hotfix: '🔨 HotFix',
+              deploy: '🚀 deploy'
+            };
+            // build/perf/rename/remove have no dedicated upstream label; do not guess.
+            const membersByLogin = new Map(Object.entries(members).map(([login, label]) =>
+              [normalize(login), label]));
+            const nicknameLabels = new Set(Object.values(members).map(normalize));
+            const typesByPrefix = new Map(Object.entries(types));
+            const typeLabels = new Set(Object.values(types).map(normalize));
+            const recoverable = new Set([403, 404, 410, 422]);
+            const attempt = async (description, operation) => {
+              try { return await operation(); }
+              catch (error) {
+                if (!recoverable.has(error.status)) throw error;
+                core.warning(`${description}: HTTP ${error.status}; skipped`);
+              }
+            };
+            const current = await github.rest.issues.get(params);
+            let item = current.data;
+            if (context.payload.action === 'opened'
+              && (item.user?.type === 'Bot' || /\[bot\]$/i.test(item.user?.login ?? ''))) {
+              core.info('Bot author: skipped');
+              return;
+            }
+            const available = await github.paginate(github.rest.issues.listLabelsForRepo, {
+              owner, repo, per_page: 100
+            });
+            const known = new Map(available.map(label => [normalize(label.name), label.name]));
+            const inheritedAssignees = new Map();
+            if (isPR && context.payload.action === 'opened') {
+              const numbers = new Set();
+              // Capture the entire reference so foreign repos cannot become local #N.
+              const pattern = /\b(?:close[sd]?|fix(?:es|ed)?|resolve[sd]?):?\s+((?:https:\/\/github\.com\/[^\s<>),]+)|(?:[\w.-]+\/[\w.-]+)?#\d+)\b/gi;
+              for (const match of (item.body ?? '').matchAll(pattern)) {
+                const ref = match[1];
+                let issueNumber;
+                if (/^#\d+$/.test(ref)) issueNumber = Number(ref.slice(1));
+                else {
+                  const qualified = ref.match(/^([\w.-]+)\/([\w.-]+)#(\d+)$/);
+                  const url = ref.match(/^https:\/\/github\.com\/([\w.-]+)\/([\w.-]+)\/issues\/(\d+)$/i);
+                  const parts = qualified ?? url;
+                  if (parts && normalize(parts[1]) === normalize(owner)
+                    && normalize(parts[2]) === normalize(repo)) issueNumber = Number(parts[3]);
+                }
+                if (Number.isSafeInteger(issueNumber) && issueNumber > 0) numbers.add(issueNumber);
+              }
+              // Official body references take priority; branch is a fallback only.
+              if (!numbers.size && context.payload.pull_request.head.repo?.full_name
+                && normalize(context.payload.pull_request.head.repo.full_name) === normalize(`${owner}/${repo}`)) {
+                const branch = context.payload.pull_request.head.ref.match(/^[a-z]+\/#(\d+)-/i);
+                if (branch) numbers.add(Number(branch[1]));
+              }
+              for (const linkedNumber of numbers) {
+                const response = await attempt(`Read linked issue #${linkedNumber}`, () =>
+                  github.rest.issues.get({ owner, repo, issue_number: linkedNumber }));
+                if (!response || response.data.pull_request) continue;
+                if (!response.data.html_url || normalize(response.data.html_url)
+                  !== normalize(`https://github.com/${owner}/${repo}/issues/${linkedNumber}`)) {
+                  core.warning(`Linked issue #${linkedNumber} moved outside this repository; skipped`);
+                  continue;
+                }
+                for (const assignee of response.data.assignees ?? []) {
+                  if (assignee.type === 'Bot' || /\[bot\]$/i.test(assignee.login)) continue;
+                  inheritedAssignees.set(normalize(assignee.login), assignee.login);
+                }
+              }
+            }
+            if (isPR && inheritedAssignees.size) {
+              const latest = await github.rest.issues.get(params);
+              const assigned = new Set((latest.data.assignees ?? []).map(user => normalize(user.login)));
+              const toAdd = [];
+              for (const [loginKey, login] of inheritedAssignees) {
+                if (assigned.has(loginKey)) continue;
+                const eligible = await attempt(`Check assignee ${login}`, () =>
+                  github.rest.issues.checkUserCanBeAssigned({ owner, repo, assignee: login }));
+                if (eligible) toAdd.push(login);
+              }
+              if (toAdd.length) await attempt('Inherit issue assignees', () =>
+                github.rest.issues.addAssignees({ ...params, assignees: toAdd }));
+              // Token-created assigned events may not trigger another run; label actual assignees here.
+              item = (await github.rest.issues.get(params)).data;
+            }
+            const syncLabels = async (desiredNames, managedNames) => {
+              const desired = new Set(desiredNames.map(normalize));
+              const missing = desiredNames.filter(name => !known.has(normalize(name)));
+              if (missing.length) core.warning(`Unavailable labels (not created): ${missing.join(', ')}`);
+              const existing = new Set((item.labels ?? []).map(label => normalize(label.name)));
+              const additions = [...desired].filter(key => known.has(key) && !existing.has(key))
+                .map(key => known.get(key));
+              // Preserve the old labels if adding their replacement fails.
+              if (additions.length) {
+                const added = await attempt('Add labels', () =>
+                  github.rest.issues.addLabels({ ...params, labels: additions }));
+                if (!added) return;
+              }
+              for (const label of item.labels ?? []) {
+                const key = normalize(label.name);
+                if (managedNames.has(key) && !desired.has(key)) await attempt(`Remove label ${label.name}`, () =>
+                  github.rest.issues.removeLabel({ ...params, name: label.name }));
+              }
+            };
+            const prefix = item.title.match(/^([a-z]+)(?:\/#\d+)?:\s*/i)?.[1].toLowerCase();
+            const type = typesByPrefix.get(prefix);
+            if (updateType && type) {
+              if (known.has(normalize(type))) await syncLabels([type], typeLabels);
+              else core.warning(`Unavailable labels (not created): ${type}`);
+            }
+            const nicknames = new Set();
+            for (const assignee of item.assignees ?? []) {
+              if (assignee.type === 'Bot' || /\[bot\]$/i.test(assignee.login)) continue;
+              const nickname = membersByLogin.get(normalize(assignee.login));
+              if (nickname) nicknames.add(nickname);
+            }
+            await syncLabels([...nicknames], nicknameLabels);
