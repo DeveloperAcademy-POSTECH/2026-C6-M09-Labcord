@@ -1,8 +1,6 @@
 # Agent Rules·Skills 관리 가이드
 
-[이슈 #32](https://github.com/DeveloperAcademy-POSTECH/2026-C6-M09-Labcord/issues/32)는
-기존 팀 협업 규칙을 에이전트가 사용할 수 있는 형태로 옮깁니다.
-앱·의존성·CI를 바꾸거나 새로운 팀 정책을 정하는 작업이 아닙니다.
+팀 협업 규칙을 에이전트에 적용하는 방법과 Rules·Skills의 관리 절차를 안내합니다.
 
 ## 사용 방법과 구조
 
@@ -21,8 +19,8 @@ AGENTS.md                              공통 원칙·저장소 지도·작업�
 docs/agent-rules.md                     적용 기준·인식 검증·관리 방법
 ```
 
-가까운 협업 절차인 Git·PR을 하나로 묶고, 일반 문서 작업을 위한 별도 Skill은 만들지 않았습니다.
-참고자료와 템플릿은 기존 파일·공식 문서 링크를 재사용합니다. 빈 `references/`나 `assets/`는 만들지 않습니다.
+가까운 협업 절차인 Git·PR은 하나의 Skill에서 관리합니다.
+참고자료와 템플릿은 기존 파일·공식 문서 링크를 재사용하며, 필요한 경우에만 `references/`나 `assets/`를 추가합니다.
 에이전트를 쓰지 않는 팀원은 기존 Xcode·Git 작업을 그대로 할 수 있습니다.
 이 파일들은 hook·자동 실행·패키지 설치·CI 변경을 추가하지 않습니다.
 
@@ -64,12 +62,7 @@ docs/agent-rules.md                     적용 기준·인식 검증·관리 방
 Agent Skills의 `SKILL.md` + `name`·`description` frontmatter 구조를 사용합니다.
 모델 이름이나 모델 API만으로 규칙 파일 자동 탐색을 보장하지 않습니다.
 
-| 실행 방식 | 현재 확인 범위 | 사용 방법 |
-| --- | --- | --- |
-| 이 작업의 Codex 에이전트 | 명시적 파일 읽기·규칙 적용 시나리오를 검증. 아래 기록 참조 | 루트 AGENTS와 해당 SKILL을 직접 지정 |
-| 새 Codex 세션의 자동 탐색 | 미검증. 이 세션에서 만든 파일을 읽는 것과 구분 | 새 작업을 저장소 루트에서 시작하고 자동 로드·선택 여부 확인 |
-| Claude Code·Copilot·기타 에이전트 | 실행 환경이 없어 자동 탐색·계층 규칙 적용 미검증 | 먼저 아래 수동 참조 요청 사용, 제품별 지원은 실제 실행 후 기록 |
-
+자동 탐색과 지침 적용 범위는 사용하는 도구·설정에 따라 확인합니다.
 자동 탐색을 지원하지 않거나 확인되지 않았다면 다음처럼 요청합니다.
 
 > 저장소 루트 AGENTS.md를 먼저 읽고 작업에 해당하는 .agents/skills/*/SKILL.md를 선택해 읽어 주세요.
@@ -95,34 +88,6 @@ Agent Skills의 `SKILL.md` + `name`·`description` frontmatter 구조를 사용�
 | PR 작성·리뷰 | git-workflow·verify-change; 실제 템플릿·제목 형식·팀 리뷰 기준 확인 |
 | Swift 스타일 설명만 요청 | code-style; 변경 없이 검사·빌드를 강제하지 않음 |
 
-### 이번 작업의 검증 기록
-
-- 기준: `develop`의 `cdf7e5e3c451c85e1448bc644598432e2cdd7925`, Linux x86_64.
-- 변경 범위: Rules·Skills·관리 문서와 선택적 문서 검사 스크립트. Swift·앱 프로젝트·CI 변경 없음.
-- 2026-10-26, 이 작업의 Codex 세션 및 별도 읽기 전용 에이전트 검토:
-  루트 AGENTS와 필요한 Skill을 명시적으로 읽고 실제 개발 요청에 적용했습니다.
-  자동 탐색 검증이나 앱 동작 테스트는 아닙니다.
-- `bash .agents/skills/verify-change/scripts/check_agent_docs.sh` 통과.
-  임시 사본에서 정상 입력 2건(현재 문서·1024자 한글 설명)과 잘못된 입력 10건(description 누락·빈 block scalar·null·길이 초과·선행 공백,
-  이름 불일치, 절차 절 누락, 깨진 로컬 링크, Skill 인덱스 누락)을 검사해 정상은 exit 0,
-  잘못된 입력은 모두 exit 1로 구분했습니다. 임시 사본은 제거했습니다.
-  Linux의 Bash 5.2에서 실행했으며, macOS·Bash 3.2에서의 실제 실행은 미검증입니다.
-- `git diff --check` 통과.
-- 실개발 시나리오 결과:
-
-  | 확인한 요청·실제 파일 | 관찰한 규칙 적용 |
-  | --- | --- |
-  | WatchPairingFeature 상태/effect 리뷰; View·iOS Client·요청/응답·observer 구현 추적 | architecture·code-style·verify-change 선택. iPhone만 수정할 경우 iPhone 빌드와 lint를 선택하고, lifecycle 취소·지연 응답 상태를 수동 검토 |
-  | WatchBatteryMessage 필드 추가 설계; 공유 메시지·Watch responder·iPhone decoder 추적 | 같은 세 Skill 선택. 송수신 양쪽·request ID 유지를 확인하고 공유 코드 변경이므로 양쪽 빌드와 lint를 선택. payload 응답을 저장 완료로 혼동하지 않음 |
-  | README 오타·lint 설정만 변경·PR 작성 요청 분류 | 각각 문서 검사/native 생략, lint만 필수, git-workflow·verify-change와 실제 PR 템플릿 사용으로 구분 |
-
-  위 코드 리뷰·설계 검증은 읽기 전용으로 수행했고 앱 소스는 수정하지 않았습니다.
-  네이티브 명령은 선택 결과이며 실행·통과 결과가 아닙니다.
-- native build·SwiftLint는 문서 작업 기준에 따라 생략합니다.
-  이 머신에는 Xcode·Swift·SwiftLint가 없어 Swift 변경 작업의 검사도 실행할 수 없습니다.
-- Watch 빌드 명령은 실제 공유 스킴에서 도출한 로컬 검증 명령입니다.
-  macOS에서의 실행 성공·앱 실행·기기 연동까지 검증한 것으로 해석하지 않습니다.
-
 ## 규칙을 수정하는 방법
 
 1. 팀 합의와 저장소 설정을 확인하고 변경할 규칙의 적용 범위를 정합니다.
@@ -134,8 +99,8 @@ Agent Skills의 `SKILL.md` + `name`·`description` frontmatter 구조를 사용�
 4. 이 저장소의 metadata 관례는 `name`·`description` 두 필드이며 모두 plain single-line 값입니다.
    `name`은 폴더와 같은 소문자·숫자·하이픈(최대 64자), `description`은 선택 조건을 담은 1–1024자입니다.
    형식을 확장한다면 아래 보조 검사도 함께 갱신합니다.
-5. 문서 검사와 관련 시나리오를 실행합니다. 도구별 자동 인식을 확인했다면
-   도구·버전·날짜·실행 방식·관찰 결과를 남깁니다. 수동 로딩 성공을 자동 탐색 성공으로 기록하지 않습니다.
+5. 문서 검사와 관련 시나리오를 실행합니다. 도구별 자동 인식과 지침 적용 범위를 확인하되,
+   파일을 직접 읽는 방식과 자동 탐색을 구분합니다.
 6. 새 실행 기준·규칙 변경은 팀과 확인한 뒤 관련 문서에 일관되게 반영합니다.
    [git-workflow](../.agents/skills/git-workflow/SKILL.md)에 따라 PR을 준비합니다.
 

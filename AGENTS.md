@@ -35,5 +35,5 @@
 | 브랜치·커밋·이슈·PR 작성 또는 리뷰 | [git-workflow](.agents/skills/git-workflow/SKILL.md) |
 | 변경 후 검증 선택·실행·결과 보고 | [verify-change](.agents/skills/verify-change/SKILL.md) |
 
-에이전트별 자동 인식 여부는 [지원·검증 기록](docs/agent-rules.md#에이전트-지원과-검증)을 참고합니다.
+자동 탐색을 지원하지 않는 도구의 사용법은 [에이전트 사용 안내](docs/agent-rules.md#에이전트-지원과-검증)를 참고합니다.
 모든 Skill을 처음부터 로드하거나 도구별로 규칙 본문을 복제할 필요는 없습니다.
