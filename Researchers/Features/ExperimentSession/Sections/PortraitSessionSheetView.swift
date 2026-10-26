@@ -53,57 +53,72 @@ struct PortraitSessionSheetView: View {
         let collapseDistance = expandedHeight - compactHeight
 
         VStack(spacing: 16) {
-            HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 20) {
                 Button {
-
+                    store.send(.cameraSwitchRequested)
                 } label: {
-                    VStack(spacing: 10) {
-                        Image(systemName: "record.circle")
-
-                        Text("음성 기록")
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: 76)
-                    .background(
-                        .black.opacity(0.4),
-                        in: RoundedRectangle(cornerRadius: 6)
-                    )
+                    Image(systemName: "arrow.trianglehead.2.clockwise.rotate.90")
+                        .font(.body)
+                        .frame(width: 40, height: 40)
                 }
                 .foregroundStyle(.white)
-                .buttonStyle(.plain)
+                .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.circle)
+                .tint(.black.opacity(0.5))
+                .disabled(store.previewConnector == nil || store.isCameraSwitching)
 
-                Button {
+                HStack(spacing: 12) {
+                    Button {
 
-                } label: {
-                    VStack(spacing: 10) {
-                        Image(systemName: "camera.viewfinder")
+                    } label: {
+                        VStack(spacing: 10) {
+                            Image(systemName: "record.circle")
 
-                        Text("장면 캡쳐")
+                            Text("음성 기록")
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: 76)
+                        .background(
+                            .black.opacity(0.4),
+                            in: RoundedRectangle(cornerRadius: 6)
+                        )
                     }
-                    .frame(maxWidth: .infinity, maxHeight: 76)
-                    .background(
-                        .black.opacity(0.4),
-                        in: RoundedRectangle(cornerRadius: 6)
-                    )
-                }
-                .foregroundStyle(.white)
-                .buttonStyle(.plain)
+                    .foregroundStyle(.white)
+                    .buttonStyle(.plain)
 
-                Button {
+                    Button {
 
-                } label: {
-                    VStack(spacing: 10) {
-                        Image(systemName: "video.fill")
+                    } label: {
+                        VStack(spacing: 10) {
+                            Image(systemName: "camera.viewfinder")
 
-                        Text("영상 기록")
+                            Text("장면 캡쳐")
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: 76)
+                        .background(
+                            .black.opacity(0.4),
+                            in: RoundedRectangle(cornerRadius: 6)
+                        )
                     }
-                    .frame(maxWidth: .infinity, maxHeight: 76)
-                    .background(
-                        .black.opacity(0.4),
-                        in: RoundedRectangle(cornerRadius: 6)
-                    )
+                    .foregroundStyle(.white)
+                    .buttonStyle(.plain)
+
+                    Button {
+
+                    } label: {
+                        VStack(spacing: 10) {
+                            Image(systemName: "video.fill")
+
+                            Text("영상 기록")
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: 76)
+                        .background(
+                            .black.opacity(0.4),
+                            in: RoundedRectangle(cornerRadius: 6)
+                        )
+                    }
+                    .foregroundStyle(.white)
+                    .buttonStyle(.plain)
                 }
-                .foregroundStyle(.white)
-                .buttonStyle(.plain)
             }
             .padding(.horizontal, 16)
 

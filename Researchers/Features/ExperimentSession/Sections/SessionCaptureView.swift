@@ -5,14 +5,40 @@
 //  Created by 정홍섭 on 10/25/26.
 //
 
+import ComposableArchitecture
 import SwiftUI
 
 struct SessionCaptureView: View {
+    let store: StoreOf<ExperimentSessionFeature>
+
     var body: some View {
         VStack(spacing: 20) {
-            Rectangle()
-                .frame(maxWidth: 401, maxHeight: 215)
-                .cornerRadius(15)
+            Color.clear
+                .frame(width: 401, height: 215)
+                .anchorPreference(key: CameraPreviewAnchorKey.self, value: .bounds) { $0 }
+                .overlay {
+                    VStack {
+                        Spacer()
+
+                        HStack {
+                            Button {
+                                store.send(.cameraSwitchRequested)
+                            } label: {
+                                Image(systemName: "arrow.trianglehead.2.clockwise.rotate.90")
+                                    .font(.body)
+                                    .frame(width: 40, height: 40)
+                            }
+                            .foregroundStyle(.white)
+                            .buttonStyle(.borderedProminent)
+                            .buttonBorderShape(.circle)
+                            .tint(.black.opacity(0.5))
+                            .disabled(store.previewConnector == nil || store.isCameraSwitching)
+
+                            Spacer()
+                        }
+                        .padding(16)
+                    }
+                }
 
             HStack(spacing: 24) {
                 Button {
@@ -69,5 +95,7 @@ struct SessionCaptureView: View {
 }
 
 #Preview {
-    SessionCaptureView()
+    SessionCaptureView(store: Store(initialState: ExperimentSessionFeature.State()) {
+        ExperimentSessionFeature()
+    })
 }
