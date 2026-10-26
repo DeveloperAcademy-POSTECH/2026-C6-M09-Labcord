@@ -41,10 +41,6 @@ jobs:
 
           def classify(path):
               path = path.lower()
-              if path == '.github/workflows/detect-changes.yml':
-                  return True, True, '공통 변경 판별 로직'
-              if path == '.github/workflows/build.yml':
-                  return True, False, 'Build 워크플로'
               if path == '.github/workflows/swiftlint.yml' or path.rsplit('/', 1)[-1] in (
                   '.swiftlint.yml', '.swiftlint.yaml'
               ):
@@ -53,14 +49,6 @@ jobs:
                   return True, True, 'Swift 소스'
               if path.rsplit('/', 1)[-1] == '.gitignore':
                   return False, False, '문서·협업 설정'
-              app_roots = ('researchers/', 'researchwatchapp/', 'packages/', 'researchers.xcodeproj/')
-              build_files = (
-                  '.xcconfig', '.entitlements', '.plist', '.storyboard', '.xib',
-                  '.xcstrings', '.strings', 'package.resolved'
-              )
-              if (path.startswith(app_roots) or path.endswith(build_files)
-                  or '.xcodeproj/' in path or '.xcworkspace/' in path or '.xcassets/' in path):
-                  return True, False, '프로젝트·패키지·리소스'
               metadata = {
                   '.github/codeowners', '.coderabbit.yaml', '.coderabbit.yml',
                   '.github/workflows/auto-assign.yml', '.github/workflows/main-branch-guard.yml'
@@ -68,7 +56,7 @@ jobs:
               if (path.startswith(('docs/', '.github/issue_template/'))
                   or path.endswith(('.md', '.mdx', '.rst')) or path in metadata):
                   return False, False, '문서·협업 설정'
-              return True, True, '분류되지 않은 파일: 안전하게 실행'
+              return True, True, '문서·협업 및 lint 전용 변경 외: 안전하게 실행'
 
           build_reasons, lint_reasons = set(), set()
           changed_count = None
