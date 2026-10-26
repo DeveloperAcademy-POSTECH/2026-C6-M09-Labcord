@@ -17,7 +17,7 @@ AGENTS.md                              공통 원칙·저장소 지도·작업�
 ├── git-workflow/SKILL.md               브랜치·커밋·이슈·PR·리뷰
 └── verify-change/
     ├── SKILL.md                        변경별 검증 기준·명령·결과 보고
-    └── scripts/check_agent_docs.py     문서 형식·로컬 파일 링크 검사
+    └── scripts/check_agent_docs.sh     Bash 문서 형식·로컬 파일 링크 검사
 docs/agent-rules.md                     출처·차이·인식 검증·관리 방법
 ```
 
@@ -130,10 +130,11 @@ Agent Skills의 `SKILL.md` + `name`·`description` frontmatter 구조를 사용�
 - 2026-10-26, 이 작업의 Codex 세션 및 별도 읽기 전용 에이전트 검토:
   루트 AGENTS와 필요한 Skill을 명시적으로 읽고 실제 개발 요청에 적용했습니다.
   자동 탐색 검증이나 앱 동작 테스트는 아닙니다.
-- `python3 .agents/skills/verify-change/scripts/check_agent_docs.py` 통과.
-  임시 사본에서 정상 입력 1건과 잘못된 입력 5건(description 누락, 이름 불일치,
-  절차 절 누락, 깨진 로컬 링크, Skill 인덱스 누락)을 검사해 정상은 exit 0,
+- `bash .agents/skills/verify-change/scripts/check_agent_docs.sh` 통과.
+  임시 사본에서 정상 입력 2건(현재 문서·1024자 한글 설명)과 잘못된 입력 8건(description 누락·빈 block scalar·null·길이 초과,
+  이름 불일치, 절차 절 누락, 깨진 로컬 링크, Skill 인덱스 누락)을 검사해 정상은 exit 0,
   잘못된 입력은 모두 exit 1로 구분했습니다. 임시 사본은 제거했습니다.
+  Linux의 Bash 5.2에서 실행했으며, macOS·Bash 3.2에서의 실제 실행은 미검증입니다.
 - `git diff --check` 통과. 원문 SHA-256 두 개를 재대조했고 일치했습니다.
 - 실개발 시나리오 결과:
 
@@ -167,13 +168,13 @@ Agent Skills의 `SKILL.md` + `name`·`description` frontmatter 구조를 사용�
    [git-workflow](../.agents/skills/git-workflow/SKILL.md)에 따라 PR을 준비합니다.
 
 ```sh
-# 저장소 루트, Python 3.10 이상. 외부 패키지 불필요.
-python3 .agents/skills/verify-change/scripts/check_agent_docs.py
+# 저장소 루트, Bash 3.2 이상과 macOS·Linux 기본 명령. 별도 패키지 불필요.
+bash .agents/skills/verify-change/scripts/check_agent_docs.sh
 git diff --check
 ```
 
-보조 검사는 metadata·필수 절·AGENTS의 Skill 링크·로컬 파일 링크를 확인합니다.
-일반 YAML/Agent Skills 전체 명세, URL 응답·앵커·Notion 동기화·자동 탐색·규칙 준수는 검사하지 않습니다.
+보조 검사는 name·description 필수 항목, 필수 절, AGENTS의 Skill 링크와 단순 상대 파일 링크를 확인합니다.
+일반 YAML/Agent Skills 전체 명세, URL 인코딩된 링크·앵커·외부 URL 응답·Notion 동기화·자동 탐색·규칙 준수는 검사하지 않습니다.
 규칙 변경 PR에서는 위 시나리오와 원문 대조도 함께 검토합니다.
 
 참고 규격: [Agent Skills specification](https://agentskills.io/specification),

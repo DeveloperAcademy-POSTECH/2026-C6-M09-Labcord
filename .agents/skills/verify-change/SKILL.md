@@ -76,10 +76,10 @@ xcodebuild build \
 ### Rules·Skills 문서 검사
 
 문서만 변경했다면 링크·Skill metadata·팀 규칙 반영과 선택 시나리오를 확인합니다.
-Python 3가 있으면 다음 보조 검사를 사용할 수 있습니다. 설치나 CI 연결은 필요하지 않습니다.
+다음 Bash 보조 검사를 사용할 수 있습니다. macOS·Linux의 기본 명령만 사용하며 설치나 CI 연결은 필요하지 않습니다.
 
 ```sh
-python3 .agents/skills/verify-change/scripts/check_agent_docs.py
+bash .agents/skills/verify-change/scripts/check_agent_docs.sh
 git diff --check
 ```
 
