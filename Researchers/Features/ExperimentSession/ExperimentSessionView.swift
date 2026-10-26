@@ -44,6 +44,19 @@ struct ExperimentSessionView: View {
             .ignoresSafeArea()
         }
         .background(.black)
+        .alert(
+            "설정 열기 실패",
+            isPresented: Binding(
+                get: { store.cameraPermission.openSettingsErrorMessage != nil },
+                set: { if !$0 { store.send(.cameraPermission(.openSettingsErrorDismissed)) } }
+            )
+        ) {
+            Button("확인", role: .cancel) {
+                store.send(.cameraPermission(.openSettingsErrorDismissed))
+            }
+        } message: {
+            Text(store.cameraPermission.openSettingsErrorMessage ?? "")
+        }
         .task {
             store.send(.cameraPermission(.request))
         }
