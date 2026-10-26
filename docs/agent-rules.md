@@ -28,7 +28,7 @@ docs/agent-rules.md                     적용 기준·인식 검증·관리 방
 
 | 규칙 | 관리 위치 |
 | --- | --- |
-| 브랜치·커밋·이슈·PR | git-workflow: 이름·제목·템플릿 |
+| 브랜치·커밋·이슈·PR | git-workflow: 이름·제목·본문 구성·변경 분리·다이어그램·리뷰 준비 |
 | Git·코드 리뷰 | git-workflow: Git Flow·CodeRabbit·팀원 승인 |
 | Swift 스타일 | code-style: 이름·레이아웃·로컬 lint 설정 |
 | Feature와 모듈 | architecture: View/Feature 역할·내부 참조 제한·모듈 경계 |
@@ -110,7 +110,7 @@ Agent Skills의 `SKILL.md` + `name`·`description` frontmatter 구조를 사용�
 | `.swiftlint.yml`만 수정 | verify-change; SwiftLint 실행, 앱 빌드는 필수 아님 |
 | 리소스/프로젝트/의존성 변경 | verify-change; 영향 대상 빌드. Swift 변경도 있다면 lint 추가 |
 | Linux에서 Swift 변경 검증 | 필요한 검사 선택 후 Xcode/SwiftLint 부재를 미실행으로 보고; 성공으로 표시하지 않음 |
-| PR 작성·리뷰 | git-workflow·verify-change; 실제 템플릿·제목 형식·팀 리뷰 기준 확인 |
+| PR 작성·리뷰 | git-workflow·verify-change; 작성자 검증 후 배경·방법론·결론·토론과 다이어그램 작성. 리뷰어 재검증 요청 제외 |
 | Swift 스타일 설명만 요청 | code-style; 변경 없이 검사·빌드를 강제하지 않음 |
 
 ## 규칙을 수정하는 방법
