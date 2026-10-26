@@ -40,6 +40,7 @@ for directory in "$root"/.agents/skills/*; do
                 name != expected || length(name) > 64 ||
                 name !~ /^[a-z0-9]+(-[a-z0-9]+)*$/ ||
                 description !~ /[^[:space:]]/ ||
+                description ~ /^[[:space:]]|[[:space:]]$/ ||
                 index(indicators, substr(description, 1, 1)) ||
                 description ~ /: | #/ ||
                 description ~ /^(null|Null|NULL|~|true|True|TRUE|false|False|FALSE)$/ ||

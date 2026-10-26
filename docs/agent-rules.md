@@ -131,7 +131,7 @@ Agent Skills의 `SKILL.md` + `name`·`description` frontmatter 구조를 사용�
   루트 AGENTS와 필요한 Skill을 명시적으로 읽고 실제 개발 요청에 적용했습니다.
   자동 탐색 검증이나 앱 동작 테스트는 아닙니다.
 - `bash .agents/skills/verify-change/scripts/check_agent_docs.sh` 통과.
-  임시 사본에서 정상 입력 2건(현재 문서·1024자 한글 설명)과 잘못된 입력 8건(description 누락·빈 block scalar·null·길이 초과,
+  임시 사본에서 정상 입력 2건(현재 문서·1024자 한글 설명)과 잘못된 입력 10건(description 누락·빈 block scalar·null·길이 초과·선행 공백,
   이름 불일치, 절차 절 누락, 깨진 로컬 링크, Skill 인덱스 누락)을 검사해 정상은 exit 0,
   잘못된 입력은 모두 exit 1로 구분했습니다. 임시 사본은 제거했습니다.
   Linux의 Bash 5.2에서 실행했으며, macOS·Bash 3.2에서의 실제 실행은 미검증입니다.
