@@ -18,6 +18,10 @@ struct SessionTimerView: View {
     let store: StoreOf<ExperimentSessionFeature>
     @State private var selectedPage: Int? = 0
     @State private var selectedActivePage: Int? = 0
+    @State private var isTimerSetupPresented = false
+    @State private var selectedHours = 0
+    @State private var selectedMinutes = 10
+    @State private var selectedSeconds = 0
 
     var body: some View {
         let selectedTab = store.selectedTimerTab
@@ -71,10 +75,18 @@ struct SessionTimerView: View {
                 Spacer()
                 
                 Button {
-                    
+                    isTimerSetupPresented = true
                 } label: {
                     Image(systemName: "plus")
                         .foregroundStyle(.blue)
+                }
+                .popover(isPresented: $isTimerSetupPresented) {
+                    timerSetup(
+                        isConfiguring: timerSeconds.isEmpty,
+                        configuredCount: timerSeconds.count,
+                        canStartTimer: canStartTimer
+                    )
+                    .presentationCompactAdaptation(.popover)
                 }
             }
             
@@ -155,6 +167,56 @@ struct SessionTimerView: View {
                 .frame(height: gridHeight + 10)
             }
         }
+    }
+
+    private func timerSetup(
+        isConfiguring: Bool,
+        configuredCount: Int,
+        canStartTimer: Bool
+    ) -> some View {
+        let durationSeconds = selectedHours * 3600 + selectedMinutes * 60 + selectedSeconds
+
+        return VStack(spacing: 16) {
+            HStack(spacing: 0) {
+                Picker("시간", selection: $selectedHours) {
+                    ForEach(0...23, id: \.self) { hour in
+                        Text("\(hour) 시간").tag(hour)
+                    }
+                }
+
+                Picker("분", selection: $selectedMinutes) {
+                    ForEach(0...59, id: \.self) { minute in
+                        Text("\(minute) 분").tag(minute)
+                    }
+                }
+
+                Picker("초", selection: $selectedSeconds) {
+                    ForEach(0...59, id: \.self) { second in
+                        Text("\(second) 초").tag(second)
+                    }
+                }
+            }
+            .pickerStyle(.wheel)
+            .labelsHidden()
+            .frame(height: 150)
+
+            Button(isConfiguring ? "설정하기" : "시작하기") {
+                if isConfiguring {
+                    store.send(.timerConfigured(durationSeconds))
+                } else {
+                    store.send(.customTimerStarted(durationSeconds))
+                }
+                isTimerSetupPresented = false
+            }
+            .buttonStyle(.borderedProminent)
+            .frame(maxWidth: .infinity)
+            .disabled(
+                durationSeconds == 0 ||
+                (isConfiguring ? configuredCount >= 12 : !canStartTimer)
+            )
+        }
+        .padding()
+        .frame(width: 320)
     }
 
     private func timerTile(_ seconds: Int) -> some View {

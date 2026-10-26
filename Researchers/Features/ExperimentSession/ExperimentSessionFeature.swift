@@ -19,6 +19,8 @@ struct ExperimentSessionFeature {
     enum Action: Equatable {
         case timerTabSelected(TimerTab)
         case timerStarted(Int)
+        case customTimerStarted(Int)
+        case timerConfigured(Int)
         case timerPaused(UUID)
         case timerResumed(UUID)
         case timerDeleted(UUID)
@@ -55,6 +57,18 @@ struct ExperimentSessionFeature {
                     at: .now
                 ) else { return .none }
                 return wasRunning ? .none : tickerEffect
+
+            case let .customTimerStarted(seconds):
+                let wasRunning = state.timerCollection.hasRunningTimers
+                guard state.timerCollection.start(durationSeconds: seconds, at: .now) else {
+                    return .none
+                }
+                return wasRunning ? .none : tickerEffect
+
+            case let .timerConfigured(seconds):
+                guard seconds > 0, state.timerSeconds.count < 12 else { return .none }
+                state.timerSeconds.append(seconds)
+                return .none
 
             case let .timerPaused(id):
                 state.timerCollection.pause(id: id, at: .now)
