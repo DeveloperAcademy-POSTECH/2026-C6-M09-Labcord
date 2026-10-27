@@ -156,6 +156,8 @@ struct ExperimentSessionFeature {
                         try await cameraSessionClient.activate(ownerID)
                         let connector = await cameraSessionClient.previewConnector()
                         await send(.cameraStarted(ownerID, connector))
+                    } catch let error as PermissionAccessError {
+                        await send(.permissions(.accessFailed(error.kind)))
                     } catch {
                         await send(.cameraStartFailed(ownerID, error.localizedDescription))
                     }
