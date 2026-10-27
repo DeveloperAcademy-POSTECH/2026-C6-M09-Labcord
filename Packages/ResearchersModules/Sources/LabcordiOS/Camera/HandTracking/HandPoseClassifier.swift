@@ -2,8 +2,14 @@ import Foundation
 import Vision
 
 nonisolated enum HandPoseClassifier {
+    private enum FingerBend {
+        case curled
+        case extended
+    }
+
     private static let confidenceThreshold: Float = 0.3
-    private static let curlMarginRatio: CGFloat = 0.3
+    private static let extensionMarginRatio: CGFloat = 0.3
+    private static let thumbExtensionMarginRatio: CGFloat = 0.15
     private static let fingers: [(VNHumanHandPoseObservation.JointName,
                                   VNHumanHandPoseObservation.JointName,
                                   VNHumanHandPoseObservation.JointName)] = [
@@ -15,34 +21,65 @@ nonisolated enum HandPoseClassifier {
 
     static func classify(_ hand: VNHumanHandPoseObservation) -> HandPose? {
         guard let points = try? hand.recognizedPoints(.all),
-              let wrist = points[.wrist], wrist.confidence >= confidenceThreshold else {
+              let wrist = points[.wrist], wrist.confidence >= confidenceThreshold,
+              let indexMCP = points[.indexMCP], indexMCP.confidence >= confidenceThreshold,
+              let littleMCP = points[.littleMCP], littleMCP.confidence >= confidenceThreshold,
+              let thumbTip = points[.thumbTip],
+              let thumbIP = points[.thumbIP],
+              let thumbMP = points[.thumbMP],
+              let thumbBend = bend(
+                  tip: thumbTip,
+                  middle: thumbIP,
+                  base: thumbMP,
+                  anchor: littleMCP.location,
+                  extensionMargin: distance(indexMCP.location, littleMCP.location)
+                      * thumbExtensionMarginRatio
+              ) else {
             return nil
         }
 
-        var visible = 0
-        var curled = 0
-        var extended = 0
-        var indexExtended = false
-        for (index, finger) in fingers.enumerated() {
+        var curled = thumbBend == .curled ? 1 : 0
+        var extended = thumbBend == .extended ? 1 : 0
+        for finger in fingers {
             let (tipName, pipName, mcpName) = finger
             guard let tip = points[tipName], let pip = points[pipName], let mcp = points[mcpName],
-                  min(tip.confidence, pip.confidence, mcp.confidence) >= confidenceThreshold else {
-                continue
+                  let fingerBend = bend(
+                      tip: tip,
+                      middle: pip,
+                      base: mcp,
+                      anchor: wrist.location,
+                      extensionMargin: distance(wrist.location, mcp.location)
+                          * extensionMarginRatio
+                  ) else {
+                return nil
             }
-            visible += 1
-            let palmLength = distance(wrist.location, mcp.location)
-            let isExtended = distance(tip.location, wrist.location)
-                >= distance(pip.location, wrist.location) + palmLength * curlMarginRatio
-            if isExtended {
+            if fingerBend == .extended {
                 extended += 1
-                if index == 0 { indexExtended = true }
             } else {
                 curled += 1
             }
         }
 
-        if indexExtended, extended == 1, curled >= 2 { return .oneFinger }
-        if visible >= 3, curled >= 3, extended == 0 { return .fist }
+        if extended == 5 { return .openHand }
+        if curled == 5 { return .fist }
+        if extended == 1, curled == 4 { return .oneFinger }
+        return nil
+    }
+
+    private static func bend(
+        tip: VNRecognizedPoint,
+        middle: VNRecognizedPoint,
+        base: VNRecognizedPoint,
+        anchor: CGPoint,
+        extensionMargin: CGFloat
+    ) -> FingerBend? {
+        guard min(tip.confidence, middle.confidence, base.confidence) >= confidenceThreshold else {
+            return nil
+        }
+
+        let reach = distance(tip.location, anchor) - distance(middle.location, anchor)
+        if reach <= 0 { return .curled }
+        if reach >= extensionMargin { return .extended }
         return nil
     }
 
