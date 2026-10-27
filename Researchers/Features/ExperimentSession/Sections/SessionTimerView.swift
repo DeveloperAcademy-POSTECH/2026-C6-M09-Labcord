@@ -77,9 +77,9 @@ struct SessionTimerView: View {
                         .buttonStyle(.plain)
                     }
                 }
-                
+
                 Spacer()
-                
+
                 Button {
                     isTimerSetupPresented = true
                 } label: {
@@ -91,7 +91,7 @@ struct SessionTimerView: View {
                     .presentationCompactAdaptation(.popover)
                 }
             }
-            
+
             if isFreeMode || selectedTab == .active {
                 if activeTimers.isEmpty {
                     emptyState("진행 중인 타이머가 없어요")

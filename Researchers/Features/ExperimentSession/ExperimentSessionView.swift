@@ -6,16 +6,16 @@
 //
 
 import ComposableArchitecture
-import SwiftUI
 import LabcordiOS
+import SwiftUI
 
 struct ExperimentSessionView: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
-    
+
     @State private var store = Store(initialState: ExperimentSessionFeature.State()) {
         ExperimentSessionFeature()
     }
-    
+
     var body: some View {
         Group {
             if verticalSizeClass == .compact {

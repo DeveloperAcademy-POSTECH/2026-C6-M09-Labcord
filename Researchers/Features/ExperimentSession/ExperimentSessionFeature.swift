@@ -1,7 +1,7 @@
 import ComposableArchitecture
 import Foundation
-import LabcordShared
 import LabcordiOS
+import LabcordShared
 
 @Reducer
 struct ExperimentSessionFeature {
@@ -9,7 +9,7 @@ struct ExperimentSessionFeature {
         case configured
         case active
     }
-    
+
     @ObservableState
     struct State: Equatable {
         var cameraPermission = CameraPermssionFeature.State()
@@ -26,7 +26,7 @@ struct ExperimentSessionFeature {
             self.mode = timerSeconds.isEmpty ? .free : .procedure
         }
     }
-    
+
     enum Action: Equatable {
         case timerTabSelected(TimerTab)
         case timerStarted(Int)
@@ -56,14 +56,14 @@ struct ExperimentSessionFeature {
         }
         .cancellable(id: CancelID.timerTick, cancelInFlight: true)
     }
-    
+
     @Dependency(\.cameraSessionClient) var cameraSessionClient
-    
+
     var body: some Reducer<State, Action> {
         Scope(state: \.cameraPermission, action: \.cameraPermission) {
             CameraPermssionFeature()
         }
-        
+
         Reduce { state, action in
             switch action {
             case let .timerTabSelected(tab):
@@ -109,7 +109,7 @@ struct ExperimentSessionFeature {
                 return state.timerCollection.hasRunningTimers
                     ? .none
                     : .cancel(id: CancelID.timerTick)
-                
+
             case .cameraPermission(.statusUpdated(.authorized)):
                 return .run { send in
                     do {
