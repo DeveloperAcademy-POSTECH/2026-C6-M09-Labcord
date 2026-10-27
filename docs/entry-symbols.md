@@ -71,6 +71,24 @@ gear leaf는 명목 `#1A1A1A`와 `LINEAR_BURN`, back은 같은 명목 색상과 
 명목 색·blend 설정은 최종 화면의 RGBA와 구분합니다. 배경·그림자·AA를 포함한 합성 결과와
 플랫폼 간 blend 동등성은 실제 원본 비교로 확인하며, 이번 출처 확인으로 확정하지 않습니다.
 
+## 행 오른쪽 chevron
+
+행의 chevron은 버튼 아이콘 세 개와 별도로 홈의 Text leaf `502:12307`에서 내보냈습니다.
+원본은 SF Pro Regular, `wght=400`, `wdth=100`, 15pt입니다. 프레임은 홈 상대
+`(371,387,11,20)`, 실제 render origin은 `(373.85595703125,390.3544921875)`이며
+ink 크기는 `7.1630859375×12.71484375`입니다.
+
+SVG의 `8×13` canvas·viewBox와 원점을 유지하고 `11×20` Text 프레임 안에서
+중앙 배치 보정 `(+1.35595703125,−0.1455078125)`를 적용합니다. ink 크기로 canvas를
+축소하지 않습니다. [EntryChevron/chevron.svg](../Researchers/Resources/Assets.xcassets/EntryChevron.imageset/chevron.svg)는
+877bytes이며, 원본과 앱 자원의 동일 SHA256은
+`62a87f40ea3e7d3167d8ba4ef86f93fa065c58050f7cf07cadd637068d7de55c`입니다.
+XML은 path 하나이며 `preserves-vector-representation=true`를 사용합니다.
+
+원본 SVG의 `fill="#3C3C43"`·`fill-opacity="0.6"`를 바이트 그대로 보존합니다.
+템플릿 Image의 foreground는 불투명 `(60,60,67)`로 지정해 SVG의 alpha에0.6을
+다시 곱하지 않습니다. 최종 RGB는 흰 배경에서 합성한 결과와 별도로 비교합니다.
+
 ## 표시 계층 경계와 검증
 
 [EntryRoundButton](../Researchers/Features/ExperimentEntry/Presentation/EntryAppearance.swift)의
@@ -81,6 +99,9 @@ Feature·저장소·UUID delegate 계약을 유지합니다.
 원본 SVG·앱 SVG 바이트와 SHA256 일치, XML/path 구조를 읽기 전용으로 확인했습니다.
 실제 빌드·화면 일치 결과는 [Entry 검증 절차](experiment-entry.md#시뮬레이터-검증)로 별도 확인합니다.
 
+텍스트의 원본 대비 가로 잔여를 줄이기 위해 진행 중 배지를 제외한 배지 텍스트·등록 제목·
+프로토콜 없이 진행 문구를 캡처 기준 왼쪽1px 보정했으며, 글꼴 크기와 세로 위치는 유지했습니다.
+
 2026-10-28 iPhone 17 시뮬레이터에서 1206×2622 원본·캡처를 정렬·마스킹 없이 비교했습니다.
-홈 MAE는0.191555/255, 등록은0.142520/255입니다. 0이 아닌 RGB 차이를 모두 세면
-각각5.223058%, 2.328809%이며, 완전한 픽셀 일치로 표시하지 않습니다.
+홈 MAE는0.135010809/255, 등록은0.06818406/255입니다. 0이 아닌 RGB 차이를 모두 세면
+각각5.17581176%, 2.28747567%이며, 완전한 픽셀 일치로 표시하지 않습니다.

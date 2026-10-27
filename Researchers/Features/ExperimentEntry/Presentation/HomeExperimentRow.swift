@@ -24,11 +24,13 @@ struct HomeExperimentRow: View {
 
                 EntryStatusBadge(title: entry.statusTitle, status: entry.status)
 
-                Image(systemName: "chevron.forward")
-                    .font(EntryAppearance.label(15))
+                Image("EntryChevron")
+                    .renderingMode(.template)
+                    .resizable()
                     .foregroundStyle(EntryAppearance.secondarySymbol)
-                    .frame(width: 11)
-                    .offset(y: -0.5)
+                    .frame(width: 8, height: 13)
+                    .offset(x: 1.35595703125, y: -0.1455078125)
+                    .frame(width: 11, height: 20)
             }
             .frame(minHeight: EntryAppearance.rowHeight)
             .contentShape(Rectangle())
@@ -54,6 +56,7 @@ private struct EntryStatusBadge: View {
     var body: some View {
         EntryText(title, style: .subheadline)
             .foregroundStyle(foreground)
+            .offset(x: status == .inProgress ? 0 : -1 / 3)
             .fixedSize(horizontal: true, vertical: false)
             .frame(width: textWidth, height: 20)
             .padding(.horizontal, 8)
