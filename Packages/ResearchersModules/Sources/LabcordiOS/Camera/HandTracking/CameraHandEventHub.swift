@@ -11,16 +11,12 @@ nonisolated final class CameraHandEventHub: @unchecked Sendable {
         )
         continuation.onTermination = { [weak self] _ in self?.remove(id) }
 
-        lock.lock()
-        continuations[id] = continuation
-        lock.unlock()
+        lock.withLock { continuations[id] = continuation }
         return stream
     }
 
     func emit(_ event: CameraHandEvent) {
-        lock.lock()
-        let recipients = Array(continuations.values)
-        lock.unlock()
+        let recipients = lock.withLock { Array(continuations.values) }
 
         for continuation in recipients {
             continuation.yield(event)
@@ -28,8 +24,6 @@ nonisolated final class CameraHandEventHub: @unchecked Sendable {
     }
 
     private func remove(_ id: UUID) {
-        lock.lock()
-        continuations.removeValue(forKey: id)
-        lock.unlock()
+        lock.withLock { _ = continuations.removeValue(forKey: id) }
     }
 }
