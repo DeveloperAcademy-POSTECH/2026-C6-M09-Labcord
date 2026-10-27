@@ -23,7 +23,7 @@ struct HomeExperimentRow: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                EntryStatusBadge(title: entry.statusTitle)
+                EntryStatusBadge(title: entry.statusTitle, status: entry.status)
 
                 Image(systemName: "chevron.forward")
                     .font(EntryAppearance.label(15))
@@ -49,6 +49,7 @@ struct HomeExperimentRow: View {
 
 private struct EntryStatusBadge: View {
     let title: String
+    let status: ExperimentListEntry.Status
 
     var body: some View {
         Text(title)
@@ -62,20 +63,20 @@ private struct EntryStatusBadge: View {
     }
 
     private var foreground: Color {
-        switch title {
-        case "진행 중": Color(red: 52 / 255, green: 199 / 255, blue: 89 / 255)
-        case "일시 정지": EntryAppearance.accent
-        case "준비": Color(red: 1, green: 141 / 255, blue: 40 / 255)
-        default: Color(red: 60 / 255, green: 60 / 255, blue: 67 / 255).opacity(0.6)
+        switch status {
+        case .inProgress: Color(red: 52 / 255, green: 199 / 255, blue: 89 / 255)
+        case .paused: EntryAppearance.accent
+        case .preparing: Color(red: 1, green: 141 / 255, blue: 40 / 255)
+        case .completed: Color(red: 60 / 255, green: 60 / 255, blue: 67 / 255).opacity(0.6)
         }
     }
 
     private var background: Color {
-        switch title {
-        case "진행 중": Color(red: 236 / 255, green: 252 / 255, blue: 240 / 255)
-        case "일시 정지": Color(red: 157 / 255, green: 196 / 255, blue: 1).opacity(0.2)
-        case "준비": Color(red: 1, green: 219 / 255, blue: 76 / 255).opacity(0.2)
-        default: Color(white: 120 / 255).opacity(0.2)
+        switch status {
+        case .inProgress: Color(red: 236 / 255, green: 252 / 255, blue: 240 / 255)
+        case .paused: Color(red: 157 / 255, green: 196 / 255, blue: 1).opacity(0.2)
+        case .preparing: Color(red: 1, green: 219 / 255, blue: 76 / 255).opacity(0.2)
+        case .completed: Color(white: 120 / 255).opacity(0.2)
         }
     }
 }

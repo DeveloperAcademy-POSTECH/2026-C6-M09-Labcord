@@ -55,6 +55,7 @@ struct ExperimentEntryFeature {
             switch action {
             case .load:
                 guard !state.isSaving else { return .none }
+                if state.failure == .loading { state.failure = nil }
                 state.isLoading = true
                 state.loadRevision += 1
                 let revision = state.loadRevision
@@ -126,7 +127,10 @@ struct ExperimentEntryFeature {
                     state.entries.sort(by: ExperimentListEntry.newestFirst)
                     state.isRegistering = false
                     state.pendingID = nil
-                    return .send(.delegate(.experimentCreated(entry.id)))
+                    return .concatenate(
+                        .send(.delegate(.experimentCreated(entry.id))),
+                        .send(.load)
+                    )
                 case .failure:
                     state.failure = .saving
                     return .none

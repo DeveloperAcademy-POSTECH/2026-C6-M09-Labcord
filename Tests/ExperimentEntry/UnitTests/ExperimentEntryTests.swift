@@ -9,7 +9,7 @@ import XCTest
 @MainActor
 final class ExperimentEntryTests: XCTestCase {
     private let identifier = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
-    private let date = Date(timeIntervalSince1970: 1_760_356_800)
+    private let date = Date(timeIntervalSince1970: 1_791_892_800)
 
     func testRetryKeepsIdentityAndEmitsOnlyAfterSaving() async {
         let probe = SaveProbe()
@@ -19,7 +19,7 @@ final class ExperimentEntryTests: XCTestCase {
         } withDependencies: {
             $0.uuid = .constant(identifier)
             $0.date = .constant(date)
-            $0.experimentEntryClient = ExperimentEntryClient(load: { [] }, create: { id, _ in
+            $0.experimentEntryClient = ExperimentEntryClient(load: { [entry] }, create: { id, _ in
                 probe.identifiers.append(id)
                 if probe.identifiers.count == 1 { throw ExperimentEntryFeature.Failure.saving }
                 return entry
@@ -49,6 +49,11 @@ final class ExperimentEntryTests: XCTestCase {
             $0.pendingID = nil
         }
         await store.receive(.delegate(.experimentCreated(identifier)))
+        await store.receive(.load) {
+            $0.isLoading = true
+            $0.loadRevision = 3
+        }
+        await store.receive(.loaded(3, .success([entry]))) { $0.isLoading = false }
         XCTAssertEqual(probe.identifiers, [identifier, identifier])
     }
 
