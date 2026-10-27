@@ -4,6 +4,7 @@ nonisolated enum HandPose: Equatable {
     case openHand
     case fist
     case oneFinger
+    case threeFingers
 }
 
 nonisolated struct HandHoldTracker {
