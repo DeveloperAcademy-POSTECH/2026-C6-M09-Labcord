@@ -3,6 +3,7 @@ import Foundation
 
 public enum CameraHandEvent: Equatable, Sendable {
     case fistHeld(Date)
+    case oneFingerHeld(Date)
 }
 
 public struct CameraSessionClient: Sendable {
