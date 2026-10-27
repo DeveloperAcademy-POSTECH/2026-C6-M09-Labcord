@@ -92,5 +92,20 @@ final class ExperimentEntryUITests: XCTestCase {
         attachment.name = name
         attachment.lifetime = .keepAlways
         add(attachment)
+        let app = XCUIApplication()
+        let identifiers = ["entry-add", "entry-settings", "entry-back", "entry-skip", "entry-next"]
+        let frames = identifiers.compactMap { identifier -> [String: Any]? in
+            let button = app.buttons[identifier]
+            guard button.exists else { return nil }
+            let frame = button.frame
+            return ["identifier": identifier, "x": frame.minX, "y": frame.minY,
+                    "width": frame.width, "height": frame.height]
+        }
+        if let data = try? JSONSerialization.data(withJSONObject: frames, options: .sortedKeys) {
+            let geometry = XCTAttachment(data: data, uniformTypeIdentifier: "public.json")
+            geometry.name = "geometry-\(name)"
+            geometry.lifetime = .keepAlways
+            add(geometry)
+        }
     }
 }
