@@ -42,10 +42,11 @@ struct ProtocolRegistrationView: View {
                         if isSaving {
                             ProgressView().controlSize(.mini)
                         }
-                        Text(isSaving ? "실험을 저장하고 있어요" : "프로토콜 없이 진행")
-                            .font(EntryAppearance.koreanLabel(12))
-                            .tracking(0.3)
-                            .offset(x: -1 / 3, y: 5 / 3)
+                        EntryText(
+                            isSaving ? "실험을 저장하고 있어요" : "프로토콜 없이 진행",
+                            style: .caption
+                        )
+                        .offset(y: 2)
                     }
                     .frame(maxWidth: .infinity, minHeight: 44)
                     .contentShape(Rectangle())
@@ -67,10 +68,9 @@ struct ProtocolRegistrationView: View {
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .principal) {
-                Text("실험 등록")
-                    .font(EntryAppearance.koreanLabel(20))
+                EntryText("실험 등록", style: .title)
                     .foregroundStyle(EntryAppearance.text)
-                    .offset(y: 4 + 2 / 3)
+                    .offset(x: -1 / 3, y: 4 + 1 / 3)
             }
             ToolbarItem(placement: .topBarLeading) {
                 EntryRoundButton(
@@ -94,14 +94,10 @@ private struct ProtocolSourceOption: View {
     var body: some View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(EntryAppearance.koreanLabel(17, weight: .semibold))
-                    .frame(minHeight: 22)
+                EntryText(title, style: .headline)
 
                 if let subtitle {
-                    EntryAppearance.mixedLabel(subtitle, size: 13)
-                        .frame(minHeight: 18)
-                        .offset(y: 1 / 3)
+                    EntryText(subtitle, style: .footnote)
                 }
             }
             .foregroundStyle(EntryAppearance.text)
@@ -122,8 +118,7 @@ private struct EntryNextButton: View {
 
     var body: some View {
         Button { action?() } label: {
-            Text("다음")
-                .font(EntryAppearance.koreanLabel(17))
+            EntryText("다음", style: .body)
                 .foregroundStyle(EntryAppearance.disabledText)
                 .frame(maxWidth: .infinity, minHeight: 50)
                 .background(EntryAppearance.disabledFill, in: Capsule())

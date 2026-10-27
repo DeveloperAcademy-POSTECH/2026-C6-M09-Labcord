@@ -41,11 +41,8 @@ struct ExperimentHomeView: View {
         _ title: String, entries: [ExperimentListEntry], rowGap: CGFloat
     ) -> some View {
         VStack(alignment: .leading, spacing: rowGap) {
-            Text(title)
-                .font(EntryAppearance.koreanLabel(17, weight: .semibold))
+            EntryText(title, style: .headline)
                 .foregroundStyle(EntryAppearance.text)
-                .frame(height: 22)
-                .offset(x: 1 / 3, y: -1 / 3)
 
             VStack(spacing: 0) {
                 ForEach(entries) { entry in
