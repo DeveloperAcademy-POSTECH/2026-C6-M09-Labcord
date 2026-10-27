@@ -35,6 +35,12 @@ struct ExperimentSessionFeature {
         case timerResumed(UUID)
         case timerDeleted(UUID)
         case timerTick(Date)
+        case cameraPermission(CameraPermssionFeature.Action)
+        case cameraStarted(CameraPreviewConnector)
+        case cameraSwitchRequested
+        case cameraSwitched(CameraPreviewConnector)
+        case cameraStartFailed(String)
+        case cameraErrorDismissed
     }
 
     private nonisolated enum CancelID: Hashable, Sendable {
@@ -49,12 +55,6 @@ struct ExperimentSessionFeature {
             }
         }
         .cancellable(id: CancelID.timerTick, cancelInFlight: true)
-        case cameraPermission(CameraPermssionFeature.Action)
-        case cameraStarted(CameraPreviewConnector)
-        case cameraSwitchRequested
-        case cameraSwitched(CameraPreviewConnector)
-        case cameraStartFailed(String)
-        case cameraErrorDismissed
     }
     
     @Dependency(\.cameraSessionClient) var cameraSessionClient
