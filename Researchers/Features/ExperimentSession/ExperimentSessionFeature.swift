@@ -29,6 +29,7 @@ struct ExperimentSessionFeature {
         var isPhotoCaptureScheduled = false
         var isCapturingPhoto = false
         var capturedPhotoData: Data?
+        var isPhotoGestureArmed = false
         var voicePhase: VoicePhase = .hidden
         var voiceSessionID = UUID()
         var voiceTranscript = ""
@@ -124,6 +125,7 @@ struct ExperimentSessionFeature {
             case .cameraViewDisappeared:
                 guard state.isCameraViewVisible else { return .none }
                 state.isCameraViewVisible = false
+                state.isPhotoGestureArmed = false
                 let ownerID = state.cameraOwnerID
                 return .merge(
                     .send(.permissions(.cancelRequest)),
@@ -209,6 +211,7 @@ struct ExperimentSessionFeature {
                 guard state.previewConnector != nil, !state.isCameraSwitching,
                       !state.isCapturingPhoto, state.capturedPhotoData == nil else { return .none }
                 state.isCameraSwitching = true
+                state.isPhotoGestureArmed = false
                 return .merge(
                     cancelScheduledPhoto(in: &state),
                     .run { send in
@@ -242,11 +245,23 @@ struct ExperimentSessionFeature {
                 state.cameraErrorMessage = nil
                 return .none
 
-            case let .handEvent(.fistHeld(detectedAt)):
+            case let .handEvent(.openHandHeld(detectedAt)):
                 guard state.isCameraViewVisible, state.previewConnector != nil,
                       !state.isPhotoCaptureScheduled, !state.isCapturingPhoto,
                       !state.isCameraSwitching, state.capturedPhotoData == nil,
                       state.voicePhase == .hidden,
+                      detectedAt.timeIntervalSinceNow > -0.5 else { return .none }
+                state.isPhotoGestureArmed = true
+                return .none
+
+            case let .handEvent(.fistHeld(detectedAt)):
+                let wasArmed = state.isPhotoGestureArmed
+                state.isPhotoGestureArmed = false
+                guard state.isCameraViewVisible, state.previewConnector != nil,
+                      !state.isPhotoCaptureScheduled, !state.isCapturingPhoto,
+                      !state.isCameraSwitching, state.capturedPhotoData == nil,
+                      state.voicePhase == .hidden,
+                      wasArmed,
                       detectedAt.timeIntervalSinceNow > -0.5 else { return .none }
                 state.isPhotoCaptureScheduled = true
                 return .run { send in
@@ -256,6 +271,7 @@ struct ExperimentSessionFeature {
                 .cancellable(id: CancelID.photoCaptureDelay, cancelInFlight: true)
 
             case let .handEvent(.oneFingerHeld(detectedAt)):
+                state.isPhotoGestureArmed = false
                 guard state.isCameraViewVisible, state.previewConnector != nil,
                       !state.isCameraSwitching, state.capturedPhotoData == nil,
                       detectedAt.timeIntervalSinceNow > -0.5 else { return .none }
@@ -305,6 +321,7 @@ struct ExperimentSessionFeature {
             case .voiceButtonTapped:
                 guard state.voicePhase == .hidden, state.isCameraViewVisible,
                       state.capturedPhotoData == nil else { return .none }
+                state.isPhotoGestureArmed = false
                 state.voiceTranscript = ""
                 state.voiceRecording = nil
                 state.voiceErrorMessage = nil
