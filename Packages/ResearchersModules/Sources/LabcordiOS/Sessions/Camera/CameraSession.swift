@@ -43,7 +43,7 @@ public actor CameraSession {
         guard !isConfigured else { return }
 
         guard AVCaptureDevice.authorizationStatus(for: .video) == .authorized else {
-            throw CameraSessionError.permissionDenied
+            throw PermissionAccessError(.camera)
         }
 
         guard let camera = AVCaptureDevice.default(
@@ -192,7 +192,6 @@ public actor CameraSession {
 }
 
 public enum CameraSessionError: LocalizedError {
-    case permissionDenied
     case cameraUnavailable
     case cannotAddInput
     case cannotAddOutput
@@ -200,8 +199,6 @@ public enum CameraSessionError: LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .permissionDenied:
-            return "카메라 접근 권한이 필요합니다."
         case .cameraUnavailable:
             return "카메라를 사용할 수 없습니다."
         case .cannotAddInput, .cannotAddOutput:
