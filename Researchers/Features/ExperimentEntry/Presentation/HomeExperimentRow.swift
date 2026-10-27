@@ -14,7 +14,8 @@ struct HomeExperimentRow: View {
 
                     Text(Self.dateFormatter.string(from: entry.createdAt))
                         .font(EntryAppearance.label(15))
-                        .tracking(1 / 30)
+                        .textRenderer(EntryTextRenderer())
+                        .tracking(0.004375)
                         .foregroundStyle(EntryAppearance.secondaryText)
                         .frame(height: 20)
                         .offset(y: -1 / 3)
