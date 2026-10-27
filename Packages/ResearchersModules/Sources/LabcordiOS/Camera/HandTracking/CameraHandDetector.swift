@@ -32,6 +32,7 @@ nonisolated final class CameraHandDetector: NSObject, AVCaptureVideoDataOutputSa
 
         guard let heldPose = holdTracker.update(pose, at: CACurrentMediaTime()) else { return }
         switch heldPose {
+        case .openHand: onHold(.openHandHeld(.now))
         case .fist: onHold(.fistHeld(.now))
         case .oneFinger: onHold(.oneFingerHeld(.now))
         }
