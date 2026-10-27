@@ -1,4 +1,5 @@
 import Foundation
+import LabcordiOS
 import SwiftUI
 
 struct VideoRecordingIndicator: View {
@@ -6,7 +7,10 @@ struct VideoRecordingIndicator: View {
 
     var body: some View {
         TimelineView(.periodic(from: startedAt, by: 0.1)) { timeline in
-            let seconds = min(5, max(0, Int(timeline.date.timeIntervalSince(startedAt))))
+            let seconds = min(
+                VideoRecordingSettings.durationSeconds,
+                max(0, Int(timeline.date.timeIntervalSince(startedAt)))
+            )
             HStack(spacing: 10) {
                 Circle()
                     .fill(.red)
