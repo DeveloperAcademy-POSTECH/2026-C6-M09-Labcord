@@ -15,6 +15,7 @@ public struct CameraSessionClient: Sendable {
     public var previewConnector: @Sendable () async -> CameraPreviewConnector
     public var handEvents: @Sendable () async -> AsyncStream<CameraHandEvent>
     public var capturePhoto: @Sendable () async throws -> Data
+    public var prepareVideoRecording: @Sendable () async throws -> Void
     public var recordVideo: @Sendable (@escaping @Sendable () -> Void) async throws -> URL
     public var cancelVideoRecording: @Sendable () async -> Void
     public var discardVideo: @Sendable (URL) async -> Void
@@ -26,6 +27,7 @@ public struct CameraSessionClient: Sendable {
         previewConnector: @escaping @Sendable () async -> CameraPreviewConnector,
         handEvents: @escaping @Sendable () async -> AsyncStream<CameraHandEvent>,
         capturePhoto: @escaping @Sendable () async throws -> Data,
+        prepareVideoRecording: @escaping @Sendable () async throws -> Void,
         recordVideo: @escaping @Sendable (@escaping @Sendable () -> Void) async throws -> URL,
         cancelVideoRecording: @escaping @Sendable () async -> Void,
         discardVideo: @escaping @Sendable (URL) async -> Void
@@ -36,6 +38,7 @@ public struct CameraSessionClient: Sendable {
         self.previewConnector = previewConnector
         self.handEvents = handEvents
         self.capturePhoto = capturePhoto
+        self.prepareVideoRecording = prepareVideoRecording
         self.recordVideo = recordVideo
         self.cancelVideoRecording = cancelVideoRecording
         self.discardVideo = discardVideo
@@ -52,6 +55,7 @@ extension CameraSessionClient: DependencyKey {
             previewConnector: { await session.previewConnector() },
             handEvents: { await session.handEvents() },
             capturePhoto: { try await session.capturePhoto() },
+            prepareVideoRecording: { try await session.prepareVideoRecording() },
             recordVideo: { try await session.recordVideo(onStarted: $0) },
             cancelVideoRecording: { await session.cancelVideoRecording() },
             discardVideo: { await session.discardVideo(at: $0) }
