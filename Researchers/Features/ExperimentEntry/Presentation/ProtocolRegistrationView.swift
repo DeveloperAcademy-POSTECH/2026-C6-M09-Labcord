@@ -33,7 +33,7 @@ struct ProtocolRegistrationView: View {
                 }
                 .disabled(isSaving)
                 .padding(.horizontal, EntryAppearance.registrationInset)
-                .padding(.top, 14)
+                .padding(.top, 12)
             }
 
             VStack(spacing: 0) {
@@ -43,7 +43,7 @@ struct ProtocolRegistrationView: View {
                             ProgressView().controlSize(.mini)
                         }
                         Text(isSaving ? "실험을 저장하고 있어요" : "프로토콜 없이 진행")
-                            .font(EntryAppearance.label(12))
+                            .font(EntryAppearance.koreanLabel(12))
                     }
                     .frame(maxWidth: .infinity, minHeight: 44)
                     .contentShape(Rectangle())
@@ -59,26 +59,27 @@ struct ProtocolRegistrationView: View {
             .padding(.bottom, 6)
         }
         .background(EntryAppearance.background)
+        .statusBarHidden()
         .navigationBarBackButtonHidden()
         .toolbar(.visible, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .principal) {
                 Text("실험 등록")
-                    .font(EntryAppearance.label(20))
-                    .tracking(-0.45)
+                    .font(EntryAppearance.koreanLabel(20))
                     .foregroundStyle(EntryAppearance.text)
+                    .offset(y: 4 + 2 / 3)
             }
             ToolbarItem(placement: .topBarLeading) {
-                Button(action: onBack) {
-                    Image(systemName: "chevron.backward")
-                        .font(EntryAppearance.label(20))
-                        .foregroundStyle(EntryAppearance.text)
-                }
+                EntryRoundButton(
+                    symbol: "chevron.backward", title: "뒤로 가기",
+                    size: 44, symbolSize: 18, action: onBack
+                )
                 .disabled(isSaving)
-                .accessibilityLabel("뒤로 가기")
                 .accessibilityIdentifier("entry-back")
+                .offset(x: -2 + 1 / 3, y: 5)
             }
+            .sharedBackgroundVisibility(.hidden)
         }
     }
 }
@@ -92,14 +93,12 @@ private struct ProtocolSourceOption: View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(EntryAppearance.label(17, weight: .semibold))
-                    .tracking(-0.43)
+                    .font(EntryAppearance.koreanLabel(17, weight: .semibold))
                     .frame(minHeight: 22)
 
                 if let subtitle {
                     Text(subtitle)
                         .font(EntryAppearance.label(13))
-                        .tracking(-0.08)
                         .frame(minHeight: 18)
                 }
             }
@@ -122,13 +121,12 @@ private struct EntryNextButton: View {
     var body: some View {
         Button { action?() } label: {
             Text("다음")
-                .font(EntryAppearance.label(17))
-                .tracking(-0.43)
+                .font(EntryAppearance.koreanLabel(17))
                 .foregroundStyle(EntryAppearance.disabledText)
                 .frame(maxWidth: .infinity, minHeight: 50)
                 .background(EntryAppearance.disabledFill, in: Capsule())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(EntryButtonStyle())
         .disabled(action == nil)
         .accessibilityIdentifier("entry-next")
     }
