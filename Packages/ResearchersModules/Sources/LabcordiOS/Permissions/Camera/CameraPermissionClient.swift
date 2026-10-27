@@ -8,16 +8,17 @@
 import AVFoundation
 import ComposableArchitecture
 import Foundation
+import LabcordShared
 import UIKit
 
 public struct CameraPermissionClient: Sendable {
-    public var currentStatus: @MainActor @Sendable () -> CameraPermissionStatus
-    public var requestAccess: @MainActor @Sendable () async -> CameraPermissionStatus
+    public var currentStatus: @MainActor @Sendable () -> PermissionStatus
+    public var requestAccess: @MainActor @Sendable () async -> PermissionStatus
     public var openSettings: @MainActor @Sendable () async -> Bool
 
     public init(
-        currentStatus: @Sendable @escaping () -> CameraPermissionStatus,
-        requestAccess: @Sendable @escaping () async -> CameraPermissionStatus,
+        currentStatus: @Sendable @escaping () -> PermissionStatus,
+        requestAccess: @Sendable @escaping () async -> PermissionStatus,
         openSettings: @Sendable @escaping () async -> Bool
     ) {
         self.currentStatus = currentStatus
@@ -47,7 +48,7 @@ extension CameraPermissionClient: DependencyKey {
         }
     )
 
-    private static func readStatus() -> CameraPermissionStatus {
+    private static func readStatus() -> PermissionStatus {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .notDetermined:
             return .notDetermined

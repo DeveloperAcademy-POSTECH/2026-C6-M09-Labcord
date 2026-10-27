@@ -7,12 +7,13 @@
 
 import ComposableArchitecture
 import Foundation
+import LabcordShared
 
 @Reducer
 public struct CameraPermssionFeature {
     @ObservableState
     public struct State: Equatable {
-        public var status: CameraPermissionStatus?
+        public var status: PermissionStatus?
         public var openSettingsErrorMessage: String?
 
         public init() {}
@@ -20,7 +21,7 @@ public struct CameraPermssionFeature {
 
     public enum Action: Equatable {
         case check
-        case statusUpdated(CameraPermissionStatus)
+        case statusUpdated(PermissionStatus)
         case request
         case openSettingsTapped
         case openSettingsFailed

@@ -53,6 +53,7 @@ struct ExperimentSessionView: View {
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
             store.send(.cameraViewAppeared)
+            store.send(.permissions(.request))
         }
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
@@ -62,15 +63,15 @@ struct ExperimentSessionView: View {
         .alert(
             "설정 열기 실패",
             isPresented: Binding(
-                get: { store.cameraPermission.openSettingsErrorMessage != nil },
-                set: { if !$0 { store.send(.cameraPermission(.openSettingsErrorDismissed)) } }
+                get: { store.permissions.camera.openSettingsErrorMessage != nil },
+                set: { if !$0 { store.send(.permissions(.camera(.openSettingsErrorDismissed))) } }
             )
         ) {
             Button("확인", role: .cancel) {
-                store.send(.cameraPermission(.openSettingsErrorDismissed))
+                store.send(.permissions(.camera(.openSettingsErrorDismissed)))
             }
         } message: {
-            Text(store.cameraPermission.openSettingsErrorMessage ?? "")
+            Text(store.permissions.camera.openSettingsErrorMessage ?? "")
         }
         .alert(
             "카메라 오류",

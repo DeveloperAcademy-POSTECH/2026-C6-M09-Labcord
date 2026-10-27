@@ -12,7 +12,7 @@ struct ExperimentSessionFeature {
 
     @ObservableState
     struct State: Equatable {
-        var cameraPermission = CameraPermssionFeature.State()
+        var permissions = SessionPermissionsFeature.State()
         var cameraOwnerID = UUID()
         var isCameraViewVisible = false
         var cameraErrorMessage: String?
@@ -42,7 +42,7 @@ struct ExperimentSessionFeature {
         case timerTick(Date)
         case cameraViewAppeared
         case cameraViewDisappeared
-        case cameraPermission(CameraPermssionFeature.Action)
+        case permissions(SessionPermissionsFeature.Action)
         case cameraStarted(UUID, CameraPreviewConnector)
         case cameraSwitchRequested
         case cameraSwitched(CameraPreviewConnector)
@@ -81,8 +81,8 @@ struct ExperimentSessionFeature {
     @Dependency(\.cameraSessionClient) var cameraSessionClient
 
     var body: some Reducer<State, Action> {
-        Scope(state: \.cameraPermission, action: \.cameraPermission) {
-            CameraPermssionFeature()
+        Scope(state: \.permissions, action: \.permissions) {
+            SessionPermissionsFeature()
         }
 
         Reduce { state, action in
@@ -91,13 +91,14 @@ struct ExperimentSessionFeature {
                 guard !state.isCameraViewVisible else { return .none }
                 state.isCameraViewVisible = true
                 state.cameraOwnerID = UUID()
-                return .send(.cameraPermission(.request))
+                return .none
 
             case .cameraViewDisappeared:
                 guard state.isCameraViewVisible else { return .none }
                 state.isCameraViewVisible = false
                 let ownerID = state.cameraOwnerID
                 return .merge(
+                    .send(.permissions(.cancelRequest)),
                     .cancel(id: CancelID.handTracking),
                     cancelScheduledPhoto(in: &state),
                     .run { _ in await cameraSessionClient.deactivate(ownerID) }
@@ -147,7 +148,7 @@ struct ExperimentSessionFeature {
                     ? .none
                     : .cancel(id: CancelID.timerTick)
 
-            case .cameraPermission(.statusUpdated(.authorized)):
+            case .permissions(.camera(.statusUpdated(.authorized))):
                 guard state.isCameraViewVisible else { return .none }
                 let ownerID = state.cameraOwnerID
                 return .run { send in
@@ -258,7 +259,7 @@ struct ExperimentSessionFeature {
                 state.capturedPhotoData = nil
                 return cancelScheduledPhoto(in: &state)
 
-            case .cameraPermission:
+            case .permissions:
                 return .none
             }
         }
