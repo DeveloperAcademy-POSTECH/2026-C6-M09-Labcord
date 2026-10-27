@@ -69,7 +69,7 @@ struct PortraitSessionSheetView: View {
 
                 HStack(spacing: 12) {
                     Button {
-
+                        store.send(.voiceButtonTapped)
                     } label: {
                         VStack(spacing: 10) {
                             Image(systemName: "record.circle")
