@@ -204,7 +204,7 @@ public actor CameraSession {
                 let delegate = VideoRecordingDelegate(
                     continuation: continuation,
                     onStarted: onStarted
-                )                    { [weak self] in
+                ) { [weak self] in
                         Task { await self?.cancelVideoRecording() }
                     }
                 videoDelegate = delegate
