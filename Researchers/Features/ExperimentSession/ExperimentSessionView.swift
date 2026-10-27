@@ -43,6 +43,12 @@ struct ExperimentSessionView: View {
             }
             .ignoresSafeArea()
         }
+        .onAppear {
+            UIApplication.shared.isIdleTimerDisabled = true
+        }
+        .onDisappear {
+            UIApplication.shared.isIdleTimerDisabled = false
+        }
         .background(.black)
         .alert(
             "설정 열기 실패",
