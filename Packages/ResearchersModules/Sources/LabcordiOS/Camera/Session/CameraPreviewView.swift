@@ -10,18 +10,18 @@ import UIKit
 
 public struct CameraPreviewView: UIViewRepresentable {
     public let connector: CameraPreviewConnector
-    
+
     public init(connector: CameraPreviewConnector) {
         self.connector = connector
     }
-    
+
     public func makeUIView(context: Context) -> some UIView {
         let view = PreviewUIView()
         view.connector = connector
         connector.attach(to: view)
         return view
     }
-    
+
     public func updateUIView(_ uiView: UIViewType, context: Context) {
         guard let view = uiView as? PreviewUIView else { return }
         if view.connector != connector {

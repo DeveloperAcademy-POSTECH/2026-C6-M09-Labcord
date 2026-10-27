@@ -14,7 +14,7 @@ public struct CameraPermissionClient: Sendable {
     public var currentStatus: @MainActor @Sendable () -> CameraPermissionStatus
     public var requestAccess: @MainActor @Sendable () async -> CameraPermissionStatus
     public var openSettings: @MainActor @Sendable () async -> Bool
-    
+
     public init(
         currentStatus: @Sendable @escaping () -> CameraPermissionStatus,
         requestAccess: @Sendable @escaping () async -> CameraPermissionStatus,
@@ -35,18 +35,18 @@ extension CameraPermissionClient: DependencyKey {
             if AVCaptureDevice.authorizationStatus(for: .video) == .notDetermined {
                 await AVCaptureDevice.requestAccess(for: .video)
             }
-            
+
             return readStatus()
         },
         openSettings: {
             guard let url = URL(string: UIApplication.openSettingsURLString) else {
                 return false
             }
-            
+
             return await UIApplication.shared.open(url)
         }
     )
-    
+
     private static func readStatus() -> CameraPermissionStatus {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .notDetermined:

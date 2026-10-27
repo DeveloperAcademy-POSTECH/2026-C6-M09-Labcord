@@ -14,10 +14,10 @@ public struct CameraPermssionFeature {
     public struct State: Equatable {
         public var status: CameraPermissionStatus?
         public var openSettingsErrorMessage: String?
-        
+
         public init() {}
     }
-    
+
     public enum Action: Equatable {
         case check
         case statusUpdated(CameraPermissionStatus)
@@ -26,11 +26,11 @@ public struct CameraPermssionFeature {
         case openSettingsFailed
         case openSettingsErrorDismissed
     }
-    
+
     @Dependency(\.cameraPermissionClient) var cameraPermissionClient
-    
+
     public init() {}
-    
+
     public var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
@@ -39,17 +39,17 @@ public struct CameraPermssionFeature {
                     let status = await cameraPermissionClient.currentStatus()
                     await send(.statusUpdated(status))
                 }
-                
+
             case let .statusUpdated(status):
                 state.status = status
                 return .none
-                
+
             case .request:
                 return .run { send in
                     let status = await cameraPermissionClient.requestAccess()
                     await send(.statusUpdated(status))
                 }
-                
+
             case .openSettingsTapped:
                 guard state.status == .denied else {
                     return .none
