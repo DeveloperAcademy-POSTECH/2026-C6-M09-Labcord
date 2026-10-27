@@ -16,6 +16,7 @@ public final class Experiment {
     public var startedAt: Date?
     public private(set) var endedAt: [Date] = []
     public private(set) var status: ExperimentStatus
+    public private(set) var mode: ExperimentMode
     public var procedure: ExperimentProtocol?
 
     @Relationship(deleteRule: .cascade)
@@ -35,6 +36,7 @@ public final class Experiment {
         endedAt: [Date] = [],
         pauses: [Pause] = [],
         status: ExperimentStatus = .preparing,
+        mode: ExperimentMode = .free,
         procedure: ExperimentProtocol? = nil,
         records: [ExperimentRecord] = []
     ) {
@@ -45,6 +47,7 @@ public final class Experiment {
         self.endedAt = endedAt
         self.pauses = pauses
         self.status = status
+        self.mode = mode
         self.procedure = procedure
         self.records = records
         self.statusHistory = [ExperimentStatusEntry(status: status, date: createdAt)]
