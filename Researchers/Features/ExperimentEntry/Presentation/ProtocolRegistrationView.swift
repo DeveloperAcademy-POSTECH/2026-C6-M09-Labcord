@@ -105,7 +105,7 @@ private struct ProtocolSourceOption: View {
             .padding(16)
             .background(
                 EntryAppearance.optionFill,
-                in: RoundedRectangle(cornerRadius: EntryAppearance.optionRadius)
+                in: RoundedRectangle(cornerRadius: EntryAppearance.optionRadius, style: .circular)
             )
             .contentShape(Rectangle())
         }
