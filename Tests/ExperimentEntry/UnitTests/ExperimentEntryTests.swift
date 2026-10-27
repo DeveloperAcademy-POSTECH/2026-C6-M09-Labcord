@@ -14,6 +14,9 @@ final class ExperimentEntryTests: XCTestCase {
     func testRetryKeepsIdentityAndEmitsOnlyAfterSaving() async {
         let probe = SaveProbe()
         let entry = row()
+        let saved = ExperimentEntryFeature.SavedExperiment(
+            entry: entry, refreshedEntries: .success([entry])
+        )
         let store = TestStore(initialState: ExperimentEntryFeature.State(isRegistering: true)) {
             ExperimentEntryFeature()
         } withDependencies: {
@@ -42,19 +45,97 @@ final class ExperimentEntryTests: XCTestCase {
             $0.isSaving = true
             $0.loadRevision = 2
         }
-        await store.receive(.saved(.success(entry))) {
+        await store.receive(.saved(.success(saved))) {
             $0.isSaving = false
             $0.entries = [entry]
             $0.isRegistering = false
             $0.pendingID = nil
         }
         await store.receive(.delegate(.experimentCreated(identifier)))
+        await store.finish()
+        XCTAssertEqual(probe.identifiers, [identifier, identifier])
+    }
+
+    func testParentCanRemoveEntryAfterRefreshedListAndFinalDelegate() async {
+        let probe = SaveProbe()
+        let entry = row()
+        let existing = ExperimentListEntry(
+            id: UUID(), title: "이전 실험", createdAt: date.addingTimeInterval(-60), status: .completed
+        )
+        let saved = ExperimentEntryFeature.SavedExperiment(
+            entry: entry, refreshedEntries: .success([existing, entry])
+        )
+        let store = TestStore(initialState: EntryRemovalParent.State()) {
+            EntryRemovalParent()
+        } withDependencies: {
+            $0.uuid = .constant(identifier)
+            $0.date = .constant(date)
+            $0.experimentEntryClient = ExperimentEntryClient(
+                load: { probe.events.append("load"); return [existing, entry] },
+                create: { _, _ in probe.events.append("save"); return entry }
+            )
+        }
+        await store.send(.entry(.skipTapped)) {
+            $0.entry?.pendingID = self.identifier
+            $0.entry?.isSaving = true
+            $0.entry?.loadRevision = 1
+        }
+        await store.receive(.entry(.saved(.success(saved)))) {
+            $0.entry?.isSaving = false
+            $0.entry?.entries = [entry, existing]
+            $0.entry?.isRegistering = false
+            $0.entry?.pendingID = nil
+        }
+        await store.receive(.entry(.delegate(.experimentCreated(identifier)))) {
+            $0.createdID = self.identifier
+            $0.finalEntries = [entry, existing]
+            $0.entry = nil
+        }
+        await store.finish()
+        XCTAssertEqual(probe.events, ["save", "load"])
+    }
+
+    func testRefreshFailureKeepsSavedEntryAndRetriesOnlyLoading() async {
+        let probe = SaveProbe()
+        let entry = row()
+        let store = TestStore(initialState: ExperimentEntryFeature.State(isRegistering: true)) {
+            ExperimentEntryFeature()
+        } withDependencies: {
+            $0.uuid = .constant(identifier)
+            $0.date = .constant(date)
+            $0.experimentEntryClient = ExperimentEntryClient(
+                load: {
+                    probe.loadCount += 1
+                    if probe.loadCount == 1 { throw ExperimentEntryFeature.Failure.loading }
+                    return [entry]
+                },
+                create: { id, _ in probe.identifiers.append(id); return entry }
+            )
+        }
+        await store.send(.skipTapped) {
+            $0.pendingID = self.identifier
+            $0.isSaving = true
+            $0.loadRevision = 1
+        }
+        let saved = ExperimentEntryFeature.SavedExperiment(
+            entry: entry, refreshedEntries: .failure(.loading)
+        )
+        await store.receive(.saved(.success(saved))) {
+            $0.isSaving = false
+            $0.entries = [entry]
+            $0.isRegistering = false
+            $0.pendingID = nil
+            $0.failure = .loading
+        }
+        await store.receive(.delegate(.experimentCreated(identifier)))
+        await store.send(.retryTapped(.loading)) { $0.failure = nil }
         await store.receive(.load) {
             $0.isLoading = true
-            $0.loadRevision = 3
+            $0.loadRevision = 2
         }
-        await store.receive(.loaded(3, .success([entry]))) { $0.isLoading = false }
-        XCTAssertEqual(probe.identifiers, [identifier, identifier])
+        await store.receive(.loaded(2, .success([entry]))) { $0.isLoading = false }
+        XCTAssertEqual(probe.identifiers, [identifier])
+        XCTAssertEqual(probe.loadCount, 2)
     }
 
     func testSavingBlocksDuplicateSubmissionAndBackNavigation() async {
@@ -176,4 +257,32 @@ final class ExperimentEntryTests: XCTestCase {
 private final class SaveProbe {
     var identifiers: [UUID] = []
     var initializationCount = 0
+    var loadCount = 0
+    var events: [String] = []
+}
+
+@Reducer
+private struct EntryRemovalParent {
+    @ObservableState
+    struct State: Equatable {
+        var entry: ExperimentEntryFeature.State? = .init(isRegistering: true)
+        var createdID: UUID?
+        var finalEntries: [ExperimentListEntry] = []
+    }
+
+    enum Action: Equatable {
+        case entry(ExperimentEntryFeature.Action)
+    }
+
+    var body: some Reducer<State, Action> {
+        Reduce { state, action in
+            if case let .entry(.delegate(.experimentCreated(identifier))) = action {
+                state.createdID = identifier
+                state.finalEntries = state.entry?.entries ?? []
+                state.entry = nil
+            }
+            return .none
+        }
+        .ifLet(\.entry, action: \.entry) { ExperimentEntryFeature() }
+    }
 }

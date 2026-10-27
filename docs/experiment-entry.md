@@ -12,7 +12,8 @@ flowchart TD
     Home -->|추가| Registration[프로토콜 방식 선택]
     Registration -->|뒤로 가기| Home
     Registration -->|프로토콜 없이 진행| Save[UUID를 한 번 발급 · 저장]
-    Save -->|성공| Created[experimentCreated · 저장된 UUID]
+    Save -->|성공| Refresh[실제 저장 목록 재조회 · 목록 반영]
+    Refresh --> Created[experimentCreated · 최종 이벤트]
     Created --> Home
     Save -->|실패| Retry[화면 유지 · 재시도 또는 취소]
     Retry -->|동일 UUID로 재시도| Save
@@ -39,6 +40,11 @@ flowchart TD
 자동 저장을 끕니다. `create`는 같은 UUID가 이미 저장됐으면 기존 항목을 반환합니다.
 실패한 작업의 context는 다른 화면의 미저장 변경을 rollback하지 않습니다.
 저장소 초기화 실패는 다음 조회에서 재시도하며 기존 데이터를 삭제하거나 초기화하지 않습니다.
+
+저장 후 실제 목록을 재조회하고 Feature 목록에 반영한 다음 `experimentCreated`를 보냅니다.
+재조회에 실패해도 저장된 항목을 유지하고 목록 조회 오류로 구분합니다. 이때 재시도는 조회만
+수행하며 실험을 다시 만들지 않습니다. 성공 delegate 뒤에는 Entry 액션을 보내지 않으므로
+부모가 해당 이벤트에서 Entry 상태를 제거하거나 후속 화면으로 전환할 수 있습니다.
 
 기존 공유 `Experiment` 모델을 변경하지 않습니다. 생성값은 `title = "새 실험"`,
 `status = .preparing`, `procedure = nil`, `startedAt = nil`입니다.
@@ -103,7 +109,8 @@ swiftlint lint --strict
 초기화 플래그도 검증 앱 자신의 저장소에만 적용됩니다.
 검증용 fixture는 메모리 저장소를 사용합니다. 제품 앱에는 검증 플래그나 예시 데이터가 없습니다.
 
-검증 항목은 저장 후 이벤트 순서, 실패 후 동일 UUID 재시도, 중복 입력·저장 중 이탈 차단,
+검증 항목은 저장·재조회·최종 이벤트 순서와 부모의 Entry 제거, 재조회 실패 후 조회만 재시도,
+저장 실패 후 동일 UUID 재시도, 중복 입력·저장 중 이탈 차단,
 오래된 조회 결과 무시, 실제 디스크 재개방, 앱 재실행, 입력 이벤트와 뒤로 가기입니다.
 화면 캡처는 iPhone 17의 402×874pt 전체 화면을 두 Figma 화면과 각각 대조합니다.
 XCTest 첨부 캡처와 실행 결과를 확인하며, 빌드 성공을 화면 일치나 테스트 통과로 대신하지 않습니다.

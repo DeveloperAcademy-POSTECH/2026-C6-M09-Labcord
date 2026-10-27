@@ -19,13 +19,18 @@ struct ExperimentEntryFeature {
         case saving
     }
 
+    nonisolated struct SavedExperiment: Equatable, Sendable {
+        let entry: ExperimentListEntry
+        let refreshedEntries: Result<[ExperimentListEntry], Failure>
+    }
+
     enum Action: Equatable {
         case load
         case loaded(Int, Result<[ExperimentListEntry], Failure>)
         case addTapped
         case registrationPresented(Bool)
         case skipTapped
-        case saved(Result<ExperimentListEntry, Failure>)
+        case saved(Result<SavedExperiment, Failure>)
         case retryTapped(Failure)
         case dismissFailure
         case experimentTapped(UUID)
@@ -110,7 +115,15 @@ struct ExperimentEntryFeature {
                     .run { send in
                         do {
                             let entry = try await client.create(identifier, date)
-                            await send(.saved(.success(entry)))
+                            let refreshedEntries: Result<[ExperimentListEntry], Failure>
+                            do {
+                                refreshedEntries = .success(try await client.load())
+                            } catch {
+                                refreshedEntries = .failure(.loading)
+                            }
+                            await send(.saved(.success(SavedExperiment(
+                                entry: entry, refreshedEntries: refreshedEntries
+                            ))))
                         } catch {
                             await send(.saved(.failure(.saving)))
                         }
@@ -121,16 +134,20 @@ struct ExperimentEntryFeature {
                 guard state.isSaving else { return .none }
                 state.isSaving = false
                 switch result {
-                case let .success(entry):
-                    state.entries.removeAll { $0.id == entry.id }
-                    state.entries.append(entry)
+                case let .success(saved):
+                    switch saved.refreshedEntries {
+                    case let .success(entries):
+                        state.entries = entries
+                        state.failure = nil
+                    case .failure:
+                        state.failure = .loading
+                    }
+                    state.entries.removeAll { $0.id == saved.entry.id }
+                    state.entries.append(saved.entry)
                     state.entries.sort(by: ExperimentListEntry.newestFirst)
                     state.isRegistering = false
                     state.pendingID = nil
-                    return .concatenate(
-                        .send(.delegate(.experimentCreated(entry.id))),
-                        .send(.load)
-                    )
+                    return .send(.delegate(.experimentCreated(saved.entry.id)))
                 case .failure:
                     state.failure = .saving
                     return .none
