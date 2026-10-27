@@ -1,6 +1,7 @@
 import Foundation
 
 nonisolated enum HandPose: Equatable {
+    case openHand
     case fist
     case oneFinger
 }
