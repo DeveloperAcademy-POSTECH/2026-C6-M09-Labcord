@@ -35,6 +35,7 @@ nonisolated final class CameraHandDetector: NSObject, AVCaptureVideoDataOutputSa
         case .openHand: onHold(.openHandHeld(.now))
         case .fist: onHold(.fistHeld(.now))
         case .oneFinger: onHold(.oneFingerHeld(.now))
+        case .threeFingers: onHold(.threeFingersHeld(.now))
         }
     }
 }
