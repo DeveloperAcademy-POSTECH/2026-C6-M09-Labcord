@@ -102,7 +102,8 @@ python3 scripts/verification/compare-entry-png.py \
 
 로그·xcresult·원시 PNG·JSON·Mermaid SVG·도구 캐시는 저장소 밖의 해당 날짜 QA 폴더에 보존합니다.
 첨부 대화 원문·개인정보와 검증 결과물은 앱 bundle이나 저장소에 포함하지 않았습니다.
-PR#33에서 임시로 사용한 Rules·Skills의 경로는 `.gitignore`로 제외했습니다.
+[개인 포크 PR#33](https://github.com/hellosunghyun/2026-C6-M09-Researchers/pull/33)에서
+임시로 사용한 Rules·Skills의 경로는 `.gitignore`로 제외했습니다.
 
 코드·문서의 `git diff --check`는 통과했습니다. 기준 커밋 대비 전체 검사에는 OFL 원문의
 21행 trailing whitespace 한 곳이 있습니다. 라이선스 바이트 보존을 위해 원문을 수정하지 않았고,
