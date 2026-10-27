@@ -16,12 +16,14 @@ import xml.etree.ElementTree as ET
 
 SELECTED = [1, 5, 11, 15, 16, 20, 26, 30, 33, 37, 43, 47, 48, 52, 58, 62]
 SOURCES = {
-    'gear': (48, [11.6484375, 11.66357421875],
-             'd0a28750623adec300d1e5901840b1fb12f4c97ff13db78ab9df370bbf3b5564'),
-    'plus': (48, [15.134765625, 15.1416015625],
-             'e29279e2ea58e5fd275d5fe683e8e874f34c63a800af14cdafcbd32f9ebcb20f'),
-    'back': (44, [15.29296875, 12.7431640625],
-             '1a92bf7a245cf55ac59745d295d15da25ec9a06532d4cf025ab14be63a03d40c'),
+    'gear': (48, 48, [11.6484375, 11.66357421875],
+             255, 'd0a28750623adec300d1e5901840b1fb12f4c97ff13db78ab9df370bbf3b5564'),
+    'plus': (48, 48, [15.134765625, 15.1416015625],
+             255, 'e29279e2ea58e5fd275d5fe683e8e874f34c63a800af14cdafcbd32f9ebcb20f'),
+    'back': (44, 44, [15.29296875, 12.7431640625],
+             255, '1a92bf7a245cf55ac59745d295d15da25ec9a06532d4cf025ab14be63a03d40c'),
+    'chevron': (11, 20, [2.85595703125, 3.3544921875],
+                153, '62a87f40ea3e7d3167d8ba4ef86f93fa065c58050f7cf07cadd637068d7de55c'),
 }
 EXPECTED = {'gear@1x': {'alphaSHA256': 'a8b3e5e688e36c905b2ed6f8004b6065771ed01238dd738bedeafb5ccf708f35',
              'PNGSHA256': '92470154ce5e839d56b9b7a1972f5a8958d174e4f4369f35b13106aea04dddda'},
@@ -40,7 +42,13 @@ EXPECTED = {'gear@1x': {'alphaSHA256': 'a8b3e5e688e36c905b2ed6f8004b6065771ed012
  'plus@3x': {'alphaSHA256': 'c8bf3339415018395d9cc3b5a5ba0b5d548fc17d3e82663b6cf41728698c3445',
              'PNGSHA256': '811198c9bd19a9691276c1a456ae4103f5ed825237cf21ab2a081348565d97ba'},
  'back@3x': {'alphaSHA256': '3751528124dea70fc2feb5610caffb7f8135909243ac02c320ebfee3b64e1164',
-             'PNGSHA256': 'caa654d0b56af1070349ef2130cf2a4eba4851cbee659231efe88762d0c779a1'}}
+             'PNGSHA256': 'caa654d0b56af1070349ef2130cf2a4eba4851cbee659231efe88762d0c779a1'},
+ 'chevron@1x': {'alphaSHA256': 'baf129ec1db91a294c3e854355bdc27e9a97b3a23c0554f7c11ad4ff8db5d815',
+                'PNGSHA256': '57e394f443bd26e9552606d8ef9263a9403e3543272e214b1844841e167077f5'},
+ 'chevron@2x': {'alphaSHA256': 'bed3a8f7425f74e3b4e1f2e4d4d1f97b9fd13385395a0443d0e5b6ec78d4e7e3',
+                'PNGSHA256': 'a53438b4be61e4f53c75f2aa51f0fc7c0936718031ae4f925903a5df8784a3d5'},
+ 'chevron@3x': {'alphaSHA256': '2898aaf6469c3576a3639996f2219e82a448d5b9a79fefb6f0ec17283101cfe9',
+                'PNGSHA256': '28fa9348665c03e013f27ab6a8fcb70879a25e95fc8d2f7bc0593bab01808d56'}}
 TOKEN = re.compile(r'[A-Za-z]|[-+]?(?:\d*\.\d+|\d+\.?\d*)(?:[eE][-+]?\d+)?')
 
 
@@ -99,7 +107,7 @@ def parse_path(value):
 
 def input_from_repository(repo):
     symbols, provenance = [], {}
-    for name, (size, origin, expected) in SOURCES.items():
+    for name, (width, height, origin, opacity_byte, expected) in SOURCES.items():
         relative = ('Researchers/Resources/Assets.xcassets/Entry' + name.title()
                     + '.imageset/' + name + '.svg')
         data = (repo / relative).read_bytes()
@@ -108,8 +116,8 @@ def input_from_repository(repo):
         paths = svg.findall('{http://www.w3.org/2000/svg}path')
         require(len(paths) == 1, 'SVG path는1개여야 합니다')
         d = paths[0].attrib['d']
-        symbols.append({'name': name, 'size': size, 'origin': origin,
-                        'commands': parse_path(d)})
+        symbols.append({'name': name, 'width': width, 'height': height,
+                        'opacityByte': opacity_byte, 'origin': origin, 'commands': parse_path(d)})
         provenance[name] = {'path': relative, 'SHA256': expected,
                             'pathDSHA256': sha(d.encode()), 'viewBox': svg.attrib['viewBox']}
     return {'selectedIndices': SELECTED, 'symbols': symbols}, provenance
@@ -133,7 +141,7 @@ def verify_and_manifest(repo, work, provenance, input_sha):
     require(after == provenance, '생성 중 원본 SVG 변경')
     decode = runpy.run_path(str(repo / 'scripts/verification/compare-entry-png.py'))['decode_png']
     export = json.loads((work / 'export-result.json').read_text())
-    require(export['containsCalls'] == 1465856 and len(export['records']) == 9,
+    require(export['containsCalls'] == 1515136 and len(export['records']) == 12,
             '예상하지 못한 export 범위')
     records = []
     for item in export['records']:
