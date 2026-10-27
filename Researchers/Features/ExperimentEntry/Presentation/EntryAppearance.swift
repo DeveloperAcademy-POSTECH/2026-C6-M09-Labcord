@@ -10,7 +10,7 @@ enum EntryAppearance {
     static let separator = Color(red: 229 / 255, green: 229 / 255, blue: 234 / 255)
     static let accent = Color(red: 0, green: 136 / 255, blue: 1)
     static let addFill = Color(red: 0, green: 145 / 255, blue: 1)
-    static let symbol = Color(white: 17 / 255)
+    static let symbol = Color(white: 26 / 255)
     static let neutralSurface = LinearGradient(
         colors: [Color(white: 238 / 255), Color(white: 254 / 255)],
         startPoint: .topLeading, endPoint: .bottomTrailing
@@ -90,9 +90,9 @@ struct EntryRoundButton: View {
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: symbol)
-                .font(EntryAppearance.label(symbolSize))
+            symbolImage
                 .foregroundStyle(isProminent ? .white : EntryAppearance.symbol)
+                .blendMode(isProminent ? .plusLighter : .plusDarker)
                 .frame(width: size, height: size)
                 .background(
                     isProminent
@@ -105,6 +105,30 @@ struct EntryRoundButton: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(title)
+    }
+
+    @ViewBuilder
+    private var symbolImage: some View {
+        switch symbol {
+        case "gear":
+            asset("EntryGear", width: 25, height: 25, x: 0.1484375, y: 0.16357421875)
+        case "plus":
+            asset("EntryPlus", width: 18, height: 18, x: 0.134765625, y: 0.1416015625)
+        case "chevron.backward":
+            asset("EntryBack", width: 11, height: 19, x: -1.20703125, y: 0.2431640625)
+        default:
+            Image(systemName: symbol).font(EntryAppearance.label(symbolSize))
+        }
+    }
+
+    private func asset(
+        _ name: String, width: CGFloat, height: CGFloat, x offsetX: CGFloat, y offsetY: CGFloat
+    ) -> some View {
+        Image(name)
+            .renderingMode(.template)
+            .resizable()
+            .frame(width: width, height: height)
+            .offset(x: offsetX, y: offsetY)
     }
 }
 

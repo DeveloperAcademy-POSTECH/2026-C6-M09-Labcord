@@ -20,7 +20,6 @@ struct ExperimentHomeView: View {
         .overlay(alignment: .topTrailing) {
             EntryRoundButton(symbol: "gear", title: "설정", symbolSize: 22, action: onSettings)
                 .accessibilityIdentifier("entry-settings")
-                .offset(y: -1 / 3)
                 .padding(.trailing, 20)
                 .padding(.top, 26)
         }

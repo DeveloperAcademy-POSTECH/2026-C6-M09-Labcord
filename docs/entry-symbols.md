@@ -1,0 +1,86 @@
+# Entry 아이콘 벡터 출처와 배치
+
+홈의 설정·추가, 등록 화면의 뒤로 가기 아이콘은 선택된 Figma 텍스트 leaf의 SVG 윤곽입니다.
+원본 SVG 바이트와 앱 자원의 동일성을 확인했습니다. 시뮬레이터의 버튼 프레임은 원본과 같고,
+벡터 적용 후 전체 화면 오차가 줄었습니다. 최종 RGBA·AA에는 차이가 남아 있습니다.
+한글 폰트의 출처·베이스라인은 별도 [폰트 문서](entry-fonts.md)에 있습니다.
+
+## 원본과 내보내기
+
+원본은 Figma 파일 `v6cxQ2I6zURWYQaG5pnuBL`, 페이지 `502:7591`의
+[홈 `502:12299`](https://www.figma.com/design/v6cxQ2I6zURWYQaG5pnuBL?node-id=502-12299)와
+[등록 `502:12563`](https://www.figma.com/design/v6cxQ2I6zURWYQaG5pnuBL?node-id=502-12563)입니다.
+
+| 아이콘 | 버튼 parent | 실제 Text leaf |
+| --- | --- | --- |
+| gear | `502:12342` | `I502:12342;5522:11872;5522:11881` |
+| plus | `502:12341` | `I502:12341;5522:11869;5522:11894` |
+| back | `502:12585` | `I502:12585;6491:22970;5431:837` |
+
+세 leaf 모두 SF Pro Medium, `wght=510`, `wdth=100`, 17pt, tracking0입니다.
+원본 수정 없이 각 버튼의 TEXT 자식을 찾고 `exportAsync`의 `SVG_STRING`,
+`svgOutlineText=true`, `contentsOnly=true`, `useAbsoluteBounds=false`로 내보냈습니다.
+각 SVG는 path 하나이며 `<text>`·폰트 파일·래스터 `<image>`를 포함하지 않습니다.
+원본의 배경·그림자·전체 버튼 PNG·전체 화면 캡처는 앱 자원으로 사용하지 않습니다.
+
+## 원본 바이트 보존
+
+`Researchers/Resources/Assets.xcassets`의 imageset에 원본 SVG를 그대로 복사했습니다.
+path·색상·viewBox를 재작성하거나 곡선·좌표를 단순화하지 않았습니다.
+각 `Contents.json`은 `preserves-vector-representation=true`를 사용합니다.
+
+| 자원 | bytes | 원본과 앱 자원의 동일 SHA256 |
+| --- | ---: | --- |
+| [EntryGear/gear.svg](../Researchers/Resources/Assets.xcassets/EntryGear.imageset/gear.svg) | 11,646 | `d0a28750623adec300d1e5901840b1fb12f4c97ff13db78ab9df370bbf3b5564` |
+| [EntryPlus/plus.svg](../Researchers/Resources/Assets.xcassets/EntryPlus.imageset/plus.svg) | 1,362 | `e29279e2ea58e5fd275d5fe683e8e874f34c63a800af14cdafcbd32f9ebcb20f` |
+| [EntryBack/back.svg](../Researchers/Resources/Assets.xcassets/EntryBack.imageset/back.svg) | 854 | `1a92bf7a245cf55ac59745d295d15da25ec9a06532d4cf025ab14be63a03d40c` |
+
+## Canvas와 원점 계산
+
+모든 값은 pt입니다. SVG viewBox 원점과 실제 path bbox 원점은 모두 `(0,0)`입니다.
+ceil 크기의 canvas에 작은 여백이 있으므로 canvas를 ink bbox 크기에 맞춰 축소·늘리지 않습니다.
+
+| 아이콘 | SVG canvas·viewBox 크기 | 실제 path bbox | 프레임 안 SVG 원점 |
+| --- | --- | --- | --- |
+| gear | 25×25 | 24.7031×24.6865 | (345.6484375, 37.66357421875) |
+| plus | 18×18 | 17.7222×17.7222 | (349.134765625, 758.1416015625) |
+| back | 11×19 | 10.6084×18.5273 | (29.29296875, 79.7431640625) |
+
+`SVG 원점 = Text.absoluteRenderBounds.origin − frame.absoluteBoundingBox.origin − pathBBox.origin`
+
+버튼의 프레임 상대 bounds는 gear `(334,26,48,48)`, plus `(334,743,48,48)`,
+back `(14,67,44,44)`입니다. 중앙 배치한 canvas에 아래 차이만 더합니다.
+
+`중앙 배치 보정 = SVG 원점 − 버튼 원점 − (버튼 크기 − canvas 크기) / 2`
+
+| 아이콘 | 버튼 내부 canvas 원점 | 중앙 배치 보정 (x,y) |
+| --- | --- | --- |
+| gear | (11.6484375, 11.66357421875) | (+0.1484375, +0.16357421875) |
+| plus | (15.134765625, 15.1416015625) | (+0.134765625, +0.1416015625) |
+| back | (15.29296875, 12.7431640625) | (−1.20703125, +0.2431640625) |
+
+SVG 소수 직렬화와 API render bounds의 크기 차이는 최대0.001pt 미만입니다.
+gear 버튼 전체의 −1/3pt 이동은 제거하고 배경 원점을 원본 y26으로 유지합니다.
+
+## 명목 색상과 합성
+
+gear leaf는 명목 `#1A1A1A`와 `LINEAR_BURN`, back은 같은 명목 색상과 상위 Text의
+`LINEAR_BURN`을 사용합니다. plus는 white paint와 `LINEAR_DODGE`이며 SVG에도
+`mix-blend-mode:plus-lighter`가 있습니다. 현재 템플릿 Image는 중성26/255와 `.plusDarker`,
+추가 버튼의 white와 `.plusLighter`로 표시 계층에서 매핑합니다.
+명목 색·blend 설정은 최종 화면의 RGBA와 구분합니다. 배경·그림자·AA를 포함한 합성 결과와
+플랫폼 간 blend 동등성은 실제 원본 비교로 확인하며, 이번 출처 확인으로 확정하지 않습니다.
+
+## 표시 계층 경계와 검증
+
+[EntryRoundButton](../Researchers/Features/ExperimentEntry/Presentation/EntryAppearance.swift)의
+내부 `symbolImage`·`asset`이 template Image, canvas 크기와 원점 보정을 담당합니다.
+버튼 배경·그림자·접근성·액션은 코드로 유지합니다. 이후 DS 적용 시 이 표시 내부를 교체하고
+Feature·저장소·UUID delegate 계약을 유지합니다.
+별도 QA 생성기는 `Researchers/Resources` 전체를 앱 그룹에 연결해 Assets와 Fonts를 함께 포함합니다.
+원본 SVG·앱 SVG 바이트와 SHA256 일치, XML/path 구조를 읽기 전용으로 확인했습니다.
+실제 빌드·화면 일치 결과는 [Entry 검증 절차](experiment-entry.md#시뮬레이터-검증)로 별도 확인합니다.
+
+2026-10-28 iPhone 17 시뮬레이터에서 1206×2622 원본·캡처를 정렬·마스킹 없이 비교했습니다.
+홈 MAE는0.191555/255, 등록은0.142520/255입니다. 0이 아닌 RGB 차이를 모두 세면
+각각5.223058%, 2.328809%이며, 완전한 픽셀 일치로 표시하지 않습니다.
