@@ -91,8 +91,6 @@ public actor CameraSession {
         pendingStop = nil
         try configureCamera()
         if AVAudioApplication.shared.recordPermission == .granted {
-            // Keep the recording connections in the graph before the preview starts.
-            // A setup failure should not prevent photo capture or hand tracking.
             try? prepareVideoRecording()
         }
 
@@ -180,13 +178,7 @@ public actor CameraSession {
         guard photoDelegate == nil else { throw CameraSessionError.alreadyCapturingPhoto }
         defer { photoDelegate = nil }
 
-        if let connection = photoOutput.connection(with: .video), let activeCamera {
-            let coordinator = AVCaptureDevice.RotationCoordinator(device: activeCamera, previewLayer: nil)
-            let angle = coordinator.videoRotationAngleForHorizonLevelCapture
-            if connection.isVideoRotationAngleSupported(angle) {
-                connection.videoRotationAngle = angle
-            }
-        }
+        configureCaptureRotation(for: photoOutput.connection(with: .video))
 
         return try await withCheckedThrowingContinuation { continuation in
             let delegate = PhotoCaptureDelegate(continuation: continuation)
@@ -203,13 +195,7 @@ public actor CameraSession {
         defer { videoDelegate = nil }
         try Task.checkCancellation()
 
-        if let connection = movieOutput.connection(with: .video), let activeCamera {
-            let coordinator = AVCaptureDevice.RotationCoordinator(device: activeCamera, previewLayer: nil)
-            let angle = coordinator.videoRotationAngleForHorizonLevelCapture
-            if connection.isVideoRotationAngleSupported(angle) {
-                connection.videoRotationAngle = angle
-            }
-        }
+        configureCaptureRotation(for: movieOutput.connection(with: .video))
 
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("video-\(UUID().uuidString).mov")
@@ -246,7 +232,7 @@ public actor CameraSession {
         guard AVAudioApplication.shared.recordPermission == .granted else {
             throw PermissionAccessError(.microphone)
         }
-        guard isConfigured else { return }
+        guard isConfigured else { throw CameraSessionError.cameraUnavailable }
         guard microphoneInput == nil else { return }
         guard let microphone = AVCaptureDevice.default(for: .audio) else {
             throw CameraSessionError.microphoneUnavailable
@@ -265,7 +251,10 @@ public actor CameraSession {
             throw CameraSessionError.cannotAddOutput
         }
         session.addOutput(movieOutput)
-        movieOutput.maxRecordedDuration = CMTime(seconds: 5, preferredTimescale: 600)
+        movieOutput.maxRecordedDuration = CMTime(
+            seconds: Double(VideoRecordingSettings.durationSeconds),
+            preferredTimescale: 600
+        )
         session.commitConfiguration()
         guard movieOutput.connection(with: .audio) != nil else {
             session.beginConfiguration()
@@ -275,6 +264,17 @@ public actor CameraSession {
             throw CameraSessionError.microphoneUnavailable
         }
         microphoneInput = input
+    }
+
+    private func configureCaptureRotation(for connection: AVCaptureConnection?) {
+        guard let connection, let activeCamera else { return }
+        let coordinator = AVCaptureDevice.RotationCoordinator(
+            device: activeCamera,
+            previewLayer: nil
+        )
+        let angle = coordinator.videoRotationAngleForHorizonLevelCapture
+        guard connection.isVideoRotationAngleSupported(angle) else { return }
+        connection.videoRotationAngle = angle
     }
 
     public func previewConnector() -> CameraPreviewConnector {
