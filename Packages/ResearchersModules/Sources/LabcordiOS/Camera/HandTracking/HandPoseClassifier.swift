@@ -63,6 +63,7 @@ nonisolated enum HandPoseClassifier {
         if extended == 5 { return .openHand }
         if curled == 5 { return .fist }
         if extended == 1, curled == 4 { return .oneFinger }
+        if extended == 3, curled == 2 { return .threeFingers }
         return nil
     }
 
