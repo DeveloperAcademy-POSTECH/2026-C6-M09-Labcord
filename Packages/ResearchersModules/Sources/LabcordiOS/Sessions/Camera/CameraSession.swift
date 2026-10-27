@@ -36,7 +36,7 @@ public actor CameraSession {
     public init() {
         let hub = CameraHandEventHub()
         handEventHub = hub
-        handDetector = CameraHandDetector { hub.emit(.fistHeld(.now)) }
+        handDetector = CameraHandDetector { hub.emit($0) }
     }
 
     public func configureCamera() throws {
