@@ -88,6 +88,10 @@ public actor CameraSession {
         pendingStop = nil
         try configureCamera()
 
+        if activeOwners.isEmpty {
+            // Clear a held pose before a returning view subscribes to hand events.
+            handTrackingQueue.sync { [handDetector] in handDetector.reset() }
+        }
         if !session.isRunning {
             session.startRunning()
         }
