@@ -7,23 +7,18 @@
 
 import AVFoundation
 import ComposableArchitecture
-import Foundation
 import LabcordShared
-import UIKit
 
 public struct CameraPermissionClient: Sendable {
     public var currentStatus: @MainActor @Sendable () -> PermissionStatus
     public var requestAccess: @MainActor @Sendable () async -> PermissionStatus
-    public var openSettings: @MainActor @Sendable () async -> Bool
 
     public init(
         currentStatus: @Sendable @escaping () -> PermissionStatus,
-        requestAccess: @Sendable @escaping () async -> PermissionStatus,
-        openSettings: @Sendable @escaping () async -> Bool
+        requestAccess: @Sendable @escaping () async -> PermissionStatus
     ) {
         self.currentStatus = currentStatus
         self.requestAccess = requestAccess
-        self.openSettings = openSettings
     }
 }
 
@@ -38,13 +33,6 @@ extension CameraPermissionClient: DependencyKey {
             }
 
             return readStatus()
-        },
-        openSettings: {
-            guard let url = URL(string: UIApplication.openSettingsURLString) else {
-                return false
-            }
-
-            return await UIApplication.shared.open(url)
         }
     )
 
