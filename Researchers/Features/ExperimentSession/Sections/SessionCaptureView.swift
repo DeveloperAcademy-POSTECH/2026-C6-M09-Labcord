@@ -58,7 +58,7 @@ struct SessionCaptureView: View {
                 .tint(.white)
 
                 Button {
-
+                    store.send(.photoCaptureRequested)
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "camera.viewfinder")

@@ -86,7 +86,7 @@ struct PortraitSessionSheetView: View {
                     .buttonStyle(.plain)
 
                     Button {
-
+                        store.send(.photoCaptureRequested)
                     } label: {
                         VStack(spacing: 10) {
                             Image(systemName: "camera.viewfinder")

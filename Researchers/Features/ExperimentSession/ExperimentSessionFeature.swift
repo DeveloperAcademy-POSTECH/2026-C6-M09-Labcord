@@ -13,9 +13,14 @@ struct ExperimentSessionFeature {
     @ObservableState
     struct State: Equatable {
         var cameraPermission = CameraPermssionFeature.State()
+        var cameraOwnerID = UUID()
+        var isCameraViewVisible = false
         var cameraErrorMessage: String?
         var previewConnector: CameraPreviewConnector?
         var isCameraSwitching = false
+        var isPhotoCaptureScheduled = false
+        var isCapturingPhoto = false
+        var capturedPhotoData: Data?
         var selectedTimerTab: TimerTab = .configured
         var timerSeconds: [Int]
         var mode: ExperimentMode
@@ -35,16 +40,27 @@ struct ExperimentSessionFeature {
         case timerResumed(UUID)
         case timerDeleted(UUID)
         case timerTick(Date)
+        case cameraViewAppeared
+        case cameraViewDisappeared
         case cameraPermission(CameraPermssionFeature.Action)
-        case cameraStarted(CameraPreviewConnector)
+        case cameraStarted(UUID, CameraPreviewConnector)
         case cameraSwitchRequested
         case cameraSwitched(CameraPreviewConnector)
-        case cameraStartFailed(String)
+        case cameraStartFailed(UUID, String)
+        case cameraSwitchFailed(String)
         case cameraErrorDismissed
+        case handEvent(CameraHandEvent)
+        case photoCaptureDelayElapsed
+        case photoCaptureRequested
+        case photoCaptured(Data)
+        case photoCaptureFailed(String)
+        case retakeRequested
     }
 
     private nonisolated enum CancelID: Hashable, Sendable {
         case timerTick
+        case handTracking
+        case photoCaptureDelay
     }
 
     private var tickerEffect: Effect<Action> {
@@ -57,6 +73,11 @@ struct ExperimentSessionFeature {
         .cancellable(id: CancelID.timerTick, cancelInFlight: true)
     }
 
+    private func cancelScheduledPhoto(in state: inout State) -> Effect<Action> {
+        state.isPhotoCaptureScheduled = false
+        return .cancel(id: CancelID.photoCaptureDelay)
+    }
+
     @Dependency(\.cameraSessionClient) var cameraSessionClient
 
     var body: some Reducer<State, Action> {
@@ -66,6 +87,22 @@ struct ExperimentSessionFeature {
 
         Reduce { state, action in
             switch action {
+            case .cameraViewAppeared:
+                guard !state.isCameraViewVisible else { return .none }
+                state.isCameraViewVisible = true
+                state.cameraOwnerID = UUID()
+                return .send(.cameraPermission(.request))
+
+            case .cameraViewDisappeared:
+                guard state.isCameraViewVisible else { return .none }
+                state.isCameraViewVisible = false
+                let ownerID = state.cameraOwnerID
+                return .merge(
+                    .cancel(id: CancelID.handTracking),
+                    cancelScheduledPhoto(in: &state),
+                    .run { _ in await cameraSessionClient.deactivate(ownerID) }
+                )
+
             case let .timerTabSelected(tab):
                 state.selectedTimerTab = tab
                 return .none
@@ -111,33 +148,47 @@ struct ExperimentSessionFeature {
                     : .cancel(id: CancelID.timerTick)
 
             case .cameraPermission(.statusUpdated(.authorized)):
+                guard state.isCameraViewVisible else { return .none }
+                let ownerID = state.cameraOwnerID
                 return .run { send in
                     do {
-                        try await cameraSessionClient.start()
+                        try await cameraSessionClient.activate(ownerID)
                         let connector = await cameraSessionClient.previewConnector()
-                        await send(.cameraStarted(connector))
+                        await send(.cameraStarted(ownerID, connector))
                     } catch {
-                        await send(.cameraStartFailed(error.localizedDescription))
+                        await send(.cameraStartFailed(ownerID, error.localizedDescription))
                     }
                 }
 
-            case let .cameraStarted(connector):
+            case let .cameraStarted(ownerID, connector):
+                guard state.isCameraViewVisible, ownerID == state.cameraOwnerID else {
+                    return .run { _ in await cameraSessionClient.deactivate(ownerID) }
+                }
                 state.cameraErrorMessage = nil
                 state.previewConnector = connector
-                return .none
-
-            case .cameraSwitchRequested:
-                guard state.previewConnector != nil, !state.isCameraSwitching else { return .none }
-                state.isCameraSwitching = true
                 return .run { send in
-                    do {
-                        try await cameraSessionClient.switchCamera()
-                        let connector = await cameraSessionClient.previewConnector()
-                        await send(.cameraSwitched(connector))
-                    } catch {
-                        await send(.cameraStartFailed(error.localizedDescription))
+                    for await event in await cameraSessionClient.handEvents() {
+                        await send(.handEvent(event))
                     }
                 }
+                .cancellable(id: CancelID.handTracking, cancelInFlight: true)
+
+            case .cameraSwitchRequested:
+                guard state.previewConnector != nil, !state.isCameraSwitching,
+                      !state.isCapturingPhoto, state.capturedPhotoData == nil else { return .none }
+                state.isCameraSwitching = true
+                return .merge(
+                    cancelScheduledPhoto(in: &state),
+                    .run { send in
+                        do {
+                            try await cameraSessionClient.switchCamera()
+                            let connector = await cameraSessionClient.previewConnector()
+                            await send(.cameraSwitched(connector))
+                        } catch {
+                            await send(.cameraSwitchFailed(error.localizedDescription))
+                        }
+                    }
+                )
 
             case let .cameraSwitched(connector):
                 state.isCameraSwitching = false
@@ -145,7 +196,12 @@ struct ExperimentSessionFeature {
                 state.previewConnector = connector
                 return .none
 
-            case let .cameraStartFailed(message):
+            case let .cameraStartFailed(ownerID, message):
+                guard state.isCameraViewVisible, ownerID == state.cameraOwnerID else { return .none }
+                state.cameraErrorMessage = message
+                return .none
+
+            case let .cameraSwitchFailed(message):
                 state.isCameraSwitching = false
                 state.cameraErrorMessage = message
                 return .none
@@ -153,6 +209,54 @@ struct ExperimentSessionFeature {
             case .cameraErrorDismissed:
                 state.cameraErrorMessage = nil
                 return .none
+
+            case let .handEvent(.fistHeld(detectedAt)):
+                guard state.isCameraViewVisible, state.previewConnector != nil,
+                      !state.isPhotoCaptureScheduled, !state.isCapturingPhoto,
+                      !state.isCameraSwitching, state.capturedPhotoData == nil,
+                      detectedAt.timeIntervalSinceNow > -0.5 else { return .none }
+                state.isPhotoCaptureScheduled = true
+                return .run { send in
+                    try await Task.sleep(for: .seconds(5))
+                    await send(.photoCaptureDelayElapsed)
+                }
+                .cancellable(id: CancelID.photoCaptureDelay, cancelInFlight: true)
+
+            case .photoCaptureDelayElapsed:
+                guard state.isPhotoCaptureScheduled else { return .none }
+                state.isPhotoCaptureScheduled = false
+                return .send(.photoCaptureRequested)
+
+            case .photoCaptureRequested:
+                guard state.isCameraViewVisible, state.previewConnector != nil,
+                      !state.isCapturingPhoto,
+                      state.capturedPhotoData == nil, !state.isCameraSwitching else { return .none }
+                let cancelDelay = cancelScheduledPhoto(in: &state)
+                state.isCapturingPhoto = true
+                return .merge(
+                    cancelDelay,
+                    .run { send in
+                        do {
+                            await send(.photoCaptured(try await cameraSessionClient.capturePhoto()))
+                        } catch {
+                            await send(.photoCaptureFailed(error.localizedDescription))
+                        }
+                    }
+                )
+
+            case let .photoCaptured(data):
+                state.isCapturingPhoto = false
+                if state.isCameraViewVisible { state.capturedPhotoData = data }
+                return .none
+
+            case let .photoCaptureFailed(message):
+                state.isCapturingPhoto = false
+                state.cameraErrorMessage = message
+                return .none
+
+            case .retakeRequested:
+                state.capturedPhotoData = nil
+                return cancelScheduledPhoto(in: &state)
 
             case .cameraPermission:
                 return .none

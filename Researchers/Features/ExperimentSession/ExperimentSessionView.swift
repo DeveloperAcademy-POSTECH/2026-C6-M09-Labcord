@@ -43,11 +43,20 @@ struct ExperimentSessionView: View {
             }
             .ignoresSafeArea()
         }
+        .overlay {
+            if let data = store.capturedPhotoData {
+                CapturedPhotoView(photoData: data) {
+                    store.send(.retakeRequested)
+                }
+            }
+        }
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
+            store.send(.cameraViewAppeared)
         }
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
+            store.send(.cameraViewDisappeared)
         }
         .background(.black)
         .alert(
@@ -63,8 +72,18 @@ struct ExperimentSessionView: View {
         } message: {
             Text(store.cameraPermission.openSettingsErrorMessage ?? "")
         }
-        .task {
-            store.send(.cameraPermission(.request))
+        .alert(
+            "카메라 오류",
+            isPresented: Binding(
+                get: { store.cameraErrorMessage != nil },
+                set: { if !$0 { store.send(.cameraErrorDismissed) } }
+            )
+        ) {
+            Button("확인", role: .cancel) {
+                store.send(.cameraErrorDismissed)
+            }
+        } message: {
+            Text(store.cameraErrorMessage ?? "")
         }
     }
 }
