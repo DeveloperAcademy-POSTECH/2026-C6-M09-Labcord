@@ -27,7 +27,17 @@ enum EntryAppearance {
         },
         center: .center
     )
-    static let symbol = Color(white: 26 / 255)
+    static let neutralRim = AngularGradient(
+        stops: stride(from: 0.0, through: 360.0, by: 22.5).map { angle in
+            let light = cos((angle - 45) * .pi / 180)
+            let intensity = light >= 0 ? 0.05 : 0.095
+            return Gradient.Stop(
+                color: .white.opacity(light * light * intensity), location: angle / 360
+            )
+        },
+        center: .center
+    )
+    static let symbol = Color(white: 17 / 255)
     static let neutralSurface = LinearGradient(
         colors: [Color(white: 238 / 255), Color(white: 254 / 255)],
         startPoint: .topLeading, endPoint: .bottomTrailing
@@ -108,7 +118,7 @@ struct EntryRoundButton: View {
         Button(action: action) {
             symbolImage
                 .foregroundStyle(isProminent ? .white : EntryAppearance.symbol)
-                .blendMode(isProminent ? .plusLighter : .plusDarker)
+                .blendMode(isProminent ? .plusLighter : .normal)
                 .frame(width: size, height: size)
                 .background(
                     isProminent
@@ -119,12 +129,13 @@ struct EntryRoundButton: View {
                 .compositingGroup()
                 .shadow(color: .black.opacity(0.12), radius: 17, x: 0, y: 8)
                 .overlay {
-                    if isProminent {
-                        Circle()
-                            .strokeBorder(EntryAppearance.addRim, lineWidth: 0.6)
-                            .blendMode(.plusLighter)
-                            .allowsHitTesting(false)
-                    }
+                    Circle()
+                        .strokeBorder(
+                            isProminent ? EntryAppearance.addRim : EntryAppearance.neutralRim,
+                            lineWidth: isProminent ? 0.6 : 0.8
+                        )
+                        .blendMode(.plusLighter)
+                        .allowsHitTesting(false)
                 }
         }
         .buttonStyle(.plain)
