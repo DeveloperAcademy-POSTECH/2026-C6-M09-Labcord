@@ -12,15 +12,20 @@ struct ExperimentSessionFeature {
     @ObservableState
     struct State: Equatable {
         var selectedTimerTab: TimerTab = .configured
-        var timerSeconds: [Int] = [5400, 120, 10, 5, 120, 30, 60, 900, 2000, 2500, 3000, 150]
+        var timerSeconds: [Int]
+        var mode: ExperimentMode
         var timerCollection = ExperimentTimerCollection()
+
+        init(timerSeconds: [Int] = [5400, 120, 10, 5, 120, 30, 60, 900, 2000, 2500, 3000, 150]) {
+            self.timerSeconds = timerSeconds
+            self.mode = timerSeconds.isEmpty ? .free : .procedure
+        }
     }
 
     enum Action: Equatable {
         case timerTabSelected(TimerTab)
         case timerStarted(Int)
         case customTimerStarted(Int)
-        case timerConfigured(Int)
         case timerPaused(UUID)
         case timerResumed(UUID)
         case timerDeleted(UUID)
@@ -56,6 +61,7 @@ struct ExperimentSessionFeature {
                     durationSeconds: state.timerSeconds[index],
                     at: .now
                 ) else { return .none }
+                state.selectedTimerTab = .active
                 return wasRunning ? .none : tickerEffect
 
             case let .customTimerStarted(seconds):
@@ -63,12 +69,8 @@ struct ExperimentSessionFeature {
                 guard state.timerCollection.start(durationSeconds: seconds, at: .now) else {
                     return .none
                 }
+                state.selectedTimerTab = .active
                 return wasRunning ? .none : tickerEffect
-
-            case let .timerConfigured(seconds):
-                guard seconds > 0, state.timerSeconds.count < 12 else { return .none }
-                state.timerSeconds.append(seconds)
-                return .none
 
             case let .timerPaused(id):
                 state.timerCollection.pause(id: id, at: .now)

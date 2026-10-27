@@ -33,43 +33,49 @@ struct SessionTimerView: View {
             TimerTileItem(id: $0.offset, seconds: $0.element)
         }
         let canStartTimer = timerCollection.canStartTimer
+        let isFreeMode = store.mode == .free
 
         return VStack(alignment: .leading, spacing: 16) {
             HStack {
-                HStack(spacing: 20) {
-                    Button {
-                        store.send(.timerTabSelected(.configured))
-                    } label: {
-                        Text("세팅된 타이머")
-                            .foregroundStyle(
-                                selectedTab == .active
-                                ? Color.gray
-                                : Color.white
-                            )
-                            .font(.body.weight(.semibold))
-                    }
-                    .buttonStyle(.plain)
-                    
-                    Button {
-                        store.send(.timerTabSelected(.active))
-                    } label: {
-                        HStack(spacing: 8) {
-                            Text("진행중인 타이머")
+                if isFreeMode {
+                    Text("타이머")
+                        .font(.body.weight(.semibold))
+                } else {
+                    HStack(spacing: 20) {
+                        Button {
+                            store.send(.timerTabSelected(.configured))
+                        } label: {
+                            Text("세팅된 타이머")
                                 .foregroundStyle(
                                     selectedTab == .active
-                                    ? Color.white
-                                    : Color.gray
+                                    ? Color.gray
+                                    : Color.white
                                 )
                                 .font(.body.weight(.semibold))
-                            
-                            if !activeTimers.isEmpty {
-                                Text("\(activeTimers.count)")
-                                    .foregroundStyle(.orange)
+                        }
+                        .buttonStyle(.plain)
+
+                        Button {
+                            store.send(.timerTabSelected(.active))
+                        } label: {
+                            HStack(spacing: 8) {
+                                Text("진행중인 타이머")
+                                    .foregroundStyle(
+                                        selectedTab == .active
+                                        ? Color.white
+                                        : Color.gray
+                                    )
                                     .font(.body.weight(.semibold))
+
+                                if !activeTimers.isEmpty {
+                                    Text("\(activeTimers.count)")
+                                        .foregroundStyle(.orange)
+                                        .font(.body.weight(.semibold))
+                                }
                             }
                         }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
                 
                 Spacer()
@@ -81,16 +87,12 @@ struct SessionTimerView: View {
                         .foregroundStyle(.blue)
                 }
                 .popover(isPresented: $isTimerSetupPresented) {
-                    timerSetup(
-                        isConfiguring: timerSeconds.isEmpty,
-                        configuredCount: timerSeconds.count,
-                        canStartTimer: canStartTimer
-                    )
+                    timerSetup(canStartTimer: canStartTimer)
                     .presentationCompactAdaptation(.popover)
                 }
             }
             
-            if selectedTab == .active {
+            if isFreeMode || selectedTab == .active {
                 if activeTimers.isEmpty {
                     emptyState("진행 중인 타이머가 없어요")
                 } else {
@@ -169,11 +171,7 @@ struct SessionTimerView: View {
         }
     }
 
-    private func timerSetup(
-        isConfiguring: Bool,
-        configuredCount: Int,
-        canStartTimer: Bool
-    ) -> some View {
+    private func timerSetup(canStartTimer: Bool) -> some View {
         let durationSeconds = selectedHours * 3600 + selectedMinutes * 60 + selectedSeconds
 
         return VStack(spacing: 16) {
@@ -200,20 +198,13 @@ struct SessionTimerView: View {
             .labelsHidden()
             .frame(height: 150)
 
-            Button(isConfiguring ? "설정하기" : "시작하기") {
-                if isConfiguring {
-                    store.send(.timerConfigured(durationSeconds))
-                } else {
-                    store.send(.customTimerStarted(durationSeconds))
-                }
+            Button("실행하기") {
+                store.send(.customTimerStarted(durationSeconds))
                 isTimerSetupPresented = false
             }
             .buttonStyle(.borderedProminent)
             .frame(maxWidth: .infinity)
-            .disabled(
-                durationSeconds == 0 ||
-                (isConfiguring ? configuredCount >= 12 : !canStartTimer)
-            )
+            .disabled(durationSeconds == 0 || !canStartTimer)
         }
         .padding()
         .frame(width: 320)
