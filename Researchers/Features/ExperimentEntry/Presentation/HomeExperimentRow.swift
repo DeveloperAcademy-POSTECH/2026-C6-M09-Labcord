@@ -61,7 +61,7 @@ private struct EntryStatusBadge: View {
             .frame(width: textWidth, height: 20)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
-            .background(background, in: RoundedRectangle(cornerRadius: 4))
+            .background(background, in: RoundedRectangle(cornerRadius: 4, style: .circular))
     }
 
     private var textWidth: CGFloat {
