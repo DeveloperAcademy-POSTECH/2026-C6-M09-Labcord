@@ -13,6 +13,13 @@ struct ExperimentSessionFeature {
         case finished
     }
 
+    enum VideoPhase: Equatable {
+        case idle
+        case starting
+        case recording(Date)
+        case preview(URL)
+    }
+
     enum TimerTab: Equatable {
         case configured
         case active
@@ -30,6 +37,8 @@ struct ExperimentSessionFeature {
         var isCapturingPhoto = false
         var capturedPhotoData: Data?
         var isPhotoGestureArmed = false
+        var videoPhase: VideoPhase = .idle
+        var videoSessionID = UUID()
         var voicePhase: VoicePhase = .hidden
         var voiceSessionID = UUID()
         var voiceTranscript = ""
@@ -64,6 +73,11 @@ struct ExperimentSessionFeature {
         case cameraSwitchFailed(String)
         case cameraErrorDismissed
         case handEvent(CameraHandEvent)
+        case videoRecordRequested
+        case videoStarted(UUID, Date)
+        case videoRecorded(UUID, URL)
+        case videoRecordingFailed(UUID, String)
+        case videoRetakeRequested
         case photoCaptureDelayElapsed
         case photoCaptureRequested
         case photoCaptured(Data)
@@ -87,6 +101,7 @@ struct ExperimentSessionFeature {
         case timerTick
         case handTracking
         case photoCaptureDelay
+        case videoRecording
         case voiceStream
         case voiceStop
     }
@@ -126,12 +141,25 @@ struct ExperimentSessionFeature {
                 guard state.isCameraViewVisible else { return .none }
                 state.isCameraViewVisible = false
                 state.isPhotoGestureArmed = false
+                let videoURL: URL?
+                if case let .preview(url) = state.videoPhase {
+                    videoURL = url
+                } else {
+                    videoURL = nil
+                }
+                state.videoPhase = .idle
+                state.videoSessionID = UUID()
                 let ownerID = state.cameraOwnerID
                 return .merge(
                     .send(.permissions(.cancelRequest)),
                     .send(.voiceCloseRequested),
                     .cancel(id: CancelID.handTracking),
+                    .cancel(id: CancelID.videoRecording),
                     cancelScheduledPhoto(in: &state),
+                    .run { _ in
+                        await cameraSessionClient.cancelVideoRecording()
+                        if let videoURL { await cameraSessionClient.discardVideo(videoURL) }
+                    },
                     .run { _ in await cameraSessionClient.deactivate(ownerID) }
                 )
 
@@ -209,7 +237,8 @@ struct ExperimentSessionFeature {
 
             case .cameraSwitchRequested:
                 guard state.previewConnector != nil, !state.isCameraSwitching,
-                      !state.isCapturingPhoto, state.capturedPhotoData == nil else { return .none }
+                      !state.isCapturingPhoto, state.capturedPhotoData == nil,
+                      state.videoPhase == .idle else { return .none }
                 state.isCameraSwitching = true
                 state.isPhotoGestureArmed = false
                 return .merge(
@@ -249,7 +278,7 @@ struct ExperimentSessionFeature {
                 guard state.isCameraViewVisible, state.previewConnector != nil,
                       !state.isPhotoCaptureScheduled, !state.isCapturingPhoto,
                       !state.isCameraSwitching, state.capturedPhotoData == nil,
-                      state.voicePhase == .hidden,
+                      state.voicePhase == .hidden, state.videoPhase == .idle,
                       detectedAt.timeIntervalSinceNow > -0.5 else { return .none }
                 state.isPhotoGestureArmed = true
                 return .none
@@ -260,7 +289,7 @@ struct ExperimentSessionFeature {
                 guard state.isCameraViewVisible, state.previewConnector != nil,
                       !state.isPhotoCaptureScheduled, !state.isCapturingPhoto,
                       !state.isCameraSwitching, state.capturedPhotoData == nil,
-                      state.voicePhase == .hidden,
+                      state.voicePhase == .hidden, state.videoPhase == .idle,
                       wasArmed,
                       detectedAt.timeIntervalSinceNow > -0.5 else { return .none }
                 state.isPhotoCaptureScheduled = true
@@ -271,26 +300,85 @@ struct ExperimentSessionFeature {
                 .cancellable(id: CancelID.photoCaptureDelay, cancelInFlight: true)
 
             case let .handEvent(.oneFingerHeld(detectedAt)):
-                state.isPhotoGestureArmed = false
                 guard state.isCameraViewVisible, state.previewConnector != nil,
-                      !state.isCameraSwitching, state.capturedPhotoData == nil,
+                      !state.isCameraSwitching, !state.isPhotoCaptureScheduled,
+                      !state.isCapturingPhoto, state.capturedPhotoData == nil,
+                      state.videoPhase == .idle,
                       detectedAt.timeIntervalSinceNow > -0.5 else { return .none }
+                state.isPhotoGestureArmed = false
                 switch state.voicePhase {
                 case .hidden: return .send(.voiceButtonTapped)
                 case .recording: return .send(.voiceStopRequested)
                 case .starting, .stopping, .finished: return .none
                 }
 
+            case let .handEvent(.threeFingersHeld(detectedAt)):
+                guard !state.isPhotoCaptureScheduled, !state.isCapturingPhoto,
+                      detectedAt.timeIntervalSinceNow > -0.5 else { return .none }
+                return .send(.videoRecordRequested)
+
+            case .videoRecordRequested:
+                guard state.isCameraViewVisible, state.previewConnector != nil,
+                      !state.isCameraSwitching, !state.isCapturingPhoto,
+                      !state.isPhotoCaptureScheduled, state.capturedPhotoData == nil,
+                      state.voicePhase == .hidden, state.videoPhase == .idle else { return .none }
+                state.isPhotoGestureArmed = false
+                state.videoSessionID = UUID()
+                state.videoPhase = .starting
+                let id = state.videoSessionID
+                return .run { send in
+                    do {
+                        let url = try await cameraSessionClient.recordVideo {
+                            Task { await send(.videoStarted(id, .now)) }
+                        }
+                        guard !Task.isCancelled else {
+                            await cameraSessionClient.discardVideo(url)
+                            return
+                        }
+                        await send(.videoRecorded(id, url))
+                    } catch let error as PermissionAccessError {
+                        await send(.permissions(.accessFailed(error.kind)))
+                        await send(.videoRecordingFailed(id, error.localizedDescription))
+                    } catch is CancellationError {
+                        return
+                    } catch {
+                        await send(.videoRecordingFailed(id, error.localizedDescription))
+                    }
+                }
+                .cancellable(id: CancelID.videoRecording, cancelInFlight: true)
+
+            case let .videoStarted(id, startedAt):
+                guard id == state.videoSessionID, state.videoPhase == .starting else { return .none }
+                state.videoPhase = .recording(startedAt)
+                return .none
+
+            case let .videoRecorded(id, url):
+                guard id == state.videoSessionID, state.isCameraViewVisible else {
+                    return .run { _ in await cameraSessionClient.discardVideo(url) }
+                }
+                state.videoPhase = .preview(url)
+                return .none
+
+            case let .videoRecordingFailed(id, message):
+                guard id == state.videoSessionID, state.isCameraViewVisible else { return .none }
+                state.videoPhase = .idle
+                state.cameraErrorMessage = message
+                return .none
+
+            case .videoRetakeRequested:
+                guard case let .preview(url) = state.videoPhase else { return .none }
+                state.videoPhase = .idle
+                return .run { _ in await cameraSessionClient.discardVideo(url) }
+
             case .photoCaptureDelayElapsed:
                 guard state.isPhotoCaptureScheduled else { return .none }
-                state.isPhotoCaptureScheduled = false
                 return .send(.photoCaptureRequested)
 
             case .photoCaptureRequested:
                 guard state.isCameraViewVisible, state.previewConnector != nil,
                       !state.isCapturingPhoto,
                       state.capturedPhotoData == nil, !state.isCameraSwitching,
-                      state.voicePhase == .hidden else { return .none }
+                      state.voicePhase == .hidden, state.videoPhase == .idle else { return .none }
                 let cancelDelay = cancelScheduledPhoto(in: &state)
                 state.isCapturingPhoto = true
                 return .merge(
@@ -320,7 +408,7 @@ struct ExperimentSessionFeature {
 
             case .voiceButtonTapped:
                 guard state.voicePhase == .hidden, state.isCameraViewVisible,
-                      state.capturedPhotoData == nil else { return .none }
+                      state.capturedPhotoData == nil, state.videoPhase == .idle else { return .none }
                 state.isPhotoGestureArmed = false
                 state.voiceTranscript = ""
                 state.voiceRecording = nil
