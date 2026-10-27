@@ -2,6 +2,7 @@ import ComposableArchitecture
 import Foundation
 
 public enum CameraHandEvent: Equatable, Sendable {
+    case openHandHeld(Date)
     case fistHeld(Date)
     case oneFingerHeld(Date)
 }
