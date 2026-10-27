@@ -207,6 +207,14 @@ struct ExperimentSessionFeature {
                     ? .none
                     : .cancel(id: CancelID.timerTick)
 
+            case .permissions(.microphoneStatusUpdated(.authorized)):
+                guard state.isCameraViewVisible else { return .none }
+                return .run { _ in
+                    // Permission may arrive after the camera preview is already running.
+                    // Prepare its audio/video connections now, before a recording begins.
+                    try? await cameraSessionClient.prepareVideoRecording()
+                }
+
             case .permissions(.camera(.statusUpdated(.authorized))):
                 guard state.isCameraViewVisible else { return .none }
                 let ownerID = state.cameraOwnerID
