@@ -103,7 +103,7 @@ struct PortraitSessionSheetView: View {
                     .buttonStyle(.plain)
 
                     Button {
-
+                        store.send(.videoRecordRequested)
                     } label: {
                         VStack(spacing: 10) {
                             Image(systemName: "video.fill")
