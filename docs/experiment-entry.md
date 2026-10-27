@@ -60,8 +60,10 @@ flowchart TD
 | `.protocolSourceRequested(ProtocolSource)` | 사진·파일·최근 프로토콜의 실제 입력 연결 지점 |
 | `.settingsRequested` | 설정 화면 연결 지점 |
 
-이후 실험 화면에서는 전달받은 UUID로 같은 저장소의 실험을 조회합니다.
-기록·타이머를 연결하기 위해 UUID를 새로 만들지 않습니다.
+이후 실험 화면을 연결할 때는 전달받은 UUID로 같은 저장소의 실험을 조회해야 합니다.
+현재 저장소 API는 목록 값 조회·생성뿐이며, Experiment 원본 조회 API와 후속 화면의
+ModelContainer 주입은 아직 연결하지 않았습니다. 기록·타이머를 연결하기 위해 UUID를
+새로 만들지 않습니다.
 사진·파일 입력, 프로토콜 분석·재사용, 설정 화면과 이후 실험 화면은 이번에 연결하지 않았습니다.
 자료를 선택하지 않은 상태의 다음 버튼은 비활성입니다. 화면의 10장·1GB는 디자인 문구이며
 입력 지원 상한을 기술적으로 검증했다는 의미가 아닙니다.
@@ -70,6 +72,7 @@ flowchart TD
 
 원본은 Figma 파일 `v6cxQ2I6zURWYQaG5pnuBL`의 홈 `502:12299`, 등록 `502:12563`입니다.
 기존 LabcordDesignSystem API는 사용하지 않습니다.
+PR 반영 순서와 기존 화면의 구현 목적은 [구현 조사](implementation-audit.md)에 정리합니다.
 
 ```mermaid
 flowchart LR
