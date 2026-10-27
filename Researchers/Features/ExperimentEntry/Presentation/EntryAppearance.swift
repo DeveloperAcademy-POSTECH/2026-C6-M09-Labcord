@@ -9,7 +9,14 @@ enum EntryAppearance {
     static let secondaryText = Color(white: 158 / 255)
     static let separator = Color(red: 229 / 255, green: 229 / 255, blue: 234 / 255)
     static let accent = Color(red: 0, green: 136 / 255, blue: 1)
-    static let addFill = Color(red: 0, green: 145 / 255, blue: 1)
+    static let addFill = AnyShapeStyle(LinearGradient.linearGradient(
+        Gradient(colors: [
+            Color(red: 0, green: 138 / 255, blue: 248 / 255),
+            Color(red: 0, green: 144 / 255, blue: 254 / 255),
+            Color(red: 6 / 255, green: 150 / 255, blue: 254 / 255)
+        ]).colorSpace(.device),
+        startPoint: .topLeading, endPoint: .bottomTrailing
+    ))
     static let symbol = Color(white: 26 / 255)
     static let neutralSurface = LinearGradient(
         colors: [Color(white: 238 / 255), Color(white: 254 / 255)],
@@ -100,7 +107,7 @@ struct EntryRoundButton: View {
                     in: Circle()
                 )
                 .compositingGroup()
-                .shadow(color: .black.opacity(0.12), radius: 20, x: 0, y: 8)
+                .shadow(color: .black.opacity(0.12), radius: 17, x: 0, y: 8)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(title)
