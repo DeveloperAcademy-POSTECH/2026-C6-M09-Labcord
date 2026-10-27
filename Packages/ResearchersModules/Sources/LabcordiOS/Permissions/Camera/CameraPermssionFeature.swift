@@ -6,7 +6,6 @@
 //
 
 import ComposableArchitecture
-import Foundation
 import LabcordShared
 
 @Reducer
@@ -14,7 +13,6 @@ public struct CameraPermssionFeature {
     @ObservableState
     public struct State: Equatable {
         public var status: PermissionStatus?
-        public var openSettingsErrorMessage: String?
 
         public init() {}
     }
@@ -23,9 +21,6 @@ public struct CameraPermssionFeature {
         case check
         case statusUpdated(PermissionStatus)
         case request
-        case openSettingsTapped
-        case openSettingsFailed
-        case openSettingsErrorDismissed
     }
 
     @Dependency(\.cameraPermissionClient) var cameraPermissionClient
@@ -50,27 +45,6 @@ public struct CameraPermssionFeature {
                     let status = await cameraPermissionClient.requestAccess()
                     await send(.statusUpdated(status))
                 }
-
-            case .openSettingsTapped:
-                guard state.status == .denied else {
-                    return .none
-                }
-
-                state.openSettingsErrorMessage = nil
-                return .run { send in
-                    guard await cameraPermissionClient.openSettings() else {
-                        await send(.openSettingsFailed)
-                        return
-                    }
-                }
-
-            case .openSettingsFailed:
-                state.openSettingsErrorMessage = "설정을 열 수 없습니다. 잠시 후 다시 시도해 주세요."
-                return .none
-
-            case .openSettingsErrorDismissed:
-                state.openSettingsErrorMessage = nil
-                return .none
             }
         }
     }
