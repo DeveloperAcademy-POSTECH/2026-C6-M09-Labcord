@@ -61,17 +61,22 @@ struct ExperimentSessionView: View {
         }
         .background(.black)
         .alert(
-            "설정 열기 실패",
+            store.permissions.issue == .settingsUnavailable ? "설정 열기 실패" : "권한 안내",
             isPresented: Binding(
-                get: { store.permissions.camera.openSettingsErrorMessage != nil },
-                set: { if !$0 { store.send(.permissions(.camera(.openSettingsErrorDismissed))) } }
+                get: { store.permissions.issue != nil },
+                set: { if !$0 { store.send(.permissions(.issueDismissed)) } }
             )
         ) {
+            if store.permissions.issue?.canOpenSettings == true {
+                Button("설정 열기") {
+                    store.send(.permissions(.openSettingsTapped))
+                }
+            }
             Button("확인", role: .cancel) {
-                store.send(.permissions(.camera(.openSettingsErrorDismissed)))
+                store.send(.permissions(.issueDismissed))
             }
         } message: {
-            Text(store.permissions.camera.openSettingsErrorMessage ?? "")
+            Text(store.permissions.issue?.message ?? "")
         }
         .alert(
             "카메라 오류",
