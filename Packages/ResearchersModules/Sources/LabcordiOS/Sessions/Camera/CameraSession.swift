@@ -90,6 +90,11 @@ public actor CameraSession {
         pendingStop?.cancel()
         pendingStop = nil
         try configureCamera()
+        if AVAudioApplication.shared.recordPermission == .granted {
+            // Keep the recording connections in the graph before the preview starts.
+            // A setup failure should not prevent photo capture or hand tracking.
+            try? prepareVideoRecording()
+        }
 
         if activeOwners.isEmpty {
             // Clear a held pose before a returning view subscribes to hand events.
@@ -194,11 +199,8 @@ public actor CameraSession {
         try Task.checkCancellation()
         guard session.isRunning else { throw CameraSessionError.cameraUnavailable }
         guard videoDelegate == nil else { throw CameraSessionError.alreadyRecording }
-        try configureVideoRecording()
-        defer {
-            videoDelegate = nil
-            tearDownVideoRecording()
-        }
+        try prepareVideoRecording()
+        defer { videoDelegate = nil }
         try Task.checkCancellation()
 
         if let connection = movieOutput.connection(with: .video), let activeCamera {
@@ -240,10 +242,12 @@ public actor CameraSession {
         try? FileManager.default.removeItem(at: url)
     }
 
-    private func configureVideoRecording() throws {
+    public func prepareVideoRecording() throws {
         guard AVAudioApplication.shared.recordPermission == .granted else {
             throw PermissionAccessError(.microphone)
         }
+        guard isConfigured else { return }
+        guard microphoneInput == nil else { return }
         guard let microphone = AVCaptureDevice.default(for: .audio) else {
             throw CameraSessionError.microphoneUnavailable
         }
@@ -262,25 +266,15 @@ public actor CameraSession {
         }
         session.addOutput(movieOutput)
         movieOutput.maxRecordedDuration = CMTime(seconds: 5, preferredTimescale: 600)
-        microphoneInput = input
         session.commitConfiguration()
         guard movieOutput.connection(with: .audio) != nil else {
-            tearDownVideoRecording()
+            session.beginConfiguration()
+            session.removeOutput(movieOutput)
+            session.removeInput(input)
+            session.commitConfiguration()
             throw CameraSessionError.microphoneUnavailable
         }
-    }
-
-    private func tearDownVideoRecording() {
-        guard let microphoneInput else { return }
-        session.beginConfiguration()
-        session.removeOutput(movieOutput)
-        session.removeInput(microphoneInput)
-        session.commitConfiguration()
-        self.microphoneInput = nil
-
-        let audioSession = AVAudioSession.sharedInstance()
-        try? audioSession.setCategory(.playback)
-        try? audioSession.setActive(true)
+        microphoneInput = input
     }
 
     public func previewConnector() -> CameraPreviewConnector {
