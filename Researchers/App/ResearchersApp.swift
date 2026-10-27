@@ -18,5 +18,6 @@ struct ResearchersApp: App {
         WindowGroup {
             ExperimentEntryView(store: store)
         }
+        .persistentSystemOverlays(.hidden)
     }
 }

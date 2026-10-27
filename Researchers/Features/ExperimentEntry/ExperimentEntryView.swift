@@ -36,7 +36,6 @@ struct ExperimentEntryView: View {
         .tint(EntryAppearance.text)
         .preferredColorScheme(.light)
         .statusBarHidden()
-        .persistentSystemOverlays(.hidden)
         .task { await store.send(.load).finish() }
     }
 
