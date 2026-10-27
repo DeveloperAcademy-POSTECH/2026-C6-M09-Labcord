@@ -50,6 +50,11 @@ struct ExperimentSessionView: View {
                 }
             }
         }
+        .overlay {
+            if store.voicePhase != .hidden {
+                VoiceRecordingOverlay(store: store)
+            }
+        }
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
             store.send(.cameraViewAppeared)
@@ -90,6 +95,19 @@ struct ExperimentSessionView: View {
             }
         } message: {
             Text(store.cameraErrorMessage ?? "")
+        }
+        .alert(
+            "음성 기록 오류",
+            isPresented: Binding(
+                get: { store.voiceErrorMessage != nil },
+                set: { if !$0 { store.send(.voiceErrorDismissed) } }
+            )
+        ) {
+            Button("확인", role: .cancel) {
+                store.send(.voiceErrorDismissed)
+            }
+        } message: {
+            Text(store.voiceErrorMessage ?? "")
         }
     }
 }
