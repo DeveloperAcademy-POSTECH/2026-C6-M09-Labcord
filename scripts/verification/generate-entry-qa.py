@@ -42,14 +42,14 @@ def main():
                 for package, name in [(local, "LabcordKit"), (remote, "ComposableArchitecture")]]
     feature_group = group(repo / "Researchers/Features/ExperimentEntry")
     support_group = group(repo / "Tests/ExperimentEntry/Support")
-    fonts_group = group(repo / "Researchers/Resources/Fonts")
+    resources_group = group(repo / "Researchers/Resources")
     unit_group = group(repo / "Tests/ExperimentEntry/UnitTests")
     ui_group = group(repo / "Tests/ExperimentEntry/UITests")
     targets, references = [], []
     app_id = None
     target_ids = {}
     for name, kind, groups in [
-        ("EntryQA", "application", [feature_group, support_group, fonts_group]),
+        ("EntryQA", "application", [feature_group, support_group, resources_group]),
         ("EntryQATests", "bundle.unit-test", [unit_group]),
         ("EntryQAUITests", "bundle.ui-testing", [ui_group]),
     ]:
@@ -99,7 +99,7 @@ def main():
     product_group = add(dict(isa="PBXGroup", name="Products", children=references,
                              sourceTree="<group>"))
     main_group = add(dict(isa="PBXGroup", sourceTree="<group>",
-                          children=[feature_group, support_group, fonts_group,
+                          children=[feature_group, support_group, resources_group,
                                     unit_group, ui_group, product_group]))
     settings = dict(CLANG_ENABLE_MODULES="YES", SDKROOT="iphoneos",
                     IPHONEOS_DEPLOYMENT_TARGET="27.0", SWIFT_VERSION="5.0",

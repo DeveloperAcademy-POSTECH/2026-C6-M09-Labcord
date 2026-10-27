@@ -79,7 +79,7 @@ struct ProtocolRegistrationView: View {
                 )
                 .disabled(isSaving)
                 .accessibilityIdentifier("entry-back")
-                .offset(x: -2 + 1 / 3, y: 5)
+                .offset(x: -2, y: 5)
             }
             .sharedBackgroundVisibility(.hidden)
         }
