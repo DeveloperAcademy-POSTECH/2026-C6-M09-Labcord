@@ -113,12 +113,13 @@ struct EntryRoundButton: View {
     var size: CGFloat = 48
     var symbolSize: CGFloat = 24
     let action: () -> Void
+    @Environment(\.displayScale) private var displayScale
 
     var body: some View {
         Button(action: action) {
             symbolImage
                 .foregroundStyle(isProminent ? .white : EntryAppearance.symbol)
-                .blendMode(isProminent ? .plusLighter : .normal)
+                .blendMode(.normal)
                 .frame(width: size, height: size)
                 .background(
                     isProminent
@@ -146,13 +147,40 @@ struct EntryRoundButton: View {
     private var symbolImage: some View {
         switch symbol {
         case "gear":
-            asset("EntryGear", width: 25, height: 25, x: 0.1484375, y: 0.16357421875)
+            sampledSymbol(
+                "gear", width: 25, height: 25,
+                x: 0.1484375, y: 0.16357421875
+            )
         case "plus":
-            asset("EntryPlus", width: 18, height: 18, x: 0.134765625, y: 0.1416015625)
+            sampledSymbol(
+                "plus", width: 18, height: 18,
+                x: 0.134765625, y: 0.1416015625
+            )
         case "chevron.backward":
-            asset("EntryBack", width: 11, height: 19, x: -1.20703125, y: 0.2431640625)
+            sampledSymbol(
+                "back", width: 11, height: 19,
+                x: -1.20703125, y: 0.2431640625
+            )
         default:
             Image(systemName: symbol).font(EntryAppearance.label(symbolSize))
+        }
+    }
+
+    /// 원본 SVG 윤곽을 미리 샘플링한 자산이며 지원 밖의 크기·배율은 벡터로 표시합니다.
+    @ViewBuilder
+    private func sampledSymbol(
+        _ name: String, width: CGFloat, height: CGFloat,
+        x offsetX: CGFloat, y offsetY: CGFloat
+    ) -> some View {
+        let expectedSize: CGFloat = name == "back" ? 44 : 48
+        if [CGFloat(1), 2, 3].contains(displayScale), size == expectedSize {
+            Image("Entry" + name.capitalized + "Sampled")
+                .renderingMode(.template)
+                .resizable()
+                .interpolation(.none)
+                .frame(width: size, height: size)
+        } else {
+            asset("Entry" + name.capitalized, width: width, height: height, x: offsetX, y: offsetY)
         }
     }
 
