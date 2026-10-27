@@ -5,6 +5,7 @@ public enum CameraHandEvent: Equatable, Sendable {
     case openHandHeld(Date)
     case fistHeld(Date)
     case oneFingerHeld(Date)
+    case threeFingersHeld(Date)
 }
 
 public struct CameraSessionClient: Sendable {
@@ -14,6 +15,9 @@ public struct CameraSessionClient: Sendable {
     public var previewConnector: @Sendable () async -> CameraPreviewConnector
     public var handEvents: @Sendable () async -> AsyncStream<CameraHandEvent>
     public var capturePhoto: @Sendable () async throws -> Data
+    public var recordVideo: @Sendable (@escaping @Sendable () -> Void) async throws -> URL
+    public var cancelVideoRecording: @Sendable () async -> Void
+    public var discardVideo: @Sendable (URL) async -> Void
 
     public init(
         activate: @escaping @Sendable (UUID) async throws -> Void,
@@ -21,7 +25,10 @@ public struct CameraSessionClient: Sendable {
         switchCamera: @escaping @Sendable () async throws -> Void,
         previewConnector: @escaping @Sendable () async -> CameraPreviewConnector,
         handEvents: @escaping @Sendable () async -> AsyncStream<CameraHandEvent>,
-        capturePhoto: @escaping @Sendable () async throws -> Data
+        capturePhoto: @escaping @Sendable () async throws -> Data,
+        recordVideo: @escaping @Sendable (@escaping @Sendable () -> Void) async throws -> URL,
+        cancelVideoRecording: @escaping @Sendable () async -> Void,
+        discardVideo: @escaping @Sendable (URL) async -> Void
     ) {
         self.activate = activate
         self.deactivate = deactivate
@@ -29,6 +36,9 @@ public struct CameraSessionClient: Sendable {
         self.previewConnector = previewConnector
         self.handEvents = handEvents
         self.capturePhoto = capturePhoto
+        self.recordVideo = recordVideo
+        self.cancelVideoRecording = cancelVideoRecording
+        self.discardVideo = discardVideo
     }
 }
 
@@ -41,7 +51,10 @@ extension CameraSessionClient: DependencyKey {
             switchCamera: { try await session.switchCamera() },
             previewConnector: { await session.previewConnector() },
             handEvents: { await session.handEvents() },
-            capturePhoto: { try await session.capturePhoto() }
+            capturePhoto: { try await session.capturePhoto() },
+            recordVideo: { try await session.recordVideo(onStarted: $0) },
+            cancelVideoRecording: { await session.cancelVideoRecording() },
+            discardVideo: { await session.discardVideo(at: $0) }
         )
     }()
 }
