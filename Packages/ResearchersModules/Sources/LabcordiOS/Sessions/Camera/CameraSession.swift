@@ -203,11 +203,10 @@ public actor CameraSession {
             try await withCheckedThrowingContinuation { continuation in
                 let delegate = VideoRecordingDelegate(
                     continuation: continuation,
-                    onStarted: onStarted,
-                    onCancelledStart: { [weak self] in
+                    onStarted: onStarted
+                )                    { [weak self] in
                         Task { await self?.cancelVideoRecording() }
                     }
-                )
                 videoDelegate = delegate
                 movieOutput.startRecording(to: url, recordingDelegate: delegate)
             }

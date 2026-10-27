@@ -31,4 +31,3 @@ private final class CapturedPhotoImageStore: ObservableObject {
         image = UIImage(data: data)
     }
 }
-
