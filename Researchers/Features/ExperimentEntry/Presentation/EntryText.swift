@@ -44,7 +44,7 @@ struct EntryText: View {
         var baselineOffset: CGFloat {
             switch self {
             case .headline: -1.412
-            case .body: -1.412 - 1 / 3
+            case .body: -1.412
             case .subheadline: -1.540 + 1 / 3
             case .footnote: -0.668 + 1 / 3
             case .caption: -1.232
@@ -63,7 +63,16 @@ struct EntryText: View {
 
     var body: some View {
         EntryAppearance.labelText(value, style: style)
+            .textRenderer(EntryTextRenderer())
             .frame(height: style.lineHeight)
             .offset(y: EntryAppearance.baselineOffset(value, style: style))
+    }
+}
+
+struct EntryTextRenderer: TextRenderer {
+    func draw(layout: Text.Layout, in context: inout GraphicsContext) {
+        for line in layout {
+            context.draw(line, options: .disablesSubpixelQuantization)
+        }
     }
 }

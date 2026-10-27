@@ -106,8 +106,8 @@ Noto를 행 안에 중앙 배치할 때의 baseline은 `(행높이 + ascent - de
 원본 절대좌표의 직렬화 차이는 최대 약 0.000215pt여서 목표값을 정수로 표시했습니다.
 13/18만 목표 baseline이 글꼴 크기보다 1pt 큽니다. 이 관계를 다른 크기·행높이에 일반화하지
 않습니다. 표는 기하 계산 기준이며 실제 SwiftUI 배치와 AA에 대한 최종 화면 보정은 별도입니다.
-현재 3x 캡처를 기준으로 body는 위 1px, subheadline·footnote는 아래 1px를 추가 보정합니다.
-headline·caption은 계산값을 유지하며, 등록 제목은 내비게이션 표시 위치에서 보정합니다.
+현재 3x 캡처를 기준으로 subheadline·footnote는 아래 1px를 추가 보정합니다.
+headline·body·caption은 계산값을 유지하며, 등록 제목은 내비게이션 표시 위치에서 보정합니다.
 이 값도 화면 비교 대상이며 전체 픽셀 일치 완료를 의미하지 않습니다.
 
 ## 표시 계층과 디자인시스템 교체
@@ -118,6 +118,12 @@ headline·caption은 계산값을 유지하며, 등록 제목은 내비게이션
 - [EntryText](../Researchers/Features/ExperimentEntry/Presentation/EntryText.swift)의 역할은
   크기·행높이·tracking·측정 baseline을 한 곳에 묶습니다. 시스템 폰트로 fallback하면 Noto용
   baseline 보정을 적용하지 않습니다.
+- 네이티브 `TextRenderer`에서 공개 옵션
+  [disablesSubpixelQuantization](https://developer.apple.com/documentation/swiftui/text/layout/drawingoptions/disablessubpixelquantization)을
+  사용해 글리프의 소수 픽셀 위치를 유지합니다. 기본 Text의 레이아웃·줄임표·접근성은 유지합니다.
+- 날짜의 기본 system 15pt·광학 크기를 유지하고 추가 tracking `0.004375pt`를 적용합니다.
+  비교한 `2026.10.13`의 CoreText 원점과 Figma SVG 원점 차이는 최대 `0.0000461pt`,
+  잉크 폭 차이는 `0.000000305pt`였습니다. 이 값은 해당 15pt 스타일의 비교 결과입니다.
 - 실제 앱은 `Researchers/Resources/Fonts`를 앱 자원으로 포함합니다. 별도 QA 생성기는 같은
   폴더를 `EntryQA` 앱의 동기화 resource group에 연결합니다. 테스트 bundle이나 기존
   LabcordDesignSystem의 `Bundle.module`에 넣은 폰트를 `Bundle.main`으로 찾는 구조가 아닙니다.
@@ -158,3 +164,7 @@ manifest.json                             출처·해시·크기·문자 범위�
 힌팅 보존과 최종 TTF 기준 SHA256이 모두 맞아야 성공합니다. 생성만으로 앱 자원을 교체하지
 않습니다. 채택 시 위 자원 두 개와 OFL을 비교·반영하고 별도 QA 호스트에서 두 화면을 검증합니다.
 시뮬레이터 명령은 [Entry 검증 안내](experiment-entry.md#시뮬레이터-검증)를 따릅니다.
+
+OFL은 고정 해시의 원문 그대로이며 21행 끝 공백도 보존합니다. 따라서 전체 변경의
+`git diff --check`는 이 원본 한 줄을 보고할 수 있습니다. 앱 코드의 공백 검사와 라이선스
+원문 해시 검증을 구분하며, 검사 통과를 위해 라이선스 내용을 수정하지 않습니다.
