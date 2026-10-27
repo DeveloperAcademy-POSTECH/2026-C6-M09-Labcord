@@ -74,7 +74,7 @@ struct SessionCaptureView: View {
                 .tint(.white)
 
                 Button {
-
+                    store.send(.videoRecordRequested)
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "video.fill")
