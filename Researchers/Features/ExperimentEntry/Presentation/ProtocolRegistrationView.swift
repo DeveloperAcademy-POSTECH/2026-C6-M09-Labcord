@@ -44,6 +44,8 @@ struct ProtocolRegistrationView: View {
                         }
                         Text(isSaving ? "실험을 저장하고 있어요" : "프로토콜 없이 진행")
                             .font(EntryAppearance.koreanLabel(12))
+                            .tracking(0.3)
+                            .offset(x: -1 / 3, y: 5 / 3)
                     }
                     .frame(maxWidth: .infinity, minHeight: 44)
                     .contentShape(Rectangle())
@@ -97,9 +99,9 @@ private struct ProtocolSourceOption: View {
                     .frame(minHeight: 22)
 
                 if let subtitle {
-                    Text(subtitle)
-                        .font(EntryAppearance.label(13))
+                    EntryAppearance.mixedLabel(subtitle, size: 13)
                         .frame(minHeight: 18)
+                        .offset(y: 1 / 3)
                 }
             }
             .foregroundStyle(EntryAppearance.text)
