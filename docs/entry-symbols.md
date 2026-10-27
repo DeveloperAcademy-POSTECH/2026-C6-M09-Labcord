@@ -109,7 +109,7 @@ python3 scripts/verification/prepare-entry-symbols.py \
   --output /저장소밖/새로운_아이콘_출력
 ```
 
-도구는 원본 SVG SHA256, 고정 원점·표본, 출력9개 alpha SHA를 확인합니다.
+도구는 원본 SVG4개의 SHA256, 고정 원점·표본, 출력12개 alpha SHA를 확인합니다.
 PNG와 계산 A8·premultiply 후 RGBA도 byte 단위로 비교하고, SDK·runtime·출력 SHA를
 외부 `manifest.json`에 남깁니다. encoder에 따른 PNG 파일 차이와 alpha 차이는 구분합니다.
 
@@ -131,10 +131,22 @@ XML은 path 하나이며 `preserves-vector-representation=true`를 사용합니�
 템플릿 Image의 foreground는 불투명 `(60,60,67)`로 지정해 SVG의 alpha에0.6을
 다시 곱하지 않습니다. 최종 RGB는 흰 배경에서 합성한 결과와 별도로 비교합니다.
 
+35차의 행 표시에는 같은 원본 path를 고정16표본으로 생성한 `EntryChevronSampled`를 사용합니다.
+전체 Text frame11×20pt 안 원점은 `(2.85595703125,3.3544921875)`이며,
+SVG opacity0.6은 `A8 = (153 × 내부 표본 수 + 8) / 16`으로 한 번만 반영합니다.
+1x·2x·3x PNG3개는 합계1,348bytes입니다. 원본 SVG는 그대로 두고 지원 밖의 배율에서 사용합니다.
+PNG에는 추가 offset·opacity를 적용하지 않으며 기존 foreground·행 선택·접근성 결합을 유지합니다.
+
+전용 Simulator의7개 행에서 각 화살표의 RGB 절대 오차 합은11,404→153으로98.66% 줄었습니다.
+원본 core155px는 모두 같은 색이고, 밝기255 미만·200 미만 ink의 위치 집합도 원본과 같았습니다.
+남은84px·최대2/255 차이는 그대로 전체 지표에 포함합니다. 7개 frame 밖의 변화는0px이며
+등록 화면은 이전 캡처와 PNG 바이트까지 같았습니다.
+
 ## 표시 계층 경계와 검증
 
 [EntryRoundButton](../Researchers/Features/ExperimentEntry/Presentation/EntryAppearance.swift)의
-내부 `symbolImage`·`asset`이 template Image, canvas 크기와 원점 보정을 담당합니다.
+내부 `symbolImage`·`sampledSymbol`·`asset`이 template Image, canvas 크기와 원점 보정을 담당합니다.
+행의 화살표는 `HomeExperimentRow`의 `EntryChevronSampledView` 내부에서 같은 책임을 가집니다.
 버튼 배경·그림자·접근성·액션은 코드로 유지합니다. 이후 DS 적용 시 이 표시 내부를 교체하고
 Feature·저장소·UUID delegate 계약을 유지합니다.
 별도 QA 생성기는 `Researchers/Resources` 전체를 앱 그룹에 연결해 Assets와 Fonts를 함께 포함합니다.
@@ -145,8 +157,8 @@ Feature·저장소·UUID delegate 계약을 유지합니다.
 프로토콜 없이 진행 문구를 캡처 기준 왼쪽1px 보정했으며, 글꼴 크기와 세로 위치는 유지했습니다.
 
 2026-10-28 iPhone 17 시뮬레이터에서 1206×2622 원본·캡처를 정렬·마스킹 없이 비교했습니다.
-34차 홈 MAE는0.095277279/255, 등록은0.057529962/255입니다. 0이 아닌 RGB 차이를 모두 세면
-각각3.61986786%, 1.69316145%이며, 완전한 픽셀 일치로 표시하지 않습니다.
+35차 홈 MAE는0.086975180/255, 등록은0.057529962/255입니다. 0이 아닌 RGB 차이를 모두 세면
+각각3.60127281%, 1.69316145%이며, 완전한 픽셀 일치로 표시하지 않습니다.
 
 ## 버튼 표면과 그림자
 

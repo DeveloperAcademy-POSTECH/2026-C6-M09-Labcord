@@ -24,13 +24,8 @@ struct HomeExperimentRow: View {
 
                 EntryStatusBadge(title: entry.statusTitle, status: entry.status)
 
-                Image("EntryChevron")
-                    .renderingMode(.template)
-                    .resizable()
+                EntryChevronSampledView()
                     .foregroundStyle(EntryAppearance.secondarySymbol)
-                    .frame(width: 8, height: 13)
-                    .offset(x: 1.35595703125, y: -0.1455078125)
-                    .frame(width: 11, height: 20)
             }
             .frame(minHeight: EntryAppearance.rowHeight)
             .contentShape(Rectangle())
@@ -87,6 +82,27 @@ private struct EntryStatusBadge: View {
         case .paused: Color(red: 157 / 255, green: 196 / 255, blue: 1).opacity(0.2)
         case .preparing: Color(red: 1, green: 219 / 255, blue: 76 / 255).opacity(0.2)
         case .completed: Color(white: 120 / 255).opacity(0.2)
+        }
+    }
+}
+
+private struct EntryChevronSampledView: View {
+    @Environment(\.displayScale) private var displayScale
+
+    var body: some View {
+        if displayScale == 1 || displayScale == 2 || displayScale == 3 {
+            Image("EntryChevronSampled")
+                .renderingMode(.template)
+                .interpolation(.none)
+                .resizable()
+                .frame(width: 11, height: 20)
+        } else {
+            Image("EntryChevron")
+                .renderingMode(.template)
+                .resizable()
+                .frame(width: 8, height: 13)
+                .offset(x: 1.35595703125, y: -0.1455078125)
+                .frame(width: 11, height: 20)
         }
     }
 }
