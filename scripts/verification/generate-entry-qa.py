@@ -54,7 +54,9 @@ def main():
     ]:
         is_app = kind == "application"
         is_ui = kind == "bundle.ui-testing"
-        links = [] if is_ui else products
+        # Hosted unit tests resolve shared symbols through TEST_HOST, as in Xcode's template.
+        # Linking the same automatic package products twice forces dynamic variants in Xcode 27.
+        links = products if is_app else []
         phases = [add(dict(isa="PBXSourcesBuildPhase", buildActionMask=2147483647,
                            files=[], runOnlyForDeploymentPostprocessing=0)),
                   add(dict(isa="PBXFrameworksBuildPhase", buildActionMask=2147483647,
@@ -100,13 +102,15 @@ def main():
     settings = dict(CLANG_ENABLE_MODULES="YES", SDKROOT="iphoneos",
                     IPHONEOS_DEPLOYMENT_TARGET="27.0", SWIFT_VERSION="5.0",
                     SWIFT_DEFAULT_ACTOR_ISOLATION="MainActor",
-                    SWIFT_APPROACHABLE_CONCURRENCY="YES", SWIFT_OPTIMIZATION_LEVEL="-Onone",
+                    SWIFT_APPROACHABLE_CONCURRENCY="YES",
+                    SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY="YES",
+                    SWIFT_OPTIMIZATION_LEVEL="-Onone", GCC_OPTIMIZATION_LEVEL="0",
                     SWIFT_ACTIVE_COMPILATION_CONDITIONS="DEBUG", ENABLE_TESTABILITY="YES",
                     DEBUG_INFORMATION_FORMAT="dwarf", ONLY_ACTIVE_ARCH="YES")
     objects[project_id] = dict(
         isa="PBXProject", attributes=dict(BuildIndependentTargetsInParallel="YES",
                                          LastUpgradeCheck="2700"),
-        buildConfigurationList=configs(settings), compatibilityVersion="Xcode 14.0",
+        buildConfigurationList=configs(settings), preferredProjectObjectVersion=77,
         developmentRegion="en", knownRegions=["en", "Base"], mainGroup=main_group,
         packageReferences=[local, remote], productRefGroup=product_group,
         projectDirPath="", projectRoot="", targets=targets)
@@ -120,7 +124,7 @@ def main():
         return str(value) if isinstance(value, int) else json.dumps(value)
 
     (project / "project.pbxproj").write_text(
-        "// !$*UTF8*$!\n" + serialize(dict(archiveVersion=1, classes={}, objectVersion=77,
+        "// !$*UTF8*$!\n" + serialize(dict(archiveVersion=1, classes={}, objectVersion=110,
                                            objects=objects, rootObject=project_id)))
     scheme = project / "xcshareddata/xcschemes/EntryQA.xcscheme"
     scheme.parent.mkdir(parents=True, exist_ok=True)

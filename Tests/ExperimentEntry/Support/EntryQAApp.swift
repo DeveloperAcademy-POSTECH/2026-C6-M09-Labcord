@@ -126,7 +126,7 @@ private enum EntryQASupport {
 
     private static func seed(_ container: ModelContainer) throws {
         let context = ModelContext(container)
-        let date = Date(timeIntervalSince1970: 1_760_356_800)
+        let date = Date(timeIntervalSince1970: 1_791_892_800)
         let statuses: [ExperimentStatus] = [
             .inProgress, .paused, .preparing, .preparing, .completed, .completed, .completed
         ]
