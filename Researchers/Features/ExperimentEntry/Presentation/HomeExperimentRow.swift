@@ -9,17 +9,18 @@ struct HomeExperimentRow: View {
             HStack(spacing: 16) {
                 VStack(alignment: .leading, spacing: 0) {
                     Text(entry.title)
-                        .font(EntryAppearance.label(17))
-                        .tracking(-0.43)
+                        .font(EntryAppearance.koreanLabel(17))
                         .foregroundStyle(EntryAppearance.text)
                         .frame(height: 22)
+                        .offset(x: 1 / 3, y: -0.5)
                         .lineLimit(1)
 
                     Text(Self.dateFormatter.string(from: entry.createdAt))
                         .font(EntryAppearance.label(15))
-                        .tracking(-0.23)
+                        .tracking(1 / 30)
                         .foregroundStyle(EntryAppearance.secondaryText)
                         .frame(height: 20)
+                        .offset(y: -1 / 3)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -27,8 +28,9 @@ struct HomeExperimentRow: View {
 
                 Image(systemName: "chevron.forward")
                     .font(EntryAppearance.label(15))
-                    .foregroundStyle(EntryAppearance.secondaryText)
+                    .foregroundStyle(EntryAppearance.secondarySymbol)
                     .frame(width: 11)
+                    .offset(y: -0.5)
             }
             .frame(minHeight: EntryAppearance.rowHeight)
             .contentShape(Rectangle())
@@ -53,13 +55,22 @@ private struct EntryStatusBadge: View {
 
     var body: some View {
         Text(title)
-            .font(EntryAppearance.label(15))
-            .tracking(-0.23)
+            .font(EntryAppearance.label(15.75))
             .foregroundStyle(foreground)
-            .frame(height: 20)
+            .fixedSize(horizontal: true, vertical: false)
+            .frame(width: textWidth, height: 20)
+            .offset(y: -0.5)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(background, in: RoundedRectangle(cornerRadius: 4))
+    }
+
+    private var textWidth: CGFloat {
+        switch status {
+        case .inProgress: 45
+        case .paused: 59
+        case .preparing, .completed: 28
+        }
     }
 
     private var foreground: Color {

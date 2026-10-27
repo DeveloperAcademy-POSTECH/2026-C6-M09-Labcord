@@ -9,8 +9,8 @@ struct ExperimentHomeView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: EntryAppearance.sectionGap) {
-                section("진행 중인 실험", entries: entries.filter(\.isActive))
-                section("최근 실험", entries: entries.filter { !$0.isActive })
+                section("진행 중인 실험", entries: entries.filter(\.isActive), rowGap: 11)
+                section("최근 실험", entries: entries.filter { !$0.isActive }, rowGap: 16)
             }
             .padding(.horizontal, EntryAppearance.homeInset)
             .padding(.top, 114)
@@ -18,8 +18,9 @@ struct ExperimentHomeView: View {
         }
         .background(EntryAppearance.background)
         .overlay(alignment: .topTrailing) {
-            EntryRoundButton(symbol: "gear", title: "설정", action: onSettings)
+            EntryRoundButton(symbol: "gear", title: "설정", symbolSize: 22, action: onSettings)
                 .accessibilityIdentifier("entry-settings")
+                .offset(y: -1 / 3)
                 .padding(.trailing, 20)
                 .padding(.top, 26)
         }
@@ -33,21 +34,25 @@ struct ExperimentHomeView: View {
         }
         .ignoresSafeArea()
         .toolbar(.hidden, for: .navigationBar)
+        .statusBarHidden()
     }
 
-    private func section(_ title: String, entries: [ExperimentListEntry]) -> some View {
-        VStack(alignment: .leading, spacing: 11) {
+    private func section(
+        _ title: String, entries: [ExperimentListEntry], rowGap: CGFloat
+    ) -> some View {
+        VStack(alignment: .leading, spacing: rowGap) {
             Text(title)
-                .font(EntryAppearance.label(17, weight: .semibold))
-                .tracking(-0.43)
+                .font(EntryAppearance.koreanLabel(17, weight: .semibold))
                 .foregroundStyle(EntryAppearance.text)
                 .frame(height: 22)
+                .offset(x: 1 / 3, y: -1 / 3)
 
             VStack(spacing: 0) {
                 ForEach(entries) { entry in
                     HomeExperimentRow(entry: entry) { onSelect(entry.id) }
                     if !entry.isActive || entry.id != entries.last?.id {
                         EntryAppearance.separator.frame(height: 1)
+                            .offset(y: entry.isActive ? -3 : 0)
                     }
                 }
             }
