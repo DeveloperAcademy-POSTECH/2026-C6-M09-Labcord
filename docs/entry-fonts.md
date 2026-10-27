@@ -77,6 +77,27 @@ Figma API의 선언 font name은 내부 한글 fallback 파일 이름을 공개�
 동일 윤곽이어도 baseline·tracking·공백의 font run·래스터라이저 AA가 달라질 수 있어
 최종 판정은 같은 기기의 두 시뮬레이터 화면을 원본과 대조한 결과로 합니다.
 
+## 원본 AA의 고정 샘플 가설
+
+외부 시뮬레이터 CLI에서 원본 SVG 첫 `실`의 각 픽셀을8×8 중앙 후보점으로 검사했습니다.
+64개 후보 중 같은16개를 선택하는 이진 제약의 유일해가 있었고, ROI2,622px의 coverage-count를
+모두 설명했습니다. 선택 bit mask는 `4411882244118822`이며 bit index는 `row * 8 + column`입니다.
+이 count 변환은 가설 검증용입니다. 최종 RGB 비교에서는 원본 PNG를 변형하지 않았습니다.
+
+같은 패턴을 다시 맞추지 않고 원래 좌표의 다른 글자에도 적용했습니다.
+
+| 대상 | 원본 RGB L1 | 최대 채널 차이 | 남은 예외 |
+| --- | ---: | ---: | --- |
+| 학습 `실` | 288 | 1 | 96px의1단계 차이 |
+| 미학습 `험`·`제`·`목`·공백 | 501 | 16 | `제`의1px는16단계 차이 |
+| 헤더 전체 | 1,434 | 17 | 1px는17단계 차이 |
+
+첫 글리프에서 성립한 패턴을 범용 렌더링 규칙이나 Figma의 실제 PNG export backend로
+확정하지 않습니다. 앱은 Native Text와 `EntryTextRenderer`를 유지하며, 이 실험으로 폰트
+윤곽·원본 이미지·앱 렌더러를 바꾸지 않았습니다. 입력 SHA·좌표·제약·시간·생성 PNG·예외는
+외부 QA의 `font-raster-analysis/msaa16-once/`에 보존합니다. 전체 화면의 일치 기준은
+[원본 PNG 비교](entry-verification.md#원본과-전체-화면-비교)를 유지합니다.
+
 ## 베이스라인과 행높이
 
 Regular와 Medium의 ascender/descent/leading 메트릭은 같습니다. descent는 양수 크기이며
