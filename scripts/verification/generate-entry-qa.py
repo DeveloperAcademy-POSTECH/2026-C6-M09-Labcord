@@ -42,20 +42,21 @@ def main():
                 for package, name in [(local, "LabcordKit"), (remote, "ComposableArchitecture")]]
     feature_group = group(repo / "Researchers/Features/ExperimentEntry")
     support_group = group(repo / "Tests/ExperimentEntry/Support")
+    fonts_group = group(repo / "Researchers/Resources/Fonts")
     unit_group = group(repo / "Tests/ExperimentEntry/UnitTests")
     ui_group = group(repo / "Tests/ExperimentEntry/UITests")
     targets, references = [], []
     app_id = None
     target_ids = {}
     for name, kind, groups in [
-        ("EntryQA", "application", [feature_group, support_group]),
+        ("EntryQA", "application", [feature_group, support_group, fonts_group]),
         ("EntryQATests", "bundle.unit-test", [unit_group]),
         ("EntryQAUITests", "bundle.ui-testing", [ui_group]),
     ]:
         is_app = kind == "application"
         is_ui = kind == "bundle.ui-testing"
-        # Hosted unit tests resolve shared symbols through TEST_HOST, as in Xcode's template.
-        # Linking the same automatic package products twice forces dynamic variants in Xcode 27.
+        # 단위 테스트는 TEST_HOST를 통해 공유 심벌을 참조합니다.
+        # 같은 패키지를 두 번 링크하면 Xcode 27에서 동적 변형을 강제합니다.
         links = products if is_app else []
         phases = [add(dict(isa="PBXSourcesBuildPhase", buildActionMask=2147483647,
                            files=[], runOnlyForDeploymentPostprocessing=0)),
@@ -98,7 +99,8 @@ def main():
     product_group = add(dict(isa="PBXGroup", name="Products", children=references,
                              sourceTree="<group>"))
     main_group = add(dict(isa="PBXGroup", sourceTree="<group>",
-                          children=[feature_group, support_group, unit_group, ui_group, product_group]))
+                          children=[feature_group, support_group, fonts_group,
+                                    unit_group, ui_group, product_group]))
     settings = dict(CLANG_ENABLE_MODULES="YES", SDKROOT="iphoneos",
                     IPHONEOS_DEPLOYMENT_TARGET="27.0", SWIFT_VERSION="5.0",
                     SWIFT_DEFAULT_ACTOR_ISOLATION="MainActor",

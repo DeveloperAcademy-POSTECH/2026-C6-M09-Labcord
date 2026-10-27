@@ -1,3 +1,5 @@
+import CoreText
+import Foundation
 import SwiftUI
 
 /// Figma 수치의 임시 매핑입니다. 디자인시스템 적용 시 이 파일과 표시 컴포넌트만 교체합니다.
@@ -32,25 +34,50 @@ enum EntryAppearance {
         .system(size: size, weight: weight)
     }
 
-    /// Figma의 한글 폴백 글꼴과 iOS 렌더링의 크기 차이를 표시 계층에서 보정합니다.
-    static func koreanLabel(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
-        label(size * 17.55 / 17, weight: weight)
-    }
-
-    static func mixedLabel(_ value: String, size: CGFloat) -> Text {
+    static func labelText(_ value: String, style: EntryText.Style) -> Text {
+        let registered = registeredFonts
         var content = AttributedString(value)
-        content.font = label(size)
+        content.font = label(style.size, weight: style == .headline ? .semibold : .regular)
         for index in content.characters.indices {
             let character = content.characters[index]
-            let isKorean = character.unicodeScalars.contains {
-                (0xAC00...0xD7A3).contains($0.value)
-            }
-            guard isKorean else { continue }
             let end = content.characters.index(after: index)
-            content[index..<end].font = koreanLabel(size)
+            if containsHangul(String(character)), registered {
+                let name = style == .headline ? "Medium" : "Regular"
+                content[index..<end].font = .custom(
+                    "LabcordEntryHangul-\(name)", fixedSize: style.size
+                )
+                content[index..<end].tracking = style.tracking
+            }
         }
         return Text(content)
     }
+
+    static func containsHangul(_ value: String) -> Bool {
+        value.unicodeScalars.contains { scalar in
+            switch scalar.value {
+            case 0x1100...0x11FF, 0x3130...0x318F, 0xA960...0xA97F,
+                 0xAC00...0xD7A3, 0xD7B0...0xD7FF, 0xFFA0...0xFFDC:
+                true
+            default:
+                false
+            }
+        }
+    }
+
+    static func baselineOffset(_ value: String, style: EntryText.Style) -> CGFloat {
+        registeredFonts && containsHangul(value) ? style.baselineOffset : 0
+    }
+
+    private static let registeredFonts: Bool = {
+        for style in ["Regular", "Medium"] {
+            guard let url = Bundle.main.url(
+                forResource: "LabcordEntryHangul-\(style)", withExtension: "ttf"
+            ), CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil) else {
+                return false
+            }
+        }
+        return true
+    }()
 }
 
 struct EntryRoundButton: View {

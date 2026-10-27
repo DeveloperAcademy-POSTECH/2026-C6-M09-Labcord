@@ -86,10 +86,11 @@ flowchart LR
     Feature --> Persistence[SwiftData 저장 계층]
 ```
 
-교체 지점은 `EntryAppearance`, `HomeExperimentRow`와 내부 배지,
+교체 지점은 `EntryAppearance`, `EntryText`, `HomeExperimentRow`와 내부 배지,
 `EntryRoundButton`, `ProtocolRegistrationView` 내부 입력 항목·다음 버튼입니다.
 표시 컴포넌트는 Store와 ModelContext를 참조하지 않고 값과 콜백을 받습니다.
 따라서 교체 시 Feature·저장소·UUID 이벤트 계약은 유지할 수 있습니다.
+한글 폰트 자원·출처·재현 방법과 베이스라인 근거는 [폰트 매핑 안내](entry-fonts.md)에 있습니다.
 
 ## 시뮬레이터 검증
 

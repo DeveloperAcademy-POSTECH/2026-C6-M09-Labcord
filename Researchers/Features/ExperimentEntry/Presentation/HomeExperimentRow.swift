@@ -8,11 +8,8 @@ struct HomeExperimentRow: View {
         Button(action: onSelect) {
             HStack(spacing: 16) {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(entry.title)
-                        .font(EntryAppearance.koreanLabel(17))
+                    EntryText(entry.title, style: .body)
                         .foregroundStyle(EntryAppearance.text)
-                        .frame(height: 22)
-                        .offset(x: 1 / 3, y: -0.5)
                         .lineLimit(1)
 
                     Text(Self.dateFormatter.string(from: entry.createdAt))
@@ -54,12 +51,10 @@ private struct EntryStatusBadge: View {
     let status: ExperimentListEntry.Status
 
     var body: some View {
-        Text(title)
-            .font(EntryAppearance.label(15.75))
+        EntryText(title, style: .subheadline)
             .foregroundStyle(foreground)
             .fixedSize(horizontal: true, vertical: false)
             .frame(width: textWidth, height: 20)
-            .offset(y: -0.5)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(background, in: RoundedRectangle(cornerRadius: 4))
