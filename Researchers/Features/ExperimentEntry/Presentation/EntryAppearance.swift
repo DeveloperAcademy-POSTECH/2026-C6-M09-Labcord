@@ -36,6 +36,21 @@ enum EntryAppearance {
     static func koreanLabel(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
         label(size * 17.55 / 17, weight: weight)
     }
+
+    static func mixedLabel(_ value: String, size: CGFloat) -> Text {
+        var content = AttributedString(value)
+        content.font = label(size)
+        for index in content.characters.indices {
+            let character = content.characters[index]
+            let isKorean = character.unicodeScalars.contains {
+                (0xAC00...0xD7A3).contains($0.value)
+            }
+            guard isKorean else { continue }
+            let end = content.characters.index(after: index)
+            content[index..<end].font = koreanLabel(size)
+        }
+        return Text(content)
+    }
 }
 
 struct EntryRoundButton: View {
