@@ -42,7 +42,7 @@ struct SessionCaptureView: View {
 
             HStack(spacing: 24) {
                 Button {
-
+                    store.send(.voiceButtonTapped)
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "record.circle")
