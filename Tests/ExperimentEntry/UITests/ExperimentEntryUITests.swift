@@ -86,6 +86,8 @@ final class ExperimentEntryUITests: XCTestCase {
     }
 
     private func capture(_ name: String) {
+        // 터치로 잠시 나타난 시스템 오버레이가 숨겨진 유휴 화면을 비교합니다.
+        Thread.sleep(forTimeInterval: 4)
         let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         attachment.name = name
         attachment.lifetime = .keepAlways
