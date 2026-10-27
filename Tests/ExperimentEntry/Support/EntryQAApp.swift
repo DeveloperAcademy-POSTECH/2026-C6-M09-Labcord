@@ -32,6 +32,7 @@ struct EntryQAApp: App {
                     }
                 }
         }
+        .persistentSystemOverlays(.hidden)
     }
 }
 
