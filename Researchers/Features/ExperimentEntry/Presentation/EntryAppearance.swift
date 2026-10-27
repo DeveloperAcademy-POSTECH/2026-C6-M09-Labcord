@@ -16,7 +16,6 @@ enum EntryAppearance {
         startPoint: .topLeading, endPoint: .bottomTrailing
     )
     static let secondarySymbol = Color(red: 60 / 255, green: 60 / 255, blue: 67 / 255)
-        .opacity(0.6)
     static let optionFill = Color(red: 116 / 255, green: 116 / 255, blue: 128 / 255)
         .opacity(0.08)
     static let disabledFill = Color(red: 238 / 255, green: 238 / 255, blue: 239 / 255)

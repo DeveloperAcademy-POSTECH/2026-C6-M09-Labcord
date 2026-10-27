@@ -46,7 +46,7 @@ struct ProtocolRegistrationView: View {
                             isSaving ? "실험을 저장하고 있어요" : "프로토콜 없이 진행",
                             style: .caption
                         )
-                        .offset(y: 2)
+                        .offset(x: -0.5, y: 2)
                     }
                     .frame(maxWidth: .infinity, minHeight: 44)
                     .contentShape(Rectangle())
@@ -70,7 +70,7 @@ struct ProtocolRegistrationView: View {
             ToolbarItem(placement: .principal) {
                 EntryText("실험 등록", style: .title)
                     .foregroundStyle(EntryAppearance.text)
-                    .offset(x: -1 / 3, y: 4 + 1 / 3)
+                    .offset(x: -2 / 3, y: 4 + 1 / 3)
             }
             ToolbarItem(placement: .topBarLeading) {
                 EntryRoundButton(
