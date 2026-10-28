@@ -98,6 +98,7 @@ struct HomeFeature {
                 return .send(.delegate(.registrationRequested))
 
             case let .created(entry):
+                state.failure = nil
                 state.loadRevision += 1
                 state.createdEntry = entry
                 state.entries.removeAll { $0.id == entry.id }
