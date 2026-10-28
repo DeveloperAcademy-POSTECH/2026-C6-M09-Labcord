@@ -96,35 +96,50 @@ struct EntryRoundButton: View {
         .buttonStyle(.plain)
         .accessibilityLabel(title)
     }
+}
 
+private extension EntryRoundButton {
     @ViewBuilder
-    private var symbolImage: some View {
+    var symbolImage: some View {
         switch symbol {
         case "gear":
             sampledSymbol(
-                "gear", width: 25, height: 25,
-                x: 0.1484375, y: 0.16357421875
+                "gear",
+                width: 25,
+                height: 25,
+                x: 0.1484375,
+                y: 0.16357421875
             )
         case "plus":
             sampledSymbol(
-                "plus", width: 18, height: 18,
-                x: 0.134765625, y: 0.1416015625
+                "plus",
+                width: 18,
+                height: 18,
+                x: 0.134765625,
+                y: 0.1416015625
             )
         case "chevron.backward":
             sampledSymbol(
-                "back", width: 11, height: 19,
-                x: -1.20703125, y: 0.2431640625
+                "back",
+                width: 11,
+                height: 19,
+                x: -1.20703125,
+                y: 0.2431640625
             )
         default:
-            Image(systemName: symbol).font(EntryAppearance.label(symbolSize))
+            Image(systemName: symbol)
+                .font(EntryAppearance.label(symbolSize))
         }
     }
 
     /// 원본 SVG 윤곽을 미리 샘플링한 자산이며 지원 밖의 크기·배율은 벡터로 표시합니다.
     @ViewBuilder
-    private func sampledSymbol(
-        _ name: String, width: CGFloat, height: CGFloat,
-        x offsetX: CGFloat, y offsetY: CGFloat
+    func sampledSymbol(
+        _ name: String,
+        width: CGFloat,
+        height: CGFloat,
+        x offsetX: CGFloat,
+        y offsetY: CGFloat
     ) -> some View {
         let expectedSize: CGFloat = name == "back" ? 44 : 48
         if [CGFloat(1), 2, 3].contains(displayScale), size == expectedSize {
@@ -138,8 +153,12 @@ struct EntryRoundButton: View {
         }
     }
 
-    private func asset(
-        _ name: String, width: CGFloat, height: CGFloat, x offsetX: CGFloat, y offsetY: CGFloat
+    func asset(
+        _ name: String,
+        width: CGFloat,
+        height: CGFloat,
+        x offsetX: CGFloat,
+        y offsetY: CGFloat
     ) -> some View {
         Image(name)
             .renderingMode(.template)

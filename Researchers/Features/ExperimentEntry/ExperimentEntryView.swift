@@ -15,10 +15,17 @@ struct ExperimentEntryView: View {
                 onDelete: { store.send(.deleteRequested($0)) },
                 isDeleting: store.isDeleting
             )
-            .alert("실험을 삭제할까요?", isPresented: deletionBinding,
-                   presenting: store.pendingDeletion) { entry in
-                Button("삭제", role: .destructive) { store.send(.deleteConfirmed(entry.id)) }
-                Button("취소", role: .cancel) { store.send(.deleteCancelled) }
+            .alert(
+                "실험을 삭제할까요?",
+                isPresented: deletionBinding,
+                presenting: store.pendingDeletion
+            ) { entry in
+                Button("삭제", role: .destructive) {
+                    store.send(.deleteConfirmed(entry.id))
+                }
+                Button("취소", role: .cancel) {
+                    store.send(.deleteCancelled)
+                }
             } message: { entry in
                 Text("‘\(entry.title)’ 실험과 연결된 기록이 영구 삭제됩니다. 되돌릴 수 없어요.")
             }
@@ -51,24 +58,32 @@ struct ExperimentEntryView: View {
         .tint(EntryAppearance.text)
         .preferredColorScheme(.light)
         .statusBarHidden()
-        .task { await store.send(.load).finish() }
+        .task {
+            await store.send(.load).finish()
+        }
     }
+}
 
-    private var deletionBinding: Binding<Bool> {
+private extension ExperimentEntryView {
+    var deletionBinding: Binding<Bool> {
         Binding(
             get: { store.pendingDeletion != nil },
             set: { if !$0 { store.send(.deleteCancelled) } }
         )
     }
 
-    private func retryButtons(for failure: ExperimentEntryFeature.Failure) -> some View {
+    func retryButtons(for failure: ExperimentEntryFeature.Failure) -> some View {
         Group {
-            Button("재시도") { store.send(.retryTapped(failure)) }
-            Button("취소", role: .cancel) { store.send(.dismissFailure) }
+            Button("재시도") {
+                store.send(.retryTapped(failure))
+            }
+            Button("취소", role: .cancel) {
+                store.send(.dismissFailure)
+            }
         }
     }
 
-    private func failureBinding(_ failure: ExperimentEntryFeature.Failure) -> Binding<Bool> {
+    func failureBinding(_ failure: ExperimentEntryFeature.Failure) -> Binding<Bool> {
         Binding(
             get: { store.failure == failure },
             set: { if !$0 { store.send(.dismissFailure) } }
