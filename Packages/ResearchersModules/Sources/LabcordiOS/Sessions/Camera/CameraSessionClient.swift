@@ -1,0 +1,71 @@
+import ComposableArchitecture
+import Foundation
+
+public enum CameraHandEvent: Equatable, Sendable {
+    case openHandHeld(Date)
+    case fistHeld(Date)
+    case oneFingerHeld(Date)
+    case threeFingersHeld(Date)
+}
+
+public struct CameraSessionClient: Sendable {
+    public var activate: @Sendable (UUID) async throws -> Void
+    public var deactivate: @Sendable (UUID) async -> Void
+    public var switchCamera: @Sendable () async throws -> Void
+    public var previewConnector: @Sendable () async -> CameraPreviewConnector
+    public var handEvents: @Sendable () async -> AsyncStream<CameraHandEvent>
+    public var capturePhoto: @Sendable () async throws -> Data
+    public var prepareVideoRecording: @Sendable () async throws -> Void
+    public var recordVideo: @Sendable (@escaping @Sendable () -> Void) async throws -> URL
+    public var cancelVideoRecording: @Sendable () async -> Void
+    public var discardVideo: @Sendable (URL) async -> Void
+
+    public init(
+        activate: @escaping @Sendable (UUID) async throws -> Void,
+        deactivate: @escaping @Sendable (UUID) async -> Void,
+        switchCamera: @escaping @Sendable () async throws -> Void,
+        previewConnector: @escaping @Sendable () async -> CameraPreviewConnector,
+        handEvents: @escaping @Sendable () async -> AsyncStream<CameraHandEvent>,
+        capturePhoto: @escaping @Sendable () async throws -> Data,
+        prepareVideoRecording: @escaping @Sendable () async throws -> Void,
+        recordVideo: @escaping @Sendable (@escaping @Sendable () -> Void) async throws -> URL,
+        cancelVideoRecording: @escaping @Sendable () async -> Void,
+        discardVideo: @escaping @Sendable (URL) async -> Void
+    ) {
+        self.activate = activate
+        self.deactivate = deactivate
+        self.switchCamera = switchCamera
+        self.previewConnector = previewConnector
+        self.handEvents = handEvents
+        self.capturePhoto = capturePhoto
+        self.prepareVideoRecording = prepareVideoRecording
+        self.recordVideo = recordVideo
+        self.cancelVideoRecording = cancelVideoRecording
+        self.discardVideo = discardVideo
+    }
+}
+
+extension CameraSessionClient: DependencyKey {
+    public static let liveValue: CameraSessionClient = {
+        let session = CameraSession()
+        return CameraSessionClient(
+            activate: { try await session.activate(owner: $0) },
+            deactivate: { await session.deactivate(owner: $0) },
+            switchCamera: { try await session.switchCamera() },
+            previewConnector: { await session.previewConnector() },
+            handEvents: { await session.handEvents() },
+            capturePhoto: { try await session.capturePhoto() },
+            prepareVideoRecording: { try await session.prepareVideoRecording() },
+            recordVideo: { try await session.recordVideo(onStarted: $0) },
+            cancelVideoRecording: { await session.cancelVideoRecording() },
+            discardVideo: { await session.discardVideo(at: $0) }
+        )
+    }()
+}
+
+extension DependencyValues {
+    public var cameraSessionClient: CameraSessionClient {
+        get { self[CameraSessionClient.self] }
+        set { self[CameraSessionClient.self] = newValue }
+    }
+}
