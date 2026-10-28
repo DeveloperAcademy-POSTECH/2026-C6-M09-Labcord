@@ -118,9 +118,41 @@ flowchart LR
 `EntryRoundButton`, `ProtocolRegistrationView` 내부 입력 항목·다음 버튼입니다.
 표시 컴포넌트는 Store와 ModelContext를 참조하지 않고 값과 콜백을 받습니다.
 따라서 교체 시 Feature·저장소·UUID 이벤트 계약은 유지할 수 있습니다.
-시스템 기본 폰트의 크기·굵기·교체 경계는 [폰트 안내](entry-fonts.md)에 있습니다.
-원본 아이콘 벡터의 출처·배치와 교체 경계는 [아이콘 안내](entry-symbols.md)에 있습니다.
-기본 Text 유지와 OS 글자 렌더링 차이의 허용 범위는 [화면 검수 기준](entry-verification.md#화면-검수-기준)을 따릅니다.
+### 폰트와 아이콘
+
+2026-10-28 사용자 요청에 따라 모든 Entry 텍스트는 SwiftUI 기본 `Text`와 시스템 폰트를
+사용합니다. 한글 폰트 파일·문자별 폰트 등록·자간과 베이스라인 보정·커스텀 TextRenderer는 제거했습니다.
+OS의 글자 윤곽과 렌더링 차이를 허용하며, 이전 Noto 적용 화면의 비교 수치를 현재 결과로 사용하지 않습니다.
+
+| 역할 | 크기 / 행높이 | 굵기 |
+| --- | --- | --- |
+| headline | 17 / 22pt | semibold |
+| body | 17 / 22pt | regular |
+| subheadline·날짜 | 15 / 20pt | regular |
+| footnote | 13 / 18pt | regular |
+| caption | 12 / 16pt | regular |
+| title | 20 / 25pt | regular |
+
+아이콘은 위 Figma 원본에서 내보낸 SVG4개와 표시용 template PNG12개(1x·2x·3x)를 사용합니다.
+사전 생성 PNG는 설정·추가48pt, 뒤로44pt, 행 화살표11×20pt 크기에서 표시하고,
+지원 밖 크기·배율에서는 SVG로 표시합니다. 배경·그림자·접근성·액션은 SwiftUI 코드입니다.
+
+| 아이콘 | Figma 원본 leaf | 표시 자산 |
+| --- | --- | --- |
+| 설정 | `I502:12342;5522:11872;5522:11881` | EntryGear·EntryGearSampled |
+| 추가 | `I502:12341;5522:11869;5522:11894` | EntryPlus·EntryPlusSampled |
+| 뒤로 | `I502:12585;6491:22970;5431:837` | EntryBack·EntryBackSampled |
+| 행 화살표 | `502:12307` | EntryChevron·EntryChevronSampled |
+
+원본 SVG를 변경하지 않고 고정 표본으로 생성합니다. 출처 SHA·원점·계산과 출력 검증은
+`prepare-entry-symbols.py`와 `export-entry-symbols.swift`에 있습니다.
+앱 실행·빌드 때 재계산하지 않습니다. 기존의 부팅된 전용 Simulator와 저장소 밖의 새 출력 폴더를 사용합니다.
+
+```sh
+python3 scripts/verification/prepare-entry-symbols.py \
+  --simulator-udid 전용_SIMULATOR_UDID \
+  --output /tmp/labcord-entry-symbol-output
+```
 
 ## 시뮬레이터 검증
 
@@ -153,4 +185,29 @@ swiftlint lint --strict
 디스크 재개방·앱 재실행 후 유지 및 수정 delegate의 UUID도 확인합니다.
 화면 캡처는 iPhone 17의 402×874pt 전체 화면을 두 Figma 화면과 각각 대조합니다.
 XCTest 첨부 캡처와 실행 결과를 확인하며, 빌드 성공을 화면 일치나 테스트 통과로 대신하지 않습니다.
-실행 결과와 전체 화면 픽셀 비교의 수치·제한은 [검증 기록](entry-verification.md)에 있습니다.
+
+### 현재 검증 결과와 제한
+
+2026-10-28 기준 iOS27.0 전용 iPhone17 Simulator에서 Entry 단위16개가 통과했습니다.
+실제 Researchers 시뮬레이터 빌드, SwiftLint strict56파일·위반0, 문서 검사·공백 검사도 통과했습니다.
+갱신한 두 Mermaid는 공식 CLI로 구문분석·SVG 렌더를 확인했습니다.
+
+UI6개는 외부 simctl 프로세스가 전용 시뮬레이터를 반복 종료해 중단됐으며,
+사용자 요청에 따라 **UI 검증과 최신 화면 비교를 보류**했습니다. 통과나1:1 일치로 표시하지 않습니다.
+수정 화면·외부 미디어 정리·Watch 세션 중단·Dynamic Type은 검증 범위에 포함되지 않습니다.
+기존 제품 저장소를 초기화하거나 검증 중 실제 실험을 삭제하지 않았습니다.
+
+Simulator의402×874pt·3x 원시 캡처를 같은 크기의 Figma 원본과 비교합니다.
+`compare-entry-png.py`는 정렬·리사이즈·마스크·임계치 없이 전체 RGB·alpha 차이를 계산하며,
+종료0은 분석 성공입니다. 화면 동일 여부는 출력의 `pixelsIdentical`로 판단합니다.
+폰트가 달라져 발생하는 차이를 숨기거나 이전 빌드·외부 시제품의 수치를 현재 결과로 대체하지 않습니다.
+
+```sh
+python3 scripts/verification/compare-entry-png.py \
+  /외부/Figma-원본-3x.png /외부/Simulator-원시-3x.png \
+  --output /tmp/labcord-entry-new-comparison.json
+```
+
+상세 캡처·실험 이력·xcresult는 저장소 밖 `Labcord-NoProtocol-QA-2026-10-28/`에 보관합니다.
+폰트 비교 도구와 별도 폰트·아이콘·검증 이력 문서는 PR에서 제외하고,
+이 안내에 현재 유지보수·재현에 필요한 계약과 명령만 모았습니다.
