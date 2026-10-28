@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import Foundation
+import LabcordiOS
 import SwiftUI
 
 @Reducer
@@ -57,7 +58,7 @@ struct ExperimentEntryFeature {
         case settingsRequested
     }
 
-    @Dependency(\.experimentEntryClient) var experimentEntryClient
+    @Dependency(\.experimentClient) var experimentClient
     @Dependency(\.uuid) var uuid
     @Dependency(\.date.now) var now
 
@@ -77,7 +78,7 @@ struct ExperimentEntryFeature {
                 let revision = state.loadRevision
                 return .run { send in
                     do {
-                        let entries = try await experimentEntryClient.load()
+                        let entries = try await experimentClient.load()
                         await send(.loaded(revision, .success(entries)))
                     } catch {
                         await send(.loaded(revision, .failure(.loading)))
@@ -124,10 +125,10 @@ struct ExperimentEntryFeature {
                     .cancel(id: CancelID.load),
                     .run { send in
                         do {
-                            let entry = try await experimentEntryClient.create(identifier, date)
+                            let entry = try await experimentClient.create(identifier, date)
                             let refreshedEntries: Result<[ExperimentListEntry], Failure>
                             do {
-                                refreshedEntries = .success(try await experimentEntryClient.load())
+                                refreshedEntries = .success(try await experimentClient.load())
                             } catch {
                                 refreshedEntries = .failure(.loading)
                             }
@@ -242,7 +243,7 @@ struct ExperimentEntryFeature {
             .cancel(id: CancelID.load),
             .run { send in
                 do {
-                    try await experimentEntryClient.delete(identifier)
+                    try await experimentClient.delete(identifier)
                     await send(.deleteSucceeded(identifier), animation: .easeInOut(duration: 0.25))
                 } catch {
                     await send(.deleteFailed(identifier))
