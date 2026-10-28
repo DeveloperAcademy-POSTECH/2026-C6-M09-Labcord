@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import Foundation
+import LabcordiOS
 
 @Reducer
 struct ExperimentEntryFeature {
