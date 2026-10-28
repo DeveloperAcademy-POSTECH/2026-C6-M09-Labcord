@@ -7,16 +7,20 @@ nonisolated enum HandPoseClassifier {
         case extended
     }
 
+    private struct FingerJoints {
+        let tip: VNHumanHandPoseObservation.JointName
+        let middle: VNHumanHandPoseObservation.JointName
+        let base: VNHumanHandPoseObservation.JointName
+    }
+
     private static let confidenceThreshold: Float = 0.3
     private static let extensionMarginRatio: CGFloat = 0.3
     private static let thumbExtensionMarginRatio: CGFloat = 0.15
-    private static let fingers: [(VNHumanHandPoseObservation.JointName,
-                                  VNHumanHandPoseObservation.JointName,
-                                  VNHumanHandPoseObservation.JointName)] = [
-        (.indexTip, .indexPIP, .indexMCP),
-        (.middleTip, .middlePIP, .middleMCP),
-        (.ringTip, .ringPIP, .ringMCP),
-        (.littleTip, .littlePIP, .littleMCP)
+    private static let fingers: [FingerJoints] = [
+        .init(tip: .indexTip, middle: .indexPIP, base: .indexMCP),
+        .init(tip: .middleTip, middle: .middlePIP, base: .middleMCP),
+        .init(tip: .ringTip, middle: .ringPIP, base: .ringMCP),
+        .init(tip: .littleTip, middle: .littlePIP, base: .littleMCP)
     ]
 
     static func classify(_ hand: VNHumanHandPoseObservation) -> HandPose? {
@@ -41,8 +45,9 @@ nonisolated enum HandPoseClassifier {
         var curled = thumbBend == .curled ? 1 : 0
         var extended = thumbBend == .extended ? 1 : 0
         for finger in fingers {
-            let (tipName, pipName, mcpName) = finger
-            guard let tip = points[tipName], let pip = points[pipName], let mcp = points[mcpName],
+            guard let tip = points[finger.tip],
+                  let pip = points[finger.middle],
+                  let mcp = points[finger.base],
                   let fingerBend = bend(
                       tip: tip,
                       middle: pip,

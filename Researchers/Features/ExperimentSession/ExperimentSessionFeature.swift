@@ -269,7 +269,8 @@ struct ExperimentSessionFeature {
                 return .none
 
             case let .cameraStartFailed(ownerID, message):
-                guard state.isCameraViewVisible, ownerID == state.cameraOwnerID else { return .none }
+                guard state.isCameraViewVisible,
+                        ownerID == state.cameraOwnerID else { return .none }
                 state.cameraErrorMessage = message
                 return .none
 
