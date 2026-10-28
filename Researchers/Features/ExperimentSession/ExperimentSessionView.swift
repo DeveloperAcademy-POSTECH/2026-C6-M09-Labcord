@@ -68,8 +68,8 @@ struct ExperimentSessionView: View {
             }
         }
         .overlay {
-            if store.voicePhase != .hidden {
-                VoiceRecordingOverlay(store: store)
+            if store.voice.phase != .hidden {
+                VoiceRecordingView(store: store.scope(state: \.voice, action: \.voice))
             }
         }
         .onAppear {
@@ -116,15 +116,15 @@ struct ExperimentSessionView: View {
         .alert(
             "음성 기록 오류",
             isPresented: Binding(
-                get: { store.voiceErrorMessage != nil },
-                set: { if !$0 { store.send(.voiceErrorDismissed) } }
+                get: { store.voice.errorMessage != nil },
+                set: { if !$0 { store.send(.voice(.errorDismissed)) } }
             )
         ) {
             Button("확인", role: .cancel) {
-                store.send(.voiceErrorDismissed)
+                store.send(.voice(.errorDismissed))
             }
         } message: {
-            Text(store.voiceErrorMessage ?? "")
+            Text(store.voice.errorMessage ?? "")
         }
     }
 }

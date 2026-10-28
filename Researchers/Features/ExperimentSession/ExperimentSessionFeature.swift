@@ -5,14 +5,6 @@ import LabcordShared
 
 @Reducer
 struct ExperimentSessionFeature {
-    enum VoicePhase: Equatable {
-        case hidden
-        case starting
-        case recording
-        case stopping
-        case finished
-    }
-
     enum VideoPhase: Equatable {
         case idle
         case starting
@@ -23,6 +15,7 @@ struct ExperimentSessionFeature {
     @ObservableState
     struct State: Equatable {
         var permissions = SessionPermissionsFeature.State()
+        var voice = VoiceRecordingFeature.State()
         var cameraOwnerID = UUID()
         var isCameraViewVisible = false
         var cameraErrorMessage: String?
@@ -34,17 +27,13 @@ struct ExperimentSessionFeature {
         var isPhotoGestureArmed = false
         var videoPhase: VideoPhase = .idle
         var videoSessionID = UUID()
-        var voicePhase: VoicePhase = .hidden
-        var voiceSessionID = UUID()
-        var voiceTranscript = ""
-        var voiceRecording: SpeechRecording?
-        var voiceErrorMessage: String?
     }
 
     enum Action: Equatable {
         case cameraViewAppeared
         case cameraViewDisappeared
         case permissions(SessionPermissionsFeature.Action)
+        case voice(VoiceRecordingFeature.Action)
         case cameraStarted(UUID, CameraPreviewConnector)
         case cameraSwitchRequested
         case cameraSwitched(CameraPreviewConnector)
@@ -63,26 +52,12 @@ struct ExperimentSessionFeature {
         case photoCaptureFailed(String)
         case retakeRequested
         case voiceButtonTapped
-        case voiceOverlayAppeared
-        case voiceStartRequested
-        case voiceStarted(UUID)
-        case voiceStartPermissionFailed(UUID)
-        case voiceStartFailed(UUID, String)
-        case voiceEvent(UUID, SpeechRecordingEvent)
-        case voiceStopRequested
-        case voiceStopped(UUID, SpeechRecording?)
-        case voiceRetakeRequested
-        case voiceCloseRequested
-        case voiceErrorDismissed
     }
 
     private nonisolated enum CancelID: Hashable, Sendable {
-        case timerTick
         case handTracking
         case photoCaptureDelay
         case videoRecording
-        case voiceStream
-        case voiceStop
     }
 
     private func cancelScheduledPhoto(in state: inout State) -> Effect<Action> {
@@ -91,11 +66,14 @@ struct ExperimentSessionFeature {
     }
 
     @Dependency(\.cameraSessionClient) var cameraSessionClient
-    @Dependency(\.speechRecordingClient) var speechRecordingClient
 
     var body: some Reducer<State, Action> {
         Scope(state: \.permissions, action: \.permissions) {
             SessionPermissionsFeature()
+        }
+
+        Scope(state: \.voice, action: \.voice) {
+            VoiceRecordingFeature()
         }
 
         Reduce { state, action in
@@ -121,7 +99,7 @@ struct ExperimentSessionFeature {
                 let ownerID = state.cameraOwnerID
                 return .merge(
                     .send(.permissions(.cancelRequest)),
-                    .send(.voiceCloseRequested),
+                    .send(.voice(.closeRequested)),
                     .cancel(id: CancelID.handTracking),
                     .cancel(id: CancelID.videoRecording),
                     cancelScheduledPhoto(in: &state),
@@ -210,7 +188,7 @@ struct ExperimentSessionFeature {
                 guard state.isCameraViewVisible, state.previewConnector != nil,
                       !state.isPhotoCaptureScheduled, !state.isCapturingPhoto,
                       !state.isCameraSwitching, state.capturedPhotoData == nil,
-                      state.voicePhase == .hidden, state.videoPhase == .idle,
+                      state.voice.phase == .hidden, state.videoPhase == .idle,
                       detectedAt.timeIntervalSinceNow > -0.5 else { return .none }
                 state.isPhotoGestureArmed = true
                 return .none
@@ -221,7 +199,7 @@ struct ExperimentSessionFeature {
                 guard state.isCameraViewVisible, state.previewConnector != nil,
                       !state.isPhotoCaptureScheduled, !state.isCapturingPhoto,
                       !state.isCameraSwitching, state.capturedPhotoData == nil,
-                      state.voicePhase == .hidden, state.videoPhase == .idle,
+                      state.voice.phase == .hidden, state.videoPhase == .idle,
                       wasArmed,
                       detectedAt.timeIntervalSinceNow > -0.5 else { return .none }
                 state.isPhotoCaptureScheduled = true
@@ -238,9 +216,9 @@ struct ExperimentSessionFeature {
                       state.videoPhase == .idle,
                       detectedAt.timeIntervalSinceNow > -0.5 else { return .none }
                 state.isPhotoGestureArmed = false
-                switch state.voicePhase {
+                switch state.voice.phase {
                 case .hidden: return .send(.voiceButtonTapped)
-                case .recording: return .send(.voiceStopRequested)
+                case .recording: return .send(.voice(.stopRequested))
                 case .starting, .stopping, .finished: return .none
                 }
 
@@ -253,7 +231,7 @@ struct ExperimentSessionFeature {
                 guard state.isCameraViewVisible, state.previewConnector != nil,
                       !state.isCameraSwitching, !state.isCapturingPhoto,
                       !state.isPhotoCaptureScheduled, state.capturedPhotoData == nil,
-                      state.voicePhase == .hidden, state.videoPhase == .idle else { return .none }
+                      state.voice.phase == .hidden, state.videoPhase == .idle else { return .none }
                 state.isPhotoGestureArmed = false
                 state.videoSessionID = UUID()
                 state.videoPhase = .starting
@@ -312,7 +290,7 @@ struct ExperimentSessionFeature {
                 guard state.isCameraViewVisible, state.previewConnector != nil,
                       !state.isCapturingPhoto,
                       state.capturedPhotoData == nil, !state.isCameraSwitching,
-                      state.voicePhase == .hidden,
+                      state.voice.phase == .hidden,
                         state.videoPhase == .idle else { return .none }
                 let cancelDelay = cancelScheduledPhoto(in: &state)
                 state.isCapturingPhoto = true
@@ -346,127 +324,23 @@ struct ExperimentSessionFeature {
                 return cancelScheduledPhoto(in: &state)
 
             case .voiceButtonTapped:
-                guard state.voicePhase == .hidden, state.isCameraViewVisible,
+                guard state.voice.phase == .hidden, state.isCameraViewVisible,
                       !state.isCapturingPhoto, state.capturedPhotoData == nil,
                         state.videoPhase == .idle else { return .none }
                 state.isPhotoGestureArmed = false
-                state.voiceTranscript = ""
-                state.voiceRecording = nil
-                state.voiceErrorMessage = nil
-                state.voiceSessionID = UUID()
-                state.voicePhase = .starting
-                return cancelScheduledPhoto(in: &state)
-
-            case .voiceOverlayAppeared:
-                guard state.voicePhase == .starting else { return .none }
-                return .send(.voiceStartRequested)
-
-            case .voiceStartRequested:
-                guard state.voicePhase == .starting else { return .none }
-                let id = state.voiceSessionID
-                return .run { send in
-                    do {
-                        let events = try await speechRecordingClient.start()
-                        await send(.voiceStarted(id))
-                        for await event in events {
-                            await send(.voiceEvent(id, event))
-                        }
-                    } catch is CancellationError {
-                        return
-                    } catch let error as PermissionAccessError {
-                        await send(.permissions(.accessFailed(error.kind)))
-                        await send(.voiceStartPermissionFailed(id))
-                    } catch {
-                        await send(.voiceStartFailed(id, error.localizedDescription))
-                    }
-                }
-                .cancellable(id: CancelID.voiceStream, cancelInFlight: true)
-
-            case let .voiceStarted(id):
-                guard id == state.voiceSessionID,
-                        state.voicePhase == .starting else { return .none }
-                state.voicePhase = .recording
-                return .none
-
-            case let .voiceStartPermissionFailed(id):
-                guard id == state.voiceSessionID,
-                        state.voicePhase == .starting else { return .none }
-                state.voicePhase = .hidden
-                return .none
-
-            case let .voiceStartFailed(id, message):
-                guard id == state.voiceSessionID,
-                        state.voicePhase == .starting else { return .none }
-                state.voicePhase = .hidden
-                state.voiceErrorMessage = message
-                return .none
-
-            case let .voiceEvent(id, event):
-                guard id == state.voiceSessionID else { return .none }
-                switch event {
-                case let .transcript(text):
-                    if state.voicePhase == .recording || state.voicePhase == .stopping {
-                        state.voiceTranscript = text
-                    }
-                case let .finished(recording):
-                    state.voiceTranscript = recording.transcript
-                    state.voiceRecording = recording
-                    state.voicePhase = .finished
-                case let .failed(message):
-                    state.voicePhase = .hidden
-                    state.voiceErrorMessage = message
-                }
-                return .none
-
-            case .voiceStopRequested:
-                guard state.voicePhase == .recording else { return .none }
-                state.voicePhase = .stopping
-                let id = state.voiceSessionID
-                return .run { send in
-                    let recording = await speechRecordingClient.stop()
-                    await send(.voiceStopped(id, recording))
-                }
-                .cancellable(id: CancelID.voiceStop, cancelInFlight: true)
-
-            case let .voiceStopped(id, recording):
-                guard id == state.voiceSessionID,
-                        state.voicePhase == .stopping else { return .none }
-                if let recording {
-                    state.voiceRecording = recording
-                    state.voiceTranscript = recording.transcript
-                    state.voicePhase = .finished
-                } else {
-                    state.voicePhase = .hidden
-                    state.voiceErrorMessage = "음성 기록을 완료하지 못했습니다. 다시 시도해 주세요."
-                }
-                return .cancel(id: CancelID.voiceStream)
-
-            case .voiceRetakeRequested:
-                guard state.voicePhase == .finished else { return .none }
-                state.voiceRecording = nil
-                state.voiceTranscript = ""
-                state.voiceErrorMessage = nil
-                state.voiceSessionID = UUID()
-                state.voicePhase = .starting
-                return .send(.voiceStartRequested)
-
-            case .voiceCloseRequested:
-                guard state.voicePhase != .hidden else { return .none }
-                state.voicePhase = .hidden
-                state.voiceSessionID = UUID()
-                state.voiceTranscript = ""
-                state.voiceRecording = nil
                 return .merge(
-                    .cancel(id: CancelID.voiceStream),
-                    .cancel(id: CancelID.voiceStop),
-                    .run { _ in await speechRecordingClient.cancel() }
+                    cancelScheduledPhoto(in: &state),
+                    .send(.voice(.prepareRequested))
                 )
 
-            case .voiceErrorDismissed:
-                state.voiceErrorMessage = nil
+            case .permissions:
                 return .none
 
-            case .permissions:
+            case let .voice(.startPermissionFailed(id, kind)):
+                guard id == state.voice.sessionID else { return .none }
+                return .send(.permissions(.accessFailed(kind)))
+
+            case .voice:
                 return .none
             }
         }
