@@ -74,8 +74,11 @@ struct ProtocolRegistrationView: View {
             }
             ToolbarItem(placement: .topBarLeading) {
                 EntryRoundButton(
-                    symbol: "chevron.backward", title: "뒤로 가기",
-                    size: 44, symbolSize: 18, action: onBack
+                    symbol: "chevron.backward",
+                    title: "뒤로 가기",
+                    size: 44,
+                    symbolSize: 18,
+                    action: onBack
                 )
                 .disabled(isSaving)
                 .accessibilityIdentifier("entry-back")

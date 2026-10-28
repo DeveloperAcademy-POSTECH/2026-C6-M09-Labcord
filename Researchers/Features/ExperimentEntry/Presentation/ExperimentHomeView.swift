@@ -22,14 +22,22 @@ struct ExperimentHomeView: View {
         .swipeActionsContainer()
         .background(EntryAppearance.background)
         .overlay(alignment: .topTrailing) {
-            EntryRoundButton(symbol: "gear", title: "설정", symbolSize: 22, action: onSettings)
-                .accessibilityIdentifier("entry-settings")
-                .padding(.trailing, 20)
-                .padding(.top, 26)
+            EntryRoundButton(
+                symbol: "gear",
+                title: "설정",
+                symbolSize: 22,
+                action: onSettings
+            )
+            .accessibilityIdentifier("entry-settings")
+            .padding(.trailing, 20)
+            .padding(.top, 26)
         }
         .overlay(alignment: .bottomTrailing) {
             EntryRoundButton(
-                symbol: "plus", title: "새 실험 추가", isProminent: true, action: onAdd
+                symbol: "plus",
+                title: "새 실험 추가",
+                isProminent: true,
+                action: onAdd
             )
             .accessibilityIdentifier("entry-add")
             .padding(.trailing, 20)
@@ -39,9 +47,13 @@ struct ExperimentHomeView: View {
         .toolbar(.hidden, for: .navigationBar)
         .statusBarHidden()
     }
+}
 
-    private func section(
-        _ title: String, entries: [ExperimentListEntry], rowGap: CGFloat
+private extension ExperimentHomeView {
+    func section(
+        _ title: String,
+        entries: [ExperimentListEntry],
+        rowGap: CGFloat
     ) -> some View {
         VStack(alignment: .leading, spacing: rowGap) {
             EntryText(title, style: .headline)
@@ -49,18 +61,25 @@ struct ExperimentHomeView: View {
 
             VStack(spacing: 0) {
                 ForEach(entries) { entry in
-                    HomeExperimentRow(entry: entry) { onSelect(entry.id) }
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button("삭제", systemImage: "trash") { onDelete(entry.id) }
-                                .tint(.red)
-                                .accessibilityIdentifier("entry-delete-\(entry.id.uuidString)")
-                            Button("수정", systemImage: "pencil") { onEdit(entry.id) }
-                                .tint(EntryAppearance.accent)
-                                .accessibilityIdentifier("entry-edit-\(entry.id.uuidString)")
+                    HomeExperimentRow(entry: entry) {
+                        onSelect(entry.id)
+                    }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button("삭제", systemImage: "trash") {
+                            onDelete(entry.id)
                         }
-                        .disabled(isDeleting)
+                        .tint(.red)
+                        .accessibilityIdentifier("entry-delete-\(entry.id.uuidString)")
+                        Button("수정", systemImage: "pencil") {
+                            onEdit(entry.id)
+                        }
+                        .tint(EntryAppearance.accent)
+                        .accessibilityIdentifier("entry-edit-\(entry.id.uuidString)")
+                    }
+                    .disabled(isDeleting)
                     if !entry.isActive || entry.id != entries.last?.id {
-                        EntryAppearance.separator.frame(height: 1)
+                        EntryAppearance.separator
+                            .frame(height: 1)
                             .offset(y: entry.isActive ? -3 : 0)
                     }
                 }

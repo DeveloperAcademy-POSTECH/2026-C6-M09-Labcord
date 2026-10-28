@@ -41,9 +41,12 @@ struct EntryText: View {
 
     var body: some View {
         Text(value)
-            .font(EntryAppearance.label(
-                style.size, weight: style == .headline ? .semibold : .regular
-            ))
+            .font(
+                EntryAppearance.label(
+                    style.size,
+                    weight: style == .headline ? .semibold : .regular
+                )
+            )
             .frame(height: style.lineHeight)
     }
 }
