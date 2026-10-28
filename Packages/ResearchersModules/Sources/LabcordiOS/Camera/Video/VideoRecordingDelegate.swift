@@ -1,7 +1,9 @@
 import AVFoundation
 import Foundation
 
-nonisolated final class VideoRecordingDelegate: NSObject, AVCaptureFileOutputRecordingDelegate, @unchecked Sendable {
+nonisolated final class VideoRecordingDelegate: NSObject,
+                                                AVCaptureFileOutputRecordingDelegate,
+                                                @unchecked Sendable {
     private let lock = NSLock()
     private var continuation: CheckedContinuation<URL, Error>?
     private var isCancelled = false
@@ -41,17 +43,21 @@ nonisolated final class VideoRecordingDelegate: NSObject, AVCaptureFileOutputRec
         from connections: [AVCaptureConnection],
         error: Error?
     ) {
-        let (continuation, cancelled) = lock.withLock { () -> (CheckedContinuation<URL, Error>?, Bool) in
+        let (continuation, cancelled) = lock.withLock {
+            () -> (CheckedContinuation<URL, Error>?, Bool) in
             defer { self.continuation = nil }
             return (self.continuation, isCancelled)
         }
+
         guard let continuation else { return }
+
+        let recordingSucceeded = (error as NSError?)?
+            .userInfo[AVErrorRecordingSuccessfullyFinishedKey] as? Bool == true
 
         if cancelled {
             try? FileManager.default.removeItem(at: fileURL)
             continuation.resume(throwing: CancellationError())
-        } else if let error,
-                  (error as NSError).userInfo[AVErrorRecordingSuccessfullyFinishedKey] as? Bool != true {
+        } else if let error, !recordingSucceeded {
             try? FileManager.default.removeItem(at: fileURL)
             continuation.resume(throwing: error)
         } else if FileManager.default.fileExists(atPath: fileURL.path) {

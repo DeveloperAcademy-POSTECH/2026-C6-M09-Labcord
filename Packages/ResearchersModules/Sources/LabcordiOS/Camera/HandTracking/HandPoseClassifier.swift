@@ -84,7 +84,7 @@ nonisolated enum HandPoseClassifier {
         return nil
     }
 
-    private static func distance(_ a: CGPoint, _ b: CGPoint) -> CGFloat {
-        hypot(a.x - b.x, a.y - b.y)
+    private static func distance(_ firstPoint: CGPoint, _ secondPoint: CGPoint) -> CGFloat {
+        hypot(firstPoint.x - secondPoint.x, firstPoint.y - secondPoint.y)
     }
 }

@@ -31,7 +31,11 @@ struct VoiceRecordingOverlay: View {
                     ScrollView {
                         Text(displayedTranscript)
                             .font(.system(size: geometry.size.height < 400 ? 24 : 30))
-                            .foregroundStyle(store.voiceTranscript.isEmpty ? .white.opacity(0.6) : .white)
+                            .foregroundStyle(
+                                store.voiceTranscript.isEmpty
+                                ? .white.opacity(0.6)
+                                : .white
+                            )
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)

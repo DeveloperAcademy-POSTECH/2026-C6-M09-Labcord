@@ -2,7 +2,9 @@ import AVFoundation
 import QuartzCore
 import Vision
 
-nonisolated final class CameraHandDetector: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @unchecked Sendable {
+nonisolated final class CameraHandDetector: NSObject,
+                                            AVCaptureVideoDataOutputSampleBufferDelegate,
+                                            @unchecked Sendable {
     private let onHold: @Sendable (CameraHandEvent) -> Void
     private let request = VNDetectHumanHandPoseRequest()
     private var holdTracker = HandHoldTracker()
