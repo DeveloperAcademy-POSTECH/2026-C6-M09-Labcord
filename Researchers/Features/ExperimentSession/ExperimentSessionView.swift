@@ -19,17 +19,25 @@ struct ExperimentSessionView: View {
         SessionTimerFeature()
     }
 
+    private var captureStore: StoreOf<CameraCaptureFeature> {
+        store.scope(state: \.capture, action: \.capture)
+    }
+
+    private var voiceStore: StoreOf<VoiceRecordingFeature> {
+        store.scope(state: \.voice, action: \.voice)
+    }
+
     var body: some View {
         Group {
             if verticalSizeClass == .compact {
-                LandscapeSessionView(store: store, timerStore: timerStore)
+                LandscapeSessionView(store: captureStore, timerStore: timerStore)
             } else {
-                PortraitSessionView(store: store, timerStore: timerStore)
+                PortraitSessionView(store: captureStore, timerStore: timerStore)
             }
         }
         .backgroundPreferenceValue(CameraPreviewAnchorKey.self) { anchor in
             GeometryReader { geometry in
-                if let connector = store.previewConnector {
+                if let connector = captureStore.previewConnector {
                     let frame = verticalSizeClass == .compact
                         ? anchor.map { geometry[$0] } ?? CGRect(origin: .zero, size: geometry.size)
                         : CGRect(origin: .zero, size: geometry.size)
@@ -41,7 +49,7 @@ struct ExperimentSessionView: View {
                             )
                         )
                         .overlay(alignment: .topLeading) {
-                            if case let .recording(startedAt) = store.videoPhase {
+                            if case let .recording(startedAt) = captureStore.videoPhase {
                                 VideoRecordingIndicator(startedAt: startedAt)
                                     .padding(.leading, 16)
                                     .padding(.top, verticalSizeClass == .compact ? 16 : 130)
@@ -54,32 +62,32 @@ struct ExperimentSessionView: View {
             .ignoresSafeArea()
         }
         .overlay {
-            if let data = store.capturedPhotoData {
+            if let data = captureStore.capturedPhotoData {
                 CapturedPhotoView(photoData: data) {
-                    store.send(.retakeRequested)
+                    captureStore.send(.retakeRequested)
                 }
             }
         }
         .overlay {
-            if case let .preview(url) = store.videoPhase {
+            if case let .preview(url) = captureStore.videoPhase {
                 CapturedVideoView(videoURL: url) {
-                    store.send(.videoRetakeRequested)
+                    captureStore.send(.videoRetakeRequested)
                 }
             }
         }
         .overlay {
-            if store.voice.phase != .hidden {
-                VoiceRecordingView(store: store.scope(state: \.voice, action: \.voice))
+            if voiceStore.phase != .hidden {
+                VoiceRecordingView(store: voiceStore)
             }
         }
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
-            store.send(.cameraViewAppeared)
+            captureStore.send(.cameraViewAppeared)
             store.send(.permissions(.request))
         }
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
-            store.send(.cameraViewDisappeared)
+            captureStore.send(.cameraViewDisappeared)
         }
         .background(.black)
         .alert(
@@ -103,37 +111,29 @@ struct ExperimentSessionView: View {
         .alert(
             "카메라 오류",
             isPresented: Binding(
-                get: { store.cameraErrorMessage != nil },
-                set: { if !$0 { store.send(.cameraErrorDismissed) } }
+                get: { captureStore.cameraErrorMessage != nil },
+                set: { if !$0 { captureStore.send(.cameraErrorDismissed) } }
             )
         ) {
             Button("확인", role: .cancel) {
-                store.send(.cameraErrorDismissed)
+                captureStore.send(.cameraErrorDismissed)
             }
         } message: {
-            Text(store.cameraErrorMessage ?? "")
+            Text(captureStore.cameraErrorMessage ?? "")
         }
         .alert(
             "음성 기록 오류",
             isPresented: Binding(
-                get: { store.voice.errorMessage != nil },
-                set: { if !$0 { store.send(.voice(.errorDismissed)) } }
+                get: { voiceStore.errorMessage != nil },
+                set: { if !$0 { voiceStore.send(.errorDismissed) } }
             )
         ) {
             Button("확인", role: .cancel) {
-                store.send(.voice(.errorDismissed))
+                voiceStore.send(.errorDismissed)
             }
         } message: {
-            Text(store.voice.errorMessage ?? "")
+            Text(voiceStore.errorMessage ?? "")
         }
-    }
-}
-
-struct CameraPreviewAnchorKey: PreferenceKey {
-    static var defaultValue: Anchor<CGRect>? { nil }
-
-    static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) {
-        value = nextValue() ?? value
     }
 }
 

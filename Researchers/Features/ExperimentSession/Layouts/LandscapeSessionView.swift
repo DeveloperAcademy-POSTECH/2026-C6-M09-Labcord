@@ -9,7 +9,7 @@ import ComposableArchitecture
 import SwiftUI
 
 struct LandscapeSessionView: View {
-    let store: StoreOf<ExperimentSessionFeature>
+    let store: StoreOf<CameraCaptureFeature>
     let timerStore: StoreOf<SessionTimerFeature>
 
     var body: some View {
@@ -38,8 +38,8 @@ struct LandscapeSessionView: View {
 
 #Preview {
     LandscapeSessionView(
-        store: Store(initialState: ExperimentSessionFeature.State()) {
-            ExperimentSessionFeature()
+        store: Store(initialState: CameraCaptureFeature.State()) {
+            CameraCaptureFeature()
         },
         timerStore: Store(initialState: SessionTimerFeature.State()) {
             SessionTimerFeature()

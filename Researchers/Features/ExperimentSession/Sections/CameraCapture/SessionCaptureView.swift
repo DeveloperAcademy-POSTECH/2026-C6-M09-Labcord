@@ -9,7 +9,7 @@ import ComposableArchitecture
 import SwiftUI
 
 struct SessionCaptureView: View {
-    let store: StoreOf<ExperimentSessionFeature>
+    let store: StoreOf<CameraCaptureFeature>
 
     var body: some View {
         VStack(spacing: 20) {
@@ -58,7 +58,7 @@ struct SessionCaptureView: View {
                 .tint(.white)
 
                 Button {
-                    store.send(.photoCaptureRequested)
+                    store.send(.photoButtonTapped)
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "camera.viewfinder")
@@ -74,7 +74,7 @@ struct SessionCaptureView: View {
                 .tint(.white)
 
                 Button {
-                    store.send(.videoRecordRequested)
+                    store.send(.videoButtonTapped)
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "video.fill")
@@ -95,7 +95,7 @@ struct SessionCaptureView: View {
 }
 
 #Preview {
-    SessionCaptureView(store: Store(initialState: ExperimentSessionFeature.State()) {
-        ExperimentSessionFeature()
+    SessionCaptureView(store: Store(initialState: CameraCaptureFeature.State()) {
+        CameraCaptureFeature()
     })
 }
