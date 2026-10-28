@@ -2,7 +2,6 @@ import Foundation
 import LabcordShared
 import SwiftData
 
-/// iPhone 앱만 사용하는 저장 구현입니다. 작업 실패가 다른 편집 context를 되돌리지 않습니다.
 @MainActor
 final class ExperimentRepository {
     static let shared = ExperimentRepository()
