@@ -422,7 +422,7 @@ struct ExperimentSessionFeature {
 
             case .voiceButtonTapped:
                 guard state.voicePhase == .hidden, state.isCameraViewVisible,
-                      state.capturedPhotoData == nil,
+                      !state.isCapturingPhoto, state.capturedPhotoData == nil,
                         state.videoPhase == .idle else { return .none }
                 state.isPhotoGestureArmed = false
                 state.voiceTranscript = ""
