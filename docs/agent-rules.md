@@ -30,11 +30,12 @@ docs/agent-rules.md                     적용 기준·인식 검증·관리 방
 | --- | --- |
 | 브랜치·커밋·이슈·PR | git-workflow: 이름·제목·본문 구성·변경 분리·다이어그램·리뷰 준비 |
 | Git·코드 리뷰 | git-workflow: Git Flow·CodeRabbit·팀원 승인 |
-| Swift 스타일 | code-style: 이름·레이아웃·로컬 lint 설정 |
-| Feature와 모듈 | architecture: View/Feature 역할·내부 참조 제한·모듈 경계 |
+| Swift 스타일 | code-style: 이름·레이아웃·주석의 필요성·로컬 lint 설정 |
+| Feature와 모듈 | architecture: View/Feature 역할·하위 Feature 분리 검토·내부 참조 제한·모듈 경계 |
+| 비동기 동작 | architecture: Effect 수명·이벤트 순서·입력과 응답·복구 경로; 검증 시나리오는 verify-change |
 | 저장과 전송 | architecture: iPhone 저장·Watch 전송·완료 상태·중복 방지 |
-| 공통 코드와 디자인 | architecture: 공통화 시점·UI 책임·패키지 연결 |
-| 변경별 검증 | verify-change: 빌드·SwiftLint 실행·생략·결과 보고 |
+| 공통 코드와 디자인 | architecture: 공통화 시점·Lo-fi 단계 범위·UI 책임·패키지 연결 |
+| 변경별 검증 | verify-change: 빌드·SwiftLint·동작 검증·검증 수단 추가 범위·현재 PR의 CI 실행 확인·결과 보고 |
 | 공통 원칙 | AGENTS.md; 명령·상세 절차는 Skill로 분리 |
 
 현재 의존성은 [Package.resolved](../Researchers.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved),
@@ -106,6 +107,11 @@ Agent Skills의 `SKILL.md` + `name`·`description` frontmatter 구조를 사용�
 | --- | --- |
 | README 오타 수정 | verify-change의 문서 전용 기준; native build/lint 생략과 이유 보고 |
 | iPhone Feature 상태 로직 수정 | architecture·code-style·verify-change; iPhone 빌드·SwiftLint |
+| 비동기 입력·콜백 변경 | architecture·verify-change; 취소의 자원 정리·이벤트 순서·연속 입력·늦은 응답·실패/권한 거부 후 복구 확인 |
+| 독립 상태·동작을 가진 컴포넌트 추가 | architecture; 하위 Feature 분리 검토. 모든 컴포넌트 분리나 특정 루트 구조를 강제하지 않음 |
+| Lo-fi 화면 구현 | architecture; 기본 컴포넌트·폰트·SF Symbols로 흐름 확인. 커스텀 UI는 요구·단계에 맞춰 판단 |
+| 테스트·검증 수단 보완 | verify-change; 기존 테스트 수정은 요청 범위에서 진행. 새 타깃·자산·자동화는 필요성·유지보수 범위 확인 후 범위 확대 시 합의 |
+| CI 결과 보고 | verify-change; 현재 PR head·대상 브랜치·실행 조건 대조. 성공·실패·조건부 생략·미실행과 대기/취소 구분 |
 | 공유 Watch 메시지 필드 변경 | architecture·code-style·verify-change; 양쪽 송수신 확인·양쪽 빌드·SwiftLint |
 | `.swiftlint.yml`만 수정 | verify-change; SwiftLint 실행, 앱 빌드는 필수 아님 |
 | 리소스/프로젝트/의존성 변경 | verify-change; 영향 대상 빌드. Swift 변경도 있다면 lint 추가 |
