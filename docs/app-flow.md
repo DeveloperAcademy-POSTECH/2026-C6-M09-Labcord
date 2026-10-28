@@ -154,9 +154,7 @@ flowchart TD
 ```
 
 [세션 Feature](../Researchers/Features/ExperimentSession/ExperimentSessionFeature.swift)는
-권한·카메라·손 제스처·타이머를 처리하고, 같은 Feature의
-[기록 확장](../Researchers/Features/ExperimentSession/ExperimentSessionFeature+Recording.swift)은
-사진·영상·음성 액션을 처리한다. 상태·액션·의존성과 취소 식별자를 공유하며 별도 세션이나 Store를 만들지 않는다.
+권한·카메라·손 제스처·타이머와 사진·영상·음성 액션을 처리한다.
 
 - 사진은 메모리 Data, 영상과 음성은 앱 임시 폴더 파일이다. 결과 미리보기와 다시 기록하기가 있다.
   영상의 ‘3초 후 자동 저장’ 문구만으로 영구 저장이 구현됐다고 판단하지 않는다.
