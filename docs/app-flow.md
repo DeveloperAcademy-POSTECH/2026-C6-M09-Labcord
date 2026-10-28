@@ -11,7 +11,7 @@
 완료 상태는 별개이며, 이 작업에서 외부 기획·디자인 문서를 수정하지 않았다.
 
 코드 기준은 팀 `develop`의 `e31d08b`, 이번 Entry의 동작 변경 `c01f714`, 별도
-`feat/#57-Theo`의 `021b0c2`다. 반영 순서와 PR 근거는 [구현 조사](implementation-audit.md)에 있다.
+`feat/#57-Theo`의 `021b0c2`다. closed PR의 병합 여부와 대상 브랜치를 대조한 시점의 조사 기준이다.
 화면 전체를 실제 비교한 Figma는 [홈 `502:12299`](https://www.figma.com/design/v6cxQ2I6zURWYQaG5pnuBL?node-id=502-12299)와
 [등록 `502:12563`](https://www.figma.com/design/v6cxQ2I6zURWYQaG5pnuBL?node-id=502-12563) 두 화면이다.
 다른 단계의 화면 ID나 1:1 검증 완료 여부는 추정하지 않는다.
