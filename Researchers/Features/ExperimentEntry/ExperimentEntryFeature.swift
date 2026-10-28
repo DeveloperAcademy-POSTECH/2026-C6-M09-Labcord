@@ -9,6 +9,9 @@ struct ExperimentEntryFeature {
         var isRegistering = false
         var isLoading = false
         var isSaving = false
+        var isDeleting = false
+        var pendingDeletion: ExperimentListEntry?
+        var deletionID: UUID?
         var pendingID: UUID?
         var failure: Failure?
         var loadRevision = 0
@@ -17,6 +20,7 @@ struct ExperimentEntryFeature {
     nonisolated enum Failure: Error, Equatable, Sendable {
         case loading
         case saving
+        case deleting
     }
 
     nonisolated struct SavedExperiment: Equatable, Sendable {
@@ -33,6 +37,12 @@ struct ExperimentEntryFeature {
         case saved(Result<SavedExperiment, Failure>)
         case retryTapped(Failure)
         case dismissFailure
+        case deleteRequested(UUID)
+        case deleteCancelled
+        case deleteConfirmed(UUID)
+        case deleteSucceeded(UUID)
+        case deleteFailed(UUID)
+        case editTapped(UUID)
         case experimentTapped(UUID)
         case sourceTapped(ProtocolSource)
         case settingsTapped
@@ -43,6 +53,7 @@ struct ExperimentEntryFeature {
     nonisolated enum Delegate: Equatable, Sendable {
         case experimentCreated(UUID)
         case experimentSelected(UUID)
+        case protocolEditRequested(UUID)
         case protocolSourceRequested(ProtocolSource)
         case settingsRequested
     }
@@ -59,7 +70,7 @@ struct ExperimentEntryFeature {
         Reduce { state, action in
             switch action {
             case .load:
-                guard !state.isSaving else { return .none }
+                guard !state.isSaving, !state.isDeleting else { return .none }
                 if state.failure == .loading { state.failure = nil }
                 state.isLoading = true
                 state.loadRevision += 1
@@ -86,7 +97,8 @@ struct ExperimentEntryFeature {
                 return .none
 
             case .addTapped:
-                guard !state.isRegistering else { return .none }
+                guard !state.isRegistering, !state.isDeleting,
+                      state.pendingDeletion == nil else { return .none }
                 state.isRegistering = true
                 state.pendingID = nil
                 return .none
@@ -158,14 +170,53 @@ struct ExperimentEntryFeature {
                 switch failure {
                 case .loading: return .send(.load)
                 case .saving: return .send(.skipTapped)
+                case .deleting:
+                    guard let identifier = state.deletionID else { return .none }
+                    return delete(identifier, state: &state)
                 }
 
             case .dismissFailure:
                 state.failure = nil
                 return .none
 
+            case let .deleteRequested(identifier):
+                guard !state.isRegistering, !state.isSaving, !state.isDeleting,
+                      state.failure == nil,
+                      let entry = state.entries.first(where: { $0.id == identifier }) else {
+                    return .none
+                }
+                state.pendingDeletion = entry
+                return .none
+
+            case .deleteCancelled:
+                state.pendingDeletion = nil
+                return .none
+
+            case let .deleteConfirmed(identifier):
+                state.pendingDeletion = nil
+                return delete(identifier, state: &state)
+
+            case let .deleteSucceeded(identifier):
+                guard state.isDeleting, state.deletionID == identifier else { return .none }
+                state.entries.removeAll { $0.id == identifier }
+                state.isDeleting = false
+                state.deletionID = nil
+                return .none
+
+            case let .deleteFailed(identifier):
+                guard state.isDeleting, state.deletionID == identifier else { return .none }
+                state.isDeleting = false
+                state.failure = .deleting
+                return .none
+
+            case let .editTapped(identifier):
+                guard !state.isDeleting,
+                      state.entries.contains(where: { $0.id == identifier }) else { return .none }
+                return .send(.delegate(.protocolEditRequested(identifier)))
+
             case let .experimentTapped(identifier):
-                guard state.entries.contains(where: { $0.id == identifier }) else { return .none }
+                guard !state.isDeleting,
+                      state.entries.contains(where: { $0.id == identifier }) else { return .none }
                 return .send(.delegate(.experimentSelected(identifier)))
 
             case let .sourceTapped(source):
@@ -179,5 +230,25 @@ struct ExperimentEntryFeature {
                 return .none
             }
         }
+    }
+
+    private func delete(_ identifier: UUID, state: inout State) -> Effect<Action> {
+        guard !state.isRegistering, !state.isSaving, !state.isDeleting,
+              state.entries.contains(where: { $0.id == identifier }) else { return .none }
+        state.isDeleting = true
+        state.deletionID = identifier
+        state.isLoading = false
+        state.loadRevision += 1
+        return .concatenate(
+            .cancel(id: CancelID.load),
+            .run { send in
+                do {
+                    try await client.delete(identifier)
+                    await send(.deleteSucceeded(identifier))
+                } catch {
+                    await send(.deleteFailed(identifier))
+                }
+            }
+        )
     }
 }

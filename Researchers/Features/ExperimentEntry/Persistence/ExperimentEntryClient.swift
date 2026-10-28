@@ -4,12 +4,16 @@ import Foundation
 struct ExperimentEntryClient: Sendable {
     var load: @MainActor @Sendable () throws -> [ExperimentListEntry]
     var create: @MainActor @Sendable (UUID, Date) throws -> ExperimentListEntry
+    var delete: @MainActor @Sendable (UUID) throws -> Void = { _ in
+        throw ExperimentEntryFeature.Failure.deleting
+    }
 }
 
 extension ExperimentEntryClient: DependencyKey {
     static let liveValue = Self(
         load: { try ExperimentEntryRepository.shared.load() },
-        create: { try ExperimentEntryRepository.shared.create(id: $0, at: $1) }
+        create: { try ExperimentEntryRepository.shared.create(id: $0, at: $1) },
+        delete: { try ExperimentEntryRepository.shared.delete(id: $0) }
     )
 }
 

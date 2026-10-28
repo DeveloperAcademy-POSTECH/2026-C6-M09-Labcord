@@ -2,7 +2,7 @@ import Foundation
 import LabcordShared
 import SwiftData
 
-/// iPhone 앱만 사용하는 저장 구현입니다. 생성 실패가 다른 편집 context를 되돌리지 않습니다.
+/// iPhone 앱만 사용하는 저장 구현입니다. 작업 실패가 다른 편집 context를 되돌리지 않습니다.
 @MainActor
 final class ExperimentEntryRepository {
     static let shared = ExperimentEntryRepository()
@@ -36,6 +36,14 @@ final class ExperimentEntryRepository {
         context.insert(experiment)
         try context.save()
         return Self.entry(experiment)
+    }
+
+    func delete(id: UUID) throws {
+        let context = try makeContext()
+        let request = FetchDescriptor<Experiment>(predicate: #Predicate { $0.id == id })
+        guard let experiment = try context.fetch(request).first else { return }
+        context.delete(experiment)
+        try context.save()
     }
 
     private func makeContext() throws -> ModelContext {

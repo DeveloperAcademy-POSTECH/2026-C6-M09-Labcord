@@ -56,6 +56,8 @@ struct EntryQARoot {
                 state.lastEvent = "created:\(identifier.uuidString)"
             case let .entry(.delegate(.experimentSelected(identifier))):
                 state.lastEvent = "selected:\(identifier.uuidString)"
+            case let .entry(.delegate(.protocolEditRequested(identifier))):
+                state.lastEvent = "edit:\(identifier.uuidString)"
             case let .entry(.delegate(.protocolSourceRequested(source))):
                 state.lastEvent = "source:\(source.rawValue)"
             case .entry(.delegate(.settingsRequested)):
@@ -73,10 +75,12 @@ private enum EntryQASupport {
     final class FailureGate {
         var load: Bool
         var save: Bool
+        var delete: Bool
 
         init(arguments: [String]) {
             load = arguments.contains("--fail-first-load")
             save = arguments.contains("--fail-first-save")
+            delete = arguments.contains("--fail-first-delete")
         }
     }
 
@@ -121,6 +125,13 @@ private enum EntryQASupport {
                     throw ExperimentEntryFeature.Failure.saving
                 }
                 return try repository.create(id: identifier, at: date)
+            },
+            delete: { identifier in
+                if gate.delete {
+                    gate.delete = false
+                    throw ExperimentEntryFeature.Failure.deleting
+                }
+                try repository.delete(id: identifier)
             }
         )
     }

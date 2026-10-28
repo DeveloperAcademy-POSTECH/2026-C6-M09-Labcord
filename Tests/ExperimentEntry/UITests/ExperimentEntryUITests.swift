@@ -74,6 +74,70 @@ final class ExperimentEntryUITests: XCTestCase {
         XCTAssertEqual(rows(app).count, 0)
     }
 
+    func testSwipeEditCancelDeleteAndRelaunch() {
+        let app = launch(["--reset-store", "--observe-events"])
+        XCTAssertTrue(app.buttons["entry-add"].waitForExistence(timeout: 10))
+        for _ in 0..<2 {
+            app.buttons["entry-add"].tap()
+            app.buttons["entry-skip"].tap()
+            XCTAssertTrue(rows(app).firstMatch.waitForExistence(timeout: 10))
+        }
+        XCTAssertEqual(rows(app).count, 2)
+        let identifier = rows(app).firstMatch.identifier
+        let uuid = String(identifier.dropFirst("experiment-row-".count))
+        let retained = rows(app).element(boundBy: 1).identifier
+        app.buttons[identifier].swipeLeft()
+        XCTAssertTrue(app.buttons["entry-edit-\(uuid)"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["entry-delete-\(uuid)"].exists)
+        capture("swipe-edit-and-delete")
+        app.buttons["entry-edit-\(uuid)"].tap()
+        XCTAssertEqual(app.staticTexts["qa-event"].label, "edit:\(uuid)")
+        revealDelete(app, row: identifier, uuid: uuid)
+        app.buttons["entry-delete-\(uuid)"].tap()
+        XCTAssertTrue(app.alerts["실험을 삭제할까요?"].waitForExistence(timeout: 5))
+        capture("delete-confirmation")
+        app.alerts.buttons["취소"].tap()
+        XCTAssertTrue(app.buttons[identifier].exists)
+        XCTAssertEqual(rows(app).count, 2)
+        revealDelete(app, row: identifier, uuid: uuid)
+        app.buttons["entry-delete-\(uuid)"].tap()
+        app.alerts.buttons["삭제"].tap()
+        XCTAssertTrue(app.buttons[identifier].waitForNonExistence(timeout: 5))
+        XCTAssertTrue(app.buttons[retained].exists)
+        app.terminate()
+        app.launchArguments = ["--observe-events"]
+        app.launch()
+        XCTAssertTrue(app.buttons[retained].waitForExistence(timeout: 10))
+        XCTAssertEqual(rows(app).count, 1)
+        XCTAssertFalse(app.buttons[identifier].exists)
+    }
+
+    func testDeleteFailurePreservesRowAndRetries() {
+        let app = launch(["--reset-store", "--fail-first-delete"])
+        XCTAssertTrue(app.buttons["entry-add"].waitForExistence(timeout: 10))
+        app.buttons["entry-add"].tap()
+        app.buttons["entry-skip"].tap()
+        XCTAssertTrue(rows(app).firstMatch.waitForExistence(timeout: 10))
+        let identifier = rows(app).firstMatch.identifier
+        let uuid = String(identifier.dropFirst("experiment-row-".count))
+        revealDelete(app, row: identifier, uuid: uuid)
+        app.buttons["entry-delete-\(uuid)"].tap()
+        app.alerts.buttons["삭제"].tap()
+        XCTAssertTrue(app.alerts["실험을 삭제하지 못했어요"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons[identifier].exists)
+        capture("delete-failure")
+        app.alerts.buttons["재시도"].tap()
+        XCTAssertTrue(app.buttons[identifier].waitForNonExistence(timeout: 5))
+        XCTAssertEqual(rows(app).count, 0)
+    }
+
+    private func revealDelete(_ app: XCUIApplication, row: String, uuid: String) {
+        if !app.buttons["entry-delete-\(uuid)"].isHittable {
+            app.buttons[row].swipeLeft()
+        }
+        XCTAssertTrue(app.buttons["entry-delete-\(uuid)"].waitForExistence(timeout: 5))
+    }
+
     private func launch(_ arguments: [String]) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = arguments

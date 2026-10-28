@@ -5,6 +5,9 @@ struct ExperimentHomeView: View {
     let onAdd: () -> Void
     let onSelect: (UUID) -> Void
     let onSettings: () -> Void
+    let onEdit: (UUID) -> Void
+    let onDelete: (UUID) -> Void
+    let isDeleting: Bool
 
     var body: some View {
         ScrollView {
@@ -16,6 +19,7 @@ struct ExperimentHomeView: View {
             .padding(.top, 114)
             .padding(.bottom, 175)
         }
+        .swipeActionsContainer()
         .background(EntryAppearance.background)
         .overlay(alignment: .topTrailing) {
             EntryRoundButton(symbol: "gear", title: "설정", symbolSize: 22, action: onSettings)
@@ -46,6 +50,15 @@ struct ExperimentHomeView: View {
             VStack(spacing: 0) {
                 ForEach(entries) { entry in
                     HomeExperimentRow(entry: entry) { onSelect(entry.id) }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button("삭제", systemImage: "trash") { onDelete(entry.id) }
+                                .tint(.red)
+                                .accessibilityIdentifier("entry-delete-\(entry.id.uuidString)")
+                            Button("수정", systemImage: "pencil") { onEdit(entry.id) }
+                                .tint(EntryAppearance.accent)
+                                .accessibilityIdentifier("entry-edit-\(entry.id.uuidString)")
+                        }
+                        .disabled(isDeleting)
                     if !entry.isActive || entry.id != entries.last?.id {
                         EntryAppearance.separator.frame(height: 1)
                             .offset(y: entry.isActive ? -3 : 0)
