@@ -1,49 +1,43 @@
+import ComposableArchitecture
 import SwiftUI
 
-nonisolated enum ProtocolSource: String, Equatable, Sendable {
-    case photos
-    case file
-    case recent
-}
-
 struct ProtocolRegistrationView: View {
-    let isSaving: Bool
-    let onBack: () -> Void
-    let onSkip: () -> Void
-    let onSource: (ProtocolSource) -> Void
+    @Bindable var store: StoreOf<ProtocolRegistrationFeature>
 
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(spacing: EntryAppearance.optionGap) {
                     ProtocolSourceOption(title: "사진", subtitle: "PNG, JPG · 최대 10장") {
-                        onSource(.photos)
+                        store.send(.sourceTapped(.photos))
                     }
                     .accessibilityIdentifier("entry-source-photos")
 
                     ProtocolSourceOption(title: "파일", subtitle: "PDF, XLSX, DOCX · 최대 1GB") {
-                        onSource(.file)
+                        store.send(.sourceTapped(.file))
                     }
                     .accessibilityIdentifier("entry-source-file")
 
                     ProtocolSourceOption(title: "최근 사용한 프로토콜", subtitle: nil) {
-                        onSource(.recent)
+                        store.send(.sourceTapped(.recent))
                     }
                     .accessibilityIdentifier("entry-source-recent")
                 }
-                .disabled(isSaving)
+                .disabled(store.isSaving)
                 .padding(.horizontal, EntryAppearance.registrationInset)
                 .padding(.top, 12)
             }
 
             VStack(spacing: 0) {
-                Button(action: onSkip) {
+                Button {
+                    store.send(.skipTapped)
+                } label: {
                     HStack(spacing: 6) {
-                        if isSaving {
+                        if store.isSaving {
                             EntryLoadingIndicator()
                         }
                         EntryText(
-                            isSaving ? "실험을 저장하고 있어요" : "프로토콜 없이 진행",
+                            store.isSaving ? "실험을 저장하고 있어요" : "프로토콜 없이 진행",
                             style: .caption
                         )
                         .offset(x: -0.5, y: 2)
@@ -53,13 +47,22 @@ struct ProtocolRegistrationView: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(EntryAppearance.accent)
-                .disabled(isSaving)
+                .disabled(store.isSaving)
                 .accessibilityIdentifier("entry-skip")
 
                 EntryNextButton()
             }
             .padding(.horizontal, EntryAppearance.registrationInset)
             .padding(.bottom, 6)
+        }
+        .alert("실험을 저장하지 못했어요", isPresented: Binding(
+            get: { store.hasFailed },
+            set: { if !$0 { store.send(.dismissFailure) } }
+        )) {
+            Button("재시도") { store.send(.retryTapped) }
+            Button("취소", role: .cancel) { store.send(.dismissFailure) }
+        } message: {
+            Text("실험은 등록되지 않았어요. 다시 시도해 주세요.")
         }
         .background(EntryAppearance.background)
         .statusBarHidden()
@@ -77,9 +80,9 @@ struct ProtocolRegistrationView: View {
                     imageName: "EntryBackSampled",
                     title: "뒤로 가기",
                     size: 44,
-                    action: onBack
+                    action: { store.send(.backTapped) }
                 )
-                .disabled(isSaving)
+                .disabled(store.isSaving)
                 .accessibilityIdentifier("entry-back")
                 .offset(x: -2, y: 5)
             }
