@@ -37,6 +37,19 @@ public final class SpeechRecordingSession {
         startupID = id
         defer { if startupID == id { startupID = nil } }
 
+        let recognizer = try authorizedRecognizer()
+        try await activateForStartup(id)
+
+        do {
+            return try beginRecording(id: id, recognizer: recognizer)
+        } catch {
+            finishRecording(keepingFile: false)
+            discardLatestRecording()
+            throw error
+        }
+    }
+
+    private func authorizedRecognizer() throws -> SFSpeechRecognizer {
         guard AVAudioApplication.shared.recordPermission == .granted else {
             throw PermissionAccessError(.microphone)
         }
@@ -46,7 +59,10 @@ public final class SpeechRecordingSession {
         guard let recognizer = SFSpeechRecognizer(locale: locale), recognizer.isAvailable else {
             throw SpeechRecordingError.recognizerUnavailable
         }
+        return recognizer
+    }
 
+    private func activateForStartup(_ id: UUID) async throws {
         audioActivationPending = true
         do {
             try await activateAudioSession()
@@ -55,62 +71,70 @@ public final class SpeechRecordingSession {
             throw error
         }
         guard startupID == id, !Task.isCancelled else {
-            // cancel() has already queued deactivation when startupID changed.
             if startupID == id { releaseAudioSession() }
             throw CancellationError()
         }
         audioActivationPending = false
         ownsAudioSession = true
+    }
 
-        do {
-            let inputNode = audioEngine.inputNode
-            let format = inputNode.outputFormat(forBus: 0)
-            guard format.sampleRate > 0 else { throw SpeechRecordingError.microphoneUnavailable }
+    private func beginRecording(
+        id: UUID,
+        recognizer: SFSpeechRecognizer
+    ) throws -> AsyncStream<SpeechRecordingEvent> {
+        let inputNode = audioEngine.inputNode
+        let format = inputNode.outputFormat(forBus: 0)
+        guard format.sampleRate > 0 else { throw SpeechRecordingError.microphoneUnavailable }
 
-            let url = FileManager.default.temporaryDirectory
-                .appendingPathComponent("speech-\(id.uuidString).caf")
-            let file = try AVAudioFile(forWriting: url, settings: format.settings)
-            recordingURL = url
-            recordingFile = file
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("speech-\(id.uuidString).caf")
+        let file = try AVAudioFile(forWriting: url, settings: format.settings)
+        recordingURL = url
+        recordingFile = file
 
-            let request = SFSpeechAudioBufferRecognitionRequest()
-            request.shouldReportPartialResults = true
-            recognitionRequest = request
-            recordingID = id
-            transcript = ""
+        let request = SFSpeechAudioBufferRecognitionRequest()
+        request.shouldReportPartialResults = true
+        recognitionRequest = request
+        recordingID = id
+        transcript = ""
 
-            let (stream, continuation) = AsyncStream<SpeechRecordingEvent>.makeStream(
-                bufferingPolicy: .bufferingNewest(1)
-            )
-            eventContinuation = continuation
+        let (stream, continuation) = AsyncStream<SpeechRecordingEvent>.makeStream(
+            bufferingPolicy: .bufferingNewest(1)
+        )
+        eventContinuation = continuation
 
-            recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
-                Task { @MainActor in
-                    self?.receive(result: result, error: error, recordingID: id)
-                }
+        recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
+            Task { @MainActor in
+                self?.receive(result: result, error: error, recordingID: id)
             }
-
-            inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
-                request.append(buffer)
-                do {
-                    try file.write(from: buffer)
-                } catch {
-                    Task { @MainActor in
-                        self?.fail(error, recordingID: id)
-                    }
-                }
-            }
-            hasInputTap = true
-            audioEngine.prepare()
-            try audioEngine.start()
-            try Task.checkCancellation()
-            guard recordingID == id else { throw SpeechRecordingError.recognizerUnavailable }
-            return stream
-        } catch {
-            finishRecording(keepingFile: false)
-            discardLatestRecording()
-            throw error
         }
+
+        installInputTap(on: inputNode, format: format, request: request, file: file, id: id)
+        audioEngine.prepare()
+        try audioEngine.start()
+        try Task.checkCancellation()
+        guard recordingID == id else { throw SpeechRecordingError.recognizerUnavailable }
+        return stream
+    }
+
+    private func installInputTap(
+        on inputNode: AVAudioInputNode,
+        format: AVAudioFormat,
+        request: SFSpeechAudioBufferRecognitionRequest,
+        file: AVAudioFile,
+        id: UUID
+    ) {
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
+            request.append(buffer)
+            do {
+                try file.write(from: buffer)
+            } catch {
+                Task { @MainActor in
+                    self?.fail(error, recordingID: id)
+                }
+            }
+        }
+        hasInputTap = true
     }
 
     public func stop() async -> SpeechRecording? {

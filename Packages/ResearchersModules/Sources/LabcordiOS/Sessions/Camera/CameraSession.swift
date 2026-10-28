@@ -137,7 +137,9 @@ public actor CameraSession {
             throw CameraSessionError.cameraUnavailable
         }
 
-        let nextPosition: AVCaptureDevice.Position = activeCamera.position == .front ? .back : .front
+        let nextPosition: AVCaptureDevice.Position = activeCamera.position == .front
+        ? .back
+        : .front
         guard let nextCamera = AVCaptureDevice.default(
             .builtInWideAngleCamera,
             for: .video,

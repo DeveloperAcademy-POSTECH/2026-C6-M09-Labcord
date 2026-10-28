@@ -83,7 +83,9 @@ public struct SessionPermissionsFeature {
                 let requirements: [PermissionRequirement] = [
                     state.camera.status.map { .init(kind: .camera, status: $0) },
                     state.microphoneStatus.map { .init(kind: .microphone, status: $0) },
-                    state.speechRecognitionStatus.map { .init(kind: .speechRecognition, status: $0) }
+                    state.speechRecognitionStatus.map {
+                        .init(kind: .speechRecognition, status: $0)
+                    }
                 ]
                 .compactMap { $0 }
                 .filter { $0.status == .denied || $0.status == .restricted }
