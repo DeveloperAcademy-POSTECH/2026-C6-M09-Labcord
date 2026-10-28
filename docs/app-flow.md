@@ -51,9 +51,17 @@ flowchart TD
     Home -->|실험 행 선택| Selected[experimentSelected: 기존 UUID]
     Input -->|사진 / 파일 / 최근 프로토콜| Source[protocolSourceRequested]
     Home -->|설정| Settings[settingsRequested]
+    Home -->|왼쪽으로 밀기| Actions[수정 / 삭제 버튼]
+    Actions -->|수정| ProtocolEdit[protocolEditRequested: 기존 UUID]
+    Actions -->|삭제| ConfirmDelete[실험명과 영구 삭제 경고 확인]
+    ConfirmDelete -->|취소| Home
+    ConfirmDelete -->|삭제 확인| Delete[선택 UUID의 실험과 연결 기록 삭제]
+    Delete -->|저장 성공| Home
+    Delete -->|저장 실패| DeleteError[항목 유지: 재시도 / 취소]
+    DeleteError -->|재시도| Delete
 ```
 
-`Selected`·`Source`·`Settings`는 부모에게 전달할 연결 지점이다. **현재 제품 루트는 이 이벤트를
+`Selected`·`Source`·`Settings`·`ProtocolEdit`는 부모에게 전달할 연결 지점이다. **현재 제품 루트는 이 이벤트를
 받아 후속 화면을 여는 처리를 아직 하지 않는다.** 실험 생성 후에도 기기 선택이나 기록 화면으로
 자동 이동하지 않고 홈으로 돌아온다. 저장 후 조회 실패의 재시도는 목록 조회만 수행한다.
 
@@ -64,7 +72,9 @@ flowchart TD
 
 홈은 진행 중·일시 정지를 첫 그룹, 준비·종료를 최근 그룹에 표시한다. 각 그룹의 순서는
 생성일 최신순이고 같은 생성일은 UUID 문자열로 고정한다. 기록 타임라인의 정렬 기준과 다르다.
-상세 API·테스트 실행 방법은 [Entry 구현 안내](experiment-entry.md)를 따른다.
+실험 행을 밀면 수정·삭제를 선택할 수 있다. 삭제는 확인창을 거쳐 실제 저장소에 반영하고,
+실패하면 항목을 유지한다. 프로토콜 수정은 UUID 이벤트까지만 구현한다.
+삭제 범위와 상세 API·테스트 실행 방법은 [Entry 구현 안내](experiment-entry.md)를 따른다.
 
 ## 전체 제품의 목표 흐름
 

@@ -21,6 +21,14 @@ flowchart TD
     Save -->|실패| Retry[화면 유지 · 재시도 또는 취소]
     Retry -->|동일 UUID로 재시도| Save
     Home -->|행 선택| Selected[experimentSelected · 기존 UUID]
+    Home -->|왼쪽으로 밀기| Actions[수정 · 삭제]
+    Actions -->|수정| Edit[protocolEditRequested · 기존 UUID]
+    Actions -->|삭제| Confirm[영구 삭제 확인창]
+    Confirm -->|취소| Home
+    Confirm -->|삭제 확인| Delete[선택 UUID의 실험 · 연결 기록 저장소 삭제]
+    Delete -->|성공| Home
+    Delete -->|실패| DeleteError[항목 유지 · 재시도 또는 취소]
+    DeleteError -->|동일 UUID 재시도| Delete
 ```
 
 진행·일시 정지는 진행 중인 실험, 준비·종료는 최근 실험에 표시합니다.
@@ -37,7 +45,7 @@ flowchart TD
 | `ExperimentEntryView` | 화면 이동, 오류 경고창, Feature에 Action 전달 |
 | `Presentation/` | Figma 기반 화면·실험 행·배지·입력 방식·버튼 표현 |
 | `ExperimentListEntry` | 저장 객체에서 분리한 Sendable 목록 값과 상태 투영 |
-| `Persistence/` | iPhone SwiftData 생성·조회와 TCA 의존성 경계 |
+| `Persistence/` | iPhone SwiftData 생성·조회·삭제와 TCA 의존성 경계 |
 
 하나의 저장소 인스턴스가 ModelContainer를 유지합니다. 각 작업은 별도 ModelContext를 사용하고
 자동 저장을 끕니다. `create`는 같은 UUID가 이미 저장됐으면 기존 항목을 반환합니다.
@@ -60,16 +68,36 @@ flowchart TD
 | --- | --- |
 | `.experimentCreated(UUID)` | SwiftData 저장에 성공한 실험. 이번 흐름에서는 홈 복귀 |
 | `.experimentSelected(UUID)` | 홈에서 선택한 기존 실험 |
+| `.protocolEditRequested(UUID)` | 밀어서 표시한 수정 버튼. 선택 실험의 프로토콜 수정 연결 지점 |
 | `.protocolSourceRequested(ProtocolSource)` | 사진·파일·최근 프로토콜의 실제 입력 연결 지점 |
 | `.settingsRequested` | 설정 화면 연결 지점 |
 
 이후 실험 화면을 연결할 때는 전달받은 UUID로 같은 저장소의 실험을 조회해야 합니다.
-현재 저장소 API는 목록 값 조회·생성뿐이며, Experiment 원본 조회 API와 후속 화면의
+현재 저장소 API는 목록 값 조회·생성·삭제이며, Experiment 원본 조회 API와 후속 화면의
 ModelContainer 주입은 아직 연결하지 않았습니다. 기록·타이머를 연결하기 위해 UUID를
 새로 만들지 않습니다.
 사진·파일 입력, 프로토콜 분석·재사용, 설정 화면과 이후 실험 화면은 이번에 연결하지 않았습니다.
 자료를 선택하지 않은 상태의 다음 버튼은 비활성입니다. 화면의 10장·1GB는 디자인 문구이며
 입력 지원 상한을 기술적으로 검증했다는 의미가 아닙니다.
+
+## 밀어서 수정·삭제
+
+진행 중인 실험과 최근 실험 모두 왼쪽으로 밀면 수정·삭제 버튼이 나타납니다.
+iOS27의 기본 `swipeActions`·`swipeActionsContainer`를 사용해 기존 ScrollView 배치를 유지합니다.
+끝까지 밀어도 바로 실행하지 않습니다. 수정은 기존 UUID로 `protocolEditRequested`를 전달하며,
+프로토콜 수정 화면과 실제 편집은 아직 구현하지 않았습니다.
+
+삭제 버튼은 실험명과 영구 삭제 경고가 있는 확인창을 엽니다. 취소하면 저장소를 건드리지 않습니다.
+확인하면 해당 UUID의 Experiment를 별도 ModelContext에서 삭제하고 저장합니다.
+기존 모델의 cascade 규칙으로 기록·타이머 중단·실험 중단·상태 이력이 함께 삭제됩니다.
+다른 실험은 보존하며 이미 없는 UUID의 삭제 요청은 성공한 것으로 처리합니다.
+`filePath` 문자열이 가리키는 외부 미디어 파일의 삭제는 포함하지 않습니다.
+현재 Entry는 미디어 파일을 생성·저장하지 않으며, 파일 소유권·수명 관리는 후속 기록 흐름에서 연결해야 합니다.
+
+저장 성공 전까지 목록 항목을 유지하고 실패하면 오류 경고창에서 같은 UUID로 재시도합니다.
+삭제 중 목록 조회·중복 삭제·새 등록·행 선택·수정 요청을 차단하고, 이전 조회 응답이 삭제한 행을
+다시 표시하지 못하도록 조회 revision을 갱신합니다. 진행 중인 실험을 삭제해도 현재 별도 Watch
+세션이나 녹음·타이머 중단 명령은 보내지 않습니다. 해당 흐름은 Entry에 아직 연결되지 않았습니다.
 
 ## 디자인시스템 교체
 
@@ -121,6 +149,8 @@ swiftlint lint --strict
 검증 항목은 저장·재조회·최종 이벤트 순서와 부모의 Entry 제거, 재조회 실패 후 조회만 재시도,
 저장 실패 후 동일 UUID 재시도, 중복 입력·저장 중 이탈 차단,
 오래된 조회 결과 무시, 실제 디스크 재개방, 앱 재실행, 입력 이벤트와 뒤로 가기입니다.
+삭제는 확인·취소, 실패 후 동일 UUID 재시도, 중복·오래된 응답 차단, 연쇄 삭제와 다른 실험 보존,
+디스크 재개방·앱 재실행 후 유지 및 수정 delegate의 UUID도 확인합니다.
 화면 캡처는 iPhone 17의 402×874pt 전체 화면을 두 Figma 화면과 각각 대조합니다.
 XCTest 첨부 캡처와 실행 결과를 확인하며, 빌드 성공을 화면 일치나 테스트 통과로 대신하지 않습니다.
 실행 결과와 전체 화면 픽셀 비교의 수치·제한은 [검증 기록](entry-verification.md)에 있습니다.
