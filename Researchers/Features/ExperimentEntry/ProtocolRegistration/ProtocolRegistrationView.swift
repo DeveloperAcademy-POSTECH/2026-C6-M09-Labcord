@@ -7,7 +7,7 @@ struct ProtocolRegistrationView: View {
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
-                VStack(spacing: EntryAppearance.optionGap) {
+                VStack(spacing: 16) {
                     ProtocolSourceOption(title: "사진", subtitle: "PNG, JPG · 최대 10장") {
                         store.send(.sourceTapped(.photos))
                     }
@@ -24,7 +24,7 @@ struct ProtocolRegistrationView: View {
                     .accessibilityIdentifier("entry-source-recent")
                 }
                 .disabled(store.isSaving)
-                .padding(.horizontal, EntryAppearance.registrationInset)
+                .padding(.horizontal, 16)
                 .padding(.top, 12)
             }
 
@@ -38,19 +38,17 @@ struct ProtocolRegistrationView: View {
                         }
                         Text(store.isSaving ? "실험을 저장하고 있어요" : "프로토콜 없이 진행")
                             .font(.caption)
-                        .offset(x: -0.5, y: 2)
                     }
                     .frame(maxWidth: .infinity, minHeight: 44)
                     .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(EntryAppearance.accent)
+                .buttonStyle(.bordered)
                 .disabled(store.isSaving)
                 .accessibilityIdentifier("entry-skip")
 
                 EntryNextButton()
             }
-            .padding(.horizontal, EntryAppearance.registrationInset)
+            .padding(.horizontal, 16)
             .padding(.bottom, 6)
         }
         .alert("실험을 저장하지 못했어요", isPresented: Binding(
@@ -62,31 +60,17 @@ struct ProtocolRegistrationView: View {
         } message: {
             Text("실험은 등록되지 않았어요. 다시 시도해 주세요.")
         }
-        .background(EntryAppearance.background)
-        .statusBarHidden()
+        .navigationTitle("실험 등록")
+        .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
-        .toolbar(.visible, for: .navigationBar)
-        .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
-            ToolbarItem(placement: .principal) {
-                Text("실험 등록")
-                    .font(.title3)
-                    .foregroundStyle(EntryAppearance.text)
-                    .offset(x: -2 / 3, y: 4 + 1 / 3)
-            }
             ToolbarItem(placement: .topBarLeading) {
-                EntryRoundButton(
-                    imageName: "EntryBackSampled",
-                    title: "뒤로 가기",
-                    size: 44
-                ) {
+                Button("뒤로 가기", systemImage: "chevron.backward") {
                     store.send(.backTapped)
                 }
                 .disabled(store.isSaving)
                 .accessibilityIdentifier("entry-back")
-                .offset(x: -2, y: 5)
             }
-            .sharedBackgroundVisibility(.hidden)
         }
     }
 }
@@ -129,16 +113,11 @@ private struct ProtocolSourceOption: View {
                         .font(.footnote)
                 }
             }
-            .foregroundStyle(EntryAppearance.text)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
-            .background(
-                EntryAppearance.optionFill,
-                in: RoundedRectangle(cornerRadius: EntryAppearance.optionRadius, style: .circular)
-            )
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.bordered)
     }
 }
 
@@ -147,11 +126,9 @@ private struct EntryNextButton: View {
         Button {} label: {
             Text("다음")
                 .font(.body)
-                .foregroundStyle(EntryAppearance.disabledText)
                 .frame(maxWidth: .infinity, minHeight: 50)
-                .background(EntryAppearance.disabledFill, in: Capsule())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.borderedProminent)
         .disabled(true)
         .accessibilityIdentifier("entry-next")
     }

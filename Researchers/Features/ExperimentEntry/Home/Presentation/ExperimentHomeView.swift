@@ -11,81 +11,44 @@ struct ExperimentHomeView: View {
     let isDeleting: Bool
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: EntryAppearance.sectionGap) {
-                section("진행 중인 실험", entries: entries.filter(\.isActive), rowGap: 11)
-                section("최근 실험", entries: entries.filter { !$0.isActive }, rowGap: 16)
+        List {
+            section("진행 중인 실험", entries: entries.filter(\.isActive))
+            section("최근 실험", entries: entries.filter { !$0.isActive })
+        }
+        .navigationTitle("실험")
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("설정", systemImage: "gearshape", action: onSettings)
+                    .accessibilityIdentifier("entry-settings")
             }
-            .padding(.horizontal, EntryAppearance.homeInset)
-            .padding(.top, 114)
-            .padding(.bottom, 175)
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("새 실험 추가", systemImage: "plus", action: onAdd)
+                    .accessibilityIdentifier("entry-add")
+            }
         }
-        .swipeActionsContainer()
-        .background(EntryAppearance.background)
-        .overlay(alignment: .topTrailing) {
-            EntryRoundButton(
-                imageName: "EntryGearSampled",
-                title: "설정",
-                action: onSettings
-            )
-            .accessibilityIdentifier("entry-settings")
-            .padding(.trailing, 20)
-            .padding(.top, 26)
-        }
-        .overlay(alignment: .bottomTrailing) {
-            EntryRoundButton(
-                imageName: "EntryPlusSampled",
-                title: "새 실험 추가",
-                isProminent: true,
-                action: onAdd
-            )
-            .accessibilityIdentifier("entry-add")
-            .padding(.trailing, 20)
-            .padding(.bottom, 83)
-        }
-        .ignoresSafeArea()
-        .toolbar(.hidden, for: .navigationBar)
-        .statusBarHidden()
     }
 }
 
 private extension ExperimentHomeView {
-    func section(
-        _ title: String,
-        entries: [ExperimentListEntry],
-        rowGap: CGFloat
-    ) -> some View {
-        VStack(alignment: .leading, spacing: rowGap) {
-            Text(title)
-                .font(.headline)
-                .foregroundStyle(EntryAppearance.text)
-
-            VStack(spacing: 0) {
-                ForEach(entries) { entry in
-                    HomeExperimentRow(entry: entry) {
-                        onSelect(entry.id)
-                    }
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button("삭제", systemImage: "trash") {
-                            onDelete(entry.id)
-                        }
-                        .tint(.red)
-                        .accessibilityIdentifier("entry-delete-\(entry.id.uuidString)")
-                        Button("수정", systemImage: "pencil") {
-                            onEdit(entry.id)
-                        }
-                        .tint(EntryAppearance.accent)
-                        .accessibilityIdentifier("entry-edit-\(entry.id.uuidString)")
-                    }
-                    .disabled(isDeleting)
-                    if !entry.isActive || entry.id != entries.last?.id {
-                        EntryAppearance.separator
-                            .frame(height: 1)
-                            .offset(y: entry.isActive ? -3 : 0)
-                    }
+    func section(_ title: String, entries: [ExperimentListEntry]) -> some View {
+        Section(title) {
+            ForEach(entries) { entry in
+                HomeExperimentRow(entry: entry) {
+                    onSelect(entry.id)
                 }
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    Button("삭제", systemImage: "trash") {
+                        onDelete(entry.id)
+                    }
+                    .tint(.red)
+                    .accessibilityIdentifier("entry-delete-\(entry.id.uuidString)")
+                    Button("수정", systemImage: "pencil") {
+                        onEdit(entry.id)
+                    }
+                    .accessibilityIdentifier("entry-edit-\(entry.id.uuidString)")
+                }
+                .disabled(isDeleting)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

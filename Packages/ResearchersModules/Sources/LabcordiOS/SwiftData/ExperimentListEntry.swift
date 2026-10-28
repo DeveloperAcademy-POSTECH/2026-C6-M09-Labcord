@@ -1,7 +1,6 @@
 import Foundation
 import LabcordShared
 
-/// 저장 객체를 화면과 비동기 Feature에 직접 전달하지 않는 목록 값입니다.
 nonisolated public struct ExperimentListEntry: Equatable, Identifiable, Sendable {
     public let id: UUID
     public let title: String

@@ -11,12 +11,11 @@ struct HomeExperimentRow: View {
                 VStack(alignment: .leading, spacing: 0) {
                     Text(entry.title)
                         .font(.body)
-                        .foregroundStyle(EntryAppearance.text)
                         .lineLimit(1)
 
                     Text(Self.dateFormatter.string(from: entry.createdAt))
                         .font(.subheadline)
-                        .foregroundStyle(EntryAppearance.secondaryText)
+                        .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -25,14 +24,10 @@ struct HomeExperimentRow: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: true, vertical: false)
 
-                Image("EntryChevronSampled")
-                    .renderingMode(.template)
-                    .interpolation(.none)
-                    .resizable()
-                    .frame(width: 11, height: 20)
-                    .foregroundStyle(EntryAppearance.secondarySymbol)
+                Image(systemName: "chevron.right")
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
             }
-            .frame(minHeight: EntryAppearance.rowHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

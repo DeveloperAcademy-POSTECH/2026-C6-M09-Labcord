@@ -13,8 +13,5 @@ struct ExperimentEntryView: View {
                     store: store.scope(state: \.registration, action: \.registration)
                 )
             }
-            .tint(EntryAppearance.text)
-            .preferredColorScheme(.light)
-            .statusBarHidden()
     }
 }
