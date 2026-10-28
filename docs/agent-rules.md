@@ -27,6 +27,32 @@ docs/agent-rules/
 에이전트를 쓰지 않는 팀원은 기존 Xcode·Git 작업을 그대로 할 수 있습니다.
 이 파일들은 hook·자동 실행·패키지 설치·CI 변경을 추가하지 않습니다.
 
+## Rules·Skills를 나눈 이유와 작업 흐름
+
+[이슈 #32](https://github.com/DeveloperAcademy-POSTECH/2026-C6-M09-Labcord/issues/32)는 항상 적용할 최소 공통 규칙과
+특정 작업에 필요한 상세 절차를 구분하고, 중복과 거대한 단일 지침을 피하도록 요구합니다.
+그래서 `AGENTS.md`는 공통 경계·저장소 진입점과 Skill 선택 안내를 맡고,
+Skills는 작업 조건에 맞춰 읽는 실행 절차를 맡습니다. 이 구분은 이 작업의 설계 요구입니다.
+
+docs는 규칙을 다시 정의하는 곳이 아니라 사용 안내, 프로젝트 사실과 관리 참고자료를 두는 곳입니다.
+현재 세 문서로 나눈 것은 이 자료들의 책임을 구분한 유지보수 구성입니다.
+
+```mermaid
+flowchart TD
+    W["개발 작업"] --> A["AGENTS.md<br/>공통 경계 · 저장소 진입점"]
+    A --> S["작업 조건에 맞는 Skill 선택<br/>code-style · architecture<br/>git-workflow · verify-change"]
+    S --> V["변경 시 필요한 검증<br/>verify-change 기준 · 결과 보고"]
+    A -. "문서 위치가 필요하면" .-> I["docs/agent-rules.md<br/>사용 안내 · 문서 색인"]
+    I -. "프로젝트 사실" .-> C["docs/agent-rules/<br/>project-context.md<br/>경로 · 모듈 · 버전 · 적용 기준"]
+    I -. "관리 참고" .-> M["docs/agent-rules/<br/>maintenance.md<br/>문서 갱신 · 도구 지원 · 검증 절차"]
+    S -. "필요한 사실 확인" .-> C
+    S -. "관련 문서 갱신 · 규칙 관리 시" .-> M
+```
+
+실선은 작업과 변경 검증의 흐름이고 점선은 필요할 때만 읽는 참고 경로입니다.
+모든 Skill·문서를 순서대로 읽으라는 뜻은 아닙니다. 도구별 자동 탐색은 별도로 확인하며,
+관련 문서 갱신은 작업 중 수행하는 절차이지 상시 자동 동기화가 아닙니다.
+
 ## 문서 색인
 
 - [현재 구현과 적용 기준](agent-rules/project-context.md): 경로·모듈·버전·팀 확인 사항
