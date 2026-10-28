@@ -74,10 +74,9 @@ struct ProtocolRegistrationView: View {
             }
             ToolbarItem(placement: .topBarLeading) {
                 EntryRoundButton(
-                    symbol: "chevron.backward",
+                    imageName: "EntryBackSampled",
                     title: "뒤로 가기",
                     size: 44,
-                    symbolSize: 18,
                     action: onBack
                 )
                 .disabled(isSaving)

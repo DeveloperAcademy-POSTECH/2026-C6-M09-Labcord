@@ -23,9 +23,8 @@ struct ExperimentHomeView: View {
         .background(EntryAppearance.background)
         .overlay(alignment: .topTrailing) {
             EntryRoundButton(
-                symbol: "gear",
+                imageName: "EntryGearSampled",
                 title: "설정",
-                symbolSize: 22,
                 action: onSettings
             )
             .accessibilityIdentifier("entry-settings")
@@ -34,7 +33,7 @@ struct ExperimentHomeView: View {
         }
         .overlay(alignment: .bottomTrailing) {
             EntryRoundButton(
-                symbol: "plus",
+                imageName: "EntryPlusSampled",
                 title: "새 실험 추가",
                 isProminent: true,
                 action: onAdd
