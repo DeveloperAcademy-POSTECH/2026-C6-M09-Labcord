@@ -5,55 +5,43 @@ import LabcordShared
 
 @Reducer
 struct CameraCaptureFeature {
-    enum VideoPhase: Equatable {
-        case idle
-        case starting
-        case recording(Date)
-        case preview(URL)
-    }
-
     @ObservableState
     struct State: Equatable {
-        var cameraOwnerID = UUID()
-        var isCameraViewVisible = false
-        var cameraErrorMessage: String?
-        var previewConnector: CameraPreviewConnector?
-        var isCameraSwitching = false
-        var isPhotoCaptureScheduled = false
-        var isCapturingPhoto = false
-        var capturedPhotoData: Data?
-        var isPhotoGestureArmed = false
-        var videoPhase: VideoPhase = .idle
-        var videoSessionID = UUID()
+        var camera = CameraFeature.State()
+        var photo = PhotoFeature.State()
+        var video = VideoFeature.State()
+
+        var isCameraViewVisible: Bool { camera.isViewVisible }
+        var previewConnector: CameraPreviewConnector? { camera.previewConnector }
+        var isCameraSwitching: Bool { camera.isSwitching }
+        var isPhotoCaptureScheduled: Bool { photo.isScheduled }
+        var isCapturingPhoto: Bool { photo.isCapturing }
+        var capturedPhotoData: Data? { photo.capturedData }
+        var videoPhase: VideoFeature.Phase { video.phase }
+        var cameraErrorMessage: String? {
+            camera.errorMessage ?? photo.errorMessage ?? video.errorMessage
+        }
     }
 
     enum Action: Equatable {
+        case camera(CameraFeature.Action)
+        case photo(PhotoFeature.Action)
+        case video(VideoFeature.Action)
+        case delegate(Delegate)
         case cameraViewAppeared
         case cameraViewDisappeared
         case cameraActivationRequested
         case prepareVideoRecordingRequested
-        case delegate(Delegate)
-        case cameraStarted(UUID, CameraPreviewConnector)
         case cameraSwitchRequested
-        case cameraSwitched(CameraPreviewConnector)
-        case cameraStartFailed(UUID, String)
-        case cameraSwitchFailed(String)
         case cameraErrorDismissed
-        case handEvent(CameraHandEvent)
         case photoGestureEvent(CameraHandEvent)
         case cancelPhotoGesture
         case voiceButtonTapped
         case photoButtonTapped
         case videoButtonTapped
         case videoRecordRequested
-        case videoStarted(UUID, Date)
-        case videoRecorded(UUID, URL)
-        case videoRecordingFailed(UUID, String)
         case videoRetakeRequested
-        case photoCaptureDelayElapsed
         case photoCaptureRequested
-        case photoCaptured(Data)
-        case photoCaptureFailed(String)
         case retakeRequested
     }
 
@@ -65,161 +53,86 @@ struct CameraCaptureFeature {
         case videoRequested
     }
 
-    private nonisolated enum CancelID: Hashable, Sendable {
-        case handTracking
-        case photoCaptureDelay
-        case videoRecording
-    }
-
-    private func cancelScheduledPhoto(in state: inout State) -> Effect<Action> {
-        state.isPhotoCaptureScheduled = false
-        return .cancel(id: CancelID.photoCaptureDelay)
-    }
-
-    @Dependency(\.cameraSessionClient) var cameraSessionClient
-
     var body: some Reducer<State, Action> {
+        Scope(state: \.camera, action: \.camera) {
+            CameraFeature()
+        }
+
+        Scope(state: \.photo, action: \.photo) {
+            PhotoFeature()
+        }
+
+        Scope(state: \.video, action: \.video) {
+            VideoFeature()
+        }
+
         Reduce { state, action in
             switch action {
             case .cameraViewAppeared:
-                guard !state.isCameraViewVisible else { return .none }
-                state.isCameraViewVisible = true
-                state.cameraOwnerID = UUID()
-                return .none
+                return .send(.camera(.viewAppeared))
 
             case .cameraViewDisappeared:
-                guard state.isCameraViewVisible else { return .none }
-                state.isCameraViewVisible = false
-                state.isPhotoGestureArmed = false
-                let videoURL: URL?
-                if case let .preview(url) = state.videoPhase {
-                    videoURL = url
-                } else {
-                    videoURL = nil
-                }
-                state.videoPhase = .idle
-                state.videoSessionID = UUID()
-                let ownerID = state.cameraOwnerID
                 return .merge(
-                    .cancel(id: CancelID.handTracking),
-                    .cancel(id: CancelID.videoRecording),
-                    cancelScheduledPhoto(in: &state),
-                    .run { _ in
-                        await cameraSessionClient.cancelVideoRecording()
-                        if let videoURL { await cameraSessionClient.discardVideo(videoURL) }
-                    },
-                    .run { _ in await cameraSessionClient.deactivate(ownerID) }
+                    .send(.camera(.viewDisappeared)),
+                    .send(.photo(.cancelGesture)),
+                    .send(.video(.cancelRequested))
                 )
-
-            case .prepareVideoRecordingRequested:
-                guard state.isCameraViewVisible else { return .none }
-                return .run { _ in
-                    try? await cameraSessionClient.prepareVideoRecording()
-                }
 
             case .cameraActivationRequested:
-                guard state.isCameraViewVisible else { return .none }
-                let ownerID = state.cameraOwnerID
-                return .run { send in
-                    do {
-                        try await cameraSessionClient.activate(ownerID)
-                        let connector = await cameraSessionClient.previewConnector()
-                        await send(.cameraStarted(ownerID, connector))
-                    } catch let error as PermissionAccessError {
-                        await send(.delegate(.permissionAccessFailed(error.kind)))
-                    } catch {
-                        await send(.cameraStartFailed(ownerID, error.localizedDescription))
-                    }
-                }
+                return .send(.camera(.activationRequested))
 
-            case let .cameraStarted(ownerID, connector):
-                guard state.isCameraViewVisible, ownerID == state.cameraOwnerID else {
-                    return .run { _ in await cameraSessionClient.deactivate(ownerID) }
-                }
-                state.cameraErrorMessage = nil
-                state.previewConnector = connector
-                return .run { send in
-                    for await event in await cameraSessionClient.handEvents() {
-                        await send(.handEvent(event))
-                    }
-                }
-                .cancellable(id: CancelID.handTracking, cancelInFlight: true)
+            case .prepareVideoRecordingRequested:
+                guard state.camera.isViewVisible else { return .none }
+                return .send(.video(.prepareRequested))
 
             case .cameraSwitchRequested:
-                guard state.previewConnector != nil, !state.isCameraSwitching,
-                      !state.isCapturingPhoto, state.capturedPhotoData == nil,
-                      state.videoPhase == .idle else { return .none }
-                state.isCameraSwitching = true
-                state.isPhotoGestureArmed = false
+                guard state.camera.previewConnector != nil,
+                      !state.camera.isSwitching,
+                      !state.photo.isCapturing,
+                      state.photo.capturedData == nil,
+                      state.video.phase == .idle else { return .none }
                 return .merge(
-                    cancelScheduledPhoto(in: &state),
-                    .run { send in
-                        do {
-                            try await cameraSessionClient.switchCamera()
-                            let connector = await cameraSessionClient.previewConnector()
-                            await send(.cameraSwitched(connector))
-                        } catch {
-                            await send(.cameraSwitchFailed(error.localizedDescription))
-                        }
-                    }
+                    .send(.photo(.cancelGesture)),
+                    .send(.camera(.switchRequested))
                 )
 
-            case let .cameraSwitched(connector):
-                state.isCameraSwitching = false
-                state.cameraErrorMessage = nil
-                state.previewConnector = connector
-                return .none
-
-            case let .cameraStartFailed(ownerID, message):
-                guard state.isCameraViewVisible,
-                        ownerID == state.cameraOwnerID else { return .none }
-                state.cameraErrorMessage = message
-                return .none
-
-            case let .cameraSwitchFailed(message):
-                state.isCameraSwitching = false
-                state.cameraErrorMessage = message
-                return .none
-
             case .cameraErrorDismissed:
-                state.cameraErrorMessage = nil
-                return .none
+                return .merge(
+                    .send(.camera(.errorDismissed)),
+                    .send(.photo(.errorDismissed)),
+                    .send(.video(.errorDismissed))
+                )
 
-            case let .handEvent(event):
-                if case .oneFingerHeld = event { state.isPhotoGestureArmed = false }
+            case let .camera(.delegate(.permissionAccessFailed(kind))),
+                 let .video(.delegate(.permissionAccessFailed(kind))):
+                return .send(.delegate(.permissionAccessFailed(kind)))
+
+            case let .camera(.delegate(.handEvent(event))):
+                if case .oneFingerHeld = event {
+                    return .merge(
+                        .send(.photo(.disarmGesture)),
+                        .send(.delegate(.handEvent(event)))
+                    )
+                }
                 return .send(.delegate(.handEvent(event)))
 
-            case let .photoGestureEvent(.openHandHeld(detectedAt)):
-                guard state.isCameraViewVisible, state.previewConnector != nil,
-                      !state.isPhotoCaptureScheduled, !state.isCapturingPhoto,
-                      !state.isCameraSwitching, state.capturedPhotoData == nil,
-                      state.videoPhase == .idle,
-                      detectedAt.timeIntervalSinceNow > -0.5 else { return .none }
-                state.isPhotoGestureArmed = true
-                return .none
+            case .photo(.delegate(.captureRequested)):
+                return .send(.delegate(.photoRequested))
 
-            case let .photoGestureEvent(.fistHeld(detectedAt)):
-                let wasArmed = state.isPhotoGestureArmed
-                state.isPhotoGestureArmed = false
-                guard state.isCameraViewVisible, state.previewConnector != nil,
-                      !state.isPhotoCaptureScheduled, !state.isCapturingPhoto,
-                      !state.isCameraSwitching, state.capturedPhotoData == nil,
-                      state.videoPhase == .idle,
-                      wasArmed,
-                      detectedAt.timeIntervalSinceNow > -0.5 else { return .none }
-                state.isPhotoCaptureScheduled = true
-                return .run { send in
-                    try await Task.sleep(for: .seconds(5))
-                    await send(.photoCaptureDelayElapsed)
+            case let .photoGestureEvent(event):
+                guard state.camera.isViewVisible,
+                      state.camera.previewConnector != nil,
+                      !state.camera.isSwitching,
+                      state.video.phase == .idle else {
+                    if case .fistHeld = event {
+                        return .send(.photo(.disarmGesture))
+                    }
+                    return .none
                 }
-                .cancellable(id: CancelID.photoCaptureDelay, cancelInFlight: true)
-
-            case .photoGestureEvent:
-                return .none
+                return .send(.photo(.gestureEvent(event)))
 
             case .cancelPhotoGesture:
-                state.isPhotoGestureArmed = false
-                return cancelScheduledPhoto(in: &state)
+                return .send(.photo(.cancelGesture))
 
             case .voiceButtonTapped:
                 return .send(.delegate(.voiceRequested))
@@ -231,101 +144,36 @@ struct CameraCaptureFeature {
                 return .send(.delegate(.videoRequested))
 
             case .videoRecordRequested:
-                guard state.isCameraViewVisible, state.previewConnector != nil,
-                      !state.isCameraSwitching, !state.isCapturingPhoto,
-                      !state.isPhotoCaptureScheduled, state.capturedPhotoData == nil,
-                      state.videoPhase == .idle else { return .none }
-                state.isPhotoGestureArmed = false
-                state.videoSessionID = UUID()
-                state.videoPhase = .starting
-                let id = state.videoSessionID
-                return .run { send in
-                    do {
-                        let url = try await cameraSessionClient.recordVideo {
-                            Task { await send(.videoStarted(id, .now)) }
-                        }
-                        guard !Task.isCancelled else {
-                            await cameraSessionClient.discardVideo(url)
-                            return
-                        }
-                        await send(.videoRecorded(id, url))
-                    } catch let error as PermissionAccessError {
-                        await send(.delegate(.permissionAccessFailed(error.kind)))
-                        await send(.videoRecordingFailed(id, error.localizedDescription))
-                    } catch is CancellationError {
-                        return
-                    } catch {
-                        await send(.videoRecordingFailed(id, error.localizedDescription))
-                    }
-                }
-                .cancellable(id: CancelID.videoRecording, cancelInFlight: true)
-
-            case let .videoStarted(id, startedAt):
-                guard id == state.videoSessionID,
-                        state.videoPhase == .starting else { return .none }
-                state.videoPhase = .recording(startedAt)
-                return .none
-
-            case let .videoRecorded(id, url):
-                guard id == state.videoSessionID, state.isCameraViewVisible else {
-                    return .run { _ in await cameraSessionClient.discardVideo(url) }
-                }
-                state.videoPhase = .preview(url)
-                return .none
-
-            case let .videoRecordingFailed(id, message):
-                guard id == state.videoSessionID,
-                        state.isCameraViewVisible else { return .none }
-                state.videoPhase = .idle
-                state.cameraErrorMessage = message
-                return .none
-
-            case .videoRetakeRequested:
-                guard case let .preview(url) = state.videoPhase else { return .none }
-                state.videoPhase = .idle
-                return .run { _ in await cameraSessionClient.discardVideo(url) }
-
-            case .photoCaptureDelayElapsed:
-                guard state.isPhotoCaptureScheduled else { return .none }
-                return .send(.delegate(.photoRequested))
-
-            case .photoCaptureRequested:
-                guard state.isCameraViewVisible, state.previewConnector != nil,
-                      !state.isCapturingPhoto,
-                      state.capturedPhotoData == nil, !state.isCameraSwitching,
-                      state.videoPhase == .idle else { return .none }
-                let cancelDelay = cancelScheduledPhoto(in: &state)
-                state.isCapturingPhoto = true
+                guard state.camera.isViewVisible,
+                      state.camera.previewConnector != nil,
+                      !state.camera.isSwitching,
+                      !state.photo.isCapturing,
+                      !state.photo.isScheduled,
+                      state.photo.capturedData == nil,
+                      state.video.phase == .idle else { return .none }
                 return .merge(
-                    cancelDelay,
-                    .run { send in
-                        do {
-                            await send(
-                                .photoCaptured(
-                                    try await cameraSessionClient.capturePhoto()
-                                )
-                            )
-                        } catch {
-                            await send(.photoCaptureFailed(error.localizedDescription))
-                        }
-                    }
+                    .send(.photo(.disarmGesture)),
+                    .send(.video(.recordRequested))
                 )
 
-            case let .photoCaptured(data):
-                state.isCapturingPhoto = false
-                if state.isCameraViewVisible { state.capturedPhotoData = data }
-                return .none
+            case .videoRetakeRequested:
+                return .send(.video(.retakeRequested))
 
-            case let .photoCaptureFailed(message):
-                state.isCapturingPhoto = false
-                state.cameraErrorMessage = message
-                return .none
+            case .photoCaptureRequested:
+                guard state.camera.isViewVisible,
+                      state.camera.previewConnector != nil,
+                      !state.camera.isSwitching,
+                      state.video.phase == .idle else { return .none }
+                return .send(.photo(.captureRequested))
 
             case .retakeRequested:
-                state.capturedPhotoData = nil
-                return cancelScheduledPhoto(in: &state)
+                return .send(.photo(.retakeRequested))
 
-            case .delegate:
+            case .photo(.captured):
+                if !state.camera.isViewVisible { state.photo.capturedData = nil }
+                return .none
+
+            case .camera, .photo, .video, .delegate:
                 return .none
             }
         }

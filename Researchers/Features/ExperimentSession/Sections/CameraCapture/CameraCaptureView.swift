@@ -1,5 +1,5 @@
 //
-//  SessionCaptureView.swift
+//  CameraCaptureView.swift
 //  Researchers
 //
 //  Created by 정홍섭 on 10/25/26.
@@ -8,7 +8,7 @@
 import ComposableArchitecture
 import SwiftUI
 
-struct SessionCaptureView: View {
+struct CameraCaptureView: View {
     let store: StoreOf<CameraCaptureFeature>
 
     var body: some View {
@@ -95,7 +95,7 @@ struct SessionCaptureView: View {
 }
 
 #Preview {
-    SessionCaptureView(store: Store(initialState: CameraCaptureFeature.State()) {
+    CameraCaptureView(store: Store(initialState: CameraCaptureFeature.State()) {
         CameraCaptureFeature()
     })
 }

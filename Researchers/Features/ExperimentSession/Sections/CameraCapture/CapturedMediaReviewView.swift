@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct CapturedMediaLayout<Content: View>: View {
+struct CapturedMediaReviewView<Content: View>: View {
     let onRetake: () -> Void
     @ViewBuilder let content: (CGSize) -> Content
 

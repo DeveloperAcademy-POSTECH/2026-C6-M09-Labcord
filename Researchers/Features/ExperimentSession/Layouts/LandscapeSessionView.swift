@@ -20,7 +20,7 @@ struct LandscapeSessionView: View {
                 SessionHeaderView()
 
                 HStack(alignment: .top, spacing: 20) {
-                    SessionCaptureView(store: store)
+                    CameraCaptureView(store: store)
 
                     Spacer()
 

@@ -5,15 +5,18 @@ import SwiftUI
 struct CapturedVideoView: View {
     let onRetake: () -> Void
     @State private var player: AVPlayer
+    @State private var playerItem: AVPlayerItem
     @State private var didFinishPlayback = false
 
     init(videoURL: URL, onRetake: @escaping () -> Void) {
         self.onRetake = onRetake
-        _player = State(initialValue: AVPlayer(url: videoURL))
+        let item = AVPlayerItem(url: videoURL)
+        _playerItem = State(initialValue: item)
+        _player = State(initialValue: AVPlayer(playerItem: item))
     }
 
     var body: some View {
-        CapturedMediaLayout(onRetake: onRetake) { size in
+        CapturedMediaReviewView(onRetake: onRetake) { size in
             VideoPlayer(player: player)
                 .frame(width: size.width * 0.85, height: size.height * 0.72)
                 .background(.black, in: RoundedRectangle(cornerRadius: 16))
@@ -26,10 +29,15 @@ struct CapturedVideoView: View {
         }
         .onAppear { player.play() }
         .onDisappear { player.pause() }
+        .onReceive(playerItem.publisher(for: \.status, options: [.initial, .new])) { status in
+            if status == .readyToPlay {
+                player.play()
+            }
+        }
         .onReceive(
             NotificationCenter.default.publisher(
                 for: AVPlayerItem.didPlayToEndTimeNotification,
-                object: player.currentItem
+                object: playerItem
             )
         ) { _ in
             didFinishPlayback = true
