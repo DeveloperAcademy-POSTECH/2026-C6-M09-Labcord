@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import Foundation
+import SwiftUI
 
 @Reducer
 struct ExperimentEntryFeature {
@@ -244,7 +245,7 @@ struct ExperimentEntryFeature {
             .run { send in
                 do {
                     try await client.delete(identifier)
-                    await send(.deleteSucceeded(identifier))
+                    await send(.deleteSucceeded(identifier), animation: .easeInOut(duration: 0.25))
                 } catch {
                     await send(.deleteFailed(identifier))
                 }
