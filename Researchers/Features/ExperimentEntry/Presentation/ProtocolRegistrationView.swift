@@ -40,7 +40,7 @@ struct ProtocolRegistrationView: View {
                 Button(action: onSkip) {
                     HStack(spacing: 6) {
                         if isSaving {
-                            ProgressView().controlSize(.mini)
+                            EntryLoadingIndicator()
                         }
                         EntryText(
                             isSaving ? "실험을 저장하고 있어요" : "프로토콜 없이 진행",
@@ -83,6 +83,28 @@ struct ProtocolRegistrationView: View {
             }
             .sharedBackgroundVisibility(.hidden)
         }
+    }
+}
+
+private struct EntryLoadingIndicator: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        Group {
+            if reduceMotion {
+                ProgressView()
+            } else {
+                ProgressView()
+                    .phaseAnimator([CGFloat(0.8), 1.15]) { content, scale in
+                        content.scaleEffect(scale)
+                    } animation: { _ in
+                        .easeInOut(duration: 0.8)
+                    }
+            }
+        }
+        .controlSize(.mini)
+        .frame(width: 18, height: 18)
+        .accessibilityLabel("실험 저장 중")
     }
 }
 
