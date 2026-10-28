@@ -1,4 +1,3 @@
-import CoreText
 import Foundation
 import SwiftUI
 
@@ -59,51 +58,6 @@ enum EntryAppearance {
     static func label(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
         .system(size: size, weight: weight)
     }
-
-    static func labelText(_ value: String, style: EntryText.Style) -> Text {
-        let registered = registeredFonts
-        var content = AttributedString(value)
-        content.font = label(style.size, weight: style == .headline ? .semibold : .regular)
-        for index in content.characters.indices {
-            let character = content.characters[index]
-            let end = content.characters.index(after: index)
-            if containsHangul(String(character)), registered {
-                let name = style == .headline ? "Medium" : "Regular"
-                content[index..<end].font = .custom(
-                    "LabcordEntryHangul-\(name)", fixedSize: style.size
-                )
-                content[index..<end].tracking = style.tracking
-            }
-        }
-        return Text(content)
-    }
-
-    static func containsHangul(_ value: String) -> Bool {
-        value.unicodeScalars.contains { scalar in
-            switch scalar.value {
-            case 0x1100...0x11FF, 0x3130...0x318F, 0xA960...0xA97F,
-                 0xAC00...0xD7A3, 0xD7B0...0xD7FF, 0xFFA0...0xFFDC:
-                true
-            default:
-                false
-            }
-        }
-    }
-
-    static func baselineOffset(_ value: String, style: EntryText.Style) -> CGFloat {
-        registeredFonts && containsHangul(value) ? style.baselineOffset : 0
-    }
-
-    private static let registeredFonts: Bool = {
-        for style in ["Regular", "Medium"] {
-            guard let url = Bundle.main.url(
-                forResource: "LabcordEntryHangul-\(style)", withExtension: "ttf"
-            ), CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil) else {
-                return false
-            }
-        }
-        return true
-    }()
 }
 
 struct EntryRoundButton: View {

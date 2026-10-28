@@ -90,7 +90,7 @@ flowchart LR
 `EntryRoundButton`, `ProtocolRegistrationView` 내부 입력 항목·다음 버튼입니다.
 표시 컴포넌트는 Store와 ModelContext를 참조하지 않고 값과 콜백을 받습니다.
 따라서 교체 시 Feature·저장소·UUID 이벤트 계약은 유지할 수 있습니다.
-한글 폰트 자원·출처·재현 방법과 베이스라인 근거는 [폰트 매핑 안내](entry-fonts.md)에 있습니다.
+시스템 기본 폰트의 크기·굵기·교체 경계는 [폰트 안내](entry-fonts.md)에 있습니다.
 원본 아이콘 벡터의 출처·배치와 교체 경계는 [아이콘 안내](entry-symbols.md)에 있습니다.
 기본 Text 유지와 OS 글자 렌더링 차이의 허용 범위는 [화면 검수 기준](entry-verification.md#화면-검수-기준)을 따릅니다.
 
