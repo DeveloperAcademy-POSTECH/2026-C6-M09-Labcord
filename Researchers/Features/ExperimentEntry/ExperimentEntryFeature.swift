@@ -8,7 +8,6 @@ struct ExperimentEntryFeature {
     struct State: Equatable {
         var entries: [ExperimentListEntry] = []
         var isRegistering = false
-        var isLoading = false
         var isSaving = false
         var isDeleting = false
         var pendingDeletion: ExperimentListEntry?
@@ -48,7 +47,6 @@ struct ExperimentEntryFeature {
         case sourceTapped(ProtocolSource)
         case settingsTapped
         case delegate(Delegate)
-
     }
 
     nonisolated enum Delegate: Equatable, Sendable {
@@ -59,7 +57,7 @@ struct ExperimentEntryFeature {
         case settingsRequested
     }
 
-    @Dependency(\.experimentEntryClient) var client
+    @Dependency(\.experimentEntryClient) var experimentEntryClient
     @Dependency(\.uuid) var uuid
     @Dependency(\.date.now) var now
 
@@ -72,13 +70,14 @@ struct ExperimentEntryFeature {
             switch action {
             case .load:
                 guard !state.isSaving, !state.isDeleting else { return .none }
-                if state.failure == .loading { state.failure = nil }
-                state.isLoading = true
+                if state.failure == .loading {
+                    state.failure = nil
+                }
                 state.loadRevision += 1
                 let revision = state.loadRevision
                 return .run { send in
                     do {
-                        let entries = try await client.load()
+                        let entries = try await experimentEntryClient.load()
                         await send(.loaded(revision, .success(entries)))
                     } catch {
                         await send(.loaded(revision, .failure(.loading)))
@@ -88,7 +87,6 @@ struct ExperimentEntryFeature {
 
             case let .loaded(revision, result):
                 guard revision == state.loadRevision else { return .none }
-                state.isLoading = false
                 switch result {
                 case let .success(entries):
                     state.entries = entries.sorted(by: ExperimentListEntry.newestFirst)
@@ -120,17 +118,16 @@ struct ExperimentEntryFeature {
                 let identifier = state.pendingID ?? uuid()
                 state.pendingID = identifier
                 state.isSaving = true
-                state.isLoading = false
                 state.loadRevision += 1
                 let date = now
                 return .concatenate(
                     .cancel(id: CancelID.load),
                     .run { send in
                         do {
-                            let entry = try await client.create(identifier, date)
+                            let entry = try await experimentEntryClient.create(identifier, date)
                             let refreshedEntries: Result<[ExperimentListEntry], Failure>
                             do {
-                                refreshedEntries = .success(try await client.load())
+                                refreshedEntries = .success(try await experimentEntryClient.load())
                             } catch {
                                 refreshedEntries = .failure(.loading)
                             }
@@ -169,8 +166,10 @@ struct ExperimentEntryFeature {
             case let .retryTapped(failure):
                 state.failure = nil
                 switch failure {
-                case .loading: return .send(.load)
-                case .saving: return .send(.skipTapped)
+                case .loading:
+                    return .send(.load)
+                case .saving:
+                    return .send(.skipTapped)
                 case .deleting:
                     guard let identifier = state.deletionID else { return .none }
                     return delete(identifier, state: &state)
@@ -238,13 +237,12 @@ struct ExperimentEntryFeature {
               state.entries.contains(where: { $0.id == identifier }) else { return .none }
         state.isDeleting = true
         state.deletionID = identifier
-        state.isLoading = false
         state.loadRevision += 1
         return .concatenate(
             .cancel(id: CancelID.load),
             .run { send in
                 do {
-                    try await client.delete(identifier)
+                    try await experimentEntryClient.delete(identifier)
                     await send(.deleteSucceeded(identifier), animation: .easeInOut(duration: 0.25))
                 } catch {
                     await send(.deleteFailed(identifier))
