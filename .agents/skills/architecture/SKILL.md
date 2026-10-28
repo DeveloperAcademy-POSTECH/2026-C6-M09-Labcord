@@ -30,7 +30,7 @@ Feature 구성·화면 연결·의존성, 저장소, WatchConnectivity 또는 �
 
 ## 절차
 
-1. [현재 구현과 적용 기준](../../../docs/agent-rules.md#현재-구현과-적용-기준)을 보고 영향받는 기기를 식별합니다.
+1. [현재 구현과 적용 기준](../../../docs/agent-rules/project-context.md#현재-구현과-적용-기준)을 보고 영향받는 기기를 식별합니다.
 2. View·Feature·기기별 Client·공유 모델/메시지 중 어느 책임인지 정합니다.
    `Packages/ResearchersModules/Package.swift`와 관련 소스의 기존 구현을 먼저 확인합니다.
 3. TCA 작업은 State·Action·Reducer와 의존성 경계를 확인합니다.

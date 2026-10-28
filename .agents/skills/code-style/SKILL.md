@@ -26,7 +26,7 @@ Swift 코드 작성·수정·스타일 리뷰에 사용합니다. 문서만 수�
 
 ## 절차
 
-1. 변경 파일과 주변 코드를 읽고 [현재 구현과 적용 기준](../../../docs/agent-rules.md#현재-구현과-적용-기준)을 확인합니다.
+1. 변경 파일과 주변 코드를 읽고 [현재 구현과 적용 기준](../../../docs/agent-rules/project-context.md#현재-구현과-적용-기준)을 확인합니다.
 2. 스타일 수정과 동작 변경을 구분하고 관련 없는 파일의 포맷을 함께 바꾸지 않습니다.
 3. `.swiftlint.yml`의 실제 설정을 읽습니다. 현재 `empty_count`, `first_where`,
    `sorted_imports`, `trailing_closure`, `closure_spacing`이 opt-in이며,

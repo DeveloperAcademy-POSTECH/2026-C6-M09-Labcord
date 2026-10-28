@@ -11,7 +11,8 @@ fi
 root=$(cd "${1:-$(dirname "$0")/../../../..}" && pwd -P)
 failures=0
 skills=0
-documents=("$root/AGENTS.md" "$root/docs/agent-rules.md")
+documents=("$root/AGENTS.md" "$root/docs/agent-rules.md"
+    "$root/docs/agent-rules/project-context.md" "$root/docs/agent-rules/maintenance.md")
 
 fail() {
     printf '%s\n' "$1" >&2
