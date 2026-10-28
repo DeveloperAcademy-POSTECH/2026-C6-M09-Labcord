@@ -62,12 +62,3 @@ fastlane/screenshots/**/*.png
 fastlane/test_output
 
 .DS_Store
-
-# Temporary agent guidance from PR #33
-/AGENTS.md
-/.agents/skills/code-style/
-/.agents/skills/architecture/
-/.agents/skills/verify-change/
-/.agents/skills/git-workflow/
-/docs/agent-rules.md
-/.local/agent-rules-pr33/
