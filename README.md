@@ -5,5 +5,4 @@
 
 - [앱 흐름과 다이어그램](docs/app-flow.md)
 - [기존 구현·PR 반영 순서와 작업 근거](docs/implementation-audit.md)
-- [홈·프로토콜 없는 실험 등록과 디자인시스템 교체](docs/experiment-entry.md)
-- [시뮬레이터 검증 결과와 화면 검수 기준](docs/entry-verification.md)
+- [홈·실험 등록·수정/삭제 연결과 디자인시스템 교체·검증](docs/experiment-entry.md)
