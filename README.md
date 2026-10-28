@@ -44,9 +44,3 @@ Swift · SwiftUI · WatchKit · SwiftData · SwiftPackage · App Intent · Visio
 | Tech | Theo, Devin, Won |
 | Design | Blair, Rin, Won |
 | UX Writing | Lawrence |
-
----
-
-## App Store
-
-[TestFlight에서 LabCord 체험하기](https://testflight.apple.com/join/XhM3Axgk)
