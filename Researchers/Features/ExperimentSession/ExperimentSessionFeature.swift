@@ -210,8 +210,6 @@ struct ExperimentSessionFeature {
             case .permissions(.microphoneStatusUpdated(.authorized)):
                 guard state.isCameraViewVisible else { return .none }
                 return .run { _ in
-                    // Permission may arrive after the camera preview is already running.
-                    // Prepare its audio/video connections now, before a recording begins.
                     try? await cameraSessionClient.prepareVideoRecording()
                 }
 
@@ -357,7 +355,8 @@ struct ExperimentSessionFeature {
                 .cancellable(id: CancelID.videoRecording, cancelInFlight: true)
 
             case let .videoStarted(id, startedAt):
-                guard id == state.videoSessionID, state.videoPhase == .starting else { return .none }
+                guard id == state.videoSessionID,
+                        state.videoPhase == .starting else { return .none }
                 state.videoPhase = .recording(startedAt)
                 return .none
 
@@ -369,7 +368,8 @@ struct ExperimentSessionFeature {
                 return .none
 
             case let .videoRecordingFailed(id, message):
-                guard id == state.videoSessionID, state.isCameraViewVisible else { return .none }
+                guard id == state.videoSessionID,
+                        state.isCameraViewVisible else { return .none }
                 state.videoPhase = .idle
                 state.cameraErrorMessage = message
                 return .none
@@ -387,14 +387,19 @@ struct ExperimentSessionFeature {
                 guard state.isCameraViewVisible, state.previewConnector != nil,
                       !state.isCapturingPhoto,
                       state.capturedPhotoData == nil, !state.isCameraSwitching,
-                      state.voicePhase == .hidden, state.videoPhase == .idle else { return .none }
+                      state.voicePhase == .hidden,
+                        state.videoPhase == .idle else { return .none }
                 let cancelDelay = cancelScheduledPhoto(in: &state)
                 state.isCapturingPhoto = true
                 return .merge(
                     cancelDelay,
                     .run { send in
                         do {
-                            await send(.photoCaptured(try await cameraSessionClient.capturePhoto()))
+                            await send(
+                                .photoCaptured(
+                                    try await cameraSessionClient.capturePhoto()
+                                )
+                            )
                         } catch {
                             await send(.photoCaptureFailed(error.localizedDescription))
                         }
@@ -417,7 +422,8 @@ struct ExperimentSessionFeature {
 
             case .voiceButtonTapped:
                 guard state.voicePhase == .hidden, state.isCameraViewVisible,
-                      state.capturedPhotoData == nil, state.videoPhase == .idle else { return .none }
+                      state.capturedPhotoData == nil,
+                        state.videoPhase == .idle else { return .none }
                 state.isPhotoGestureArmed = false
                 state.voiceTranscript = ""
                 state.voiceRecording = nil
@@ -452,17 +458,20 @@ struct ExperimentSessionFeature {
                 .cancellable(id: CancelID.voiceStream, cancelInFlight: true)
 
             case let .voiceStarted(id):
-                guard id == state.voiceSessionID, state.voicePhase == .starting else { return .none }
+                guard id == state.voiceSessionID,
+                        state.voicePhase == .starting else { return .none }
                 state.voicePhase = .recording
                 return .none
 
             case let .voiceStartPermissionFailed(id):
-                guard id == state.voiceSessionID, state.voicePhase == .starting else { return .none }
+                guard id == state.voiceSessionID,
+                        state.voicePhase == .starting else { return .none }
                 state.voicePhase = .hidden
                 return .none
 
             case let .voiceStartFailed(id, message):
-                guard id == state.voiceSessionID, state.voicePhase == .starting else { return .none }
+                guard id == state.voiceSessionID,
+                        state.voicePhase == .starting else { return .none }
                 state.voicePhase = .hidden
                 state.voiceErrorMessage = message
                 return .none
@@ -495,7 +504,8 @@ struct ExperimentSessionFeature {
                 .cancellable(id: CancelID.voiceStop, cancelInFlight: true)
 
             case let .voiceStopped(id, recording):
-                guard id == state.voiceSessionID, state.voicePhase == .stopping else { return .none }
+                guard id == state.voiceSessionID,
+                        state.voicePhase == .stopping else { return .none }
                 if let recording {
                     state.voiceRecording = recording
                     state.voiceTranscript = recording.transcript
