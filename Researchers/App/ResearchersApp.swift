@@ -20,6 +20,5 @@ struct ResearchersApp: App {
                 ExperimentEntryView(store: store)
             }
         }
-        .persistentSystemOverlays(.hidden)
     }
 }
