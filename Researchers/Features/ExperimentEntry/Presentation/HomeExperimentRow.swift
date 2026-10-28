@@ -9,18 +9,21 @@ struct HomeExperimentRow: View {
         Button(action: onSelect) {
             HStack(spacing: 16) {
                 VStack(alignment: .leading, spacing: 0) {
-                    EntryText(entry.title, style: .body)
+                    Text(entry.title)
+                        .font(.body)
                         .foregroundStyle(EntryAppearance.text)
                         .lineLimit(1)
 
                     Text(Self.dateFormatter.string(from: entry.createdAt))
-                        .font(EntryAppearance.label(15))
+                        .font(.subheadline)
                         .foregroundStyle(EntryAppearance.secondaryText)
-                        .frame(height: 20)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                EntryStatusBadge(title: entry.statusTitle, status: entry.status)
+                Text(entry.statusTitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: true, vertical: false)
 
                 Image("EntryChevronSampled")
                     .renderingMode(.template)
@@ -44,46 +47,4 @@ struct HomeExperimentRow: View {
         formatter.dateFormat = "yyyy.MM.dd"
         return formatter
     }()
-}
-
-private struct EntryStatusBadge: View {
-    let title: String
-    let status: ExperimentListEntry.Status
-
-    var body: some View {
-        EntryText(title, style: .subheadline)
-            .foregroundStyle(foreground)
-            .offset(x: status == .inProgress ? 0 : -1 / 3)
-            .fixedSize(horizontal: true, vertical: false)
-            .frame(width: textWidth, height: 20)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(background, in: RoundedRectangle(cornerRadius: 4, style: .circular))
-    }
-
-    private var textWidth: CGFloat {
-        switch status {
-        case .inProgress: 45
-        case .paused: 59
-        case .preparing, .completed: 28
-        }
-    }
-
-    private var foreground: Color {
-        switch status {
-        case .inProgress: Color(red: 52 / 255, green: 199 / 255, blue: 89 / 255)
-        case .paused: EntryAppearance.accent
-        case .preparing: Color(red: 1, green: 141 / 255, blue: 40 / 255)
-        case .completed: Color(red: 60 / 255, green: 60 / 255, blue: 67 / 255).opacity(0.6)
-        }
-    }
-
-    private var background: Color {
-        switch status {
-        case .inProgress: Color(red: 236 / 255, green: 252 / 255, blue: 240 / 255)
-        case .paused: Color(red: 157 / 255, green: 196 / 255, blue: 1).opacity(0.2)
-        case .preparing: Color(red: 1, green: 219 / 255, blue: 76 / 255).opacity(0.2)
-        case .completed: Color(white: 120 / 255).opacity(0.2)
-        }
-    }
 }

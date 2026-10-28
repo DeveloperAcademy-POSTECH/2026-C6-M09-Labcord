@@ -36,10 +36,8 @@ struct ProtocolRegistrationView: View {
                         if store.isSaving {
                             EntryLoadingIndicator()
                         }
-                        EntryText(
-                            store.isSaving ? "실험을 저장하고 있어요" : "프로토콜 없이 진행",
-                            style: .caption
-                        )
+                        Text(store.isSaving ? "실험을 저장하고 있어요" : "프로토콜 없이 진행")
+                            .font(.caption)
                         .offset(x: -0.5, y: 2)
                     }
                     .frame(maxWidth: .infinity, minHeight: 44)
@@ -71,7 +69,8 @@ struct ProtocolRegistrationView: View {
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .principal) {
-                EntryText("실험 등록", style: .title)
+                Text("실험 등록")
+                    .font(.title3)
                     .foregroundStyle(EntryAppearance.text)
                     .offset(x: -2 / 3, y: 4 + 1 / 3)
             }
@@ -121,10 +120,12 @@ private struct ProtocolSourceOption: View {
     var body: some View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 4) {
-                EntryText(title, style: .headline)
+                Text(title)
+                    .font(.headline)
 
                 if let subtitle {
-                    EntryText(subtitle, style: .footnote)
+                    Text(subtitle)
+                        .font(.footnote)
                 }
             }
             .foregroundStyle(EntryAppearance.text)
@@ -143,12 +144,13 @@ private struct ProtocolSourceOption: View {
 private struct EntryNextButton: View {
     var body: some View {
         Button {} label: {
-            EntryText("다음", style: .body)
+            Text("다음")
+                .font(.body)
                 .foregroundStyle(EntryAppearance.disabledText)
                 .frame(maxWidth: .infinity, minHeight: 50)
                 .background(EntryAppearance.disabledFill, in: Capsule())
         }
-        .buttonStyle(EntryButtonStyle())
+        .buttonStyle(.plain)
         .disabled(true)
         .accessibilityIdentifier("entry-next")
     }

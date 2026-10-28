@@ -56,7 +56,8 @@ private extension ExperimentHomeView {
         rowGap: CGFloat
     ) -> some View {
         VStack(alignment: .leading, spacing: rowGap) {
-            EntryText(title, style: .headline)
+            Text(title)
+                .font(.headline)
                 .foregroundStyle(EntryAppearance.text)
 
             VStack(spacing: 0) {
