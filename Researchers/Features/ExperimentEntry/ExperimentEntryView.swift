@@ -5,16 +5,14 @@ struct ExperimentEntryView: View {
     @Bindable var store: StoreOf<ExperimentEntryFeature>
 
     var body: some View {
-        NavigationStack {
-            HomeView(store: store.scope(state: \.home, action: \.home))
-                .navigationDestination(
-                    isPresented: $store.isRegistering.sending(\.registrationPresented)
-                ) {
-                    ProtocolRegistrationView(
-                        store: store.scope(state: \.registration, action: \.registration)
-                    )
-                }
-        }
+        HomeView(store: store.scope(state: \.home, action: \.home))
+            .navigationDestination(
+                isPresented: $store.isRegistering.sending(\.registrationPresented)
+            ) {
+                ProtocolRegistrationView(
+                    store: store.scope(state: \.registration, action: \.registration)
+                )
+            }
         .tint(EntryAppearance.text)
         .preferredColorScheme(.light)
         .statusBarHidden()

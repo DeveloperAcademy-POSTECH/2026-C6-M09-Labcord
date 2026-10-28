@@ -16,7 +16,9 @@ struct ResearchersApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ExperimentEntryView(store: store)
+            NavigationStack {
+                ExperimentEntryView(store: store)
+            }
         }
         .persistentSystemOverlays(.hidden)
     }
