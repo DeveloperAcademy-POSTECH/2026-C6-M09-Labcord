@@ -57,7 +57,7 @@ flowchart TD
 부모가 해당 이벤트에서 Entry 상태를 제거하거나 후속 화면으로 전환할 수 있습니다.
 
 기존 공유 `Experiment` 모델을 변경하지 않습니다. 생성값은 `title = "새 실험"`,
-`status = .preparing`, `procedure = nil`, `startedAt = nil`입니다.
+`status = .preparing`, `mode = .free`, `procedure = nil`, `startedAt = nil`입니다.
 준비 상태 이력은 기존 생성자가 만듭니다. 실패 후 재시도도 같은 UUID를 사용하며,
 저장 중 추가 입력과 뒤로 가기를 막습니다. 취소한 등록은 실험을 만들지 않습니다.
 저장 중 인디케이터는 고정된 18×18pt 영역에서 0.8배→1.15배→0.8배로 반복 표시합니다.
