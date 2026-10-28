@@ -139,6 +139,9 @@ struct HomeFeature {
             case let .deleteSucceeded(identifier):
                 guard state.isDeleting, state.deletionID == identifier else { return .none }
                 state.entries.removeAll { $0.id == identifier }
+                if state.createdEntry?.id == identifier {
+                    state.createdEntry = nil
+                }
                 state.isDeleting = false
                 state.deletionID = nil
                 return .none

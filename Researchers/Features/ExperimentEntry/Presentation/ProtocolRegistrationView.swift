@@ -78,9 +78,10 @@ struct ProtocolRegistrationView: View {
                 EntryRoundButton(
                     imageName: "EntryBackSampled",
                     title: "뒤로 가기",
-                    size: 44,
-                    action: { store.send(.backTapped) }
-                )
+                    size: 44
+                ) {
+                    store.send(.backTapped)
+                }
                 .disabled(store.isSaving)
                 .accessibilityIdentifier("entry-back")
                 .offset(x: -2, y: 5)
