@@ -37,34 +37,91 @@ struct ExperimentSessionView: View {
                                 cornerRadius: verticalSizeClass == .compact ? 15 : 0
                             )
                         )
+                        .overlay(alignment: .topLeading) {
+                            if case let .recording(startedAt) = store.videoPhase {
+                                VideoRecordingIndicator(startedAt: startedAt)
+                                    .padding(.leading, 16)
+                                    .padding(.top, verticalSizeClass == .compact ? 16 : 130)
+                            }
+                        }
                         .position(x: frame.midX, y: frame.midY)
                         .allowsHitTesting(false)
                 }
             }
             .ignoresSafeArea()
         }
+        .overlay {
+            if let data = store.capturedPhotoData {
+                CapturedPhotoView(photoData: data) {
+                    store.send(.retakeRequested)
+                }
+            }
+        }
+        .overlay {
+            if case let .preview(url) = store.videoPhase {
+                CapturedVideoView(videoURL: url) {
+                    store.send(.videoRetakeRequested)
+                }
+            }
+        }
+        .overlay {
+            if store.voicePhase != .hidden {
+                VoiceRecordingOverlay(store: store)
+            }
+        }
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
+            store.send(.cameraViewAppeared)
+            store.send(.permissions(.request))
         }
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
+            store.send(.cameraViewDisappeared)
         }
         .background(.black)
         .alert(
-            "설정 열기 실패",
+            store.permissions.issue == .settingsUnavailable ? "설정 열기 실패" : "권한 안내",
             isPresented: Binding(
-                get: { store.cameraPermission.openSettingsErrorMessage != nil },
-                set: { if !$0 { store.send(.cameraPermission(.openSettingsErrorDismissed)) } }
+                get: { store.permissions.issue != nil },
+                set: { if !$0 { store.send(.permissions(.issueDismissed)) } }
+            )
+        ) {
+            if store.permissions.issue?.canOpenSettings == true {
+                Button("설정 열기") {
+                    store.send(.permissions(.openSettingsTapped))
+                }
+            }
+            Button("확인", role: .cancel) {
+                store.send(.permissions(.issueDismissed))
+            }
+        } message: {
+            Text(store.permissions.issue?.message ?? "")
+        }
+        .alert(
+            "카메라 오류",
+            isPresented: Binding(
+                get: { store.cameraErrorMessage != nil },
+                set: { if !$0 { store.send(.cameraErrorDismissed) } }
             )
         ) {
             Button("확인", role: .cancel) {
-                store.send(.cameraPermission(.openSettingsErrorDismissed))
+                store.send(.cameraErrorDismissed)
             }
         } message: {
-            Text(store.cameraPermission.openSettingsErrorMessage ?? "")
+            Text(store.cameraErrorMessage ?? "")
         }
-        .task {
-            store.send(.cameraPermission(.request))
+        .alert(
+            "음성 기록 오류",
+            isPresented: Binding(
+                get: { store.voiceErrorMessage != nil },
+                set: { if !$0 { store.send(.voiceErrorDismissed) } }
+            )
+        ) {
+            Button("확인", role: .cancel) {
+                store.send(.voiceErrorDismissed)
+            }
+        } message: {
+            Text(store.voiceErrorMessage ?? "")
         }
     }
 }

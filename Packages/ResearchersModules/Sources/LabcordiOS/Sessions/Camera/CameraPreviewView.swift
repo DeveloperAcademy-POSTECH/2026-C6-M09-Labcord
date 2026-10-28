@@ -25,10 +25,16 @@ public struct CameraPreviewView: UIViewRepresentable {
     public func updateUIView(_ uiView: UIViewType, context: Context) {
         guard let view = uiView as? PreviewUIView else { return }
         if view.connector != connector {
-            view.connector?.detach()
+            view.connector?.detach(from: view)
         }
         view.connector = connector
         connector.attach(to: view)
+    }
+
+    public static func dismantleUIView(_ uiView: UIViewType, coordinator: ()) {
+        guard let view = uiView as? PreviewUIView else { return }
+        view.connector?.detach(from: view)
+        view.connector = nil
     }
 }
 

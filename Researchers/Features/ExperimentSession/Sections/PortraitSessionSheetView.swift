@@ -69,7 +69,7 @@ struct PortraitSessionSheetView: View {
 
                 HStack(spacing: 12) {
                     Button {
-
+                        store.send(.voiceButtonTapped)
                     } label: {
                         VStack(spacing: 10) {
                             Image(systemName: "record.circle")
@@ -86,7 +86,7 @@ struct PortraitSessionSheetView: View {
                     .buttonStyle(.plain)
 
                     Button {
-
+                        store.send(.photoCaptureRequested)
                     } label: {
                         VStack(spacing: 10) {
                             Image(systemName: "camera.viewfinder")
@@ -103,7 +103,7 @@ struct PortraitSessionSheetView: View {
                     .buttonStyle(.plain)
 
                     Button {
-
+                        store.send(.videoRecordRequested)
                     } label: {
                         VStack(spacing: 10) {
                             Image(systemName: "video.fill")

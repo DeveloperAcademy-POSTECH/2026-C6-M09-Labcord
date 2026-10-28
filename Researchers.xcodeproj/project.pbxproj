@@ -362,6 +362,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "실험 중 장면을 촬영하고 기록하기 위해 카메라 접근이 필요합니다.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "실험 중 음성을 녹음하고 기록하기 위해 마이크 접근이 필요합니다.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "실험 중 녹음한 음성을 글자로 표시하기 위해 음성 인식 접근이 필요합니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -395,6 +397,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "실험 중 장면을 촬영하고 기록하기 위해 카메라 접근이 필요합니다.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "실험 중 음성을 녹음하고 기록하기 위해 마이크 접근이 필요합니다.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "실험 중 녹음한 음성을 글자로 표시하기 위해 음성 인식 접근이 필요합니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -428,6 +432,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = ResearchWatch;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "실험 중 음성을 녹음하고 기록하기 위해 마이크 접근이 필요합니다.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.researchers.Researchers;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -461,6 +466,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = ResearchWatch;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "실험 중 음성을 녹음하고 기록하기 위해 마이크 접근이 필요합니다.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.researchers.Researchers;
 				LD_RUNPATH_SEARCH_PATHS = (

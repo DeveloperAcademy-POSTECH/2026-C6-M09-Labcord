@@ -42,7 +42,7 @@ struct SessionCaptureView: View {
 
             HStack(spacing: 24) {
                 Button {
-
+                    store.send(.voiceButtonTapped)
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "record.circle")
@@ -58,7 +58,7 @@ struct SessionCaptureView: View {
                 .tint(.white)
 
                 Button {
-
+                    store.send(.photoCaptureRequested)
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "camera.viewfinder")
@@ -74,7 +74,7 @@ struct SessionCaptureView: View {
                 .tint(.white)
 
                 Button {
-
+                    store.send(.videoRecordRequested)
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "video.fill")

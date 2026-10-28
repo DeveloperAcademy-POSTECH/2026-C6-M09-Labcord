@@ -10,11 +10,9 @@ import Foundation
 import UIKit
 
 nonisolated public struct CameraPreviewConnector: @unchecked Sendable {
-    private let session: AVCaptureSession
     private let storage: CameraPreviewStorage
 
     init(session: AVCaptureSession, device: AVCaptureDevice?) {
-        self.session = session
         self.storage = CameraPreviewStorage(session: session, device: device)
     }
 
@@ -24,13 +22,18 @@ nonisolated public struct CameraPreviewConnector: @unchecked Sendable {
     }
 
     @MainActor
-    public func detach() {
-        storage.detach()
+    public func detach(from view: UIView) {
+        storage.detach(from: view)
     }
 
     @MainActor
     public func updateLayout(in view: UIView) {
         storage.updateLayout(in: view)
+    }
+
+    @MainActor
+    public func updateDevice(_ device: AVCaptureDevice) {
+        storage.updateDevice(device)
     }
 }
 
@@ -42,7 +45,7 @@ extension CameraPreviewConnector: Equatable {
 
 nonisolated private final class CameraPreviewStorage: @unchecked Sendable {
     private let session: AVCaptureSession
-    private let device: AVCaptureDevice?
+    private var device: AVCaptureDevice?
 
     @MainActor private var previewLayer: AVCaptureVideoPreviewLayer?
     @MainActor private var rotationCoordinator: AVCaptureDevice.RotationCoordinator?
@@ -70,6 +73,37 @@ nonisolated private final class CameraPreviewStorage: @unchecked Sendable {
         view.clipsToBounds = true
         updateLayout(in: view)
 
+        configureRotationIfNeeded(for: layer)
+    }
+
+    @MainActor
+    func updateDevice(_ device: AVCaptureDevice) {
+        guard self.device !== device else { return }
+        self.device = device
+        rotationObservation = nil
+        rotationCoordinator = nil
+        if let previewLayer {
+            configureRotationIfNeeded(for: previewLayer)
+        }
+    }
+
+    @MainActor
+    func detach(from view: UIView) {
+        guard previewLayer?.superlayer === view.layer else { return }
+        rotationObservation = nil
+        rotationCoordinator = nil
+        previewLayer?.removeFromSuperlayer()
+        previewLayer = nil
+    }
+
+    @MainActor
+    func updateLayout(in view: UIView) {
+        guard let previewLayer, previewLayer.superlayer === view.layer else { return }
+        previewLayer.frame = view.bounds
+    }
+
+    @MainActor
+    private func configureRotationIfNeeded(for layer: AVCaptureVideoPreviewLayer) {
         if rotationCoordinator == nil, let device {
             let coordinator = AVCaptureDevice.RotationCoordinator(
                 device: device,
@@ -91,20 +125,6 @@ nonisolated private final class CameraPreviewStorage: @unchecked Sendable {
         if let rotationCoordinator {
             applyRotation(rotationCoordinator.videoRotationAngleForHorizonLevelPreview)
         }
-    }
-
-    @MainActor
-    func detach() {
-        rotationObservation = nil
-        rotationCoordinator = nil
-        previewLayer?.removeFromSuperlayer()
-        previewLayer = nil
-    }
-
-    @MainActor
-    func updateLayout(in view: UIView) {
-        guard let previewLayer, previewLayer.superlayer === view.layer else { return }
-        previewLayer.frame = view.bounds
     }
 
     @MainActor
