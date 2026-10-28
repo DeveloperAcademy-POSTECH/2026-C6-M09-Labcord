@@ -7,22 +7,14 @@ import SwiftData
 final class ExperimentEntryRepository {
     static let shared = ExperimentEntryRepository()
 
-    private let makeContainer: () throws -> ModelContainer
     private var container: ModelContainer?
 
-    init(makeContainer: @escaping () throws -> ModelContainer = {
-        try ModelContainer(
-            for: Experiment.self, ExperimentRecord.self, Pause.self, ExperimentStatusEntry.self
-        )
-    }) {
-        self.makeContainer = makeContainer
-    }
+    private init() {}
 
     func load() throws -> [ExperimentListEntry] {
         let context = try makeContext()
         return try context.fetch(FetchDescriptor<Experiment>())
             .map(Self.entry)
-            .sorted(by: ExperimentListEntry.newestFirst)
     }
 
     func create(id: UUID, at date: Date) throws -> ExperimentListEntry {
@@ -51,7 +43,9 @@ final class ExperimentEntryRepository {
         if let container {
             storage = container
         } else {
-            storage = try makeContainer()
+            storage = try ModelContainer(
+                for: Experiment.self, ExperimentRecord.self, Pause.self, ExperimentStatusEntry.self
+            )
             container = storage
         }
         let context = ModelContext(storage)
