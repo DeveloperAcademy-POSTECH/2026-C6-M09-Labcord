@@ -11,24 +11,24 @@ import SwiftUI
 struct PortraitSessionView: View {
     let store: StoreOf<ExperimentSessionFeature>
     let timerStore: StoreOf<SessionTimerFeature>
-    
+
     var body: some View {
         GeometryReader { geo in
             let screenHeight = geo.size.height
             + geo.safeAreaInsets.top
             + geo.safeAreaInsets.bottom
-            
+
             ZStack {
                 Color.clear
                     .ignoresSafeArea()
-                
+
                 VStack {
                     SessionHeaderView()
                         .padding(16)
-                    
+
                     Spacer()
                 }
-                
+
                 PortraitSessionSheetView(
                     store: store,
                     timerStore: timerStore,

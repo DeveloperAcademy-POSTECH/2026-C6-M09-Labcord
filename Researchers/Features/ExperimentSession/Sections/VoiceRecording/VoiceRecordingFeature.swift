@@ -18,7 +18,7 @@ struct VoiceRecordingFeature {
         case stopping
         case finished
     }
-    
+
     @ObservableState
     struct State: Equatable {
         var phase: Phase = .hidden
@@ -27,7 +27,7 @@ struct VoiceRecordingFeature {
         var recording: SpeechRecording?
         var errorMessage: String?
     }
-    
+
     enum Action: Equatable {
         case prepareRequested
         case overlayAppeared
@@ -42,7 +42,7 @@ struct VoiceRecordingFeature {
         case closeRequested
         case errorDismissed
     }
-    
+
     private nonisolated enum CancelID: Hashable, Sendable {
         case voiceStream
         case voiceStop
