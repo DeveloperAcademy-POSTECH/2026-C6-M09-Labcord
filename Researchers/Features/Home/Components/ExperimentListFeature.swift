@@ -4,7 +4,7 @@ import LabcordiOS
 import SwiftUI
 
 @Reducer
-struct HomeFeature {
+struct ExperimentListFeature {
     @ObservableState
     struct State: Equatable {
         var entries: [ExperimentListEntry] = []
@@ -26,7 +26,6 @@ struct HomeFeature {
         case loaded(Int, Result<[ExperimentListEntry], Failure>)
         case cancelLoad
         case created(ExperimentListEntry)
-        case addTapped
         case retryTapped(Failure)
         case dismissFailure
         case deleteRequested(UUID)
@@ -36,15 +35,12 @@ struct HomeFeature {
         case deleteFailed(UUID)
         case editTapped(UUID)
         case experimentTapped(UUID)
-        case settingsTapped
         case delegate(Delegate)
     }
 
     nonisolated enum Delegate: Equatable, Sendable {
-        case registrationRequested
         case experimentSelected(UUID)
         case protocolEditRequested(UUID)
-        case settingsRequested
     }
 
     @Dependency(\.experimentClient) var experimentClient
@@ -92,10 +88,6 @@ struct HomeFeature {
             case .cancelLoad:
                 state.loadRevision += 1
                 return .cancel(id: CancelID.load)
-
-            case .addTapped:
-                guard !state.isDeleting, state.pendingDeletion == nil else { return .none }
-                return .send(.delegate(.registrationRequested))
 
             case let .created(entry):
                 state.failure = nil
@@ -162,9 +154,6 @@ struct HomeFeature {
                 guard !state.isDeleting,
                       state.entries.contains(where: { $0.id == identifier }) else { return .none }
                 return .send(.delegate(.experimentSelected(identifier)))
-
-            case .settingsTapped:
-                return .send(.delegate(.settingsRequested))
 
             case .delegate:
                 return .none

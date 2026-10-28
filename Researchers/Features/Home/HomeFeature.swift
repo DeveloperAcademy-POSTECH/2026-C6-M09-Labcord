@@ -3,16 +3,18 @@ import Foundation
 import LabcordiOS
 
 @Reducer
-struct ExperimentEntryFeature {
+struct HomeFeature {
     @ObservableState
     struct State: Equatable {
-        var home = HomeFeature.State()
+        var list = ExperimentListFeature.State()
         var registration = ProtocolRegistrationFeature.State()
         var isRegistering = false
     }
 
     enum Action: Equatable {
-        case home(HomeFeature.Action)
+        case list(ExperimentListFeature.Action)
+        case addTapped
+        case settingsTapped
         case registration(ProtocolRegistrationFeature.Action)
         case registrationPresented(Bool)
         case delegate(Delegate)
@@ -27,29 +29,30 @@ struct ExperimentEntryFeature {
     }
 
     var body: some Reducer<State, Action> {
-        Scope(state: \.home, action: \.home) { HomeFeature() }
+        Scope(state: \.list, action: \.list) { ExperimentListFeature() }
         Scope(state: \.registration, action: \.registration) { ProtocolRegistrationFeature() }
         Reduce { state, action in
             switch action {
-            case .home(.delegate(.registrationRequested)):
-                guard !state.isRegistering else { return .none }
+            case .addTapped:
+                guard !state.isRegistering, !state.list.isDeleting,
+                      state.list.pendingDeletion == nil else { return .none }
                 state.registration = ProtocolRegistrationFeature.State()
                 state.isRegistering = true
-                return .send(.home(.cancelLoad))
+                return .send(.list(.cancelLoad))
 
-            case let .home(.delegate(.experimentSelected(identifier))):
+            case let .list(.delegate(.experimentSelected(identifier))):
                 return .send(.delegate(.experimentSelected(identifier)))
 
-            case let .home(.delegate(.protocolEditRequested(identifier))):
+            case let .list(.delegate(.protocolEditRequested(identifier))):
                 return .send(.delegate(.protocolEditRequested(identifier)))
 
-            case .home(.delegate(.settingsRequested)):
+            case .settingsTapped:
                 return .send(.delegate(.settingsRequested))
 
             case let .registration(.delegate(.experimentCreated(entry))):
                 state.isRegistering = false
                 return .merge(
-                    .send(.home(.created(entry))),
+                    .send(.list(.created(entry))),
                     .send(.delegate(.experimentCreated(entry.id)))
                 )
 
@@ -65,7 +68,7 @@ struct ExperimentEntryFeature {
                 state.isRegistering = isPresented
                 return .none
 
-            case .home, .registration, .delegate:
+            case .list, .registration, .delegate:
                 return .none
             }
         }

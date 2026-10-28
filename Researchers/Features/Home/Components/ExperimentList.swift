@@ -2,19 +2,14 @@ import ComposableArchitecture
 import LabcordiOS
 import SwiftUI
 
-struct HomeView: View {
-    @Bindable var store: StoreOf<HomeFeature>
+struct ExperimentList: View {
+    @Bindable var store: StoreOf<ExperimentListFeature>
 
     var body: some View {
-        ExperimentHomeView(
-            entries: store.entries,
-            onAdd: { store.send(.addTapped) },
-            onSelect: { store.send(.experimentTapped($0)) },
-            onSettings: { store.send(.settingsTapped) },
-            onEdit: { store.send(.editTapped($0)) },
-            onDelete: { store.send(.deleteRequested($0)) },
-            isDeleting: store.isDeleting
-        )
+        List {
+            section("진행 중인 실험", entries: store.entries.filter(\.isActive))
+            section("최근 실험", entries: store.entries.filter { !$0.isActive })
+        }
         .alert(
             "실험을 삭제할까요?",
             isPresented: deletionBinding,
@@ -43,7 +38,29 @@ struct HomeView: View {
     }
 }
 
-private extension HomeView {
+private extension ExperimentList {
+    func section(_ title: String, entries: [ExperimentListEntry]) -> some View {
+        Section(title) {
+            ForEach(entries) { entry in
+                ExperimentListItem(entry: entry) {
+                    store.send(.experimentTapped(entry.id))
+                }
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    Button("삭제", systemImage: "trash") {
+                        store.send(.deleteRequested(entry.id))
+                    }
+                    .tint(.red)
+                    .accessibilityIdentifier("entry-delete-\(entry.id.uuidString)")
+                    Button("수정", systemImage: "pencil") {
+                        store.send(.editTapped(entry.id))
+                    }
+                    .accessibilityIdentifier("entry-edit-\(entry.id.uuidString)")
+                }
+                .disabled(store.isDeleting)
+            }
+        }
+    }
+
     var deletionBinding: Binding<Bool> {
         Binding(
             get: { store.pendingDeletion != nil },
@@ -51,7 +68,7 @@ private extension HomeView {
         )
     }
 
-    func retryButtons(for failure: HomeFeature.Failure) -> some View {
+    func retryButtons(for failure: ExperimentListFeature.Failure) -> some View {
         Group {
             Button("재시도") {
                 store.send(.retryTapped(failure))
@@ -62,7 +79,7 @@ private extension HomeView {
         }
     }
 
-    func failureBinding(_ failure: HomeFeature.Failure) -> Binding<Bool> {
+    func failureBinding(_ failure: ExperimentListFeature.Failure) -> Binding<Bool> {
         Binding(
             get: { store.failure == failure },
             set: { if !$0 { store.send(.dismissFailure) } }

@@ -1,7 +1,7 @@
 import LabcordiOS
 import SwiftUI
 
-struct HomeExperimentRow: View {
+struct ExperimentListItem: View {
     let entry: ExperimentListEntry
     let onSelect: () -> Void
 
@@ -42,4 +42,16 @@ struct HomeExperimentRow: View {
         formatter.dateFormat = "yyyy.MM.dd"
         return formatter
     }()
+}
+
+extension ExperimentListEntry {
+    var statusTitle: String {
+        switch status {
+        case .preparing: "준비"
+        case .inProgress: "진행 중"
+        case .paused: "일시 정지"
+        case .completed: "종료"
+        }
+    }
+
 }

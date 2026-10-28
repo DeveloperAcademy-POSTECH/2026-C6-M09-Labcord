@@ -5,7 +5,7 @@ struct ResearchersApp: App {
     var body: some Scene {
         WindowGroup {
             NavigationStack {
-                ExperimentEntryRootView()
+                HomeView()
             }
         }
     }
