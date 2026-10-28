@@ -10,6 +10,7 @@ import SwiftUI
 
 struct LandscapeSessionView: View {
     let store: StoreOf<ExperimentSessionFeature>
+    let timerStore: StoreOf<SessionTimerFeature>
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -23,7 +24,7 @@ struct LandscapeSessionView: View {
 
                     Spacer()
 
-                    SessionTimerView(store: store)
+                    SessionTimerView(store: timerStore)
                 }
             }
             .padding(.vertical, 30)
@@ -36,7 +37,12 @@ struct LandscapeSessionView: View {
 }
 
 #Preview {
-    LandscapeSessionView(store: Store(initialState: ExperimentSessionFeature.State()) {
-        ExperimentSessionFeature()
-    })
+    LandscapeSessionView(
+        store: Store(initialState: ExperimentSessionFeature.State()) {
+            ExperimentSessionFeature()
+        },
+        timerStore: Store(initialState: SessionTimerFeature.State()) {
+            SessionTimerFeature()
+        }
+    )
 }

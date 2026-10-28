@@ -15,13 +15,16 @@ struct ExperimentSessionView: View {
     @State private var store = Store(initialState: ExperimentSessionFeature.State()) {
         ExperimentSessionFeature()
     }
+    @State private var timerStore = Store(initialState: SessionTimerFeature.State()) {
+        SessionTimerFeature()
+    }
 
     var body: some View {
         Group {
             if verticalSizeClass == .compact {
-                LandscapeSessionView(store: store)
+                LandscapeSessionView(store: store, timerStore: timerStore)
             } else {
-                PortraitSessionView(store: store)
+                PortraitSessionView(store: store, timerStore: timerStore)
             }
         }
         .backgroundPreferenceValue(CameraPreviewAnchorKey.self) { anchor in

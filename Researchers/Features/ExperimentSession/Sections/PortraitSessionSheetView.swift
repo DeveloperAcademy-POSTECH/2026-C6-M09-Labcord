@@ -10,6 +10,7 @@ import SwiftUI
 
 struct PortraitSessionSheetView: View {
     let store: StoreOf<ExperimentSessionFeature>
+    let timerStore: StoreOf<SessionTimerFeature>
     let compactHeight: CGFloat
     let expandedHeight: CGFloat
     let bottomInset: CGFloat
@@ -125,7 +126,7 @@ struct PortraitSessionSheetView: View {
             ZStack(alignment: .top) {
                 Color.black
 
-                SessionTimerView(store: store)
+                SessionTimerView(store: timerStore)
                     .padding(.horizontal, 16)
                     .padding(.top, 40)
 
