@@ -114,17 +114,15 @@ private struct ProtocolSourceOption: View {
 }
 
 private struct EntryNextButton: View {
-    var action: (() -> Void)?
-
     var body: some View {
-        Button { action?() } label: {
+        Button {} label: {
             EntryText("다음", style: .body)
                 .foregroundStyle(EntryAppearance.disabledText)
                 .frame(maxWidth: .infinity, minHeight: 50)
                 .background(EntryAppearance.disabledFill, in: Capsule())
         }
         .buttonStyle(EntryButtonStyle())
-        .disabled(action == nil)
+        .disabled(true)
         .accessibilityIdentifier("entry-next")
     }
 }
