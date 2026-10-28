@@ -124,7 +124,10 @@ struct SessionTimerView: View {
 
                                     LazyVGrid(
                                         columns: Array(
-                                            repeating: GridItem(.fixed(tileWidth), spacing: tileSpacing),
+                                            repeating: GridItem(
+                                                .fixed(tileWidth),
+                                                spacing: tileSpacing
+                                            ),
                                             count: columnCount
                                         ),
                                         alignment: .leading,
@@ -140,7 +143,11 @@ struct SessionTimerView: View {
                                             .disabled(!canStartTimer)
                                         }
                                     }
-                                    .frame(width: geometry.size.width, height: gridHeight, alignment: .topLeading)
+                                    .frame(
+                                        width: geometry.size.width,
+                                        height: gridHeight,
+                                        alignment: .topLeading
+                                    )
                                     .id(page)
                                 }
                             }
@@ -230,8 +237,10 @@ struct SessionTimerView: View {
                     .font(.footnote)
             }
     }
+}
 
-    private func activeTimerPages(_ timers: [ExperimentTimer], at date: Date) -> some View {
+private extension SessionTimerView {
+    func activeTimerPages(_ timers: [ExperimentTimer], at date: Date) -> some View {
         let pageCount = (timers.count + 2) / 3
 
         return GeometryReader { geometry in
@@ -260,7 +269,10 @@ struct SessionTimerView: View {
                 HStack(spacing: 6) {
                     ForEach(0..<pageCount, id: \.self) { page in
                         Circle()
-                            .fill(min(selectedActivePage ?? 0, pageCount - 1) == page ? Color.white : Color.gray)
+                            .fill(
+                                min(selectedActivePage ?? 0, pageCount - 1) == page
+                                    ? Color.white : Color.gray
+                            )
                             .frame(width: 6, height: 6)
                     }
                 }
@@ -274,7 +286,7 @@ struct SessionTimerView: View {
         .frame(height: 200)
     }
 
-    private func activeTimerList(
+    func activeTimerList(
         _ timers: [ExperimentTimer],
         at date: Date,
         width: CGFloat
@@ -292,7 +304,7 @@ struct SessionTimerView: View {
         .frame(width: width, height: 186, alignment: .leading)
     }
 
-    private func activeTimerRow(_ timer: ExperimentTimer, at date: Date) -> some View {
+    func activeTimerRow(_ timer: ExperimentTimer, at date: Date) -> some View {
         RoundedRectangle(cornerRadius: 6)
             .fill(.gray.opacity(0.3))
             .frame(maxWidth: .infinity)
@@ -303,7 +315,9 @@ struct SessionTimerView: View {
                         Text(TimerDurationFormatter.string(from: timer.remainingSeconds(at: date)))
                             .font(.body.monospacedDigit())
 
-                        Text("설정 \(TimerDurationFormatter.string(from: timer.durationSeconds))")
+                        Text(
+                            "설정 \(TimerDurationFormatter.string(from: timer.durationSeconds))"
+                        )
                             .font(.footnote)
                             .foregroundStyle(.gray)
                     }

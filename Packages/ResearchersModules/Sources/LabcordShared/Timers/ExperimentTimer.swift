@@ -45,7 +45,10 @@ public struct ExperimentTimer: Equatable, Identifiable, Sendable {
     public func remainingSeconds(at date: Date) -> Int {
         let effectiveDate = pausedAt ?? finishedAt ?? date
         let pausedDuration = pauseIntervals.reduce(0.0) { total, interval in
-            total + max(0, (interval.resumedAt ?? effectiveDate).timeIntervalSince(interval.pausedAt))
+            let resumedAt = interval.resumedAt ?? effectiveDate
+            let duration = resumedAt.timeIntervalSince(interval.pausedAt)
+
+            return total + max(0, duration)
         }
         let elapsed = max(0, effectiveDate.timeIntervalSince(startedAt) - pausedDuration)
         return max(0, Int(ceil(Double(durationSeconds) - elapsed)))
