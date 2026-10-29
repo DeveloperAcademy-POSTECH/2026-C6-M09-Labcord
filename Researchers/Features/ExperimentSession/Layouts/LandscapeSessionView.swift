@@ -11,13 +11,14 @@ import SwiftUI
 struct LandscapeSessionView: View {
     let store: StoreOf<CameraCaptureFeature>
     let timerStore: StoreOf<SessionTimerFeature>
+    let sessionStore: StoreOf<ExperimentSessionFeature>
 
     var body: some View {
         ZStack(alignment: .topLeading) {
             Color.clear
 
             VStack(alignment: .leading, spacing: 20) {
-                SessionHeaderView()
+                SessionHeaderView(store: sessionStore)
 
                 HStack(alignment: .top, spacing: 20) {
                     CameraCaptureView(store: store)
@@ -43,6 +44,9 @@ struct LandscapeSessionView: View {
         },
         timerStore: Store(initialState: SessionTimerFeature.State()) {
             SessionTimerFeature()
+        },
+        sessionStore: Store(initialState: ExperimentSessionFeature.State()) {
+            ExperimentSessionFeature()
         }
     )
 }
