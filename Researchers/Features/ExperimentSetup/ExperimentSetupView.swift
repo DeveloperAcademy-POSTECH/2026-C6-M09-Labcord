@@ -22,7 +22,7 @@ struct ExperimentSetupView: View {
                     Text("실험할 위치\n iPhone을 놓아주세요")
                         .font(.title)
                         .multilineTextAlignment(.center)
-                    
+
                     Text("카메라가 준비되면 자동으로 시작돼요")
                 }
             }
