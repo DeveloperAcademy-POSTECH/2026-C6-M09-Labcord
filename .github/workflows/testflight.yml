@@ -63,14 +63,14 @@ jobs:
             CODE_SIGN_STYLE=Automatic DEVELOPMENT_TEAM=HJGS4LQ7XH \
             CURRENT_PROJECT_VERSION="$GITHUB_RUN_ID"
           test -d "$RUNNER_TEMP/Researchers.xcarchive/Products/Applications/Researchers.app/Watch/ResearchWatch Watch App.app"
-      - name: Export internal-only build
+      - name: Export App Store Connect build
         shell: bash
         run: |
           set -euo pipefail
           /usr/libexec/PlistBuddy -c 'Add :method string app-store-connect' "$RUNNER_TEMP/ExportOptions.plist"
           /usr/libexec/PlistBuddy -c 'Add :signingStyle string automatic' "$RUNNER_TEMP/ExportOptions.plist"
           /usr/libexec/PlistBuddy -c 'Add :teamID string HJGS4LQ7XH' "$RUNNER_TEMP/ExportOptions.plist"
-          /usr/libexec/PlistBuddy -c 'Add :testFlightInternalTestingOnly bool true' "$RUNNER_TEMP/ExportOptions.plist"
+          /usr/libexec/PlistBuddy -c 'Add :testFlightInternalTestingOnly bool false' "$RUNNER_TEMP/ExportOptions.plist"
           /usr/libexec/PlistBuddy -c 'Add :manageAppVersionAndBuildNumber bool false' "$RUNNER_TEMP/ExportOptions.plist"
           xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/Researchers.xcarchive" \
             -exportPath "$RUNNER_TEMP/export" -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
