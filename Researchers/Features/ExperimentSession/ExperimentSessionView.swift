@@ -13,9 +13,7 @@ struct ExperimentSessionView: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.scenePhase) private var scenePhase
 
-    @State private var store = Store(initialState: ExperimentSessionFeature.State()) {
-        ExperimentSessionFeature()
-    }
+    let store: StoreOf<ExperimentSessionFeature>
     @State private var timerStore = Store(initialState: SessionTimerFeature.State()) {
         SessionTimerFeature()
     }
@@ -31,9 +29,17 @@ struct ExperimentSessionView: View {
     var body: some View {
         Group {
             if verticalSizeClass == .compact {
-                LandscapeSessionView(store: captureStore, timerStore: timerStore)
+                LandscapeSessionView(
+                    store: captureStore,
+                    timerStore: timerStore,
+                    sessionStore: store
+                )
             } else {
-                PortraitSessionView(store: captureStore, timerStore: timerStore)
+                PortraitSessionView(
+                    store: captureStore,
+                    timerStore: timerStore,
+                    sessionStore: store
+                )
             }
         }
         .backgroundPreferenceValue(CameraPreviewAnchorKey.self) { anchor in
@@ -75,6 +81,7 @@ struct ExperimentSessionView: View {
                 CapturedVideoView(videoURL: url) {
                     captureStore.send(.videoRetakeRequested)
                 }
+                .id(url)
             }
         }
         .overlay {
@@ -98,7 +105,9 @@ struct ExperimentSessionView: View {
         }
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
-            captureStore.send(.cameraViewDisappeared)
+            if !store.isReturningHome {
+                captureStore.send(.cameraViewDisappeared)
+            }
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
@@ -154,5 +163,7 @@ struct ExperimentSessionView: View {
 }
 
 #Preview {
-    ExperimentSessionView()
+    ExperimentSessionView(store: Store(initialState: ExperimentSessionFeature.State()) {
+        ExperimentSessionFeature()
+    })
 }
