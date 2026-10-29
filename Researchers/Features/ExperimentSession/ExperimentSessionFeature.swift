@@ -10,6 +10,16 @@ struct ExperimentSessionFeature {
         var permissions = SessionPermissionsFeature.State()
         var voice = VoiceRecordingFeature.State()
         var capture = CameraCaptureFeature.State()
+        var permissionRequestGeneration = 0
+        var isReturningHome = false
+
+        var isReady: Bool {
+            permissions.camera.status == .authorized
+                && permissions.microphoneStatus == .authorized
+                && permissions.speechRecognitionStatus == .authorized
+                && !permissions.isRequesting
+                && capture.previewConnector != nil
+        }
     }
 
     enum Action: Equatable {
@@ -19,7 +29,14 @@ struct ExperimentSessionFeature {
         case voiceStartRequested
         case photoStartRequested
         case videoStartRequested
+        case appBecameActive
+        case stopTapped
+        case returnHomeTapped
+        case homeExitCompleted
     }
+
+    @Dependency(\.cameraSessionClient) var cameraSessionClient
+    @Dependency(\.speechRecordingClient) var speechRecordingClient
 
     var body: some Reducer<State, Action> {
         Scope(state: \.permissions, action: \.permissions) {
@@ -36,6 +53,28 @@ struct ExperimentSessionFeature {
 
         Reduce { state, action in
             switch action {
+            case .appBecameActive:
+                guard !state.isReady else { return .none }
+                state.permissionRequestGeneration += 1
+                return .none
+
+            case .stopTapped:
+                return .none
+
+            case .returnHomeTapped:
+                guard !state.isReturningHome else { return .none }
+                state.isReturningHome = true
+                let ownerID = state.capture.camera.ownerID
+                return .run { send in
+                    await cameraSessionClient.cancelVideoRecording()
+                    await speechRecordingClient.cancel()
+                    await cameraSessionClient.deactivate(ownerID)
+                    await send(.homeExitCompleted)
+                }
+
+            case .homeExitCompleted:
+                return .none
+
             case .permissions(.microphoneStatusUpdated(.authorized)):
                 return .send(.capture(.prepareVideoRecordingRequested))
 

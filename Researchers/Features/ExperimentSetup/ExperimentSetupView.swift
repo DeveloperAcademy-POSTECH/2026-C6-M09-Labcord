@@ -13,31 +13,23 @@ struct ExperimentSetupView: View {
             Color(.black)
 
             VStack(spacing: 20) {
-                Image(systemName: "iphone")
-                    .font(.system(size: 100))
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .controlSize(.large)
+                    .tint(.white)
 
-                Text("잠시후 기록 대기 모드로 전환됩니다.")
-                    .font(.headline)
+                VStack(spacing: 7) {
+                    Text("실험할 위치\n iPhone을 놓아주세요")
+                        .font(.title)
+                        .multilineTextAlignment(.center)
 
-                Text("실험 기록은 계속 작동하고 있으며,\n언제든 기록할 수 있어요.")
-                    .multilineTextAlignment(.center)
-                    .font(.subheadline)
-
-                Button {
-                    // 화면 이동 코드
-                } label: {
-                    Text("시작하기")
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 49)
+                    Text("카메라가 준비되면 자동으로 시작돼요")
                 }
-                .frame(maxWidth: 304)
-                .foregroundStyle(.black)
-                .buttonStyle(.borderedProminent)
-                .tint(.white)
             }
         }
         .ignoresSafeArea()
         .foregroundStyle(.white)
+        .toolbar(.hidden, for: .navigationBar)
     }
 }
 

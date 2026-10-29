@@ -2,13 +2,9 @@ import ComposableArchitecture
 import SwiftUI
 
 struct HomeView: View {
-    @State private var store = Store(initialState: HomeFeature.State()) {
-        HomeFeature()
-    }
+    let store: StoreOf<HomeFeature>
 
     var body: some View {
-        @Bindable var store = store
-
         ExperimentList(store: store.scope(state: \.list, action: \.list))
             .navigationTitle("실험")
             .toolbar {
@@ -25,12 +21,13 @@ struct HomeView: View {
                     .accessibilityIdentifier("entry-add")
                 }
             }
-            .navigationDestination(
-                isPresented: $store.isRegistering.sending(\.registrationPresented)
-            ) {
-                ProtocolRegistrationView(
-                    store: store.scope(state: \.registration, action: \.registration)
-                )
-            }
+    }
+}
+
+#Preview {
+    NavigationStack {
+        HomeView(store: Store(initialState: HomeFeature.State()) {
+            HomeFeature()
+        })
     }
 }

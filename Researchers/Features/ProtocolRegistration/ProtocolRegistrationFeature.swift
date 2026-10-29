@@ -21,20 +21,14 @@ struct ProtocolRegistrationFeature {
         case backTapped
         case skipTapped
         case saved(Result<ExperimentListEntry, SaveFailure>)
+        case saveSucceeded(ExperimentListEntry)
         case retryTapped
         case dismissFailure
         case sourceTapped(ProtocolSource)
-        case delegate(Delegate)
     }
 
     nonisolated enum SaveFailure: Error, Equatable, Sendable {
         case saving
-    }
-
-    nonisolated enum Delegate: Equatable, Sendable {
-        case backRequested
-        case experimentCreated(ExperimentListEntry)
-        case protocolSourceRequested(ProtocolSource)
     }
 
     @Dependency(\.experimentClient) var experimentClient
@@ -45,8 +39,7 @@ struct ProtocolRegistrationFeature {
         Reduce { state, action in
             switch action {
             case .backTapped:
-                guard !state.isSaving else { return .none }
-                return .send(.delegate(.backRequested))
+                return .none
 
             case .skipTapped:
                 guard !state.isSaving, !state.hasFailed else { return .none }
@@ -69,7 +62,7 @@ struct ProtocolRegistrationFeature {
                 switch result {
                 case let .success(entry):
                     state.pendingID = nil
-                    return .send(.delegate(.experimentCreated(entry)))
+                    return .send(.saveSucceeded(entry))
                 case .failure:
                     state.hasFailed = true
                     return .none
@@ -83,11 +76,10 @@ struct ProtocolRegistrationFeature {
                 state.hasFailed = false
                 return .none
 
-            case let .sourceTapped(source):
-                guard !state.isSaving else { return .none }
-                return .send(.delegate(.protocolSourceRequested(source)))
+            case .sourceTapped:
+                return .none
 
-            case .delegate:
+            case .saveSucceeded:
                 return .none
             }
         }

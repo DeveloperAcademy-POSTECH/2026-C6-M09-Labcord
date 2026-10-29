@@ -11,6 +11,7 @@ import SwiftUI
 struct PortraitSessionView: View {
     let store: StoreOf<CameraCaptureFeature>
     let timerStore: StoreOf<SessionTimerFeature>
+    let sessionStore: StoreOf<ExperimentSessionFeature>
 
     var body: some View {
         GeometryReader { geo in
@@ -23,7 +24,7 @@ struct PortraitSessionView: View {
                     .ignoresSafeArea()
 
                 VStack {
-                    SessionHeaderView()
+                    SessionHeaderView(store: sessionStore)
                         .padding(16)
 
                     Spacer()
@@ -51,6 +52,9 @@ struct PortraitSessionView: View {
         },
         timerStore: Store(initialState: SessionTimerFeature.State()) {
             SessionTimerFeature()
+        },
+        sessionStore: Store(initialState: ExperimentSessionFeature.State()) {
+            ExperimentSessionFeature()
         }
     )
 }

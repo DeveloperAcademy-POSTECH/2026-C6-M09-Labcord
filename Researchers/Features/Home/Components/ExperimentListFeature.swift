@@ -35,12 +35,6 @@ struct ExperimentListFeature {
         case deleteFailed(UUID)
         case editTapped(UUID)
         case experimentTapped(UUID)
-        case delegate(Delegate)
-    }
-
-    nonisolated enum Delegate: Equatable, Sendable {
-        case experimentSelected(UUID)
-        case protocolEditRequested(UUID)
     }
 
     @Dependency(\.experimentClient) var experimentClient
@@ -148,14 +142,9 @@ struct ExperimentListFeature {
             case let .editTapped(identifier):
                 guard !state.isDeleting,
                       state.entries.contains(where: { $0.id == identifier }) else { return .none }
-                return .send(.delegate(.protocolEditRequested(identifier)))
+                return .none
 
-            case let .experimentTapped(identifier):
-                guard !state.isDeleting,
-                      state.entries.contains(where: { $0.id == identifier }) else { return .none }
-                return .send(.delegate(.experimentSelected(identifier)))
-
-            case .delegate:
+            case .experimentTapped:
                 return .none
             }
         }
