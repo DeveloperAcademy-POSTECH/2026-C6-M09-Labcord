@@ -15,7 +15,7 @@ struct SessionTimerView: View {
         let seconds: Int
     }
 
-    let store: StoreOf<ExperimentSessionFeature>
+    let store: StoreOf<SessionTimerFeature>
     @State private var selectedPage: Int? = 0
     @State private var selectedActivePage: Int? = 0
     @State private var isTimerSetupPresented = false
@@ -361,7 +361,9 @@ private extension SessionTimerView {
 }
 
 #Preview {
-    SessionTimerView(store: Store(initialState: ExperimentSessionFeature.State()) {
-        ExperimentSessionFeature()
-    })
+    SessionTimerView(
+        store: Store(initialState: SessionTimerFeature.State()) {
+            SessionTimerFeature()
+        }
+    )
 }

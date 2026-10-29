@@ -11,7 +11,7 @@ struct CapturedPhotoView: View {
     }
 
     var body: some View {
-        CapturedMediaLayout(onRetake: onRetake) { size in
+        CapturedMediaReviewView(onRetake: onRetake) { size in
             if let photo = imageStore.image {
                 Image(uiImage: photo)
                     .resizable()

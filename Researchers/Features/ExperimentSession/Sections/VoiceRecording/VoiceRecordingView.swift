@@ -1,8 +1,8 @@
 import ComposableArchitecture
 import SwiftUI
 
-struct VoiceRecordingOverlay: View {
-    let store: StoreOf<ExperimentSessionFeature>
+struct VoiceRecordingView: View {
+    let store: StoreOf<VoiceRecordingFeature>
 
     var body: some View {
         GeometryReader { geometry in
@@ -13,7 +13,7 @@ struct VoiceRecordingOverlay: View {
                 VStack(alignment: .leading, spacing: 24) {
                     HStack(spacing: 12) {
                         Button {
-                            store.send(.voiceCloseRequested)
+                            store.send(.closeRequested)
                         } label: {
                             Image(systemName: "xmark")
                                 .font(.title3.weight(.medium))
@@ -22,7 +22,7 @@ struct VoiceRecordingOverlay: View {
                         }
                         .accessibilityLabel("음성 기록 닫기")
 
-                        Text(store.voicePhase == .finished ? "녹음 내용 확인" : "녹음 중")
+                        Text(store.phase == .finished ? "녹음 내용 확인" : "녹음 중")
                             .font(.headline)
 
                         Spacer()
@@ -32,7 +32,7 @@ struct VoiceRecordingOverlay: View {
                         Text(displayedTranscript)
                             .font(.system(size: geometry.size.height < 400 ? 24 : 30))
                             .foregroundStyle(
-                                store.voiceTranscript.isEmpty
+                                store.transcript.isEmpty
                                 ? .white.opacity(0.6)
                                 : .white
                             )
@@ -40,11 +40,11 @@ struct VoiceRecordingOverlay: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                    if store.voicePhase == .finished {
+                    if store.phase == .finished {
                         HStack {
                             Spacer()
                             Button {
-                                store.send(.voiceRetakeRequested)
+                                store.send(.retakeRequested)
                             } label: {
                                 Label("다시하기", systemImage: "arrow.uturn.backward")
                                     .font(.headline)
@@ -59,7 +59,7 @@ struct VoiceRecordingOverlay: View {
                         HStack {
                             Spacer()
                             Button {
-                                store.send(.voiceStopRequested)
+                                store.send(.stopRequested)
                             } label: {
                                 Image(systemName: "mic.fill")
                                     .font(.title2)
@@ -67,7 +67,7 @@ struct VoiceRecordingOverlay: View {
                                     .background(.blue, in: Circle())
                                     .shadow(color: .white.opacity(0.65), radius: 14)
                             }
-                            .disabled(store.voicePhase != .recording)
+                            .disabled(store.phase != .recording)
                             .accessibilityLabel("녹음 종료")
                             Spacer()
                         }
@@ -84,13 +84,13 @@ struct VoiceRecordingOverlay: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .onAppear {
-            store.send(.voiceOverlayAppeared)
+            store.send(.overlayAppeared)
         }
     }
 
     private var displayedTranscript: String {
-        if !store.voiceTranscript.isEmpty { return store.voiceTranscript }
-        switch store.voicePhase {
+        if !store.transcript.isEmpty { return store.transcript }
+        switch store.phase {
         case .starting: return "녹음을 준비하고 있어요."
         case .recording: return "말씀해 주세요."
         case .stopping: return "음성 인식을 마무리하고 있어요."
