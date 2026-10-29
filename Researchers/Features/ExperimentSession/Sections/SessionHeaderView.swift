@@ -20,7 +20,7 @@ struct SessionHeaderView: View {
             Spacer()
 
             Button {
-                store.send(.navigateToResult)
+                store.send(.stopTapped)
             } label: {
                 Image(systemName: "stop.fill")
                     .frame(width: 40, height: 40)
