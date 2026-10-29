@@ -11,6 +11,7 @@ import SwiftUI
 
 struct ExperimentSessionView: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var store = Store(initialState: ExperimentSessionFeature.State()) {
         ExperimentSessionFeature()
@@ -61,6 +62,7 @@ struct ExperimentSessionView: View {
             }
             .ignoresSafeArea()
         }
+        .navigationBarBackButtonHidden()
         .overlay {
             if let data = captureStore.capturedPhotoData {
                 CapturedPhotoView(photoData: data) {
@@ -80,14 +82,28 @@ struct ExperimentSessionView: View {
                 VoiceRecordingView(store: voiceStore)
             }
         }
+        .overlay {
+            if !store.isReady {
+                ExperimentSetupView()
+                    .task(id: store.permissionRequestGeneration) {
+                        try? await Task.sleep(for: .milliseconds(200))
+                        guard !Task.isCancelled else { return }
+                        store.send(.permissions(.request))
+                    }
+            }
+        }
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
             captureStore.send(.cameraViewAppeared)
-            store.send(.permissions(.request))
         }
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
             captureStore.send(.cameraViewDisappeared)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                store.send(.appBecameActive)
+            }
         }
         .background(.black)
         .alert(
