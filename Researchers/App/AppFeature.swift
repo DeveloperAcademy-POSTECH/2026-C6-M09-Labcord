@@ -62,7 +62,7 @@ struct AppFeature {
                 state.path.append(.session(ExperimentSessionFeature.State()))
                 return .send(.home(.list(.created(entry))))
 
-            case let .path(.element(id: id, action: .session(.navigateToResult))):
+            case let .path(.element(id: id, action: .session(.stopTapped))):
                 return .send(.showResult(id))
 
             case let .path(.element(id: id, action: .session(.homeExitCompleted))):
