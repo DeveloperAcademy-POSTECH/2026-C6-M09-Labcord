@@ -10,6 +10,15 @@ struct ExperimentSessionFeature {
         var permissions = SessionPermissionsFeature.State()
         var voice = VoiceRecordingFeature.State()
         var capture = CameraCaptureFeature.State()
+        var permissionRequestGeneration = 0
+
+        var isReady: Bool {
+            permissions.camera.status == .authorized
+                && permissions.microphoneStatus == .authorized
+                && permissions.speechRecognitionStatus == .authorized
+                && !permissions.isRequesting
+                && capture.previewConnector != nil
+        }
     }
 
     enum Action: Equatable {
@@ -19,6 +28,7 @@ struct ExperimentSessionFeature {
         case voiceStartRequested
         case photoStartRequested
         case videoStartRequested
+        case appBecameActive
     }
 
     var body: some Reducer<State, Action> {
@@ -36,6 +46,11 @@ struct ExperimentSessionFeature {
 
         Reduce { state, action in
             switch action {
+            case .appBecameActive:
+                guard !state.isReady else { return .none }
+                state.permissionRequestGeneration += 1
+                return .none
+
             case .permissions(.microphoneStatusUpdated(.authorized)):
                 return .send(.capture(.prepareVideoRecordingRequested))
 
