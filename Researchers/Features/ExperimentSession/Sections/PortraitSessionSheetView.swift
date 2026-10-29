@@ -9,7 +9,8 @@ import ComposableArchitecture
 import SwiftUI
 
 struct PortraitSessionSheetView: View {
-    let store: StoreOf<ExperimentSessionFeature>
+    let store: StoreOf<CameraCaptureFeature>
+    let timerStore: StoreOf<SessionTimerFeature>
     let compactHeight: CGFloat
     let expandedHeight: CGFloat
     let bottomInset: CGFloat
@@ -86,7 +87,7 @@ struct PortraitSessionSheetView: View {
                     .buttonStyle(.plain)
 
                     Button {
-                        store.send(.photoCaptureRequested)
+                        store.send(.photoButtonTapped)
                     } label: {
                         VStack(spacing: 10) {
                             Image(systemName: "camera.viewfinder")
@@ -103,7 +104,7 @@ struct PortraitSessionSheetView: View {
                     .buttonStyle(.plain)
 
                     Button {
-                        store.send(.videoRecordRequested)
+                        store.send(.videoButtonTapped)
                     } label: {
                         VStack(spacing: 10) {
                             Image(systemName: "video.fill")
@@ -125,7 +126,7 @@ struct PortraitSessionSheetView: View {
             ZStack(alignment: .top) {
                 Color.black
 
-                SessionTimerView(store: store)
+                SessionTimerView(store: timerStore)
                     .padding(.horizontal, 16)
                     .padding(.top, 40)
 

@@ -9,13 +9,14 @@ import ComposableArchitecture
 import SwiftUI
 
 struct PortraitSessionView: View {
-    let store: StoreOf<ExperimentSessionFeature>
+    let store: StoreOf<CameraCaptureFeature>
+    let timerStore: StoreOf<SessionTimerFeature>
 
     var body: some View {
         GeometryReader { geo in
             let screenHeight = geo.size.height
-                + geo.safeAreaInsets.top
-                + geo.safeAreaInsets.bottom
+            + geo.safeAreaInsets.top
+            + geo.safeAreaInsets.bottom
 
             ZStack {
                 Color.clear
@@ -30,6 +31,7 @@ struct PortraitSessionView: View {
 
                 PortraitSessionSheetView(
                     store: store,
+                    timerStore: timerStore,
                     compactHeight: screenHeight * 0.127,
                     expandedHeight: screenHeight * 0.3890160183,
                     bottomInset: geo.safeAreaInsets.bottom
@@ -43,9 +45,12 @@ struct PortraitSessionView: View {
 #Preview {
     PortraitSessionView(
         store: Store(
-            initialState: ExperimentSessionFeature.State()
+            initialState: CameraCaptureFeature.State()
         ) {
-            ExperimentSessionFeature()
+            CameraCaptureFeature()
+        },
+        timerStore: Store(initialState: SessionTimerFeature.State()) {
+            SessionTimerFeature()
         }
     )
 }
