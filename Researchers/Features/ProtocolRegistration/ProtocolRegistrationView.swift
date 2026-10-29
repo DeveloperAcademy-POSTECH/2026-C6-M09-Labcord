@@ -63,11 +63,6 @@ struct ProtocolRegistrationView: View {
         .navigationTitle("실험 등록")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
-        .navigationDestination(
-            isPresented: $store.isNavigatingToSession.sending(\.sessionNavigationChanged)
-        ) {
-            ExperimentSessionView()
-        }
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button("뒤로 가기", systemImage: "chevron.backward") {
