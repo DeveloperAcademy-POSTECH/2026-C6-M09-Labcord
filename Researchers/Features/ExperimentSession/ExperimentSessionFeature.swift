@@ -30,7 +30,7 @@ struct ExperimentSessionFeature {
         case photoStartRequested
         case videoStartRequested
         case appBecameActive
-        case navigateToResult
+        case stopTapped
         case returnHomeTapped
         case homeExitCompleted
     }
@@ -58,7 +58,7 @@ struct ExperimentSessionFeature {
                 state.permissionRequestGeneration += 1
                 return .none
 
-            case .navigateToResult:
+            case .stopTapped:
                 return .none
 
             case .returnHomeTapped:
