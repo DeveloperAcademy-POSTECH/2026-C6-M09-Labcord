@@ -144,9 +144,7 @@ struct ExperimentListFeature {
                       state.entries.contains(where: { $0.id == identifier }) else { return .none }
                 return .none
 
-            case let .experimentTapped(identifier):
-                guard !state.isDeleting,
-                      state.entries.contains(where: { $0.id == identifier }) else { return .none }
+            case .experimentTapped:
                 return .none
             }
         }
