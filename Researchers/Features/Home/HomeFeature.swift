@@ -50,7 +50,6 @@ struct HomeFeature {
                 return .send(.delegate(.settingsRequested))
 
             case let .registration(.delegate(.experimentCreated(entry))):
-                state.isRegistering = false
                 return .merge(
                     .send(.list(.created(entry))),
                     .send(.delegate(.experimentCreated(entry.id)))
