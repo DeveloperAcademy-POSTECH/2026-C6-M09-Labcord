@@ -6,6 +6,7 @@ struct CapturedVideoView: View {
     let onRetake: () -> Void
     @State private var player: AVPlayer
     @State private var playerItem: AVPlayerItem
+    @State private var hasStartedPlayback = false
     @State private var didFinishPlayback = false
 
     init(videoURL: URL, onRetake: @escaping () -> Void) {
@@ -27,11 +28,14 @@ struct CapturedVideoView: View {
                     .foregroundStyle(.white)
             }
         }
-        .onAppear { player.play() }
-        .onDisappear { player.pause() }
+        .onAppear { startPlayback() }
+        .onDisappear {
+            player.pause()
+            hasStartedPlayback = false
+        }
         .onReceive(playerItem.publisher(for: \.status, options: [.initial, .new])) { status in
             if status == .readyToPlay {
-                player.play()
+                startPlayback()
             }
         }
         .onReceive(
@@ -42,5 +46,13 @@ struct CapturedVideoView: View {
         ) { _ in
             didFinishPlayback = true
         }
+    }
+
+    private func startPlayback() {
+        guard playerItem.status == .readyToPlay, !hasStartedPlayback else { return }
+        hasStartedPlayback = true
+        didFinishPlayback = false
+        player.seek(to: .zero)
+        player.play()
     }
 }
