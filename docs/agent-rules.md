@@ -13,9 +13,7 @@ AGENTS.md                              공통 원칙·저장소 지도·작업�
 ├── code-style/SKILL.md                 Swift 스타일
 ├── architecture/SKILL.md               TCA·모듈·기기별 저장/통신 책임
 ├── git-workflow/SKILL.md               브랜치·커밋·이슈·PR·리뷰
-└── verify-change/
-    ├── SKILL.md                        변경별 검증 기준·명령·결과 보고
-    └── scripts/check_agent_docs.sh     Bash 문서 형식·로컬 파일 링크 검사
+└── verify-change/SKILL.md              변경별 검증 기준·명령·결과 보고
 docs/agent-rules.md                     사용 안내·문서 색인
 docs/agent-rules/
 ├── project-context.md                  현재 구현·적용 기준

@@ -95,16 +95,15 @@ xcodebuild build \
 
 ### Rules·Skills 문서 검사
 
-문서만 변경했다면 링크·Skill metadata·팀 규칙 반영과 선택 시나리오를 확인합니다.
-다음 Bash 보조 검사를 사용할 수 있습니다. macOS·Linux의 기본 명령만 사용하며 설치나 CI 연결은 필요하지 않습니다.
+1. 변경한 설명을 실제 구현·설정 및 팀 규칙과 대조합니다.
+2. 상대 파일 링크와 앵커가 유효한지, 이동·삭제한 파일의 참조가 남아 있지 않은지 확인합니다.
+   Skill을 바꿨다면 `name`·`description`, 필수 절과 AGENTS의 Skill 연결도 확인합니다.
+3. 아래 명령으로 공백 오류를 확인하고, 관련 선택 시나리오는
+   [관리 가이드](../../../docs/agent-rules/maintenance.md#에이전트-지원과-검증)를 참고합니다.
 
 ```sh
-bash .agents/skills/verify-change/scripts/check_agent_docs.sh
 git diff --check
 ```
-
-이 스크립트는 저장소 문서 형식·로컬 링크만 검사합니다. 자동 Skill 인식이나 규칙 준수,
-Swift 빌드·앱 동작을 검증하지 않습니다. 동작 시나리오는 [관리 가이드](../../../docs/agent-rules/maintenance.md#에이전트-지원과-검증)를 봅니다.
 
 ## 주의사항과 예외
 

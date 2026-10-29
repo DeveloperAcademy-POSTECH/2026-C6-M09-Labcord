@@ -21,7 +21,7 @@
 4. 바뀐 명령·링크를 확인하고 관련 검증을 수행합니다. 실행할 수 없는 검증은 그 이유를 보고합니다.
 
 이 절차는 에이전트가 수행하는 작업의 완료 조건입니다. 다른 사람이 코드만 수정했을 때
-문서가 저절로 바뀌는 상시 감시·자동 동기화 기능은 아닙니다. 문서 검사기는 형식·링크만 검사하므로
+문서가 저절로 바뀌는 상시 감시·자동 동기화 기능은 아닙니다.
 구현과 설명이 의미상 일치하는지도 에이전트가 확인해야 합니다.
 
 ## 에이전트 지원과 검증
@@ -70,18 +70,10 @@ Agent Skills의 `SKILL.md` + `name`·`description` frontmatter 구조를 사용�
    Skill은 사용 시점·팀 규칙·절차·주의사항과 예외·결과 검증을 포함합니다.
 4. 이 저장소의 metadata 관례는 `name`·`description` 두 필드이며 모두 plain single-line 값입니다.
    `name`은 폴더와 같은 소문자·숫자·하이픈(최대 64자), `description`은 선택 조건을 담은 1–1024자입니다.
-   형식을 확장한다면 아래 보조 검사도 함께 갱신합니다.
-5. 문서 검사와 관련 시나리오를 실행합니다. 도구별 자동 인식과 지침 적용 범위를 확인하되,
+5. [verify-change](../../.agents/skills/verify-change/SKILL.md)의 문서 확인 절차와 관련 시나리오를 적용합니다.
+   도구별 자동 인식과 지침 적용 범위를 확인하되,
    파일을 직접 읽는 방식과 자동 탐색을 구분합니다.
 6. 새 실행 기준·규칙 변경은 팀과 확인한 뒤 관련 문서에 일관되게 반영합니다.
    [git-workflow](../../.agents/skills/git-workflow/SKILL.md)에 따라 PR을 준비합니다.
 
-```sh
-# 저장소 루트, Bash 3.2 이상과 macOS·Linux 기본 명령. 별도 패키지 불필요.
-bash .agents/skills/verify-change/scripts/check_agent_docs.sh
-git diff --check
-```
-
-보조 검사는 name·description 필수 항목, 필수 절, AGENTS의 Skill 링크와 단순 상대 파일 링크를 확인합니다.
-일반 YAML/Agent Skills 전체 명세, URL 인코딩된 링크·앵커·외부 URL 응답·자동 탐색·규칙 준수는 검사하지 않습니다.
 규칙 변경 PR에서는 위 시나리오와 팀 규칙의 적용 범위도 함께 검토합니다.
