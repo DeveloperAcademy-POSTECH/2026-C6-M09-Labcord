@@ -36,6 +36,14 @@ struct AppFeature {
                 state.path.append(.registration(ProtocolRegistrationFeature.State()))
                 return .send(.home(.list(.cancelLoad)))
 
+            case let .home(.list(.experimentTapped(identifier))):
+                guard state.path.isEmpty, !state.home.list.isDeleting,
+                      state.home.list.entries.contains(where: { $0.id == identifier }) else {
+                    return .none
+                }
+                state.path.append(.session(ExperimentSessionFeature.State()))
+                return .send(.home(.list(.cancelLoad)))
+
             case let .path(.element(id: id, action: .registration(.backTapped))):
                 return .send(.closeRegistration(id))
 
