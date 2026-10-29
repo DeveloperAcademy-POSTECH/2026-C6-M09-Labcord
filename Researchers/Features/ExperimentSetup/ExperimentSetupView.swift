@@ -29,6 +29,7 @@ struct ExperimentSetupView: View {
         }
         .ignoresSafeArea()
         .foregroundStyle(.white)
+        .toolbar(.hidden, for: .navigationBar)
     }
 }
 
