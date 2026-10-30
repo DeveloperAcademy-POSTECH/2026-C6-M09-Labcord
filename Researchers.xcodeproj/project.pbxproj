@@ -362,7 +362,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Labcord;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCameraUsageDescription = "실험 중 장면을 촬영하고 기록하기 위해 카메라 접근이 필요합니다.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "실험 중 음성을 녹음하고 기록하기 위해 마이크 접근이 필요합니다.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "실험 중 녹음한 음성을 글자로 표시하기 위해 음성 인식 접근이 필요합니다.";
@@ -403,7 +403,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Labcord;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCameraUsageDescription = "실험 중 장면을 촬영하고 기록하기 위해 카메라 접근이 필요합니다.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "실험 중 음성을 녹음하고 기록하기 위해 마이크 접근이 필요합니다.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "실험 중 녹음한 음성을 글자로 표시하기 위해 음성 인식 접근이 필요합니다.";
