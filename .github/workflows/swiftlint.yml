@@ -1,0 +1,53 @@
+name: SwiftLint
+
+on:
+  pull_request:
+  push:
+    branches:
+      - develop
+
+permissions:
+  contents: write
+
+jobs:
+  changes:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/detect-changes.yml
+
+  lint:
+    name: lint
+    needs: changes
+    if: ${{ always() && !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.lint == 'true') }}
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Install SwiftLint
+        run: brew install swiftlint
+
+      - name: SwiftLint fix
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          swiftlint --fix || true
+          if ! git diff --quiet; then
+            ISSUE=$(echo "${{ github.head_ref }} ${{ github.event.pull_request.body }}" | grep -oE '#[0-9]+' | head -1)
+            if [ -n "$ISSUE" ]; then
+              MSG="style/$ISSUE: SwiftLint 자동 수정"
+            else
+              MSG="style: SwiftLint 자동 수정"
+            fi
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "$MSG"
+            git push origin HEAD:${{ github.head_ref }}
+          fi
+
+      - name: SwiftLint
+        run: swiftlint --strict

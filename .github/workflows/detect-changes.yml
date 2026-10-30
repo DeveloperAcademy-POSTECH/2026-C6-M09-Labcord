@@ -1,0 +1,37 @@
+name: CI Changes
+
+on:
+  workflow_call:
+    outputs:
+      build:
+        description: Whether the changed files require an app build
+        value: ${{ jobs.detect.outputs.build }}
+      lint:
+        description: Whether the changed files require SwiftLint
+        value: ${{ jobs.detect.outputs.lint }}
+
+permissions:
+  contents: read
+
+jobs:
+  detect:
+    name: changed-files
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.decide.outputs.build }}
+      lint: ${{ steps.decide.outputs.lint }}
+    steps:
+      - name: Checkout for file comparison
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Decide required checks
+        id: decide
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          IS_PR: ${{ github.event_name == 'pull_request' }}
+        shell: bash
+        run: bash .github/scripts/detect-changes.sh
