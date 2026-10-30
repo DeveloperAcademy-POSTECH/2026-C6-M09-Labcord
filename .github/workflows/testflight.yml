@@ -2,7 +2,7 @@ name: TestFlight
 
 on:
   push:
-    branches: [main]
+    branches: ['ci/#49-test-Devin']
   workflow_dispatch:
 
 permissions:
@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   upload:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/ci/#49-test-Devin'
     runs-on: xcode-27
     timeout-minutes: 90
     env:
