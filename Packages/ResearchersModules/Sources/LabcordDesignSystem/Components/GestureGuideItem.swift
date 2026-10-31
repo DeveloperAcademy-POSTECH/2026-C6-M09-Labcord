@@ -85,3 +85,20 @@ public struct GestureGuideItem<Media: View>: View {
         layout == .portrait ? .center : .leading
     }
 }
+
+#Preview("제스처 안내 · 가로와 세로") {
+    _ = FontRegistration.register()
+    return VStack(spacing: 16) {
+        GestureGuideItem(layout: .landscape) {
+            Image(systemName: "hand.raised")
+                .font(.largeTitle)
+        }
+        GestureGuideItem(layout: .portrait) {
+            Image(systemName: "hand.raised")
+                .font(.largeTitle)
+        }
+    }
+    .padding()
+    .background(.labcord(.backgroundPrimary))
+    .labcordTheme(LabcordTheme(context: .experiment))
+}
