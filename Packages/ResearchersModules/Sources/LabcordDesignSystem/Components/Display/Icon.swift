@@ -1,7 +1,7 @@
 import SwiftUI
 
 // swiftlint:disable identifier_name
-public enum LabcordIcon: String, CaseIterable, Identifiable, Sendable {
+public enum Icon: String, CaseIterable, Identifiable, Sendable {
     case arrowCounterClockwiseBold = "arrow-counter-clockwise-bold"
     case arrowCounterClockwise = "arrow-counter-clockwise"
     case arrowIn = "arrow-in"
@@ -67,17 +67,17 @@ public enum LabcordIcon: String, CaseIterable, Identifiable, Sendable {
 // swiftlint:enable identifier_name
 
 public extension Image {
-    init(labcordIcon icon: LabcordIcon) {
+    init(labcordIcon icon: Icon) {
         self.init(icon.symbolAssetName, bundle: .module)
     }
 }
 
 struct LabcordIconArtwork: View {
-    private let icon: LabcordIcon
+    private let icon: Icon
     @ScaledMetric private var scaledSize: CGFloat
 
     init(
-        icon: LabcordIcon,
+        icon: Icon,
         size: CGFloat,
         relativeTo: Font.TextStyle = .body
     ) {
@@ -99,7 +99,7 @@ struct LabcordIconArtwork: View {
 #Preview("아이콘") {
     ScrollView {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 16) {
-            ForEach(LabcordIcon.allCases) { icon in
+            ForEach(Icon.allCases) { icon in
                 VStack(spacing: 4) {
                     LabcordIconArtwork(icon: icon, size: 24)
                     Text(icon.rawValue)
@@ -111,3 +111,5 @@ struct LabcordIconArtwork: View {
         .padding()
     }
 }
+
+public typealias LabcordIcon = Icon
