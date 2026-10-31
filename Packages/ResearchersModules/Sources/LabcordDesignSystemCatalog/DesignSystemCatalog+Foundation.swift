@@ -55,7 +55,6 @@ enum CatalogTypography: String, CaseIterable {
 struct DesignSystemFoundationPage: View {
     let item: CatalogItem
     @State private var palette = CatalogFoundationPalette.semantic
-    @State private var typographyPlatform = CatalogTypographyPlatform.current
 
     private var context: ThemeContext { item.context }
 
@@ -93,45 +92,25 @@ struct DesignSystemFoundationPage: View {
     private var typographyCard: some View {
         DesignSystemCatalogCard(
             "Typography",
-            description: "Pretendard iOS / SF Pro watchOS의 공통 semantic style"
+            description: "Pretendard iOS의 semantic style"
         ) {
-            Picker("플랫폼", selection: $typographyPlatform) {
-                catalogPickerOptions(CatalogTypographyPlatform.allCases, capitalized: false)
-            }
-            #if !os(watchOS)
-            .pickerStyle(.segmented)
-            #endif
-            .accessibilityIdentifier("foundation.typography.platform")
-
-            if typographyPlatform == .watch {
-                VStack(alignment: .leading, spacing: 16) {
-                    ForEach(CatalogWatchTypography.allCases, id: \.rawValue) { style in
-                        CatalogWatchTypographyPreview(style: style)
-                            .accessibilityElement(children: .contain)
+            VStack(alignment: .leading, spacing: 16) {
+                ForEach(CatalogTypography.allCases, id: \.rawValue) { style in
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(style.rawValue)
+                            .typography(Typography.caption1)
+                            .foregroundStyle(.labcord(.labelSecondary))
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text("실험의 흐름을 기록해요 0123456789")
+                            .typography(style.style)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                             .accessibilityIdentifier(
-                                "foundation.typography.row.watch.\(style.rawValue)"
+                                "foundation.typography.preview.ios.\(style.rawValue)"
                             )
                     }
-                }
-            } else {
-                VStack(alignment: .leading, spacing: 16) {
-                    ForEach(CatalogTypography.allCases, id: \.rawValue) { style in
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(style.rawValue)
-                                .typography(Typography.caption1)
-                                .foregroundStyle(.labcord(.labelSecondary))
-                                .fixedSize(horizontal: false, vertical: true)
-                            Text("실험의 흐름을 기록해요 0123456789")
-                                .typography(style.style)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .accessibilityIdentifier(
-                                    "foundation.typography.preview.ios.\(style.rawValue)"
-                                )
-                        }
-                        .accessibilityElement(children: .contain)
-                        .accessibilityIdentifier("foundation.typography.row.ios.\(style.rawValue)")
-                    }
+                    .accessibilityElement(children: .contain)
+                    .accessibilityIdentifier("foundation.typography.row.ios.\(style.rawValue)")
                 }
             }
         }
