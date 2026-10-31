@@ -41,7 +41,7 @@ public struct TimelineExperimentState: View {
     }
 }
 
-public typealias LabcordTimelineExperimentState = TimelineExperimentState
+public typealias LabcordExperimentStatusTimelineItem = TimelineExperimentState
 
 #if DEBUG
 #Preview("실험 상태 타임라인") {
