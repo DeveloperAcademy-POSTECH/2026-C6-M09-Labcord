@@ -76,7 +76,7 @@ public struct TimerTabs: View {
                         Text(count)
                             .typography(Typography.callout)
                             .monospacedDigit()
-                            .foregroundStyle(Color("Experiment/Label/Brand", bundle: .module))
+                            .foregroundStyle(Color(.Experiment.Label.brand))
                             .contentTransition(.opacity)
                             .fixedSize(horizontal: true, vertical: false)
                             .accessibilityLabel(Text("\(count)개"))
@@ -101,7 +101,7 @@ public struct TimerTabs: View {
     _ = FontRegistration.register()
     return TimerTabs(selection: $selection, count: "3")
         .padding()
-        .background(Color("Experiment/Background/Primary", bundle: .module))
+        .background(Color(.Experiment.Background.primary))
 }
 
 #Preview("선택 상태") {
@@ -110,5 +110,5 @@ public struct TimerTabs: View {
     _ = FontRegistration.register()
     return TimerTabs(selection: $selection, count: 3)
         .padding()
-        .background(Color("Experiment/Background/Primary", bundle: .module))
+        .background(Color(.Experiment.Background.primary))
 }

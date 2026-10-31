@@ -33,11 +33,11 @@ private struct RunIconButtonContent: View {
         configuration.label
             .frame(minWidth: iconSize, minHeight: iconSize)
             .foregroundStyle(
-                isEnabled ? foreground : Color("Experiment/Label/Disabled", bundle: .module)
+                isEnabled ? foreground : Color(.Experiment.Label.disabled)
             )
             .frame(width: buttonSize, height: buttonSize)
             .background(
-                isEnabled ? background : Color("Experiment/Fill/Disabled", bundle: .module),
+                isEnabled ? background : Color(.Experiment.Fill.disabled),
                 in: Circle()
             )
             .contentShape(Circle())

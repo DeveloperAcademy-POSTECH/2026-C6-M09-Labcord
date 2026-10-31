@@ -34,7 +34,7 @@ private struct LabcordCheckboxToggleBody: View {
                 if labelsVisibility != .hidden {
                     configuration.label
                         .typography(Typography.body)
-                        .foregroundStyle(Color("General/Label/Primary", bundle: .module))
+                        .foregroundStyle(Color(.General.Label.primary))
                 }
             }
             .contentShape(Rectangle())
@@ -98,20 +98,20 @@ struct LabcordSelectionIndicator: View {
             cornerRadius: (resolvedSize == .large ? 8 : 4) * scale, style: .circular
         )
         return shape
-            .fill(Color("General/Fill/PrimaryBrand", bundle: .module))
+            .fill(Color(.General.Fill.primaryBrand))
             .opacity(isSelected ? 1 : 0)
             .overlay {
                 shape.strokeBorder(
                     isSelected
-                        ? Color("General/Fill/PrimaryBrand", bundle: .module)
-                        : Color("General/Border/Default", bundle: .module),
+                        ? Color(.General.Fill.primaryBrand)
+                        : Color(.General.Border.`default`),
                     lineWidth: 1.5 * scale
                 )
             }
             .overlay {
                 if isSelected {
                     LabcordIconArtwork(icon: .checkBold, size: checkSize)
-                        .foregroundStyle(Color("General/Label/Inverse", bundle: .module))
+                        .foregroundStyle(Color(.General.Label.inverse))
                         .transition(.opacity)
                 }
             }
@@ -120,13 +120,13 @@ struct LabcordSelectionIndicator: View {
     private var radio: some View {
         Circle()
             .inset(by: isSelected ? -scale : 0)
-            .fill(Color("General/Fill/PrimaryBrand", bundle: .module))
+            .fill(Color(.General.Fill.primaryBrand))
             .opacity(isSelected ? 1 : 0)
             .overlay {
                 if !isSelected {
                     Circle()
                         .strokeBorder(
-                            Color("General/Border/Default", bundle: .module),
+                            Color(.General.Border.`default`),
                             lineWidth: radioStroke * scale
                         )
                 }
@@ -134,7 +134,7 @@ struct LabcordSelectionIndicator: View {
             .overlay {
                 if isSelected {
                     Circle()
-                        .fill(Color("General/Fill/Light", bundle: .module))
+                        .fill(Color(.General.Fill.light))
                         .frame(width: dotSize * scale, height: dotSize * scale)
                         .transition(.opacity)
                 }

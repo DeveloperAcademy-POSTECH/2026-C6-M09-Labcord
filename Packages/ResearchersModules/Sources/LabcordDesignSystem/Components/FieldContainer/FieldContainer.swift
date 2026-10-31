@@ -79,23 +79,23 @@ public struct FieldContainer<Content: View>: View {
 
     private var labelColor: Color {
         resolvedIsDisabled
-            ? Color("General/Label/Disabled", bundle: .module)
-            : Color("General/Label/Secondary", bundle: .module)
+            ? Color(.General.Label.disabled)
+            : Color(.General.Label.secondary)
     }
 
     private var requiredColor: Color {
         resolvedIsDisabled
-            ? Color("General/Label/Disabled", bundle: .module)
-            : Color("General/Feedback/Error/Foreground", bundle: .module)
+            ? Color(.General.Label.disabled)
+            : Color(.General.Feedback.Error.foreground)
     }
 
     private var feedbackColor: Color {
         if resolvedIsDisabled {
-            return Color("General/Label/Disabled", bundle: .module)
+            return Color(.General.Label.disabled)
         }
         return isError
-            ? Color("General/Feedback/Error/Foreground", bundle: .module)
-            : Color("General/Label/Secondary", bundle: .module)
+            ? Color(.General.Feedback.Error.foreground)
+            : Color(.General.Label.secondary)
     }
 }
 

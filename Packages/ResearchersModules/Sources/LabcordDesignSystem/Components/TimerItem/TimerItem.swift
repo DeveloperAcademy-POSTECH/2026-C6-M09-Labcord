@@ -84,14 +84,14 @@ public struct TimerItem<ID: Hashable>: View {
         )
         .background {
             Rectangle()
-                .fill(Color("Experiment/Timer/Background", bundle: .module))
+                .fill(Color(.Experiment.Timer.background))
                 .opacity(state == .completed ? 1 : 0)
                 .labcordMotion(.state, value: state.rawValue)
                 .allowsHitTesting(false)
         }
         .overlay {
             Rectangle()
-                .strokeBorder(Color("Experiment/Border/Default", bundle: .module), lineWidth: 1)
+                .strokeBorder(Color(.Experiment.Border.default), lineWidth: 1)
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("타이머 \(String(describing: timerID))"))
@@ -105,7 +105,7 @@ public struct TimerItem<ID: Hashable>: View {
             Text(setDuration)
                 .typography(setDurationTypography)
                 .monospacedDigit()
-                .foregroundStyle(Color("Experiment/Label/Tertiary", bundle: .module))
+                .foregroundStyle(Color(.Experiment.Label.tertiary))
                 .contentTransition(.numericText())
                 .labcordMotion(.state, value: setDuration)
                 .multilineTextAlignment(.leading)
@@ -128,8 +128,8 @@ public struct TimerItem<ID: Hashable>: View {
     private var actionButton: some View {
         TimerItemActionButton(
             icon: actionIcon,
-            background: Color("Experiment/Timer/Background", bundle: .module),
-            foreground: Color("Experiment/Timer/Foreground", bundle: .module),
+            background: Color(.Experiment.Timer.background),
+            foreground: Color(.Experiment.Timer.foreground),
             role: state == .completed ? .destructive : nil,
             action: action
         )
@@ -147,11 +147,11 @@ public struct TimerItem<ID: Hashable>: View {
     private var remainingForeground: Color {
         switch state {
         case .running:
-            Color("Experiment/Label/Primary", bundle: .module)
+            Color(.Experiment.Label.primary)
         case .paused:
-            Color("Experiment/Label/Tertiary", bundle: .module)
+            Color(.Experiment.Label.tertiary)
         case .completed:
-            Color("Experiment/Timer/Foreground", bundle: .module)
+            Color(.Experiment.Timer.foreground)
         }
     }
 
@@ -237,7 +237,7 @@ private func noTimerAction() { }
     )
     .frame(width: 297)
     .padding()
-    .background(Color("Experiment/Background/Primary", bundle: .module))
+    .background(Color(.Experiment.Background.primary))
 }
 
 #Preview("일시 정지 · 큰 글자") {
@@ -253,7 +253,7 @@ private func noTimerAction() { }
     .frame(width: 297)
     .environment(\.dynamicTypeSize, .accessibility3)
     .padding()
-    .background(Color("Experiment/Background/Primary", bundle: .module))
+    .background(Color(.Experiment.Background.primary))
 }
 
 #Preview("완료") {
@@ -267,5 +267,5 @@ private func noTimerAction() { }
     )
     .frame(width: 297)
     .padding()
-    .background(Color("Experiment/Background/Primary", bundle: .module))
+    .background(Color(.Experiment.Background.primary))
 }

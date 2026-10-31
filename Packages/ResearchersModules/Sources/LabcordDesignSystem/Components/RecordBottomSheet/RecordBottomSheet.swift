@@ -32,17 +32,17 @@ public struct RecordBottomSheet: View {
     private let voiceOnSeek: ((Double) -> Void)?
     private let mediaContent: AnyView?
     private let transcriptContent: AnyView?
-    private let memoContent: AnyView?
+    private let noteContent: AnyView?
     private let transcriptHelp: String
     private let onDismiss: (() -> Void)?
     private let onSave: () -> Void
     private let onDelete: () -> Void
 
-    @Binding private var memo: String
+    @Binding private var note: String
     @Binding private var transcript: String
-    @FocusState private var isMemoFocused: Bool
+    @FocusState private var isNoteFocused: Bool
     @FocusState private var isTranscriptFocused: Bool
-    @State private var memoBounds = CGRect.zero
+    @State private var noteBounds = CGRect.zero
     @State private var transcriptBounds = CGRect.zero
     @State private var isKeyboardVisible = false
 
@@ -68,10 +68,10 @@ public struct RecordBottomSheet: View {
         transcript: Binding<String> = .constant(
             "샘플 B, 반응 시작 5분 후 연한 노란색으로 변했고 침전은 없음"
         ),
-        memo: Binding<String> = .constant(""),
+        note: Binding<String> = .constant(""),
         mediaContent: AnyView? = nil,
         transcriptContent: AnyView? = nil,
-        memoContent: AnyView? = nil,
+        noteContent: AnyView? = nil,
         transcriptHelp: String = "잘못 인식된 용어와 수치를 확인해 주세요.",
         onDismiss: (() -> Void)? = nil,
         onSave: @escaping () -> Void = {},
@@ -92,10 +92,10 @@ public struct RecordBottomSheet: View {
         self.voiceOnToggle = voiceOnToggle
         self.voiceOnSeek = voiceOnSeek
         self._transcript = transcript
-        self._memo = memo
+        self._note = note
         self.mediaContent = mediaContent
         self.transcriptContent = transcriptContent
-        self.memoContent = memoContent
+        self.noteContent = noteContent
         self.transcriptHelp = transcriptHelp
         self.onDismiss = onDismiss
         self.onSave = onSave
@@ -116,7 +116,7 @@ public struct RecordBottomSheet: View {
                     bounds: $transcriptBounds
                 )
             }
-            memoField
+            noteField
             actions
         }
         .padding(.horizontal, LayoutTokens.spacing16)
@@ -124,13 +124,13 @@ public struct RecordBottomSheet: View {
         .padding(.bottom, bottomPadding)
         .frame(maxWidth: .infinity)
         .background(
-            Color("General/Background/Grouped/Secondary", bundle: .module),
+            Color(.General.Background.Grouped.secondary),
             ignoresSafeAreaEdges: []
         )
         .clipShape(RoundedRectangle(cornerRadius: isPresented ? 0 : 28, style: .continuous))
         .shadow(
             color: isPresented
-                ? .clear : Color("General/Effect/Shadow/Medium/Color", bundle: .module),
+                ? .clear : Color(.General.Effect.Shadow.Medium.color),
             radius: EffectTokens(context: .general).shadowMediumRadius,
             x: 0,
             y: EffectTokens(context: .general).shadowMediumOffsetY
@@ -138,8 +138,8 @@ public struct RecordBottomSheet: View {
         .accessibilityElement(children: .contain)
         .simultaneousGesture(
             SpatialTapGesture(coordinateSpace: .global).onEnded { value in
-                if isMemoFocused, !memoBounds.contains(value.location) {
-                    isMemoFocused = false
+                if isNoteFocused, !noteBounds.contains(value.location) {
+                    isNoteFocused = false
                 }
                 if isTranscriptFocused, !transcriptBounds.contains(value.location) {
                     isTranscriptFocused = false
@@ -162,7 +162,7 @@ public struct RecordBottomSheet: View {
 
     private var grabber: some View {
         Capsule()
-            .fill(Color("General/Fill/Quaternary", bundle: .module))
+            .fill(Color(.General.Fill.quaternary))
             .frame(width: 36, height: 5)
             .accessibilityHidden(true)
     }
@@ -171,14 +171,14 @@ public struct RecordBottomSheet: View {
         HStack(alignment: .center) {
             Button(action: close) {
                 LabcordIconArtwork(icon: .x, size: 16, relativeTo: .body)
-                    .foregroundStyle(Color("General/Label/Primary", bundle: .module))
+                    .foregroundStyle(Color(.General.Label.primary))
             }
             .buttonStyle(.labcordIcon(.tertiary, size: .medium))
             .accessibilityLabel(Text("닫기"))
 
             Text("기록")
                 .typography(Typography.bodySemiBold)
-                .foregroundStyle(Color("General/Label/Primary", bundle: .module))
+                .foregroundStyle(Color(.General.Label.primary))
                 .frame(maxWidth: .infinity)
 
             Color.clear.frame(width: 34 * headerControlScale, height: 34 * headerControlScale)
@@ -233,18 +233,18 @@ public struct RecordBottomSheet: View {
         }
     }
 
-    private var memoField: some View {
+    private var noteField: some View {
         VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
             Text("메모")
                 .typography(Typography.calloutSemiBold)
-                .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
+                .foregroundStyle(Color(.General.Label.secondary))
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            if let memoContent {
-                memoContent
+            if let noteContent {
+                noteContent
                     .frame(maxWidth: .infinity, minHeight: 120)
             } else {
-                defaultMemoEditor
+                defaultNoteEditor
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -284,20 +284,20 @@ private extension RecordBottomSheet {
     }
 
     @ViewBuilder
-    var defaultMemoEditor: some View {
+    var defaultNoteEditor: some View {
 #if os(watchOS)
-        recordSheetReadOnlyText(memo)
+        recordSheetReadOnlyText(note)
 #else
-        TextEditor(text: $memo)
+        TextEditor(text: $note)
             .labcordTextEditorStyle(
-                text: memo,
-                focus: $isMemoFocused,
+                text: note,
+                focus: $isNoteFocused,
                 placeholder: Text("내용을 입력해 주세요")
             )
             .onGeometryChange(for: CGRect.self) { geometry in
                 geometry.frame(in: .global)
             } action: { bounds in
-                memoBounds = bounds
+                noteBounds = bounds
             }
             .accessibilityLabel(Text("메모"))
 #endif

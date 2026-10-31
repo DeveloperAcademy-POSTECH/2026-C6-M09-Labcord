@@ -59,13 +59,13 @@ public struct ExperimentListItem: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
             Rectangle()
-                .fill(Color("General/Fill/Selected", bundle: .module))
+                .fill(Color(.General.Fill.selected))
                 .opacity(isSelected ? 1 : 0)
                 .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: isSelected)
         }
         .overlay(alignment: .bottom) {
             Rectangle()
-                .fill(Color("General/Border/Default", bundle: .module))
+                .fill(Color(.General.Border.`default`))
                 .frame(height: 0.5)
                 .accessibilityHidden(true)
         }
@@ -111,14 +111,14 @@ public struct ExperimentListItem: View {
         VStack(alignment: .leading, spacing: LayoutTokens.spacing4) {
             Text(title)
                 .typography(Typography.body)
-                .foregroundStyle(Color("General/Label/Primary", bundle: .module))
+                .foregroundStyle(Color(.General.Label.primary))
                 .contentTransition(.opacity)
                 .labcordMotion(.state, value: title)
                 .fixedSize(horizontal: false, vertical: true)
 
             Text(date)
                 .typography(Typography.subheadline)
-                .foregroundStyle(Color("General/Label/Tertiary", bundle: .module))
+                .foregroundStyle(Color(.General.Label.tertiary))
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -138,8 +138,8 @@ public struct ExperimentListItem: View {
 
     private var openIconForeground: Color {
         isEnabled
-            ? Color("General/Label/Tertiary", bundle: .module)
-            : Color("General/Action/Disabled/Foreground", bundle: .module)
+            ? Color(.General.Label.tertiary)
+            : Color(.General.Action.Disabled.foreground)
     }
 
     private var openButton: some View {
