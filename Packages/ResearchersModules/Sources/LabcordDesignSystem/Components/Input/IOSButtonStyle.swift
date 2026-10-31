@@ -1,7 +1,7 @@
 import SwiftUI
 
 @MainActor
-public struct LabcordButtonStyle: ButtonStyle {
+public struct IOSButtonStyle: ButtonStyle {
     public enum Variant: String, CaseIterable, Sendable {
         case primary
         case secondary
@@ -16,12 +16,12 @@ public struct LabcordButtonStyle: ButtonStyle {
     }
 
     private let variant: Variant
-    private let size: LabcordControlSize?
+    private let size: ComponentSize?
     private let isLoading: Bool
 
     public init(
         _ variant: Variant,
-        size: LabcordControlSize? = nil,
+        size: ComponentSize? = nil,
         isLoading: Bool = false
     ) {
         self.variant = variant
@@ -45,11 +45,11 @@ public struct LabcordButtonStyle: ButtonStyle {
 
         let configuration: ButtonStyleConfiguration
         let variant: Variant
-        let size: LabcordControlSize?
+        let size: ComponentSize?
         let isLoading: Bool
 
-        private var resolvedSize: LabcordControlSize {
-            size ?? LabcordControlSize(controlSize)
+        private var resolvedSize: ComponentSize {
+            size ?? ComponentSize(controlSize)
         }
 
         private var metrics: LabcordButtonMetrics {
@@ -153,13 +153,13 @@ public struct LabcordButtonStyle: ButtonStyle {
     }
 }
 
-public extension ButtonStyle where Self == LabcordButtonStyle {
+public extension ButtonStyle where Self == IOSButtonStyle {
     static func labcord(
-        _ variant: LabcordButtonStyle.Variant,
-        size: LabcordControlSize? = nil,
+        _ variant: IOSButtonStyle.Variant,
+        size: ComponentSize? = nil,
         isLoading: Bool = false
-    ) -> LabcordButtonStyle {
-        LabcordButtonStyle(variant, size: size, isLoading: isLoading)
+    ) -> IOSButtonStyle {
+        IOSButtonStyle(variant, size: size, isLoading: isLoading)
     }
 }
 
@@ -176,7 +176,7 @@ struct LabcordButtonMetrics {
     let typography: TypographyStyle
 
     @MainActor
-    init(size: LabcordControlSize, variant: LabcordButtonStyle.Variant) {
+    init(size: ComponentSize, variant: IOSButtonStyle.Variant) {
         let layout = LayoutTokens()
 
         switch size {
@@ -243,7 +243,7 @@ struct LabcordButtonAppearance {
 }
 
 func labcordButtonAppearance(
-    variant: LabcordButtonStyle.Variant,
+    variant: IOSButtonStyle.Variant,
     isDestructive: Bool,
     isDisabled: Bool
 ) -> LabcordButtonAppearance {
@@ -315,3 +315,5 @@ func labcordButtonAppearance(
     }
     .padding()
 }
+
+public typealias LabcordButtonStyle = IOSButtonStyle

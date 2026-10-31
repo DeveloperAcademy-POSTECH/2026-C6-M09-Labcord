@@ -156,7 +156,7 @@ public struct TimerItem<ID: Hashable>: View {
         }
     }
 
-    private var actionIcon: LabcordIcon {
+    private var actionIcon: Icon {
         switch state {
         case .running:
             .pause
@@ -186,7 +186,7 @@ private extension TimerItem.State {
 }
 
 private struct TimerItemActionButton: View {
-    let icon: LabcordIcon
+    let icon: Icon
     let background: Color
     let foreground: Color
     let role: ButtonRole?
@@ -212,7 +212,7 @@ private struct TimerItemActionButton: View {
     }
 }
 
-private extension LabcordIcon {
+private extension Icon {
     var accessibilityLabel: String {
         switch self {
         case .pause:

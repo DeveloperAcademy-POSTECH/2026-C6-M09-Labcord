@@ -10,7 +10,7 @@ public enum DropdownState: String, Sendable {
 
 public struct DropdownTriggerLabel: View {
     private let value: String
-    private let size: LabcordControlSize?
+    private let size: ComponentSize?
     private let state: DropdownState
     private let isPresented: Bool
 
@@ -20,7 +20,7 @@ public struct DropdownTriggerLabel: View {
 
     public init(
         value: String,
-        size: LabcordControlSize? = nil,
+        size: ComponentSize? = nil,
         state: DropdownState = .default,
         isPresented: Bool = false
     ) {
@@ -60,8 +60,8 @@ public struct DropdownTriggerLabel: View {
         .contentShape(RoundedRectangle(cornerRadius: layout.radiusSm))
     }
 
-    private var resolvedSize: LabcordControlSize {
-        size ?? LabcordControlSize(controlSize)
+    private var resolvedSize: ComponentSize {
+        size ?? ComponentSize(controlSize)
     }
 
     private var effectiveState: DropdownState {
@@ -158,7 +158,7 @@ public struct DropdownTriggerLabel: View {
 
 public struct DropdownTrigger<MenuContent: View>: View {
     private let value: String
-    private let size: LabcordControlSize?
+    private let size: ComponentSize?
     private let state: DropdownState
     private let isPresented: Bool
     private let menuContent: () -> MenuContent
@@ -166,7 +166,7 @@ public struct DropdownTrigger<MenuContent: View>: View {
 
     public init(
         value: String,
-        size: LabcordControlSize? = nil,
+        size: ComponentSize? = nil,
         state: DropdownState = .default,
         isPresented: Bool = false,
         @ViewBuilder menuContent: @escaping () -> MenuContent

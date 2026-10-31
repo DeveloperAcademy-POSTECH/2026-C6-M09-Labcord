@@ -1,16 +1,16 @@
 import SwiftUI
 
 @MainActor
-public struct IconButtonStyle: ButtonStyle {
-    public typealias Variant = LabcordButtonStyle.Variant
+public struct IOSIconButtonStyle: ButtonStyle {
+    public typealias Variant = IOSButtonStyle.Variant
 
     private let variant: Variant
-    private let size: LabcordControlSize?
+    private let size: ComponentSize?
     private let isLoading: Bool
 
     public init(
         _ variant: Variant,
-        size: LabcordControlSize? = nil,
+        size: ComponentSize? = nil,
         isLoading: Bool = false
     ) {
         self.variant = variant
@@ -35,11 +35,11 @@ public struct IconButtonStyle: ButtonStyle {
 
         let configuration: ButtonStyleConfiguration
         let variant: Variant
-        let size: LabcordControlSize?
+        let size: ComponentSize?
         let isLoading: Bool
 
-        private var resolvedSize: LabcordControlSize {
-            size ?? LabcordControlSize(controlSize)
+        private var resolvedSize: ComponentSize {
+            size ?? ComponentSize(controlSize)
         }
 
         private var metrics: LabcordIconButtonMetrics {
@@ -138,13 +138,13 @@ public struct IconButtonStyle: ButtonStyle {
     }
 }
 
-public extension ButtonStyle where Self == IconButtonStyle {
+public extension ButtonStyle where Self == IOSIconButtonStyle {
     static func labcordIcon(
-        _ variant: IconButtonStyle.Variant,
-        size: LabcordControlSize? = nil,
+        _ variant: IOSIconButtonStyle.Variant,
+        size: ComponentSize? = nil,
         isLoading: Bool = false
-    ) -> IconButtonStyle {
-        IconButtonStyle(variant, size: size, isLoading: isLoading)
+    ) -> IOSIconButtonStyle {
+        IOSIconButtonStyle(variant, size: size, isLoading: isLoading)
     }
 }
 
@@ -154,7 +154,7 @@ struct LabcordIconButtonMetrics {
     let loadingIndicatorSize: LoadingIndicatorStyle.Size
     let loadingSlotSize: CGFloat
 
-    init(size: LabcordControlSize) {
+    init(size: ComponentSize) {
         switch size {
         case .small:
             containerSize = 28
@@ -193,3 +193,5 @@ struct LabcordIconButtonMetrics {
     }
     .padding()
 }
+
+public typealias IconButtonStyle = IOSIconButtonStyle

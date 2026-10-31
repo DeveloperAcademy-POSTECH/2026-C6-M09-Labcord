@@ -29,7 +29,7 @@ struct DesignSystemControlsPage: View {
                     description: "전체 아이콘을 크기와 이름으로 확인"
                 ) {
                     CatalogIconGridLayout {
-                        ForEach(LabcordIcon.allCases) { icon in
+                        ForEach(Icon.allCases) { icon in
                             VStack(spacing: 6) {
                                 Image(labcordIcon: icon)
                                     .resizable()

@@ -4,8 +4,8 @@ import SwiftUI
 struct CatalogControlButtonScenario: View {
     let iconOnly: Bool
 
-    @State private var size = LabcordControlSize.small
-    @State private var variant = LabcordButtonStyle.Variant.primary
+    @State private var size = ComponentSize.small
+    @State private var variant = IOSButtonStyle.Variant.primary
     @State private var state = CatalogControlButtonState.normal
     @State private var isDestructive = false
     @State private var showsIcon = true
@@ -18,7 +18,7 @@ struct CatalogControlButtonScenario: View {
     }
 
     private var identifier: String { "catalog.scenario.\(iconOnly ? "iconButton" : "button")" }
-    private var icon: LabcordIcon { iconOnly ? .caretLeft : .plus }
+    private var icon: Icon { iconOnly ? .caretLeft : .plus }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -34,11 +34,11 @@ struct CatalogControlButtonScenario: View {
                 .accessibilityIdentifier(identifier + ".actionCount")
 
             Picker("크기", selection: $size) {
-                catalogPickerOptions(LabcordControlSize.allCases)
+                catalogPickerOptions(ComponentSize.allCases)
             }
             .accessibilityIdentifier(identifier + ".size")
             Picker("Appearance", selection: $variant) {
-                ForEach(LabcordButtonStyle.Variant.allCases, id: \.rawValue) { variant in
+                ForEach(IOSButtonStyle.Variant.allCases, id: \.rawValue) { variant in
                     Text(variant.catalogAppearanceName).tag(variant)
                 }
             }
@@ -99,7 +99,7 @@ struct CatalogControlButtonScenario: View {
     }
 }
 
-private extension LabcordButtonStyle.Variant {
+private extension IOSButtonStyle.Variant {
     var catalogAppearanceName: String {
         switch self {
         case .primary: "Filled"

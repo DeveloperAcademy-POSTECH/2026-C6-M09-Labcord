@@ -6,7 +6,7 @@ public struct RecordButton: View {
         case capture
         case video
 
-        fileprivate var icon: LabcordIcon {
+        fileprivate var icon: Icon {
             switch self {
             case .audio:
                 .record
@@ -71,12 +71,12 @@ public struct RecordButton: View {
 }
 
 private struct RecordButtonIcon: View {
-    private let icon: LabcordIcon
+    private let icon: Icon
     private let artworkCanvasSize: CGFloat
     @ScaledMetric private var slotSize: CGFloat
     @ScaledMetric private var captureCanvasSize: CGFloat
 
-    init(icon: LabcordIcon, slotSize: CGFloat, artworkCanvasSize: CGFloat) {
+    init(icon: Icon, slotSize: CGFloat, artworkCanvasSize: CGFloat) {
         self.icon = icon
         self.artworkCanvasSize = artworkCanvasSize
         _slotSize = ScaledMetric(wrappedValue: slotSize, relativeTo: .body)
