@@ -61,7 +61,7 @@ public struct ExperimentTitleSection<Leading: View, Trailing: View>: View {
     private var titleView: some View {
         Text(title)
             .typography(Typography.headline)
-            .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
+            .foregroundStyle(Color(.General.Label.secondary))
             .multilineTextAlignment(.leading)
             .fixedSize(horizontal: false, vertical: true)
             .layoutPriority(1)
@@ -101,7 +101,7 @@ public extension ExperimentTitleSection where Trailing == EmptyView {
     )
     .frame(width: 749)
     .padding()
-    .background(Color("General/Background/Primary", bundle: .module))
+    .background(Color(.General.Background.primary))
 
 }
 
@@ -116,7 +116,7 @@ public extension ExperimentTitleSection where Trailing == EmptyView {
     .environment(\.dynamicTypeSize, .accessibility3)
     .frame(width: 401)
     .padding()
-    .background(Color("General/Background/Primary", bundle: .module))
+    .background(Color(.General.Background.primary))
 
 }
 

@@ -28,7 +28,7 @@ public struct RadioButton<Value: Hashable, Label: View>: View {
                 if labelsVisibility != .hidden {
                     label
                         .typography(Typography.body)
-                        .foregroundStyle(Color("General/Label/Primary", bundle: .module))
+                        .foregroundStyle(Color(.General.Label.primary))
                 }
             }
             .contentShape(Rectangle())
