@@ -41,7 +41,11 @@ struct SessionHeaderView: View {
 }
 
 #Preview {
-    SessionHeaderView(store: Store(initialState: ExperimentSessionFeature.State()) {
-        ExperimentSessionFeature()
-    })
+    SessionHeaderView(
+        store: Store(
+            initialState: ExperimentSessionFeature.State(experimentID: UUID())
+        ) {
+            ExperimentSessionFeature()
+        }
+    )
 }

@@ -7,6 +7,8 @@ import LabcordShared
 struct ExperimentSessionFeature {
     @ObservableState
     struct State: Equatable {
+        let experimentID: UUID
+        
         var permissions = SessionPermissionsFeature.State()
         var voice = VoiceRecordingFeature.State()
         var capture = CameraCaptureFeature.State()

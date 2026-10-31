@@ -53,7 +53,9 @@ struct PortraitSessionView: View {
         timerStore: Store(initialState: SessionTimerFeature.State()) {
             SessionTimerFeature()
         },
-        sessionStore: Store(initialState: ExperimentSessionFeature.State()) {
+        sessionStore: Store(
+            initialState: ExperimentSessionFeature.State(experimentID: UUID())
+        ) {
             ExperimentSessionFeature()
         }
     )

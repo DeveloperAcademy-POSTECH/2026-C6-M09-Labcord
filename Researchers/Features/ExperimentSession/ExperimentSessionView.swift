@@ -163,7 +163,13 @@ struct ExperimentSessionView: View {
 }
 
 #Preview {
-    ExperimentSessionView(store: Store(initialState: ExperimentSessionFeature.State()) {
-        ExperimentSessionFeature()
-    })
+    ExperimentSessionView(
+        store: Store(
+            initialState: ExperimentSessionFeature.State(
+                experimentID: UUID()
+            )
+        ) {
+            ExperimentSessionFeature()
+        }
+    )
 }
