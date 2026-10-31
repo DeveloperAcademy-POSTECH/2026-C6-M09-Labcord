@@ -13,4 +13,4 @@ VoicePlayer(duration: durationText, isPlaying: $isPlaying, progress: $progress,
 - 기본 Slider의 탐색 종료는 `onEditingChanged(false)` 다음 `onSeek` 순서입니다. 최종 seek 전에 엔진 진행률로 Binding을 덮어쓰지 않게 조율합니다.
 - `waveform` 슬롯은 파형을 표시하며 같은 Slider로 재생 위치를 탐색합니다.
 
-[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/VoicePlayer.swift) · [오디오 연결 예시](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystemCatalog/DesignSystemCatalog+ReviewAudio.swift)
+[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/VoicePlayer/VoicePlayer.swift) · [오디오 연결 예시](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystemCatalog/DesignSystemCatalog+ReviewAudio.swift)

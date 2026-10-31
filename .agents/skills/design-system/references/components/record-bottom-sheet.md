@@ -16,4 +16,4 @@ RecordBottomSheet(type: .voice, contentState: canSave ? .filled : .empty,
 - `onDismiss`를 주면 부모가 presentation을 닫습니다. 저장·삭제 후 저장 처리와 닫힘 순서도 부모가 정합니다.
 - 사진·영상은 `photoContent`·`videoContent` 또는 `mediaContent` 슬롯을 사용합니다. 엔진의 시작·중지·자원 정리는 슬롯 호출자가 맡습니다.
 
-[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/RecordBottomSheet.swift) · [콘텐츠 initializer](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/RecordBottomSheet+Transcript.swift)
+[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/RecordBottomSheet/RecordBottomSheet.swift) · [콘텐츠 initializer](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/RecordBottomSheet/RecordBottomSheet+Transcript.swift)

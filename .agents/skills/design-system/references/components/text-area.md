@@ -1,6 +1,6 @@
 # Text Area
 
-[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/LabcordTextEditorStyle.swift)
+[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/TextEditor/LabcordTextEditorStyle.swift)
 
 iOS 예제의 `memo`는 부모의 문자열 Binding이고 `focus`는 화면의 `FocusState<Bool>`입니다.
 

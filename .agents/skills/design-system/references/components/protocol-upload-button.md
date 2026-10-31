@@ -11,4 +11,4 @@ ProtocolUploadButton("프로토콜", description: "파일을 선택해 주세요
 - 파일 가져오기 화면·확장자/용량 검증·업로드는 `selectFile` 호출부가 처리합니다.
 - `.disabled` 상태와 부모의 `.disabled(...)`를 존중합니다. 기본 initializer는 `.selected`이므로 실제 상태를 명시합니다.
 
-[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/ProtocolUploadButton.swift)
+[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/ProtocolUploadButton/ProtocolUploadButton.swift)

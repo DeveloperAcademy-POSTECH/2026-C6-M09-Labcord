@@ -11,4 +11,4 @@ TimerSettingSheet(duration: $draftDuration, onCancel: cancelDraft,
 - `onCancel`을 제공하면 닫기도 콜백이 맡습니다. 생략하면 native dismiss만 수행하며 Binding 값을 되돌리지 않습니다.
 - 휠만 필요하면 [Time Picker](time-picker.md)를 사용합니다.
 
-[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/TimerSettingSheet.swift)
+[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/TimerSettingSheet/TimerSettingSheet.swift)

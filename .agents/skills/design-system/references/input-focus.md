@@ -1,6 +1,6 @@
 # 입력 포커스·키보드
 
-소스: [InputInteraction.swift](../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/InputInteraction.swift).
+소스: [InputInteraction.swift](../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/Shared/InputInteraction.swift).
 
 - 호출부가 `@FocusState`를 소유합니다. `text:` 편의 modifier에는 현재 `String`, `focus:`에는 `FocusState.Binding`을 전달합니다.
 - 편의 modifier가 포커스를 연결하므로 `.focused`·`.labcordInputFocus`를 다시 적용하지 않습니다.

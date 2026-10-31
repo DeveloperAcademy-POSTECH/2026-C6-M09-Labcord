@@ -12,4 +12,4 @@ TimerItem(timerID, remainingTime: remaining, setDuration: configured,
 - 진행/일시정지에서는 `onToggle`, 완료에서는 `onRemove`가 호출됩니다.
 - [시간 형식](../time-formatting.md)에 맞춰 시분초 포함 여부를 선택하고 긴 값이 잘리지 않는지 확인합니다.
 
-[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/TimerItem.swift)
+[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/TimerItem/TimerItem.swift)

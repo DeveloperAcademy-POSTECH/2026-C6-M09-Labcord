@@ -1,6 +1,6 @@
 # Status Badge
 
-[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/LabcordStatusBadge.swift)
+[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/StatusBadge/LabcordStatusBadge.swift)
 
 `status`는 실험의 현재 `LabcordShared.ExperimentStatus`입니다.
 

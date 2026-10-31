@@ -1,6 +1,6 @@
 # Radio Button
 
-[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/LabcordRadioButton.swift)
+[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/RadioButton/LabcordRadioButton.swift)
 
 `firstSampleID`와 `selectedID`의 값 타입은 같은 `Hashable` 타입입니다. 선택 Binding은 부모가 소유합니다.
 

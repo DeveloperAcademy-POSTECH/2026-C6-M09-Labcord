@@ -11,4 +11,4 @@ LabcordChipGroup(samples, selection: $selectedIDs, label: \.title,
 - `onRemove`는 실제 배열도 갱신해야 합니다. `onAdd`는 추가 액션이며 새 항목은 부모가 배열에 넣습니다.
 - 추가 버튼이 필요 없으면 `onAdd`를 생략합니다.
 
-[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/ChipGroup.swift)
+[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/ChipGroup/ChipGroup.swift)

@@ -10,4 +10,4 @@ ProtocolTimerRow(duration, onEdit: openTimerEditor)
 - 연필 버튼은 `onEdit`만 호출합니다. 편집·저장 결과를 반영해 부모가 `duration`을 갱신합니다.
 - 표시 정책은 [시간 형식](../time-formatting.md)을 확인합니다.
 
-[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/ProtocolTimerRow.swift)
+[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/ProtocolTimerRow/ProtocolTimerRow.swift)

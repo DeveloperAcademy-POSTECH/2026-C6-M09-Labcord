@@ -1,6 +1,6 @@
 # Checkbox
 
-[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/LabcordCheckboxStyle.swift)
+[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/Checkbox/LabcordCheckboxStyle.swift)
 
 `isIncluded`는 부모가 제공한 선택 `Binding<Bool>`입니다.
 

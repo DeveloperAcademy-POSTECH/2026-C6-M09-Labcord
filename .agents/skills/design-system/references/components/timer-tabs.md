@@ -10,4 +10,4 @@ TimerTabs(selection: $selection, count: runningCount, style: .plain)
 - 개수는 `.plain`에서 `showCount == true`이고 `count != nil`일 때 표시합니다. `.pill`에는 표시하지 않습니다.
 - 개수 값과 탭 제목을 상태 변경마다 새로운 ID로 바꾸지 않습니다.
 
-[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/TimerTabs.swift)
+[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/TimerTabs/TimerTabs.swift)
