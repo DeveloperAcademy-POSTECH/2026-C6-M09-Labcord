@@ -1,66 +1,22 @@
+import LabcordShared
 import SwiftUI
 
 public struct LabcordStatusBadge: View {
-    public enum Status: String, CaseIterable, Sendable {
-        case ready
-        case running
-        case paused
-        case completed
 
-        var defaultLabel: String {
-            switch self {
-            case .ready:
-                "준비"
-            case .running:
-                "진행 중"
-            case .paused:
-                "일시정지"
-            case .completed:
-                "완료"
-            }
-        }
-
-        var foregroundToken: ColorToken {
-            switch self {
-            case .ready:
-                .experimentStatusReadyForeground
-            case .running:
-                .experimentStatusInProgressForeground
-            case .paused:
-                .experimentStatusPausedForeground
-            case .completed:
-                .experimentStatusCompletedForeground
-            }
-        }
-
-        var backgroundToken: ColorToken {
-            switch self {
-            case .ready:
-                .experimentStatusReadyBackground
-            case .running:
-                .experimentStatusInProgressBackground
-            case .paused:
-                .experimentStatusPausedBackground
-            case .completed:
-                .experimentStatusCompletedBackground
-            }
-        }
-    }
-
-    private let status: Status
+    private let status: ExperimentStatus
     private let label: String
     private let layout = LayoutTokens()
 
     @Environment(\.labcordTheme) private var theme
     @Environment(\.colorScheme) private var colorScheme
 
-    public init(status: Status, label: String? = nil) {
+    public init(status: ExperimentStatus, label: String? = nil) {
         self.status = status
         self.label = label ?? status.defaultLabel
     }
 
     private var usesGeneralReadyColors: Bool {
-        status == .ready && theme.resolvedContext(for: colorScheme) == .general
+        status == .preparing && theme.resolvedContext(for: colorScheme) == .general
     }
 
     private var foregroundToken: ColorToken {
@@ -82,5 +38,34 @@ public struct LabcordStatusBadge: View {
             .frame(minWidth: 70, minHeight: 28)
             .background(.labcord(backgroundToken), in: RoundedRectangle(cornerRadius: 8))
             .accessibilityLabel(Text(label))
+    }
+}
+
+private extension ExperimentStatus {
+    var defaultLabel: String {
+        switch self {
+        case .preparing: "준비"
+        case .inProgress: "진행 중"
+        case .paused: "일시정지"
+        case .completed: "완료"
+        }
+    }
+
+    var foregroundToken: ColorToken {
+        switch self {
+        case .preparing: .experimentStatusReadyForeground
+        case .inProgress: .experimentStatusInProgressForeground
+        case .paused: .experimentStatusPausedForeground
+        case .completed: .experimentStatusCompletedForeground
+        }
+    }
+
+    var backgroundToken: ColorToken {
+        switch self {
+        case .preparing: .experimentStatusReadyBackground
+        case .inProgress: .experimentStatusInProgressBackground
+        case .paused: .experimentStatusPausedBackground
+        case .completed: .experimentStatusCompletedBackground
+        }
     }
 }
