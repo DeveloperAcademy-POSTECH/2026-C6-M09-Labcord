@@ -14,7 +14,7 @@ public struct LabcordAccordion<Content: View>: View {
     private let state: LabcordAccordionState
     private let content: () -> Content
 
-    @Environment(\.labcordTheme) private var theme
+    private let tokenLayout = LayoutTokens()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(
@@ -54,20 +54,20 @@ public struct LabcordAccordion<Content: View>: View {
     public var body: some View {
         VStack(
             alignment: .leading,
-            spacing: isOpen ? theme.layout.spacing16 : theme.layout.spacing12
+            spacing: isOpen ? tokenLayout.spacing16 : tokenLayout.spacing12
         ) {
             Button(action: toggle) {
-                HStack(spacing: theme.layout.spacing12) {
-                    HStack(spacing: theme.layout.spacing12) {
+                HStack(spacing: tokenLayout.spacing12) {
+                    HStack(spacing: tokenLayout.spacing12) {
                         Text(title)
                             .typography(Typography.callout)
-                            .foregroundStyle(.labcord(foregroundToken))
+                            .foregroundStyle(foregroundColor)
                             .fixedSize(horizontal: false, vertical: true)
 
                         if hasCount {
                             Text(count)
                                 .typography(Typography.subheadline)
-                                .foregroundStyle(.labcord(countToken))
+                                .foregroundStyle(countColor)
                                 .contentTransition(.numericText())
                                 .labcordMotion(.state, value: count)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -82,7 +82,7 @@ public struct LabcordAccordion<Content: View>: View {
                         size: 20,
                         relativeTo: .callout
                     )
-                    .foregroundStyle(.labcord(countToken))
+                    .foregroundStyle(countColor)
                     .rotationEffect(.degrees(isOpen ? 180 : 0))
                 }
                 .contentShape(Rectangle())
@@ -97,16 +97,16 @@ public struct LabcordAccordion<Content: View>: View {
             }
         }
         .animation(expansionAnimation, value: isOpen)
-        .padding(theme.layout.spacing16)
+        .padding(tokenLayout.spacing16)
         .padding(1)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            .labcord(backgroundToken),
-            in: RoundedRectangle(cornerRadius: theme.layout.radiusSm)
+            backgroundColor,
+            in: RoundedRectangle(cornerRadius: tokenLayout.radiusSm)
         )
         .overlay {
-            RoundedRectangle(cornerRadius: theme.layout.radiusSm)
-                .strokeBorder(.labcord(.borderDefault), lineWidth: 1)
+            RoundedRectangle(cornerRadius: tokenLayout.radiusSm)
+                .strokeBorder(Color("General/Border/Default", bundle: .module), lineWidth: 1)
         }
         .accessibilityElement(children: .contain)
     }
@@ -123,16 +123,22 @@ public struct LabcordAccordion<Content: View>: View {
         showsCount && !count.isEmpty && count != "0"
     }
 
-    private var foregroundToken: ColorToken {
-        state == .disabled ? .labelDisabled : .labelPrimary
+    private var foregroundColor: Color {
+        state == .disabled
+            ? Color("General/Label/Disabled", bundle: .module)
+            : Color("General/Label/Primary", bundle: .module)
     }
 
-    private var countToken: ColorToken {
-        state == .disabled ? .labelDisabled : .labelSecondary
+    private var countColor: Color {
+        state == .disabled
+            ? Color("General/Label/Disabled", bundle: .module)
+            : Color("General/Label/Secondary", bundle: .module)
     }
 
-    private var backgroundToken: ColorToken {
-        state == .disabled ? .fillSecondary : .backgroundGroupedSecondary
+    private var backgroundColor: Color {
+        state == .disabled
+            ? Color("General/Fill/Secondary", bundle: .module)
+            : Color("General/Background/Grouped/Secondary", bundle: .module)
     }
 
     private func toggle() {
@@ -151,7 +157,7 @@ private struct AccordionPreviewContent: View {
         LabcordAccordion(isExpanded: $isExpanded) {
             Text("콘텐츠 슬롯")
                 .typography(Typography.subheadline)
-                .foregroundStyle(.labcord(.labelSecondary))
+                .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
         }
     }
 }

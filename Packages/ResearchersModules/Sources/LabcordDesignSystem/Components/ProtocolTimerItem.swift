@@ -25,7 +25,7 @@ public struct ProtocolTimerItem: View {
         VStack(alignment: .center, spacing: 0) {
             Text(value)
                 .typography(valueTypography)
-                .foregroundStyle(.labcord(.labelPrimary))
+                .foregroundStyle(Color("Experiment/Label/Primary", bundle: .module))
                 .contentTransition(.numericText())
                 .labcordMotion(.state, value: value)
                 .multilineTextAlignment(.center)
@@ -33,7 +33,7 @@ public struct ProtocolTimerItem: View {
 
             Text(unit)
                 .typography(Typography.footnote)
-                .foregroundStyle(.labcord(.labelTertiary))
+                .foregroundStyle(Color("Experiment/Label/Tertiary", bundle: .module))
                 .contentTransition(.opacity)
                 .labcordMotion(.state, value: unit)
                 .multilineTextAlignment(.center)
@@ -41,7 +41,7 @@ public struct ProtocolTimerItem: View {
         }
         .padding(layout.spacing4)
         .frame(minWidth: 90, minHeight: 60)
-        .background(.labcord(.fillPrimary), in: roundedShape)
+        .background(Color("Experiment/Fill/Primary", bundle: .module), in: roundedShape)
         .clipShape(roundedShape)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text("\(value) \(unit)"))
@@ -66,15 +66,13 @@ public struct ProtocolTimerItem: View {
     _ = FontRegistration.register()
     return ProtocolTimerItem(value: "5", unit: "분")
         .padding()
-        .background(.labcord(.backgroundPrimary))
-        .labcordTheme(LabcordTheme(context: .experiment))
+        .background(Color("Experiment/Background/Primary", bundle: .module))
 }
 
 #Preview("Long") {
     _ = FontRegistration.register()
     return ProtocolTimerItem(value: "05:03:09", unit: "시간", format: .long)
         .padding()
-        .background(.labcord(.backgroundPrimary))
-        .labcordTheme(LabcordTheme(context: .experiment))
+        .background(Color("Experiment/Background/Primary", bundle: .module))
 }
 #endif

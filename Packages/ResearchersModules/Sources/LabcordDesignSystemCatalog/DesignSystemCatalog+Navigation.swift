@@ -1,6 +1,11 @@
 import LabcordDesignSystem
 import SwiftUI
 
+enum CatalogContext: String, CaseIterable, Sendable {
+    case general = "General"
+    case experiment = "Experiment"
+}
+
 enum CatalogSection: String, CaseIterable, Identifiable, Sendable {
     case foundation
     case setup
