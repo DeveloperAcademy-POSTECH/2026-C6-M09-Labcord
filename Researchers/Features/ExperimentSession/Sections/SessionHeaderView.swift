@@ -28,6 +28,7 @@ struct SessionHeaderView: View {
             }
             .buttonStyle(.glass)
             .buttonBorderShape(.circle)
+            .disabled(!store.canCloseSession)
 
             Button {
                 store.send(.returnHomeTapped)
@@ -37,6 +38,7 @@ struct SessionHeaderView: View {
             }
             .buttonStyle(.glassProminent)
             .buttonBorderShape(.circle)
+            .disabled(!store.canCloseSession)
         }
     }
 }
