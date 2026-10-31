@@ -100,7 +100,7 @@ public struct TimelineItem: View {
             VStack(alignment: .leading, spacing: contentSpacing) {
                 if type == .voice {
                     Text(title)
-                        .typography(Typography.bodyEmphasized)
+                        .typography(Typography.bodySemiBold)
                         .foregroundStyle(.labcord(.labelPrimary))
                         .contentTransition(.opacity)
                         .labcordMotion(.state, value: title)
@@ -150,7 +150,7 @@ public struct TimelineItem: View {
     private var memoContent: some View {
         VStack(alignment: .leading, spacing: theme.layout.spacing12) {
             Text(memoTitle)
-                .typography(Typography.calloutEmphasized)
+                .typography(Typography.calloutSemiBold)
                 .foregroundStyle(.labcord(.labelTertiary))
                 .fixedSize(horizontal: false, vertical: true)
 

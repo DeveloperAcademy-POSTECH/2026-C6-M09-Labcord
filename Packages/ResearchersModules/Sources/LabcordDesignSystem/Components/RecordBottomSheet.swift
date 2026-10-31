@@ -177,7 +177,7 @@ public struct RecordBottomSheet: View {
             .accessibilityLabel(Text("닫기"))
 
             Text("기록")
-                .typography(Typography.bodyEmphasized)
+                .typography(Typography.bodySemiBold)
                 .foregroundStyle(.labcord(.labelPrimary))
                 .frame(maxWidth: .infinity)
 
@@ -236,7 +236,7 @@ public struct RecordBottomSheet: View {
     private var memoField: some View {
         VStack(alignment: .leading, spacing: theme.layout.spacing8) {
             Text("메모")
-                .typography(Typography.calloutEmphasized)
+                .typography(Typography.calloutSemiBold)
                 .foregroundStyle(.labcord(.labelSecondary))
                 .frame(maxWidth: .infinity, alignment: .leading)
 
