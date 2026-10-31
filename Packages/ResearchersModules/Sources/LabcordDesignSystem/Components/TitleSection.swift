@@ -62,7 +62,7 @@ public struct TitleSection<Leading: View, Trailing: View>: View {
     private var titleView: some View {
         Text(title)
             .typography(Typography.headline)
-            .foregroundStyle(.labcord(.labelSecondary))
+            .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
             .multilineTextAlignment(.leading)
             .fixedSize(horizontal: false, vertical: true)
             .layoutPriority(1)
@@ -103,8 +103,8 @@ public extension TitleSection where Trailing == EmptyView {
     )
     .frame(width: 749)
     .padding()
-    .background(.labcord(.backgroundPrimary))
-    .labcordTheme(LabcordTheme(context: .experiment))
+    .background(Color("General/Background/Primary", bundle: .module))
+
 }
 
 #Preview("Vertical · 긴 제목") {
@@ -118,8 +118,8 @@ public extension TitleSection where Trailing == EmptyView {
     .environment(\.dynamicTypeSize, .accessibility3)
     .frame(width: 401)
     .padding()
-    .background(.labcord(.backgroundPrimary))
-    .labcordTheme(LabcordTheme(context: .experiment))
+    .background(Color("General/Background/Primary", bundle: .module))
+
 }
 
 private func noTitleSectionAction() { }

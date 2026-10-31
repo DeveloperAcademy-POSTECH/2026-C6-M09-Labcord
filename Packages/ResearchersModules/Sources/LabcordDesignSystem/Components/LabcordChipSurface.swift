@@ -9,7 +9,7 @@ struct LabcordChipSurface<Content: View>: View {
     let content: Content
 
     @Environment(\.controlSize) private var controlSize
-    @Environment(\.labcordTheme) private var theme
+    private let layout = LayoutTokens()
 
     init(
         size: LabcordControlSize?,
@@ -32,23 +32,26 @@ struct LabcordChipSurface<Content: View>: View {
             content
         }
             .typography(typography)
-            .foregroundStyle(LabcordColor(foregroundToken))
-            .labcordMotion(.state, value: foregroundToken)
-            .padding(.horizontal, horizontalPadding + (borderToken == nil ? 0 : 1))
+            .foregroundStyle((foregroundColor))
+            .labcordMotion(.state, value: foregroundColor)
+            .padding(.horizontal, horizontalPadding + (borderColor == nil ? 0 : 1))
             .frame(minHeight: height)
             .background {
                 Rectangle()
-                    .fill(LabcordColor(fillToken ?? .fillPrimary))
-                    .opacity(fillToken == nil ? 0 : 1)
-                    .labcordMotion(.state, value: fillToken)
+                    .fill((fillColor ?? Color("General/Fill/Primary", bundle: .module)))
+                    .opacity(fillColor == nil ? 0 : 1)
+                    .labcordMotion(.state, value: fillColor)
                     .allowsHitTesting(false)
             }
             .clipShape(Capsule())
             .overlay {
                 Capsule()
-                    .strokeBorder(LabcordColor(borderToken ?? .borderDefault), lineWidth: 1)
-                    .opacity(borderToken == nil ? 0 : 1)
-                    .labcordMotion(.state, value: borderToken)
+                    .strokeBorder(
+                        borderColor ?? Color("General/Border/Default", bundle: .module),
+                        lineWidth: 1
+                    )
+                    .opacity(borderColor == nil ? 0 : 1)
+                    .labcordMotion(.state, value: borderColor)
                     .allowsHitTesting(false)
             }
             .contentShape(Capsule())
@@ -69,46 +72,48 @@ struct LabcordChipSurface<Content: View>: View {
     }
 
     private var horizontalPadding: CGFloat {
-        resolvedSize == .large ? theme.layout.spacing16 : theme.layout.spacing12
+        resolvedSize == .large ? layout.spacing16 : layout.spacing12
     }
 
     private var typography: TypographyStyle {
         resolvedSize == .large ? Typography.body : Typography.subheadline
     }
 
-    private var foregroundToken: ColorToken {
+    private var foregroundColor: Color {
         if isDisabled {
-            return .labelDisabled
+            return Color("General/Label/Disabled", bundle: .module)
         }
 
         if isSelected {
-            return emphasis == .strong ? .fillWhite : .brandOnSubtle
+            return emphasis == .strong
+                ? Color("General/Fill/White", bundle: .module)
+                : Color("General/Brand/On Subtle", bundle: .module)
         }
 
-        return .labelPrimary
+        return Color("General/Label/Primary", bundle: .module)
     }
 
-    private var fillToken: ColorToken? {
+    private var fillColor: Color? {
         if isDisabled {
-            return .fillDisabled
+            return Color("General/Fill/Disabled", bundle: .module)
         }
 
         if isSelected {
             if emphasis == .strong {
-                return .brandPrimary
+                return Color("General/Brand/Primary", bundle: .module)
             }
-            return visualStyle == .solid ? .brandSubtle : nil
+            return visualStyle == .solid ? Color("General/Brand/Subtle", bundle: .module) : nil
         }
 
-        return visualStyle == .solid ? .fillPrimary : nil
+        return visualStyle == .solid ? Color("General/Fill/Primary", bundle: .module) : nil
     }
 
-    private var borderToken: ColorToken? {
+    private var borderColor: Color? {
         guard visualStyle == .outline else { return nil }
         if isDisabled || !isSelected {
-            return .borderDefault
+            return Color("General/Border/Default", bundle: .module)
         }
-        return emphasis == .weak ? .brandBorder : nil
+        return emphasis == .weak ? Color("General/Brand/Border", bundle: .module) : nil
     }
 }
 

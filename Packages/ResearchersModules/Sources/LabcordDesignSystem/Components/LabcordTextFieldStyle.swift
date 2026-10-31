@@ -29,38 +29,38 @@ extension LabcordInputState {
         }
     }
 
-    var foregroundToken: ColorToken {
+    var foregroundColor: Color {
         switch self {
         case .empty:
-            return .labelTertiary
+            return Color("General/Label/Tertiary", bundle: .module)
         case .focused, .filled:
-            return .labelPrimary
+            return Color("General/Label/Primary", bundle: .module)
         case .error:
-            return .feedbackErrorForeground
+            return Color("General/Feedback/Error/Foreground", bundle: .module)
         case .disabled:
-            return .labelDisabled
+            return Color("General/Label/Disabled", bundle: .module)
         }
     }
 
-    var backgroundToken: ColorToken {
+    var backgroundColor: Color {
         switch self {
         case .error:
-            return .feedbackErrorSubtle
+            return Color("General/Feedback/Error/Subtle", bundle: .module)
         case .disabled:
-            return .fillDisabled
+            return Color("General/Fill/Disabled", bundle: .module)
         case .empty, .focused, .filled:
-            return .backgroundGroupedSecondary
+            return Color("General/Background/Grouped/Secondary", bundle: .module)
         }
     }
 
-    var borderToken: ColorToken {
+    var borderColor: Color {
         switch self {
         case .focused:
-            return .borderFocused
+            return Color("General/Border/Focused", bundle: .module)
         case .error:
-            return .feedbackErrorForeground
+            return Color("General/Feedback/Error/Foreground", bundle: .module)
         case .empty, .filled, .disabled:
-            return .borderDefault
+            return Color("General/Border/Default", bundle: .module)
         }
     }
 }
@@ -94,9 +94,9 @@ public struct LabcordTextFieldStyle: TextFieldStyle {
         LabcordTextFieldBody(
             configuration: configuration,
             size: resolvedSize,
-            foregroundToken: state.foregroundToken,
-            borderToken: state.borderToken,
-            backgroundToken: state.backgroundToken,
+            foregroundColor: state.foregroundColor,
+            borderColor: state.borderColor,
+            backgroundColor: state.backgroundColor,
             height: height
         )
     }
@@ -136,47 +136,47 @@ public struct LabcordTextFieldStyle: TextFieldStyle {
 private struct LabcordTextFieldBody<Label: View>: View {
     nonisolated(unsafe) let configuration: TextField<Label>
     let size: LabcordControlSize
-    let foregroundToken: ColorToken
-    let borderToken: ColorToken
-    let backgroundToken: ColorToken
+    let foregroundColor: Color
+    let borderColor: Color
+    let backgroundColor: Color
     let height: CGFloat
 
-    @Environment(\.labcordTheme) private var theme
+    private let layout = LayoutTokens()
 
     nonisolated init(
         configuration: TextField<Label>,
         size: LabcordControlSize,
-        foregroundToken: ColorToken,
-        borderToken: ColorToken,
-        backgroundToken: ColorToken,
+        foregroundColor: Color,
+        borderColor: Color,
+        backgroundColor: Color,
         height: CGFloat
     ) {
         self.configuration = configuration
         self.size = size
-        self.foregroundToken = foregroundToken
-        self.borderToken = borderToken
-        self.backgroundToken = backgroundToken
+        self.foregroundColor = foregroundColor
+        self.borderColor = borderColor
+        self.backgroundColor = backgroundColor
         self.height = height
     }
 
     var body: some View {
         configuration
             .typography(inputTypography)
-            .foregroundStyle(LabcordColor(foregroundToken))
-            .tint(LabcordColor(.brandPrimary))
-            .padding(.horizontal, theme.layout.spacing8)
+            .foregroundStyle((foregroundColor))
+            .tint((Color("General/Brand/Primary", bundle: .module)))
+            .padding(.horizontal, layout.spacing8)
             .frame(
                 maxWidth: .infinity,
                 minHeight: height,
                 alignment: .leading
             )
-            .background(LabcordColor(backgroundToken))
-            .clipShape(RoundedRectangle(cornerRadius: theme.layout.radiusSm, style: .circular))
+            .background((backgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: layout.radiusSm, style: .circular))
             .contentShape(Rectangle())
             .overlay {
-                RoundedRectangle(cornerRadius: theme.layout.radiusSm, style: .circular)
-                    .strokeBorder(LabcordColor(borderToken), lineWidth: 1)
-                    .labcordMotion(.state, value: borderToken)
+                RoundedRectangle(cornerRadius: layout.radiusSm, style: .circular)
+                    .strokeBorder((borderColor), lineWidth: 1)
+                    .labcordMotion(.state, value: borderColor)
                     .allowsHitTesting(false)
             }
     }

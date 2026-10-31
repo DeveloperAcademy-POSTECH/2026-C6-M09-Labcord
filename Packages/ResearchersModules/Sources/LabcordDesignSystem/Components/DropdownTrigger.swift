@@ -16,7 +16,7 @@ public struct LabcordDropdownTriggerLabel: View {
 
     @Environment(\.controlSize) private var controlSize
     @Environment(\.isEnabled) private var isEnabled
-    @Environment(\.labcordTheme) private var theme
+    private let layout = LayoutTokens()
 
     public init(
         value: String,
@@ -31,7 +31,7 @@ public struct LabcordDropdownTriggerLabel: View {
     }
 
     public var body: some View {
-        HStack(spacing: theme.layout.spacing8) {
+        HStack(spacing: layout.spacing8) {
             Text(value)
                 .lineLimit(1)
                 .truncationMode(.tail)
@@ -44,20 +44,20 @@ public struct LabcordDropdownTriggerLabel: View {
             )
         }
         .typography(textStyle)
-        .foregroundStyle(LabcordColor(foregroundToken))
-        .labcordMotion(.state, value: foregroundToken)
+        .foregroundStyle((foregroundColor))
+        .labcordMotion(.state, value: foregroundColor)
         .padding(.horizontal, horizontalPadding)
         .padding(.vertical, verticalPadding)
         .frame(idealWidth: width, maxWidth: width, minHeight: height, alignment: .leading)
         .background {
             Rectangle()
-                .fill(LabcordColor(fillToken ?? .fillSecondary))
-                .opacity(fillToken == nil ? 0 : 1)
-                .labcordMotion(.state, value: fillToken)
+                .fill((fillColor ?? Color("General/Fill/Secondary", bundle: .module)))
+                .opacity(fillColor == nil ? 0 : 1)
+                .labcordMotion(.state, value: fillColor)
                 .allowsHitTesting(false)
         }
-        .clipShape(RoundedRectangle(cornerRadius: theme.layout.radiusSm))
-        .contentShape(RoundedRectangle(cornerRadius: theme.layout.radiusSm))
+        .clipShape(RoundedRectangle(cornerRadius: layout.radiusSm))
+        .contentShape(RoundedRectangle(cornerRadius: layout.radiusSm))
     }
 
     private var resolvedSize: LabcordControlSize {
@@ -100,7 +100,7 @@ public struct LabcordDropdownTriggerLabel: View {
     }
 
     private var horizontalPadding: CGFloat {
-        resolvedSize == .small ? theme.layout.spacing12 : theme.layout.spacing16
+        resolvedSize == .small ? layout.spacing12 : layout.spacing16
     }
 
     private var verticalPadding: CGFloat {
@@ -136,25 +136,25 @@ public struct LabcordDropdownTriggerLabel: View {
         }
     }
 
-    private var foregroundToken: ColorToken {
+    private var foregroundColor: Color {
         switch effectiveState {
         case .default:
-            return .labelTertiary
+            return Color("General/Label/Tertiary", bundle: .module)
         case .filled, .open:
-            return .labelPrimary
+            return Color("General/Label/Primary", bundle: .module)
         case .disabled:
-            return .labelDisabled
+            return Color("General/Label/Disabled", bundle: .module)
         case .error:
-            return .feedbackErrorForeground
+            return Color("General/Feedback/Error/Foreground", bundle: .module)
         }
     }
 
-    private var fillToken: ColorToken? {
+    private var fillColor: Color? {
         switch effectiveState {
         case .disabled:
-            return .fillSecondary
+            return Color("General/Fill/Secondary", bundle: .module)
         case .error:
-            return .feedbackErrorSubtle
+            return Color("General/Feedback/Error/Subtle", bundle: .module)
         case .default, .filled, .open:
             return nil
         }
