@@ -158,7 +158,7 @@ public struct TimerRecord: View {
             stateLabel
 
             Text(pauseCount)
-                .typography(Typography.bodyEmphasized)
+                .typography(Typography.bodySemiBold)
                 .foregroundStyle(.labcord(.labelPrimary))
                 .contentTransition(.numericText())
                 .labcordMotion(.state, value: pauseCount)
@@ -168,7 +168,7 @@ public struct TimerRecord: View {
 
     private var stateLabel: some View {
         Text(state.title)
-            .typography(Typography.bodyEmphasized)
+            .typography(Typography.bodySemiBold)
             .foregroundStyle(.labcord(.labelPrimary))
             .contentTransition(.opacity)
             .labcordMotion(.state, value: state.rawValue)
@@ -206,7 +206,7 @@ public struct TimerRecord: View {
 
     private func detailValue(_ value: String) -> some View {
         Text(value)
-            .typography(Typography.bodyEmphasized)
+            .typography(Typography.bodySemiBold)
             .foregroundStyle(.labcord(.labelSecondary))
             .contentTransition(.numericText())
             .labcordMotion(.state, value: value)
@@ -215,7 +215,7 @@ public struct TimerRecord: View {
 
     private var durationLabel: some View {
         Text(setDuration)
-            .typography(Typography.bodyEmphasized)
+            .typography(Typography.bodySemiBold)
             .foregroundStyle(.labcord(.labelPrimary))
             .contentTransition(.numericText())
             .labcordMotion(.state, value: setDuration)

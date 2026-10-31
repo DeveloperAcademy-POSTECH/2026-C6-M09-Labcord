@@ -30,7 +30,7 @@ public struct TimerTabItem: View {
     public var body: some View {
         Button(action: action) {
             Text(title)
-                .typography(isSelected ? Typography.bodyEmphasized : Typography.body)
+                .typography(isSelected ? Typography.bodySemiBold : Typography.body)
                 .transaction { $0.animation = nil }
                 .foregroundStyle(
                     .labcord(foregroundToken)

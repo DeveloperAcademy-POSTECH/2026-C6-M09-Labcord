@@ -101,7 +101,7 @@ public struct TimerSettingSheet: View {
             .accessibilityLabel(Text("닫기"))
 
             Text("타이머")
-                .typography(Typography.bodyEmphasized)
+                .typography(Typography.bodySemiBold)
                 .foregroundStyle(.labcord(.labelPrimary))
                 .frame(maxWidth: .infinity)
 
