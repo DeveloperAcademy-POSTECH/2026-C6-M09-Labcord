@@ -141,6 +141,9 @@ struct DesignSystemReviewPage: View {
                 catalogPickerOptions(LabcordTimerIdentity.allCases, capitalized: false)
             }
             .accessibilityIdentifier("catalog.review.timerRecord.identity")
+            Button("타이머 삭제", role: .destructive) { timerRecordState = .deleted }
+                .buttonStyle(.labcord(.quaternary, size: .small))
+                .disabled(timerRecordState == .deleted)
             if timerRecordState == .deleted {
                 Picker("삭제 전 상황", selection: $deletionScenario) {
                     catalogPickerOptions(CatalogTimerDeletionScenario.allCases, capitalized: false)
@@ -165,10 +168,6 @@ struct DesignSystemReviewPage: View {
                     .accessibilityIdentifier("catalog.review.timerRecord.deletionGuard")
             }
 
-            CatalogDisclosureGroup("타이머 식별색 배정") {
-                CatalogTimerIdentityScenario()
-            }
-            .accessibilityIdentifier("catalog.timerIdentity.disclosure")
         }
     }
 

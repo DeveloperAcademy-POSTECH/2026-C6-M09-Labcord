@@ -2,85 +2,25 @@ import LabcordDesignSystem
 import SwiftUI
 #if os(iOS)
 import AVKit
-import UIKit
 #endif
 
 struct CatalogSampleMedia: View {
     var isVideo = false
 
     var body: some View {
-        GeometryReader { geometry in
-            #if os(iOS)
-            if let image = cachedImage {
-                scaledImage(Image(uiImage: image), size: geometry.size)
-            } else {
-                missingImage
-            }
-            #else
-            scaledImage(
-                Image(resourceName + ".jpg", bundle: Bundle.module),
-                size: geometry.size
-            )
-            #endif
+        ZStack {
+            Rectangle().fill(.labcord(.backgroundSecondary))
+            Circle()
+                .fill(.labcord(.brandPrimary))
+                .padding(isVideo ? 36 : 24)
         }
         .aspectRatio(16.0 / 9.0, contentMode: .fit)
-        .clipped()
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(accessibilityName))
-    }
-
-    private var resourceName: String {
-        isVideo ? "catalog-example-video-poster" : "catalog-example-photo"
-    }
-
-    private var accessibilityName: String {
-        #if os(iOS)
-        if cachedImage == nil { return "샘플 이미지를 불러올 수 없어요" }
-        #endif
-        return isVideo ? "예시 영상 포스터" : "예시 실험 사진"
-    }
-
-    private func scaledImage(_ image: Image, size: CGSize) -> some View {
-        image
-            .renderingMode(.original)
-            .resizable()
-            .scaledToFill()
-            .frame(width: size.width, height: size.height)
-    }
-
-    private var missingImage: some View {
-        Text("샘플 이미지를 불러올 수 없어요")
-            .font(.caption)
-            .foregroundStyle(.labcord(.labelSecondary))
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(.labcord(.fillTertiary))
-    }
-
-    #if os(iOS)
-    private var cachedImage: UIImage? {
-        isVideo ? CatalogSampleImageCache.videoPoster : CatalogSampleImageCache.photo
-    }
-    #endif
-}
-
-#if os(iOS)
-@MainActor
-private enum CatalogSampleImageCache {
-    static let photo = load("catalog-example-photo")
-    static let videoPoster = load("catalog-example-video-poster")
-
-    private static func load(_ name: String) -> UIImage? {
-        guard let url = Bundle.module.url(
-            forResource: name, withExtension: "jpg"
-        ) else {
-            return nil
-        }
-        return UIImage(contentsOfFile: url.path)?.withRenderingMode(.alwaysOriginal)
+        .accessibilityLabel(Text(isVideo ? "영상 예시" : "사진 예시"))
     }
 }
-#endif
 
 struct CatalogLoopingVideo: View {
     #if os(iOS)
