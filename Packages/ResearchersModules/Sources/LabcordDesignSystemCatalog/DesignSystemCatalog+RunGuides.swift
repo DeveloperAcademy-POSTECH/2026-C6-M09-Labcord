@@ -44,7 +44,7 @@ struct DesignSystemRunGuidesPage: View {
             }
             timerStatus
                 .typography(Typography.footnote)
-                .foregroundStyle(.labcord(.labelSecondary))
+                .foregroundStyle(Color("Experiment/Label/Secondary", bundle: catalogBundle))
         }
         .task(id: countdown.isRunning && scenePhase == .active) {
             guard countdown.isRunning, scenePhase == .active else { return }

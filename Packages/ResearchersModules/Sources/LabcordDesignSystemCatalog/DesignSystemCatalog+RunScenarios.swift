@@ -183,7 +183,7 @@ struct CatalogRunTimerControlScenario: View {
                 digitCount: String(max(0, duration.components.seconds)).count
             )
                 .typography(Typography.footnote)
-                .foregroundStyle(.labcord(.labelSecondary))
+                .foregroundStyle(Color("Experiment/Label/Secondary", bundle: catalogBundle))
                 .accessibilityIdentifier("catalog.scenario.timerControl.remaining")
             if state == .running {
                 Button(countdown.isRunning ? "일시정지" : "재개") {
@@ -206,7 +206,7 @@ struct CatalogRunTimerControlScenario: View {
                 .accessibilityIdentifier("catalog.scenario.timerControl.finish")
             Text(event)
                 .typography(Typography.caption1)
-                .foregroundStyle(.labcord(.labelSecondary))
+                .foregroundStyle(Color("Experiment/Label/Secondary", bundle: catalogBundle))
                 .accessibilityIdentifier("catalog.scenario.timerControl.event")
         }
         .task(id: countdown.isRunning && scenePhase == .active) {
@@ -235,7 +235,7 @@ struct CatalogRunTimerControlScenario: View {
 
     private var cameraPreview: some View {
         RoundedRectangle(cornerRadius: 8)
-            .strokeBorder(.labcord(.borderDefault))
+            .strokeBorder(Color("Experiment/Border/Default", bundle: catalogBundle))
             .frame(height: isFullScreen ? 160 : 80)
             .overlay {
                 Label {
