@@ -2,7 +2,7 @@ import SwiftUI
 
 #if os(watchOS)
 @MainActor
-func recordSheetReadOnlyText(_ text: String, layout: LayoutTokens) -> some View {
+func recordSheetReadOnlyText(_ text: String) -> some View {
     Text(text.isEmpty ? "내용을 입력해 주세요" : text)
         .typography(Typography.subheadline)
         .foregroundStyle(
@@ -10,11 +10,11 @@ func recordSheetReadOnlyText(_ text: String, layout: LayoutTokens) -> some View 
                 : Color("General/Label/Primary", bundle: .module)
         )
         .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
-        .padding(layout.spacing12)
+        .padding(LayoutTokens.spacing12)
         .background(Color("General/Background/Grouped/Secondary", bundle: .module))
-        .clipShape(RoundedRectangle(cornerRadius: layout.radiusSm))
+        .clipShape(RoundedRectangle(cornerRadius: LayoutTokens.radiusSm))
         .overlay {
-            RoundedRectangle(cornerRadius: layout.radiusSm)
+            RoundedRectangle(cornerRadius: LayoutTokens.radiusSm)
                 .strokeBorder(Color("General/Border/Default", bundle: .module), lineWidth: 1)
         }
 }
@@ -63,7 +63,7 @@ struct RecordBottomSheetTranscriptField: View {
     @ViewBuilder
     private var defaultEditor: some View {
 #if os(watchOS)
-        recordSheetReadOnlyText(transcript, layout: tokenLayout)
+        recordSheetReadOnlyText(transcript)
 #else
         TextEditor(text: $transcript)
             .labcordTextEditorStyle(

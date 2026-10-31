@@ -286,7 +286,7 @@ private extension RecordBottomSheet {
     @ViewBuilder
     var defaultMemoEditor: some View {
 #if os(watchOS)
-        recordSheetReadOnlyText(memo, layout: tokenLayout)
+        recordSheetReadOnlyText(memo)
 #else
         TextEditor(text: $memo)
             .labcordTextEditorStyle(
