@@ -225,6 +225,5 @@ public extension View {
     _ = FontRegistration.register()
     return TextEditor(text: $text)
         .labcordTextEditorStyle(.init(isEmpty: false, isFilled: true))
-        .padding()
 }
 #endif

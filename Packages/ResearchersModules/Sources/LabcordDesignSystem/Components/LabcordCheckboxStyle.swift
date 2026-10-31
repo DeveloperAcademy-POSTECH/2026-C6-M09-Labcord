@@ -140,12 +140,6 @@ struct LabcordSelectionIndicator: View {
 #Preview("체크박스") {
     @Previewable @State var isSelected = true
     _ = FontRegistration.register()
-    return VStack(alignment: .leading, spacing: 12) {
-        Toggle("선택 항목", isOn: $isSelected)
-            .toggleStyle(.labcordCheckbox())
-        Toggle("사용할 수 없는 항목", isOn: .constant(false))
-            .toggleStyle(.labcordCheckbox())
-            .disabled(true)
-    }
-    .padding()
+    return Toggle("선택 항목", isOn: $isSelected)
+        .toggleStyle(.labcordCheckbox())
 }

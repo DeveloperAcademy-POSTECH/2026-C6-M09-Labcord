@@ -225,16 +225,9 @@ private struct DropdownMenuPressStyle: ButtonStyle {
     }
 }
 
-#Preview("드롭다운 · 상태") {
+#Preview("드롭다운") {
     _ = FontRegistration.register()
-    return VStack(spacing: 12) {
-        LabcordDropdownTriggerLabel(value: "선택해 주세요")
-        LabcordDropdownTriggerLabel(value: "선택된 항목", state: .filled)
-        LabcordDropdownTriggerLabel(value: "오류", state: .error)
-        LabcordDropdownTrigger(value: "옵션 선택") {
-            Button("옵션 1") {}
-            Button("옵션 2") {}
-        }
+    return LabcordDropdownTrigger(value: "옵션 선택") {
+        Button("옵션 1") {}
     }
-    .padding()
 }
