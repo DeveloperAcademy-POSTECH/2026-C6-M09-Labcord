@@ -7,6 +7,7 @@ struct TimePickerWheel: UIViewRepresentable {
     let selection: Binding<Int>
     let count: Int
     let scale: CGFloat
+    let color: Color
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -60,7 +61,7 @@ struct TimePickerWheel: UIViewRepresentable {
         }
 
         func update(_ parent: TimePickerWheel) -> Bool {
-            let nextColor = UIColor(Color("Experiment/Label/Primary", bundle: .module))
+            let nextColor = UIColor(parent.color)
             let changed = parent.scale != self.parent.scale || color != nextColor
             self.parent = parent
             color = nextColor

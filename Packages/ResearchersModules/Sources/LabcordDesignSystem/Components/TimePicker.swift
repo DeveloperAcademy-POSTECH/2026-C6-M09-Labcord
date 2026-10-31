@@ -2,23 +2,32 @@ import Foundation
 import SwiftUI
 
 public struct TimePicker: View {
+    public enum Usage: Sendable {
+        case setup, running
+    }
     @Binding private var hours: Int
     @Binding private var minutes: Int
     @Binding private var seconds: Int
+    private let usage: Usage
 
     @ScaledMetric(relativeTo: .body) private var textScale: CGFloat = 1
 
-    public init(hours: Binding<Int>, minutes: Binding<Int>, seconds: Binding<Int>) {
+    public init(
+        hours: Binding<Int>, minutes: Binding<Int>, seconds: Binding<Int>,
+        usage: Usage = .running
+    ) {
         _hours = hours
         _minutes = minutes
         _seconds = seconds
+        self.usage = usage
     }
 
-    public init(duration: Binding<Duration>) {
+    public init(duration: Binding<Duration>, usage: Usage = .running) {
         self.init(
             hours: Self.component(duration, unit: 3_600),
             minutes: Self.component(duration, unit: 60, modulus: 60),
-            seconds: Self.component(duration, unit: 1, modulus: 60)
+            seconds: Self.component(duration, unit: 1, modulus: 60),
+            usage: usage
         )
     }
 
@@ -34,10 +43,16 @@ public struct TimePicker: View {
         .padding(.bottom, 16)
     }
 
+    private var foregroundColor: Color {
+        Color(
+            usage == .setup ? "General/Label/Primary" : "Experiment/Label/Primary", bundle: .module
+        )
+    }
+
     private var separator: some View {
         Text(":")
             .typography(Typography.title1)
-            .foregroundStyle(Color("Experiment/Label/Primary", bundle: .module))
+            .foregroundStyle(foregroundColor)
             .frame(width: 14)
             .accessibilityHidden(true)
     }
@@ -45,7 +60,10 @@ public struct TimePicker: View {
     @ViewBuilder
     private func wheel(_ title: String, selection: Binding<Int>, count: Int) -> some View {
         #if os(iOS)
-        TimePickerWheel(title: title, selection: selection, count: count, scale: textScale)
+        TimePickerWheel(
+            title: title, selection: selection, count: count,
+            scale: textScale, color: foregroundColor
+        )
             .frame(maxWidth: .infinity)
             .frame(height: 174 * textScale)
             .clipShape(RoundedRectangle(cornerRadius: 22))

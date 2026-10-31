@@ -143,7 +143,7 @@ public struct TimerSettingSheet: View {
     }
 
     private var durationPicker: some View {
-        TimePicker(hours: $hours, minutes: $minutes, seconds: $seconds)
+        TimePicker(hours: $hours, minutes: $minutes, seconds: $seconds, usage: .setup)
     }
 }
 
