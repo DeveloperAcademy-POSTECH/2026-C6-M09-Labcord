@@ -62,8 +62,6 @@ struct DesignSystemCatalogSheet<Content: View>: View {
         #endif
     }
 
-    private let layout = LayoutTokens()
-
     private var sheetBackground: Color {
         context == .general
             ? Color("General/Background/Grouped/Secondary", bundle: catalogBundle)
@@ -91,7 +89,7 @@ struct DesignSystemCatalogSheet<Content: View>: View {
             .highPriorityGesture(headerDrag)
             .padding(
                 .horizontal,
-                max(60, layout.spacing16 + 34 * headerControlScale + layout.spacing8)
+                max(60, LayoutTokens.spacing16 + 34 * headerControlScale + LayoutTokens.spacing8)
             )
             .accessibilityHidden(true)
     }
