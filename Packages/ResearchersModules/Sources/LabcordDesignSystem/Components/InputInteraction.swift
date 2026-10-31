@@ -176,3 +176,16 @@ private struct LabcordInputBoundsPreferenceKey: PreferenceKey {
 private extension EnvironmentValues {
     @Entry var labcordInputDismissRequest = 0
 }
+
+#Preview("입력 포커스") {
+    @Previewable @State var text = ""
+    @Previewable @FocusState var isFocused: Bool
+    _ = FontRegistration.register()
+    return VStack {
+        TextField("실험 이름", text: $text)
+            .labcordTextFieldStyle(text: text, focus: $isFocused)
+        Text("바깥 영역을 누르면 키보드가 닫힙니다.")
+    }
+    .padding()
+    .labcordDismissKeyboardOnTapOutside()
+}

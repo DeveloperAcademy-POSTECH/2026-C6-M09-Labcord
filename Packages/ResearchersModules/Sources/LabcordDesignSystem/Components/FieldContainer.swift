@@ -95,3 +95,12 @@ public struct FieldContainer<Content: View>: View {
 }
 
 public typealias LabcordFieldContainer<Content: View> = FieldContainer<Content>
+
+#Preview("입력 필드 · 피드백") {
+    _ = FontRegistration.register()
+    return FieldContainer(label: "실험 이름", feedback: "실험 이름을 입력해 주세요.") {
+        TextField("실험 이름", text: .constant(""))
+            .textFieldStyle(.labcord())
+    }
+    .padding()
+}
