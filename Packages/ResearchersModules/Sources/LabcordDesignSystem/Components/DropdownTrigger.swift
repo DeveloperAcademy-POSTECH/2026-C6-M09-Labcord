@@ -138,23 +138,17 @@ public struct LabcordDropdownTriggerLabel: View {
 
     private var foregroundColor: Color {
         switch effectiveState {
-        case .default:
-            return Color("General/Label/Tertiary", bundle: .module)
-        case .filled, .open:
-            return Color("General/Label/Primary", bundle: .module)
-        case .disabled:
-            return Color("General/Label/Disabled", bundle: .module)
-        case .error:
-            return Color("General/Feedback/Error/Foreground", bundle: .module)
+        case .default: return Color("General/Label/Tertiary", bundle: .module)
+        case .filled, .open: return Color("General/Label/Primary", bundle: .module)
+        case .disabled: return Color("General/Label/Disabled", bundle: .module)
+        case .error: return Color("General/Feedback/Error/Foreground", bundle: .module)
         }
     }
 
     private var fillColor: Color? {
         switch effectiveState {
-        case .disabled:
-            return Color("General/Fill/Secondary", bundle: .module)
-        case .error:
-            return Color("General/Feedback/Error/Subtle", bundle: .module)
+        case .disabled: return Color("General/Fill/Secondary", bundle: .module)
+        case .error: return Color("General/Feedback/Error/Subtle", bundle: .module)
         case .default, .filled, .open:
             return nil
         }

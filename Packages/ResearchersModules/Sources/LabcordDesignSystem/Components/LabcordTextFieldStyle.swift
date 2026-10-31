@@ -31,23 +31,17 @@ extension LabcordInputState {
 
     var foregroundColor: Color {
         switch self {
-        case .empty:
-            return Color("General/Label/Tertiary", bundle: .module)
-        case .focused, .filled:
-            return Color("General/Label/Primary", bundle: .module)
-        case .error:
-            return Color("General/Feedback/Error/Foreground", bundle: .module)
-        case .disabled:
-            return Color("General/Label/Disabled", bundle: .module)
+        case .empty: return Color("General/Label/Tertiary", bundle: .module)
+        case .focused, .filled: return Color("General/Label/Primary", bundle: .module)
+        case .error: return Color("General/Feedback/Error/Foreground", bundle: .module)
+        case .disabled: return Color("General/Label/Disabled", bundle: .module)
         }
     }
 
     var backgroundColor: Color {
         switch self {
-        case .error:
-            return Color("General/Feedback/Error/Subtle", bundle: .module)
-        case .disabled:
-            return Color("General/Fill/Disabled", bundle: .module)
+        case .error: return Color("General/Feedback/Error/Subtle", bundle: .module)
+        case .disabled: return Color("General/Fill/Disabled", bundle: .module)
         case .empty, .focused, .filled:
             return Color("General/Background/Grouped/Secondary", bundle: .module)
         }
@@ -55,12 +49,9 @@ extension LabcordInputState {
 
     var borderColor: Color {
         switch self {
-        case .focused:
-            return Color("General/Border/Focused", bundle: .module)
-        case .error:
-            return Color("General/Feedback/Error/Foreground", bundle: .module)
-        case .empty, .filled, .disabled:
-            return Color("General/Border/Default", bundle: .module)
+        case .focused: return Color("General/Border/Focused", bundle: .module)
+        case .error: return Color("General/Feedback/Error/Foreground", bundle: .module)
+        case .empty, .filled, .disabled: return Color("General/Border/Default", bundle: .module)
         }
     }
 }
