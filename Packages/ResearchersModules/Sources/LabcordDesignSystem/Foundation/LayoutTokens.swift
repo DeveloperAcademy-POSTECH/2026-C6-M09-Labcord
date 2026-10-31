@@ -1,3 +1,3 @@
 public struct LayoutTokens: Sendable {
-    public init() {}
+    private init() {}
 }
