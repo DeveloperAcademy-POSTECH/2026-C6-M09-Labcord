@@ -102,5 +102,4 @@ public typealias LabcordFieldContainer<Content: View> = FieldContainer<Content>
         TextField("실험 이름", text: .constant(""))
             .textFieldStyle(.labcord())
     }
-    .padding()
 }
