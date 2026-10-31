@@ -12,7 +12,7 @@ import SwiftUI
         type: .voice,
         contentState: .filled,
         transcript: .constant("샘플 B, 반응 시작 5분 후 연한 노란색으로 변했고 침전은 없음"),
-        memo: .constant("전사와 메모를 확인했습니다.")
+        note: .constant("전사와 메모를 확인했습니다.")
     )
     .padding(.top, 20)
 }
@@ -23,7 +23,7 @@ import SwiftUI
         type: .voice,
         contentState: .filled,
         transcript: .constant("호출자가 FocusState를 보유한 native 입력 슬롯"),
-        memo: .constant("메모")
+        note: .constant("메모")
     ) {
 #if os(watchOS)
         Text("호출자 전사 슬롯")
@@ -46,7 +46,7 @@ import SwiftUI
     return RecordBottomSheet(
         type: .photo,
         contentState: .filled,
-        memo: .constant("반응 후 색 변화를 확인했습니다.")
+        note: .constant("반응 후 색 변화를 확인했습니다.")
     ) {
         RoundedRectangle(cornerRadius: 8)
             .fill(Color(.General.Fill.secondary))
@@ -55,7 +55,7 @@ import SwiftUI
                     .typography(Typography.callout)
                     .foregroundStyle(Color(.General.Label.secondary))
             }
-    } memoContent: {
+    } noteContent: {
         Text("반응 후 색 변화를 확인했습니다.")
             .typography(Typography.subheadline)
             .foregroundStyle(Color(.General.Label.primary))
@@ -70,7 +70,7 @@ import SwiftUI
     return RecordBottomSheet(
         type: .timer,
         contentState: .filled,
-        memo: .constant("긴 메모도 입력 영역 안에서 여러 줄로 표시됩니다.")
+        note: .constant("긴 메모도 입력 영역 안에서 여러 줄로 표시됩니다.")
     )
     .padding(.top, 20)
     .environment(\.dynamicTypeSize, .accessibility3)
