@@ -62,3 +62,38 @@ fastlane/screenshots/**/*.png
 fastlane/test_output
 
 .DS_Store
+
+## 로컬 빌드·테스트·프로파일 결과
+/DerivedData/
+/build/
+*.app/
+*.xcarchive/
+*.xcresult/
+*.xccoverage
+*.xccovreport
+*.xccovarchive
+*.profdata
+*.profraw
+*.log
+
+## Python 생성기 캐시
+__pycache__/
+*.py[cod]
+
+## 로컬 디자인 원본·QA 산출물
+*.fig
+/Labcord-DesignSystem-QA-*/
+/Labcord-Figma-snapshot-*/
+/Labcord-Design-System-App-*/
+/Labcord-Develop-Diff-*/
+/Labcord-Gitignore-Review-*/
+/labcord-design-evidence/
+
+## 로컬 디자인 시스템 자료
+/docs/design-system*
+/Packages/ResearchersModules/Tests/LabcordDesignSystemTests/
+/Packages/ResearchersModules/.swiftpm/xcode/xcshareddata/xcschemes/DesignSystem.xcscheme
+/scripts/design-system/
+/Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/File.swift
+/Packages/ResearchersModules/.swiftpm/xcode/xcshareddata/xcschemes/Shared.xcscheme
+/Packages/ResearchersModules/Sources/LabcordDesignSystem/Recources/DesignTokens.json
