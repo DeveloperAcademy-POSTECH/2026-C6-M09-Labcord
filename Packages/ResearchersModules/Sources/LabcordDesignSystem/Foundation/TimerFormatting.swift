@@ -12,10 +12,10 @@ public struct TimerDurationFormatStyle: FormatStyle, Sendable {
     public init() { }
 
     public func format(_ value: Duration) -> String {
-        components(value).text
+        formattedParts(for: value).text
     }
 
-    public func components(_ duration: Duration) -> TimerDurationComponents {
+    public func formattedParts(for duration: Duration) -> TimerDurationComponents {
         let total = duration.components.seconds
         let formatted = TimerDurationFormatter.components(magnitude: total.magnitude)
         let sign = total < 0 ? "-" : ""

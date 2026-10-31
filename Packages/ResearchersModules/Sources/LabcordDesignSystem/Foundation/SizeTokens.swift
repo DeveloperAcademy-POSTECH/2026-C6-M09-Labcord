@@ -1,9 +1,9 @@
 import CoreGraphics
 
 public extension LayoutTokens {
-    var iconDefaultSize: CGFloat { 20 }
-    var iconLargeSize: CGFloat { 28 }
-    var controlDefaultSize: CGFloat { 50 }
-    var timerTabHeight: CGFloat { 54 }
-    var timerItemHeight: CGFloat { 60 }
+    static let iconDefaultSize: CGFloat = 20
+    static let iconLargeSize: CGFloat = 28
+    static let controlDefaultSize: CGFloat = 50
+    static let timerTabHeight: CGFloat = 54
+    static let timerItemHeight: CGFloat = 60
 }
