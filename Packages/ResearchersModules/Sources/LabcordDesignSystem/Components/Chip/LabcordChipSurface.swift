@@ -37,7 +37,7 @@ struct LabcordChipSurface<Content: View>: View {
             .frame(minHeight: height)
             .background {
                 Rectangle()
-                    .fill((fillColor ?? Color("General/Fill/Primary", bundle: .module)))
+                    .fill((fillColor ?? Color(.General.Fill.primary)))
                     .opacity(fillColor == nil ? 0 : 1)
                     .labcordMotion(.state, value: fillColor)
                     .allowsHitTesting(false)
@@ -46,7 +46,7 @@ struct LabcordChipSurface<Content: View>: View {
             .overlay {
                 Capsule()
                     .strokeBorder(
-                        borderColor ?? Color("General/Border/Default", bundle: .module),
+                        borderColor ?? Color(.General.Border.`default`),
                         lineWidth: 1
                     )
                     .opacity(borderColor == nil ? 0 : 1)
@@ -80,39 +80,39 @@ struct LabcordChipSurface<Content: View>: View {
 
     private var foregroundColor: Color {
         if isDisabled {
-            return Color("General/Label/Disabled", bundle: .module)
+            return Color(.General.Label.disabled)
         }
 
         if isSelected {
             return emphasis == .strong
-                ? Color("General/Fill/White", bundle: .module)
-                : Color("General/Brand/On Subtle", bundle: .module)
+                ? Color(.General.Fill.white)
+                : Color(.General.Brand.onSubtle)
         }
 
-        return Color("General/Label/Primary", bundle: .module)
+        return Color(.General.Label.primary)
     }
 
     private var fillColor: Color? {
         if isDisabled {
-            return Color("General/Fill/Disabled", bundle: .module)
+            return Color(.General.Fill.disabled)
         }
 
         if isSelected {
             if emphasis == .strong {
-                return Color("General/Brand/Primary", bundle: .module)
+                return Color(.General.Brand.primary)
             }
-            return visualStyle == .solid ? Color("General/Brand/Subtle", bundle: .module) : nil
+            return visualStyle == .solid ? Color(.General.Brand.subtle) : nil
         }
 
-        return visualStyle == .solid ? Color("General/Fill/Primary", bundle: .module) : nil
+        return visualStyle == .solid ? Color(.General.Fill.primary) : nil
     }
 
     private var borderColor: Color? {
         guard visualStyle == .outline else { return nil }
         if isDisabled || !isSelected {
-            return Color("General/Border/Default", bundle: .module)
+            return Color(.General.Border.`default`)
         }
-        return emphasis == .weak ? Color("General/Brand/Border", bundle: .module) : nil
+        return emphasis == .weak ? Color(.General.Brand.border) : nil
     }
 }
 
