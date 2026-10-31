@@ -11,13 +11,13 @@ public enum ChipEmphasis: String, Sendable {
 }
 
 public struct ChipStyle: ToggleStyle {
-    private let size: LabcordControlSize?
+    private let size: ComponentSize?
     private let visualStyle: ChipVisualStyle
     private let emphasis: ChipEmphasis
     private let isDisabled: Bool
 
     public init(
-        size: LabcordControlSize? = nil,
+        size: ComponentSize? = nil,
         style: ChipVisualStyle = .solid,
         emphasis: ChipEmphasis = .strong,
         isDisabled: Bool = false
@@ -40,13 +40,13 @@ public struct ChipStyle: ToggleStyle {
 }
 
 public struct ChipButtonStyle: ButtonStyle {
-    private let size: LabcordControlSize?
+    private let size: ComponentSize?
     private let visualStyle: ChipVisualStyle
     private let emphasis: ChipEmphasis
     private let isSelected: Bool
 
     public init(
-        size: LabcordControlSize? = nil,
+        size: ComponentSize? = nil,
         style: ChipVisualStyle = .solid,
         emphasis: ChipEmphasis = .strong,
         isSelected: Bool = false
@@ -72,8 +72,8 @@ public struct Chip: View {
     @Binding private var isSelected: Bool
 
     private let label: String
-    private let leadingIcon: LabcordIcon?
-    private let size: LabcordControlSize?
+    private let leadingIcon: Icon?
+    private let size: ComponentSize?
     private let visualStyle: ChipVisualStyle
     private let emphasis: ChipEmphasis
     private let onDismiss: (() -> Void)?
@@ -84,8 +84,8 @@ public struct Chip: View {
     public init(
         isSelected: Binding<Bool>,
         label: String,
-        leadingIcon: LabcordIcon? = nil,
-        size: LabcordControlSize? = nil,
+        leadingIcon: Icon? = nil,
+        size: ComponentSize? = nil,
         style: ChipVisualStyle = .solid,
         emphasis: ChipEmphasis = .strong,
         onDismiss: (() -> Void)? = nil
@@ -145,14 +145,14 @@ public struct Chip: View {
         }
     }
 
-    private var resolvedSize: LabcordControlSize {
-        size ?? LabcordControlSize(controlSize)
+    private var resolvedSize: ComponentSize {
+        size ?? ComponentSize(controlSize)
     }
 }
 
 public extension ToggleStyle where Self == ChipStyle {
     static func labcordChip(
-        size: LabcordControlSize? = nil,
+        size: ComponentSize? = nil,
         style: ChipVisualStyle = .solid,
         emphasis: ChipEmphasis = .strong,
         isDisabled: Bool = false
@@ -168,7 +168,7 @@ public extension ToggleStyle where Self == ChipStyle {
 
 public extension ButtonStyle where Self == ChipButtonStyle {
     static func labcordChip(
-        size: LabcordControlSize? = nil,
+        size: ComponentSize? = nil,
         style: ChipVisualStyle = .solid,
         emphasis: ChipEmphasis = .strong,
         isSelected: Bool = false
@@ -184,7 +184,7 @@ public extension ButtonStyle where Self == ChipButtonStyle {
 
 private struct LabcordChipToggleBody: View {
     nonisolated(unsafe) let configuration: ToggleStyleConfiguration
-    let size: LabcordControlSize?
+    let size: ComponentSize?
     let visualStyle: ChipVisualStyle
     let emphasis: ChipEmphasis
     let isDisabled: Bool
@@ -193,7 +193,7 @@ private struct LabcordChipToggleBody: View {
 
     nonisolated init(
         configuration: ToggleStyleConfiguration,
-        size: LabcordControlSize?,
+        size: ComponentSize?,
         visualStyle: ChipVisualStyle,
         emphasis: ChipEmphasis,
         isDisabled: Bool
@@ -220,7 +220,7 @@ private struct LabcordChipToggleBody: View {
 
 private struct LabcordChipButtonBody: View {
     nonisolated(unsafe) let configuration: ButtonStyleConfiguration
-    let size: LabcordControlSize?
+    let size: ComponentSize?
     let visualStyle: ChipVisualStyle
     let emphasis: ChipEmphasis
     let isSelected: Bool
@@ -229,7 +229,7 @@ private struct LabcordChipButtonBody: View {
 
     nonisolated init(
         configuration: ButtonStyleConfiguration,
-        size: LabcordControlSize?,
+        size: ComponentSize?,
         visualStyle: ChipVisualStyle,
         emphasis: ChipEmphasis,
         isSelected: Bool

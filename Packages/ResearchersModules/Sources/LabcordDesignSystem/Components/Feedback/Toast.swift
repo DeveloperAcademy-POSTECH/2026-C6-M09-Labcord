@@ -19,7 +19,7 @@ public enum ToastType: CaseIterable, Sendable {
         }
     }
 
-    fileprivate var icon: LabcordIcon {
+    fileprivate var icon: Icon {
         switch self {
         case .success:
             .checkCircleFill
