@@ -29,6 +29,8 @@ public struct LabcordIconButtonStyle: ButtonStyle {
 
     private struct IconButtonContent: View {
         @Environment(\.controlSize) private var controlSize
+        @Environment(\.labcordTheme) private var theme
+        @Environment(\.colorScheme) private var colorScheme
         @Environment(\.isEnabled) private var isEnabled
 
         @ScaledMetric(relativeTo: .body) private var dynamicTypeScale = 1
@@ -125,7 +127,7 @@ public struct LabcordIconButtonStyle: ButtonStyle {
                 .progressViewStyle(
                     .labcord(
                         size: metrics.loadingIndicatorSize,
-                        foreground: appearance.foreground
+                        foreground: theme.color(appearance.foreground, colorScheme: colorScheme)
                     )
                 )
                 .scaleEffect(metrics.loadingSlotSize / metrics.loadingIndicatorSize.points)

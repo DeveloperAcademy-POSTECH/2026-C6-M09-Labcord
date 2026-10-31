@@ -37,7 +37,7 @@ public struct ProtocolUploadButton: View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: LayoutTokens().spacing4) {
                 Text(title)
-                    .typography(Typography.bodyEmphasized)
+                    .typography(Typography.bodySemiBold)
                     .fixedSize(horizontal: false, vertical: true)
 
                 Text(description.isEmpty ? Self.defaultDescription : description)

@@ -27,7 +27,7 @@ public struct ExperimentStatusTimelineItem: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             Text(title)
-                .typography(Typography.bodyEmphasized)
+                .typography(Typography.bodySemiBold)
                 .foregroundStyle(.labcord(.labelPrimary))
                 .contentTransition(.opacity)
                 .labcordMotion(.state, value: title)

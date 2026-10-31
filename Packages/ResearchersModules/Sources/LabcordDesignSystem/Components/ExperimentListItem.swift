@@ -1,9 +1,10 @@
+import LabcordShared
 import SwiftUI
 
 public struct ExperimentListItem: View {
     private let title: String
     private let date: String
-    private let status: LabcordStatusBadge.Status
+    private let status: ExperimentStatus
     private let onSelect: () -> Void
     @Binding private var isSelected: Bool
     private let showBadge: Bool
@@ -18,7 +19,7 @@ public struct ExperimentListItem: View {
     public init(
         _ title: String,
         date: String,
-        status: LabcordStatusBadge.Status,
+        status: ExperimentStatus,
         isSelected: Binding<Bool>,
         showBadge: Bool = true,
         showRadioButton: Bool = true,
@@ -38,7 +39,7 @@ public struct ExperimentListItem: View {
     public init(
         title: String = "실험 제목",
         date: String = "2026.10.13",
-        status: LabcordStatusBadge.Status = .ready,
+        status: ExperimentStatus = .preparing,
         isSelected: Binding<Bool> = .constant(false),
         showBadge: Bool = true,
         showRadioButton: Bool = true,
@@ -175,7 +176,7 @@ public struct ExperimentListItem: View {
 #Preview("실험 목록 · 상태") {
     _ = FontRegistration.register()
     return VStack(spacing: 0) {
-        ExperimentListItem(status: .running)
+        ExperimentListItem(status: .inProgress)
         ExperimentListItem(status: .completed)
     }
     .frame(width: 362)

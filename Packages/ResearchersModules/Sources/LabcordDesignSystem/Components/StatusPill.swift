@@ -6,7 +6,7 @@ public struct StatusPill: View {
     private let message: String
     private let layout = LayoutTokens()
 
-    public init(message: String) {
+    public init(_ message: String) {
         self.message = message
     }
 
@@ -29,7 +29,7 @@ public struct StatusPill: View {
 
     private var messageContent: some View {
         Text(message)
-            .typography(Typography.bodyEmphasized)
+            .typography(Typography.bodySemiBold)
             .foregroundStyle(.labcord(.labelPrimary))
             .contentTransition(.opacity)
             .labcordMotion(.state, value: message)
@@ -48,10 +48,9 @@ public struct StatusPill: View {
     }
 }
 
-#if DEBUG
 #Preview("상태 안내 · 기본") {
     _ = FontRegistration.register()
-    return StatusPill(message: "3초 후 자동 저장됩니다.")
+    return StatusPill("3초 후 자동 저장됩니다.")
         .padding()
         .background(.labcord(.backgroundPrimary))
         .labcordTheme(LabcordTheme(context: .experiment))
@@ -59,11 +58,10 @@ public struct StatusPill: View {
 
 #Preview("상태 안내 · 큰 글자") {
     _ = FontRegistration.register()
-    return StatusPill(message: "변경한 실험 기록은 3초 후 자동 저장됩니다.")
+    return StatusPill("변경한 실험 기록은 3초 후 자동 저장됩니다.")
         .frame(width: 320)
         .environment(\.dynamicTypeSize, .accessibility3)
         .padding()
         .background(.labcord(.backgroundPrimary))
         .labcordTheme(LabcordTheme(context: .experiment))
 }
-#endif

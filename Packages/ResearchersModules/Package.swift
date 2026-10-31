@@ -45,6 +45,7 @@ let package = Package(
         ),
         .target(
             name: "LabcordDesignSystem",
+            dependencies: ["LabcordShared"],
             resources: [.process("Recources")]
         ),
         .target(
