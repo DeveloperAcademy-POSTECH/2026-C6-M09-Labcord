@@ -58,7 +58,7 @@ public struct ChipGroup<Item: Identifiable>: View where Item.ID: Hashable {
                     HStack(spacing: LayoutTokens.spacing4) {
                         LabcordIconArtwork(icon: .plus, size: 16, relativeTo: .subheadline)
                         Text("추가")
-                            .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
+                            .foregroundStyle(Color(.General.Label.secondary))
                     }
                 }
                 .buttonStyle(.labcord(.secondary, size: .small))
@@ -99,11 +99,11 @@ private struct LabcordSetupSmallChip: View {
             .buttonStyle(LabcordPlainButtonStyle())
             .accessibilityLabel(Text("\(label) 제거"))
         }
-        .foregroundStyle(Color("General/Label/Brand", bundle: .module))
+        .foregroundStyle(Color(.General.Label.brand))
         .padding(.horizontal, LayoutTokens.spacing12)
         .padding(.vertical, 7)
         .frame(minHeight: 34)
-        .background(Color("General/Fill/Selected", bundle: .module), in: Capsule())
+        .background(Color(.General.Fill.selected), in: Capsule())
         .contentShape(Capsule())
     }
 }

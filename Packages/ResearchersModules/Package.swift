@@ -11,10 +11,6 @@ let package = Package(
             targets: ["LabcordShared", "LabcordDesignSystem"]
         ),
         .library(
-            name: "LabcordDesignSystemCatalog",
-            targets: ["LabcordDesignSystemCatalog"]
-        ),
-        .library(
             name: "LabcordiOS",
             targets: ["LabcordiOS"]
         ),
@@ -47,10 +43,6 @@ let package = Package(
             name: "LabcordDesignSystem",
             dependencies: ["LabcordShared"],
             resources: [.process("Recources")]
-        ),
-        .target(
-            name: "LabcordDesignSystemCatalog",
-            dependencies: ["LabcordDesignSystem", "LabcordShared"]
         ),
         .target(
             name: "LabcordiOS",

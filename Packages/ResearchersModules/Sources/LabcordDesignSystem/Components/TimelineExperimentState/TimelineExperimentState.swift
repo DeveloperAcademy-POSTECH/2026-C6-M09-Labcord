@@ -20,13 +20,13 @@ public struct TimelineExperimentState: View {
         HStack(alignment: .firstTextBaseline, spacing: LayoutTokens.spacing12) {
             Text(timestamp)
                 .typography(Typography.body)
-                .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
+                .foregroundStyle(Color(.General.Label.secondary))
                 .frame(minWidth: 70, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
 
             Text(title)
                 .typography(Typography.bodySemiBold)
-                .foregroundStyle(Color("General/Label/Primary", bundle: .module))
+                .foregroundStyle(Color(.General.Label.primary))
                 .contentTransition(.opacity)
                 .labcordMotion(.state, value: title)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -48,8 +48,8 @@ public typealias LabcordExperimentStatusTimelineItem = TimelineExperimentState
         TimelineExperimentState(timestamp: "10:25:09", title: "실험 일시정지")
         TimelineExperimentState(timestamp: "11:02:41", title: "실험 종료")
     }
-    .foregroundStyle(Color("General/Label/Primary", bundle: .module))
-    .background(Color("General/Background/Primary", bundle: .module))
+    .foregroundStyle(Color(.General.Label.primary))
+    .background(Color(.General.Background.primary))
 }
 
 #Preview("실험 상태 타임라인 · 큰 글자") {

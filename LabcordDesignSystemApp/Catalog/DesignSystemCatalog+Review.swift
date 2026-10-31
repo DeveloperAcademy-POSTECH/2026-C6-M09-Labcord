@@ -40,7 +40,7 @@ struct DesignSystemReviewPage: View {
                     type: record.type,
                     identity: timerIdentity,
                     timerExample: record.timerExample,
-                    memo: $recordMemo,
+                    note: $recordMemo,
                     transcript: $recordTranscript,
                     initialTranscript: record.transcriptAtOpen,
                     onDismiss: cancelRecord,

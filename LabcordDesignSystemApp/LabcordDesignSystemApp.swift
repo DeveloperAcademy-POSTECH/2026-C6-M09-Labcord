@@ -1,5 +1,4 @@
 import LabcordDesignSystem
-import LabcordDesignSystemCatalog
 import SwiftUI
 
 @main

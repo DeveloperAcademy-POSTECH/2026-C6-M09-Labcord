@@ -81,7 +81,7 @@ public struct ExperimentSidePanel<Content: View>: View {
     private var handle: some View {
         Button(action: toggle) {
             handleLabel
-                .background(Color("Experiment/Fill/Dark", bundle: .module), in: panelShape)
+                .background(Color(.Experiment.Fill.dark), in: panelShape)
                 .contentShape(panelShape)
         }
         .buttonStyle(LabcordPlainButtonStyle())
@@ -114,7 +114,7 @@ public struct ExperimentSidePanel<Content: View>: View {
             size: 28,
             relativeTo: .body
         )
-        .foregroundStyle(Color("Experiment/Label/Brand", bundle: .module))
+        .foregroundStyle(Color(.Experiment.Label.brand))
         .rotationEffect(.degrees(layout == .landscape && !isExpanded ? 180 : 0))
     }
 
@@ -139,7 +139,7 @@ public struct ExperimentSidePanel<Content: View>: View {
                     .transition(contentTransition(edge: .bottom))
             }
         }
-        .background(Color("Experiment/Fill/Dark", bundle: .module), in: panelShape)
+        .background(Color(.Experiment.Fill.dark), in: panelShape)
         .clipShape(panelShape)
     }
 
@@ -158,7 +158,7 @@ public struct ExperimentSidePanel<Content: View>: View {
                     .transition(contentTransition(edge: .trailing))
             }
         }
-        .background(Color("Experiment/Fill/Dark", bundle: .module), in: panelShape)
+        .background(Color(.Experiment.Fill.dark), in: panelShape)
         .clipShape(panelShape)
     }
 
@@ -192,7 +192,7 @@ public struct ExperimentSidePanel<Content: View>: View {
     }
 
     private var shadowColor: Color {
-        Color("Experiment/Effect/Shadow/Soft/Color", bundle: .module)
+        Color(.Experiment.Effect.Shadow.Soft.color)
     }
 
     private func toggle() {
@@ -217,7 +217,7 @@ public extension ExperimentSidePanel where Content == EmptyView {
             .foregroundStyle(.white)
     }
     .frame(width: 450, height: 430)
-    .background(Color("Experiment/Background/Primary", bundle: .module))
+    .background(Color(.Experiment.Background.primary))
 }
 
 #Preview("실험 패널 · 세로") {
@@ -228,5 +228,5 @@ public extension ExperimentSidePanel where Content == EmptyView {
             .foregroundStyle(.white)
     }
     .frame(width: 402, height: 430)
-    .background(Color("Experiment/Background/Primary", bundle: .module))
+    .background(Color(.Experiment.Background.primary))
 }

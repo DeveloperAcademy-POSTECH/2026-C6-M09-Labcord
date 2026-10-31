@@ -119,7 +119,7 @@ public struct VoicePlayer: View {
     private var horizontalDuration: some View {
         Text(duration)
             .typography(Typography.callout)
-            .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
+            .foregroundStyle(Color(.General.Label.secondary))
             .frame(minWidth: 44)
             .fixedSize(horizontal: true, vertical: false)
     }
@@ -127,7 +127,7 @@ public struct VoicePlayer: View {
     private var flexibleDuration: some View {
         Text(duration)
             .typography(Typography.callout)
-            .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
+            .foregroundStyle(Color(.General.Label.secondary))
             .frame(maxWidth: .infinity, alignment: .leading)
             .fixedSize(horizontal: false, vertical: true)
     }
@@ -143,7 +143,7 @@ public struct VoicePlayer: View {
                 .id(isPlaying)
                 .transition(.opacity)
             }
-            .foregroundStyle(Color("General/Label/Inverse", bundle: .module))
+            .foregroundStyle(Color(.General.Label.inverse))
             .labcordMotion(.state, value: isPlaying)
         }
         .buttonStyle(.labcordIcon(.primary, size: .small))
@@ -184,7 +184,7 @@ public struct VoicePlayer: View {
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
         }
-        .tint(Color("General/Brand/Primary", bundle: .module))
+        .tint(Color(.General.Brand.primary))
         .controlSize(.small)
         .frame(maxWidth: .infinity, minHeight: minimumHeight)
         .labcordSliderPressObservation($isPressingSlider)
@@ -282,8 +282,8 @@ public extension VoicePlayer {
     }
     .padding()
     .frame(maxWidth: .infinity)
-    .foregroundStyle(Color("General/Label/Primary", bundle: .module))
-    .background(Color("General/Background/Primary", bundle: .module))
+    .foregroundStyle(Color(.General.Label.primary))
+    .background(Color(.General.Background.primary))
 }
 
 #Preview("음성 플레이어 · 큰 글자") {

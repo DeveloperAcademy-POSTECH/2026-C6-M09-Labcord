@@ -31,27 +31,27 @@ extension InputState {
 
     var foregroundColor: Color {
         switch self {
-        case .empty: return Color("General/Label/Tertiary", bundle: .module)
-        case .focused, .filled: return Color("General/Label/Primary", bundle: .module)
-        case .error: return Color("General/Feedback/Error/Foreground", bundle: .module)
-        case .disabled: return Color("General/Label/Disabled", bundle: .module)
+        case .empty: return Color(.General.Label.tertiary)
+        case .focused, .filled: return Color(.General.Label.primary)
+        case .error: return Color(.General.Feedback.Error.foreground)
+        case .disabled: return Color(.General.Label.disabled)
         }
     }
 
     var backgroundColor: Color {
         switch self {
-        case .error: return Color("General/Feedback/Error/Subtle", bundle: .module)
-        case .disabled: return Color("General/Fill/Disabled", bundle: .module)
+        case .error: return Color(.General.Feedback.Error.subtle)
+        case .disabled: return Color(.General.Fill.disabled)
         case .empty, .focused, .filled:
-            return Color("General/Background/Grouped/Secondary", bundle: .module)
+            return Color(.General.Background.Grouped.secondary)
         }
     }
 
     var borderColor: Color {
         switch self {
-        case .focused: return Color("General/Border/Focused", bundle: .module)
-        case .error: return Color("General/Feedback/Error/Foreground", bundle: .module)
-        case .empty, .filled, .disabled: return Color("General/Border/Default", bundle: .module)
+        case .focused: return Color(.General.Border.focused)
+        case .error: return Color(.General.Feedback.Error.foreground)
+        case .empty, .filled, .disabled: return Color(.General.Border.`default`)
         }
     }
 }
@@ -152,7 +152,7 @@ private struct LabcordTextFieldBody<Label: View>: View {
         configuration
             .typography(inputTypography)
             .foregroundStyle((foregroundColor))
-            .tint((Color("General/Brand/Primary", bundle: .module)))
+            .tint((Color(.General.Brand.primary)))
             .padding(.horizontal, LayoutTokens.spacing8)
             .frame(
                 maxWidth: .infinity,

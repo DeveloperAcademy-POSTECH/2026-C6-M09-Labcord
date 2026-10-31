@@ -27,7 +27,7 @@ struct CatalogRecordSheetSample: View {
     let type: RecordType
     let identity: TimerIdentity
     var timerExample = CatalogTimerRecordExample.short
-    @Binding var memo: String
+    @Binding var note: String
     @Binding var transcript: String
     var initialTranscript: String?
     let onDismiss: () -> Void
@@ -50,9 +50,9 @@ struct CatalogRecordSheetSample: View {
             voiceProgress: playback.progressBinding,
             voiceOnEditingChanged: playback.setEditing,
             transcript: $transcript,
-            memo: $memo,
+            note: $note,
             mediaContent: mediaContent,
-            memoContent: AnyView(CatalogTextEditor(value: $memo)),
+            noteContent: AnyView(CatalogTextEditor(value: $note)),
             onDismiss: onDismiss,
             onSave: onSave,
             onDelete: onDelete
@@ -67,7 +67,7 @@ struct CatalogRecordSheetSample: View {
     }
 
     private var canSave: Bool {
-        !memo.isEmpty || (type == .voice && initialTranscript.map { transcript != $0 } == true)
+        !note.isEmpty || (type == .voice && initialTranscript.map { transcript != $0 } == true)
     }
 
     private var mediaContent: AnyView? {
@@ -169,13 +169,13 @@ private final class CatalogAudioPlayback {
 }
 
 #Preview("기록 시트 예제") {
-    @Previewable @State var memo = "실험 결과를 기록했어요."
+    @Previewable @State var note = "실험 결과를 기록했어요."
     @Previewable @State var transcript = "색이 변했어요."
     _ = FontRegistration.register()
     return CatalogRecordSheetSample(
         type: .voice,
         identity: .identity02,
-        memo: $memo,
+        note: $note,
         transcript: $transcript,
         onDismiss: {},
         onSave: {},

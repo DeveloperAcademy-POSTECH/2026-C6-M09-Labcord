@@ -6,16 +6,16 @@ func recordSheetReadOnlyText(_ text: String) -> some View {
     Text(text.isEmpty ? "내용을 입력해 주세요" : text)
         .typography(Typography.subheadline)
         .foregroundStyle(
-            text.isEmpty ? Color("General/Label/Tertiary", bundle: .module)
-                : Color("General/Label/Primary", bundle: .module)
+            text.isEmpty ? Color(.General.Label.tertiary)
+                : Color(.General.Label.primary)
         )
         .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
         .padding(LayoutTokens.spacing12)
-        .background(Color("General/Background/Grouped/Secondary", bundle: .module))
+        .background(Color(.General.Background.Grouped.secondary))
         .clipShape(RoundedRectangle(cornerRadius: LayoutTokens.radiusSm))
         .overlay {
             RoundedRectangle(cornerRadius: LayoutTokens.radiusSm)
-                .strokeBorder(Color("General/Border/Default", bundle: .module), lineWidth: 1)
+                .strokeBorder(Color(.General.Border.`default`), lineWidth: 1)
         }
 }
 #endif
@@ -53,7 +53,7 @@ struct RecordBottomSheetTranscriptField: View {
 
             Text(help)
                 .typography(Typography.subheadline)
-                .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
+                .foregroundStyle(Color(.General.Label.secondary))
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -82,7 +82,7 @@ struct RecordBottomSheetTranscriptField: View {
 }
 
 public extension RecordBottomSheet {
-    init<MediaContent: View, MemoContent: View>(
+    init<MediaContent: View, NoteContent: View>(
         type: RecordType = .timer,
         contentState: RecordContentState = .empty,
         setDuration: String = "30초",
@@ -100,12 +100,12 @@ public extension RecordBottomSheet {
         transcript: Binding<String> = .constant(
             "샘플 B, 반응 시작 5분 후 연한 노란색으로 변했고 침전은 없음"
         ),
-        memo: Binding<String> = .constant(""),
+        note: Binding<String> = .constant(""),
         onDismiss: (() -> Void)? = nil,
         onSave: @escaping () -> Void = {},
         onDelete: @escaping () -> Void = {},
         @ViewBuilder mediaContent: () -> MediaContent,
-        @ViewBuilder memoContent: () -> MemoContent
+        @ViewBuilder noteContent: () -> NoteContent
     ) {
         self.init(
             type: type,
@@ -123,9 +123,9 @@ public extension RecordBottomSheet {
             voiceOnToggle: voiceOnToggle,
             voiceOnSeek: voiceOnSeek,
             transcript: transcript,
-            memo: memo,
+            note: note,
             mediaContent: AnyView(mediaContent()),
-            memoContent: AnyView(memoContent()),
+            noteContent: AnyView(noteContent()),
             onDismiss: onDismiss,
             onSave: onSave,
             onDelete: onDelete
@@ -150,9 +150,9 @@ public extension RecordBottomSheet {
         transcript: Binding<String> = .constant(
             "샘플 B, 반응 시작 5분 후 연한 노란색으로 변했고 침전은 없음"
         ),
-        memo: Binding<String> = .constant(""),
+        note: Binding<String> = .constant(""),
         mediaContent: AnyView? = nil,
-        memoContent: AnyView? = nil,
+        noteContent: AnyView? = nil,
         transcriptHelp: String = "잘못 인식된 용어와 수치를 확인해 주세요.",
         onDismiss: (() -> Void)? = nil,
         onSave: @escaping () -> Void = {},
@@ -175,10 +175,10 @@ public extension RecordBottomSheet {
             voiceOnToggle: voiceOnToggle,
             voiceOnSeek: voiceOnSeek,
             transcript: transcript,
-            memo: memo,
+            note: note,
             mediaContent: mediaContent,
             transcriptContent: AnyView(transcriptContent()),
-            memoContent: memoContent,
+            noteContent: noteContent,
             transcriptHelp: transcriptHelp,
             onDismiss: onDismiss,
             onSave: onSave,
@@ -194,7 +194,7 @@ public extension RecordBottomSheet {
         timerCumulativeTime: String,
         timerPauseCount: String,
         contentState: RecordContentState,
-        memo: Binding<String>,
+        note: Binding<String>,
         onDismiss: (() -> Void)? = nil,
         onSave: @escaping () -> Void,
         onDelete: @escaping () -> Void
@@ -203,7 +203,7 @@ public extension RecordBottomSheet {
             type: .timer, contentState: contentState, setDuration: timerSetDuration,
             timerIdentity: timerIdentity, timerState: timerState,
             timerElapsedTime: timerElapsedTime, timerCumulativeTime: timerCumulativeTime,
-            timerPauseCount: timerPauseCount, memo: memo,
+            timerPauseCount: timerPauseCount, note: note,
             onDismiss: onDismiss, onSave: onSave, onDelete: onDelete
         )
     }
@@ -213,7 +213,7 @@ public extension RecordBottomSheet {
         isPlaying: Binding<Bool>,
         progress: Binding<Double>,
         transcript: Binding<String>,
-        memo: Binding<String>,
+        note: Binding<String>,
         contentState: RecordContentState,
         onEditingChanged: ((Bool) -> Void)? = nil,
         onToggle: (() -> Void)? = nil,
@@ -226,7 +226,7 @@ public extension RecordBottomSheet {
             type: .voice, contentState: contentState,
             voiceDuration: voiceDuration, voiceIsPlaying: isPlaying, voiceProgress: progress,
             voiceOnEditingChanged: onEditingChanged, voiceOnToggle: onToggle, voiceOnSeek: onSeek,
-            transcript: transcript, memo: memo,
+            transcript: transcript, note: note,
             onDismiss: onDismiss, onSave: onSave, onDelete: onDelete
         )
     }
@@ -234,13 +234,13 @@ public extension RecordBottomSheet {
     init<PhotoContent: View>(
         photoContent: PhotoContent,
         contentState: RecordContentState,
-        memo: Binding<String>,
+        note: Binding<String>,
         onDismiss: (() -> Void)? = nil,
         onSave: @escaping () -> Void,
         onDelete: @escaping () -> Void
     ) {
         self.init(
-            type: .photo, contentState: contentState, memo: memo,
+            type: .photo, contentState: contentState, note: note,
             mediaContent: AnyView(photoContent),
             onDismiss: onDismiss, onSave: onSave, onDelete: onDelete
         )
@@ -249,13 +249,13 @@ public extension RecordBottomSheet {
     init<VideoContent: View>(
         videoContent: VideoContent,
         contentState: RecordContentState,
-        memo: Binding<String>,
+        note: Binding<String>,
         onDismiss: (() -> Void)? = nil,
         onSave: @escaping () -> Void,
         onDelete: @escaping () -> Void
     ) {
         self.init(
-            type: .video, contentState: contentState, memo: memo,
+            type: .video, contentState: contentState, note: note,
             mediaContent: AnyView(videoContent),
             onDismiss: onDismiss, onSave: onSave, onDelete: onDelete
         )
