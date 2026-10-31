@@ -1,4 +1,3 @@
-import CoreText
 import SwiftUI
 
 // swiftlint:disable identifier_name
@@ -70,11 +69,8 @@ public extension Image {
 }
 
 struct LabcordIconArtwork: View {
-    private let referenceFont = Font.system(size: 1_000, weight: .regular)
-
     private let icon: LabcordIcon
     @ScaledMetric private var scaledSize: CGFloat
-    @Environment(\.fontResolutionContext) private var fontResolutionContext
 
     init(
         icon: LabcordIcon,
@@ -86,21 +82,11 @@ struct LabcordIconArtwork: View {
     }
 
     var body: some View {
-        let capHeight = CTFontGetCapHeight(referenceFont.resolve(in: fontResolutionContext).ctFont)
-
         Image(labcordIcon: icon)
             .renderingMode(.template)
-            .font(referenceFont)
-            .imageScale(.medium)
-            .alignmentGuide(.bottom) { $0[.firstTextBaseline] }
-            .frame(
-                width: capHeight,
-                height: capHeight,
-                alignment: .bottom
-            )
-            .scaleEffect(scaledSize / capHeight)
+            .resizable()
+            .scaledToFit()
             .frame(width: scaledSize, height: scaledSize)
-            .clipped()
             .alignmentGuide(.firstTextBaseline) { $0[.bottom] }
             .accessibilityHidden(true)
     }
