@@ -2,8 +2,8 @@ import SwiftUI
 
 @MainActor
 struct RunIconButtonStyle: ButtonStyle {
-    let background: ColorToken
-    let foreground: ColorToken
+    let background: Color
+    let foreground: Color
     let iconSize: CGFloat
 
     func makeBody(configuration: Configuration) -> some View {
@@ -21,8 +21,8 @@ private struct RunIconButtonContent: View {
     @ScaledMetric(relativeTo: .body) private var buttonSize = 50.0
 
     let configuration: ButtonStyleConfiguration
-    let background: ColorToken
-    let foreground: ColorToken
+    let background: Color
+    let foreground: Color
     let iconSize: CGFloat
 
     private var isPressed: Bool {
@@ -32,10 +32,12 @@ private struct RunIconButtonContent: View {
     var body: some View {
         configuration.label
             .frame(minWidth: iconSize, minHeight: iconSize)
-            .foregroundStyle(.labcord(isEnabled ? foreground : .labelDisabled))
+            .foregroundStyle(
+                isEnabled ? foreground : Color("Experiment/Label/Disabled", bundle: .module)
+            )
             .frame(width: buttonSize, height: buttonSize)
             .background(
-                .labcord(isEnabled ? background : .fillDisabled),
+                isEnabled ? background : Color("Experiment/Fill/Disabled", bundle: .module),
                 in: Circle()
             )
             .contentShape(Circle())

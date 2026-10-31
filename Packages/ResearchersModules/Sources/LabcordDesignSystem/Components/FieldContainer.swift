@@ -11,7 +11,7 @@ public struct FieldContainer<Content: View>: View {
     private let content: () -> Content
 
     @Environment(\.isEnabled) private var isEnabled
-    @Environment(\.labcordTheme) private var theme
+    private let layout = LayoutTokens()
 
     public init(
         label: String? = "타이틀",
@@ -34,21 +34,21 @@ public struct FieldContainer<Content: View>: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: theme.layout.spacing8) {
+        VStack(alignment: .leading, spacing: layout.spacing8) {
             if showTitle {
-                HStack(alignment: .firstTextBaseline, spacing: theme.layout.spacing4) {
+                HStack(alignment: .firstTextBaseline, spacing: layout.spacing4) {
                     if let label {
                         Text(label)
                             .typography(Typography.calloutSemiBold)
-                            .foregroundStyle(LabcordColor(labelToken))
-                            .labcordMotion(.state, value: labelToken)
+                            .foregroundStyle((labelColor))
+                            .labcordMotion(.state, value: labelColor)
                     }
 
                     if required {
                         Text("*")
                             .typography(Typography.calloutSemiBold)
-                            .foregroundStyle(LabcordColor(requiredToken))
-                            .labcordMotion(.state, value: requiredToken)
+                            .foregroundStyle((requiredColor))
+                            .labcordMotion(.state, value: requiredColor)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -61,8 +61,8 @@ public struct FieldContainer<Content: View>: View {
                 if showFeedback, let feedback {
                     Text(feedback)
                         .typography(Typography.subheadline)
-                        .foregroundStyle(LabcordColor(feedbackToken))
-                        .labcordMotion(.state, value: feedbackToken)
+                        .foregroundStyle((feedbackColor))
+                        .labcordMotion(.state, value: feedbackColor)
                         .contentTransition(.opacity)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .transition(.opacity)
@@ -78,19 +78,25 @@ public struct FieldContainer<Content: View>: View {
         isDisabled || !isEnabled
     }
 
-    private var labelToken: ColorToken {
-        resolvedIsDisabled ? .labelDisabled : .labelSecondary
+    private var labelColor: Color {
+        resolvedIsDisabled
+            ? Color("General/Label/Disabled", bundle: .module)
+            : Color("General/Label/Secondary", bundle: .module)
     }
 
-    private var requiredToken: ColorToken {
-        resolvedIsDisabled ? .labelDisabled : .feedbackErrorForeground
+    private var requiredColor: Color {
+        resolvedIsDisabled
+            ? Color("General/Label/Disabled", bundle: .module)
+            : Color("General/Feedback/Error/Foreground", bundle: .module)
     }
 
-    private var feedbackToken: ColorToken {
+    private var feedbackColor: Color {
         if resolvedIsDisabled {
-            return .labelDisabled
+            return Color("General/Label/Disabled", bundle: .module)
         }
-        return isError ? .feedbackErrorForeground : .labelSecondary
+        return isError
+            ? Color("General/Feedback/Error/Foreground", bundle: .module)
+            : Color("General/Label/Secondary", bundle: .module)
     }
 }
 

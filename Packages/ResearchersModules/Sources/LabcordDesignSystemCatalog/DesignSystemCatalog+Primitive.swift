@@ -61,7 +61,7 @@ private struct CatalogPrimitiveSwatchPreview: View {
         VStack(alignment: .leading, spacing: 8) {
             if let edge = swatch.gradientEdge {
                 Rectangle()
-                    .fill(.labcord(.backgroundPrimary))
+                    .fill(Color("General/Background/Primary", bundle: catalogBundle))
                     .overlay { LabcordOverlayFade(edge: edge) }
                     .aspectRatio(416.0 / 210.0, contentMode: .fit)
                     .frame(maxWidth: 416)
@@ -102,7 +102,7 @@ private struct CatalogPrimitiveSwatchPreview: View {
             }
             Text(swatch.name)
                 .typography(Typography.caption1)
-                .foregroundStyle(.labcord(.labelSecondary))
+                .foregroundStyle(Color("General/Label/Secondary", bundle: catalogBundle))
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

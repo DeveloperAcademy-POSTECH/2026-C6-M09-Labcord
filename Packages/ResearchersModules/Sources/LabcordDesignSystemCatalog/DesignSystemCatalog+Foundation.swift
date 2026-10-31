@@ -56,7 +56,7 @@ struct DesignSystemFoundationPage: View {
     let item: CatalogItem
     @State private var palette = CatalogFoundationPalette.semantic
 
-    private var context: ThemeContext { item.context }
+    private var context: CatalogContext { item.context }
 
     var body: some View {
         DesignSystemCatalogPage(title: item.title, context: context) {
@@ -65,7 +65,7 @@ struct DesignSystemFoundationPage: View {
             if item == .radius { radiusCard }
             if item == .sizes { sizeCard }
             if item == .effects {
-                ForEach(ThemeContext.allCases, id: \.rawValue) { context in
+                ForEach(CatalogContext.allCases, id: \.rawValue) { context in
                     CatalogFoundationEffectsCard(context: context)
                 }
             }
@@ -79,7 +79,7 @@ struct DesignSystemFoundationPage: View {
                 #endif
                 .accessibilityIdentifier("foundation.palette.kind")
                 if palette == .semantic {
-                    ForEach(ThemeContext.allCases, id: \.rawValue) { context in
+                    ForEach(CatalogContext.allCases, id: \.rawValue) { context in
                         CatalogFoundationColorCard(context: context)
                     }
                 } else {
@@ -99,7 +99,9 @@ struct DesignSystemFoundationPage: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(style.rawValue)
                             .typography(Typography.caption1)
-                            .foregroundStyle(.labcord(.labelSecondary))
+                            .foregroundStyle(
+                                Color("General/Label/Secondary", bundle: catalogBundle)
+                            )
                             .fixedSize(horizontal: false, vertical: true)
                         Text("실험의 흐름을 기록해요 0123456789")
                             .typography(style.style)
@@ -116,7 +118,7 @@ struct DesignSystemFoundationPage: View {
         }
     }
 
-    private var layout: LayoutTokens { LabcordTheme(context: context).layout }
+    private var layout: LayoutTokens { LayoutTokens() }
 
     private var spacingCard: some View {
         DesignSystemCatalogCard("Spacing", description: "토큰 간격으로 배치한 두 도형") {
@@ -135,8 +137,12 @@ struct DesignSystemFoundationPage: View {
                     VStack(alignment: .leading, spacing: 8) {
                         CatalogMetricLabel(name: token.name, value: token.value)
                         HStack(spacing: token.value) {
-                            Rectangle().fill(.labcord(.labelBrand)).frame(width: 20, height: 20)
-                            Rectangle().fill(.labcord(.labelBrand)).frame(width: 20, height: 20)
+                            Rectangle()
+                                .fill(Color("General/Label/Brand", bundle: catalogBundle))
+                                .frame(width: 20, height: 20)
+                            Rectangle()
+                                .fill(Color("General/Label/Brand", bundle: catalogBundle))
+                                .frame(width: 20, height: 20)
                         }
                         .accessibilityHidden(true)
                     }
@@ -158,7 +164,7 @@ struct DesignSystemFoundationPage: View {
                     VStack(alignment: .leading, spacing: 8) {
                         CatalogMetricLabel(name: token.name, value: token.value)
                         RoundedRectangle(cornerRadius: token.value, style: .continuous)
-                            .fill(.labcord(.fillPrimary))
+                            .fill(Color("General/Fill/Primary", bundle: catalogBundle))
                             .frame(height: 60)
                             .accessibilityHidden(true)
                     }
@@ -181,7 +187,7 @@ struct DesignSystemFoundationPage: View {
                     VStack(alignment: .leading, spacing: 8) {
                         CatalogMetricLabel(name: token.name, value: token.value)
                         RoundedRectangle(cornerRadius: layout.radiusSm, style: .continuous)
-                            .fill(.labcord(.labelBrand))
+                            .fill(Color("General/Label/Brand", bundle: catalogBundle))
                             .frame(width: token.value, height: token.value)
                             .accessibilityHidden(true)
                     }
@@ -225,22 +231,24 @@ private enum CatalogFoundationPalette: String, CaseIterable {
 }
 
 private struct CatalogFoundationColorCard: View {
-    let context: ThemeContext
+    let context: CatalogContext
 
     var body: some View {
         DesignSystemCatalogCard(context == .general ? "General" : "Experiment") {
             VStack(alignment: .leading, spacing: 8) {
-                ForEach(ColorToken.allCases, id: \.rawValue) { token in
+                ForEach(catalogSemanticColorNames, id: \.self) { token in
                     HStack(spacing: 12) {
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(.labcord(token))
+                            .fill(Color("\(context.rawValue)/\(token)", bundle: catalogBundle))
                             .frame(width: 52, height: 36)
                             .overlay {
                                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                    .strokeBorder(.labcord(.borderDefault))
+                                    .strokeBorder(
+                                        Color("General/Border/Default", bundle: catalogBundle)
+                                    )
                             }
-                            .labcordTheme(LabcordTheme(context: context))
-                        Text(token.rawValue)
+
+                        Text(token)
                             .typography(Typography.subheadline)
                     }
                 }
@@ -250,10 +258,12 @@ private struct CatalogFoundationColorCard: View {
 }
 
 private struct CatalogFoundationEffectsCard: View {
-    let context: ThemeContext
+    let context: CatalogContext
 
-    private var layout: LayoutTokens { LabcordTheme(context: context).layout }
-    private var effects: EffectTokens { LabcordTheme(context: context).effects }
+    private var layout: LayoutTokens { LayoutTokens() }
+    private var effects: EffectTokens {
+        EffectTokens(context: context == .general ? .general : .experiment)
+    }
 
     private var blurMetrics: [CatalogMetric] {
         [
@@ -297,11 +307,13 @@ private struct CatalogFoundationEffectsCard: View {
                             .padding(12)
                             .frame(maxWidth: .infinity)
                             .background(
-                                .labcord(.fillPrimary),
+                                Color("\(context.rawValue)/Fill/Primary", bundle: catalogBundle),
                                 in: RoundedRectangle(cornerRadius: layout.radiusMd)
                             )
-                            .foregroundStyle(.labcord(.labelPrimary))
-                            .labcordTheme(LabcordTheme(context: context))
+                            .foregroundStyle(
+                                Color("\(context.rawValue)/Label/Primary", bundle: catalogBundle)
+                            )
+
                             .blur(radius: token.value)
                             .padding(48)
                             .accessibilityHidden(true)
@@ -310,15 +322,15 @@ private struct CatalogFoundationEffectsCard: View {
 
                 shadowPreview(
                     "Shadow Soft", radius: effects.shadowSoftRadius,
-                    offsetY: effects.shadowSoftOffsetY, color: .effectShadowSoftColor
+                    offsetY: effects.shadowSoftOffsetY, color: "Effect/Shadow/Soft/Color"
                 )
                 shadowPreview(
                     "Shadow Medium", radius: effects.shadowMediumRadius,
-                    offsetY: effects.shadowMediumOffsetY, color: .effectShadowMediumColor
+                    offsetY: effects.shadowMediumOffsetY, color: "Effect/Shadow/Medium/Color"
                 )
                 shadowPreview(
                     "Shadow Strong", radius: effects.shadowStrongRadius,
-                    offsetY: effects.shadowStrongOffsetY, color: .effectShadowStrongColor
+                    offsetY: effects.shadowStrongOffsetY, color: "Effect/Shadow/Strong/Color"
                 )
             }
         }
@@ -329,7 +341,7 @@ private struct CatalogFoundationEffectsCard: View {
         _ title: String,
         radius: CGFloat,
         offsetY: CGFloat,
-        color: ColorToken
+        color: String
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
@@ -339,13 +351,13 @@ private struct CatalogFoundationEffectsCard: View {
                 .padding(16)
                 .frame(maxWidth: .infinity)
                 .background(
-                    .labcord(.backgroundPrimary),
+                    Color("\(context.rawValue)/Background/Primary", bundle: catalogBundle),
                     in: RoundedRectangle(cornerRadius: layout.radiusMd)
                 )
-                .foregroundStyle(.labcord(.labelPrimary))
-                .labcordTheme(LabcordTheme(context: context))
+                .foregroundStyle(Color("\(context.rawValue)/Label/Primary", bundle: catalogBundle))
+
                 .shadow(
-                    color: LabcordTheme(context: context).color(color),
+                    color: Color("\(context.rawValue)/\(color)", bundle: catalogBundle),
                     radius: radius, x: 0, y: offsetY
                 )
                 .padding(radius)
@@ -353,3 +365,35 @@ private struct CatalogFoundationEffectsCard: View {
         }
     }
 }
+
+private let catalogSemanticColorNames = [
+    "Background/Primary", "Background/Secondary", "Background/Tertiary",
+    "Background/Grouped/Primary", "Background/Grouped/Secondary",
+    "Background/Grouped/Tertiary", "Label/Primary", "Label/Secondary", "Label/Tertiary",
+    "Label/Quaternary", "Label/Disabled", "Label/Inverse", "Label/Brand", "Fill/Primary",
+    "Fill/Secondary", "Fill/Tertiary", "Fill/Quaternary", "Fill/Selected", "Fill/Disabled",
+    "Separator/Default", "Separator/Opaque", "Separator/Strong", "Brand/Primary",
+    "Brand/Secondary", "Brand/Tertiary", "Brand/On Primary", "Brand/Subtle",
+    "Feedback/Success/Foreground", "Feedback/Warning/Foreground", "Feedback/Error/Foreground",
+    "Feedback/Info/Foreground", "Feedback/Success/Subtle", "Feedback/Warning/Subtle",
+    "Feedback/Error/Subtle", "Feedback/Info/Subtle", "Timer/Foreground", "Border/Default",
+    "Border/Strong", "Border/Focused", "Feedback/Error/Border", "Overlay/Scrim",
+    "Overlay/Strong", "Experiment/Status/Ready/Foreground",
+    "Experiment/Status/Ready/Background", "Experiment/Status/InProgress/Foreground",
+    "Experiment/Status/InProgress/Background", "Experiment/Status/Paused/Foreground",
+    "Experiment/Status/Paused/Background", "Experiment/Status/Completed/Foreground",
+    "Experiment/Status/Completed/Background", "Feedback/Success/Border",
+    "Feedback/Warning/Border", "Feedback/Info/Border", "Feedback/Success/Strong",
+    "Feedback/Success/OnStrong", "Feedback/Warning/Strong", "Feedback/Warning/OnStrong",
+    "Feedback/Error/Strong", "Feedback/Error/OnStrong", "Feedback/Info/Strong",
+    "Feedback/Info/OnStrong", "Brand/On Subtle", "Brand/Border", "Action/Primary/Background",
+    "Action/Primary/Foreground", "Action/Secondary/Background", "Action/Secondary/Foreground",
+    "Action/Destructive/Background", "Action/Destructive/Foreground",
+    "Action/Destructive/Subtle Background", "Action/Destructive/Subtle Foreground",
+    "Action/Disabled/Background", "Action/Disabled/Foreground", "Fill/Light",
+    "Timer/Background", "Effect/Shadow/Soft/Color", "Effect/Shadow/Medium/Color",
+    "Effect/Shadow/Strong/Color", "Timer/Identity/01", "Timer/Identity/02",
+    "Timer/Identity/03", "Timer/Identity/04", "Timer/Identity/05", "Fill/PrimaryBrand",
+    "Fill/Dark", "Fill/Inverse", "Fill/White", "Effect/Shadow/Strong/01",
+    "Timeline/Memo/Background", "Timer/Sheet/Grabber"
+]

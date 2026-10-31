@@ -46,8 +46,7 @@ public struct RecordBottomSheet: View {
     @State private var transcriptBounds = CGRect.zero
     @State private var isKeyboardVisible = false
 
-    @Environment(\.labcordTheme) private var theme
-    @Environment(\.colorScheme) private var colorScheme
+    private let tokenLayout = LayoutTokens()
     @Environment(\.isPresented) private var isPresented
     @Environment(\.dismiss) private var dismiss
     @ScaledMetric(relativeTo: .body) private var headerControlScale: CGFloat = 1
@@ -105,7 +104,7 @@ public struct RecordBottomSheet: View {
     }
 
     public var body: some View {
-        VStack(alignment: .center, spacing: theme.layout.spacing16) {
+        VStack(alignment: .center, spacing: tokenLayout.spacing16) {
             grabber
             header
             recordContent
@@ -121,19 +120,21 @@ public struct RecordBottomSheet: View {
             memoField
             actions
         }
-        .padding(.horizontal, theme.layout.spacing16)
-        .padding(.top, theme.layout.spacing16)
+        .padding(.horizontal, tokenLayout.spacing16)
+        .padding(.top, tokenLayout.spacing16)
         .padding(.bottom, bottomPadding)
         .frame(maxWidth: .infinity)
-        .background(.labcord(.backgroundGroupedSecondary), ignoresSafeAreaEdges: [])
+        .background(
+            Color("General/Background/Grouped/Secondary", bundle: .module),
+            ignoresSafeAreaEdges: []
+        )
         .clipShape(RoundedRectangle(cornerRadius: isPresented ? 0 : 28, style: .continuous))
         .shadow(
-            color: isPresented ? .clear : theme.color(
-                .effectShadowMediumColor, colorScheme: colorScheme
-            ),
-            radius: theme.effects(for: colorScheme).shadowMediumRadius,
+            color: isPresented
+                ? .clear : Color("General/Effect/Shadow/Medium/Color", bundle: .module),
+            radius: EffectTokens(context: .general).shadowMediumRadius,
             x: 0,
-            y: theme.effects(for: colorScheme).shadowMediumOffsetY
+            y: EffectTokens(context: .general).shadowMediumOffsetY
         )
         .accessibilityElement(children: .contain)
         .simultaneousGesture(
@@ -162,7 +163,7 @@ public struct RecordBottomSheet: View {
 
     private var grabber: some View {
         Capsule()
-            .fill(.labcord(.fillQuaternary))
+            .fill(Color("General/Fill/Quaternary", bundle: .module))
             .frame(width: 36, height: 5)
             .accessibilityHidden(true)
     }
@@ -171,20 +172,20 @@ public struct RecordBottomSheet: View {
         HStack(alignment: .center) {
             Button(action: close) {
                 LabcordIconArtwork(icon: .x, size: 16, relativeTo: .body)
-                    .foregroundStyle(.labcord(.labelPrimary))
+                    .foregroundStyle(Color("General/Label/Primary", bundle: .module))
             }
             .buttonStyle(.labcordIcon(.tertiary, size: .medium))
             .accessibilityLabel(Text("닫기"))
 
             Text("기록")
                 .typography(Typography.bodySemiBold)
-                .foregroundStyle(.labcord(.labelPrimary))
+                .foregroundStyle(Color("General/Label/Primary", bundle: .module))
                 .frame(maxWidth: .infinity)
 
             Color.clear.frame(width: 34 * headerControlScale, height: 34 * headerControlScale)
                 .accessibilityHidden(true)
         }
-        .padding(.vertical, theme.layout.spacing4)
+        .padding(.vertical, tokenLayout.spacing4)
         .frame(maxWidth: .infinity)
     }
 
@@ -218,7 +219,7 @@ public struct RecordBottomSheet: View {
                 onSeek: voiceOnSeek
             )
             .frame(maxWidth: .infinity)
-            .padding(.vertical, theme.layout.spacing8)
+            .padding(.vertical, tokenLayout.spacing8)
         case .photo, .video:
             Group {
                 if let mediaContent {
@@ -234,10 +235,10 @@ public struct RecordBottomSheet: View {
     }
 
     private var memoField: some View {
-        VStack(alignment: .leading, spacing: theme.layout.spacing8) {
+        VStack(alignment: .leading, spacing: tokenLayout.spacing8) {
             Text("메모")
                 .typography(Typography.calloutSemiBold)
-                .foregroundStyle(.labcord(.labelSecondary))
+                .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             if let memoContent {
@@ -251,7 +252,7 @@ public struct RecordBottomSheet: View {
     }
 
     private var actions: some View {
-        HStack(spacing: theme.layout.spacing16) {
+        HStack(spacing: tokenLayout.spacing16) {
             Button(role: .destructive, action: onDelete) {
                 Text("삭제")
                     .frame(maxWidth: .infinity)
@@ -279,14 +280,14 @@ public struct RecordBottomSheet: View {
 
 private extension RecordBottomSheet {
     var bottomPadding: CGFloat {
-        let base = isPresented ? 0 : theme.layout.spacing32
-        return base + (isKeyboardVisible ? theme.layout.spacing16 : 0)
+        let base = isPresented ? 0 : tokenLayout.spacing32
+        return base + (isKeyboardVisible ? tokenLayout.spacing16 : 0)
     }
 
     @ViewBuilder
     var defaultMemoEditor: some View {
 #if os(watchOS)
-        recordSheetReadOnlyText(memo, theme: theme)
+        recordSheetReadOnlyText(memo, layout: tokenLayout)
 #else
         TextEditor(text: $memo)
             .labcordTextEditorStyle(

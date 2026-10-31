@@ -22,7 +22,7 @@ public struct TimelineItem: View {
     private let state: LabcordTimelineItemState
     private let content: AnyView?
 
-    @Environment(\.labcordTheme) private var theme
+    private let tokenLayout = LayoutTokens()
     @ScaledMetric(relativeTo: .callout) private var memoMinimumHeight = 42
 
     public init<Content: View>(
@@ -90,10 +90,10 @@ public struct TimelineItem: View {
     }
 
     public var body: some View {
-        HStack(alignment: .top, spacing: theme.layout.spacing12) {
+        HStack(alignment: .top, spacing: tokenLayout.spacing12) {
             Text(timestamp)
                 .typography(Typography.body)
-                .foregroundStyle(.labcord(.labelSecondary))
+                .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
                 .frame(minWidth: 70, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -101,7 +101,7 @@ public struct TimelineItem: View {
                 if type == .voice {
                     Text(title)
                         .typography(Typography.bodySemiBold)
-                        .foregroundStyle(.labcord(.labelPrimary))
+                        .foregroundStyle(Color("General/Label/Primary", bundle: .module))
                         .contentTransition(.opacity)
                         .labcordMotion(.state, value: title)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -119,11 +119,11 @@ public struct TimelineItem: View {
             .layoutPriority(1)
             .labcordMotion(.layout, value: showMemo)
         }
-        .padding(.horizontal, theme.layout.spacing16)
-        .padding(.vertical, theme.layout.spacing8)
+        .padding(.horizontal, tokenLayout.spacing16)
+        .padding(.vertical, tokenLayout.spacing8)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(selectionBackground)
-        .clipShape(RoundedRectangle(cornerRadius: state == .selected ? theme.layout.radiusSm : 0))
+        .clipShape(RoundedRectangle(cornerRadius: state == .selected ? tokenLayout.radiusSm : 0))
         .accessibilityElement(children: .contain)
     }
 
@@ -144,35 +144,35 @@ public struct TimelineItem: View {
     }
 
     private var contentSpacing: CGFloat {
-        type == .voice ? theme.layout.spacing8 : theme.layout.spacing12
+        type == .voice ? tokenLayout.spacing8 : tokenLayout.spacing12
     }
 
     private var memoContent: some View {
-        VStack(alignment: .leading, spacing: theme.layout.spacing12) {
+        VStack(alignment: .leading, spacing: tokenLayout.spacing12) {
             Text(memoTitle)
                 .typography(Typography.calloutSemiBold)
-                .foregroundStyle(.labcord(.labelTertiary))
+                .foregroundStyle(Color("General/Label/Tertiary", bundle: .module))
                 .fixedSize(horizontal: false, vertical: true)
 
             Text(memo)
                 .typography(Typography.callout)
-                .foregroundStyle(.labcord(.labelPrimary))
+                .foregroundStyle(Color("General/Label/Primary", bundle: .module))
                 .contentTransition(.opacity)
                 .labcordMotion(.state, value: memo)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, minHeight: memoMinimumHeight, alignment: .topLeading)
         }
-        .padding(theme.layout.spacing12)
+        .padding(tokenLayout.spacing12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            .labcord(.timelineMemoBackground),
-            in: RoundedRectangle(cornerRadius: theme.layout.radiusSm)
+            Color("General/Timeline/Memo/Background", bundle: .module),
+            in: RoundedRectangle(cornerRadius: tokenLayout.radiusSm)
         )
     }
 
     private var selectionBackground: some View {
-        RoundedRectangle(cornerRadius: theme.layout.radiusSm)
-            .fill(.labcord(.fillPrimary))
+        RoundedRectangle(cornerRadius: tokenLayout.radiusSm)
+            .fill(Color("General/Fill/Primary", bundle: .module))
             .opacity(state == .selected ? 1 : 0)
             .labcordMotion(.state, value: state.rawValue)
             .allowsHitTesting(false)
@@ -194,19 +194,18 @@ public typealias LabcordTimelineItem = TimelineItem
                 state: .default
             ) {
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(.labcord(.fillSecondary))
+                    .fill(Color("General/Fill/Secondary", bundle: .module))
                     .frame(height: 160)
                     .overlay {
                         Text("호출자 미디어 슬롯")
                             .typography(Typography.callout)
-                            .foregroundStyle(.labcord(.labelSecondary))
+                            .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
                     }
             }
         }
     }
-    .foregroundStyle(.labcord(.labelPrimary))
-    .background(.labcord(.backgroundPrimary))
-    .labcordTheme(LabcordTheme(context: .general))
+    .foregroundStyle(Color("General/Label/Primary", bundle: .module))
+    .background(Color("General/Background/Primary", bundle: .module))
 }
 
 #Preview("타임라인 · 큰 글자") {
@@ -220,6 +219,5 @@ public typealias LabcordTimelineItem = TimelineItem
     )
     .frame(maxWidth: .infinity)
     .environment(\.dynamicTypeSize, .accessibility3)
-    .labcordTheme(LabcordTheme(context: .experiment))
 }
 #endif

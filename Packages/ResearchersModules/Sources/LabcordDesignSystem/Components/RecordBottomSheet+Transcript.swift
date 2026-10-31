@@ -2,17 +2,20 @@ import SwiftUI
 
 #if os(watchOS)
 @MainActor
-func recordSheetReadOnlyText(_ text: String, theme: LabcordTheme) -> some View {
+func recordSheetReadOnlyText(_ text: String, layout: LayoutTokens) -> some View {
     Text(text.isEmpty ? "내용을 입력해 주세요" : text)
         .typography(Typography.subheadline)
-        .foregroundStyle(.labcord(text.isEmpty ? .labelTertiary : .labelPrimary))
+        .foregroundStyle(
+            text.isEmpty ? Color("General/Label/Tertiary", bundle: .module)
+                : Color("General/Label/Primary", bundle: .module)
+        )
         .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
-        .padding(theme.layout.spacing12)
-        .background(.labcord(.backgroundGroupedSecondary))
-        .clipShape(RoundedRectangle(cornerRadius: theme.layout.radiusSm))
+        .padding(layout.spacing12)
+        .background(Color("General/Background/Grouped/Secondary", bundle: .module))
+        .clipShape(RoundedRectangle(cornerRadius: layout.radiusSm))
         .overlay {
-            RoundedRectangle(cornerRadius: theme.layout.radiusSm)
-                .strokeBorder(.labcord(.borderDefault), lineWidth: 1)
+            RoundedRectangle(cornerRadius: layout.radiusSm)
+                .strokeBorder(Color("General/Border/Default", bundle: .module), lineWidth: 1)
         }
 }
 #endif
@@ -25,7 +28,7 @@ struct RecordBottomSheetTranscriptField: View {
     private let content: AnyView?
     private let help: String
 
-    @Environment(\.labcordTheme) private var theme
+    private let tokenLayout = LayoutTokens()
 
     init(
         transcript: Binding<String>,
@@ -42,7 +45,7 @@ struct RecordBottomSheetTranscriptField: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: theme.layout.spacing8) {
+        VStack(alignment: .leading, spacing: tokenLayout.spacing8) {
             if let content {
                 content
                     .frame(maxWidth: .infinity, minHeight: 120)
@@ -52,7 +55,7 @@ struct RecordBottomSheetTranscriptField: View {
 
             Text(help)
                 .typography(Typography.subheadline)
-                .foregroundStyle(.labcord(.labelSecondary))
+                .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -62,7 +65,7 @@ struct RecordBottomSheetTranscriptField: View {
     @ViewBuilder
     private var defaultEditor: some View {
 #if os(watchOS)
-        recordSheetReadOnlyText(transcript, theme: theme)
+        recordSheetReadOnlyText(transcript, layout: tokenLayout)
 #else
         TextEditor(text: $transcript)
             .labcordTextEditorStyle(

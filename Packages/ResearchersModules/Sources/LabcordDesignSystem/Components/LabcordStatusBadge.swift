@@ -7,36 +7,21 @@ public struct LabcordStatusBadge: View {
     private let label: String
     private let layout = LayoutTokens()
 
-    @Environment(\.labcordTheme) private var theme
-    @Environment(\.colorScheme) private var colorScheme
-
     public init(status: ExperimentStatus, label: String? = nil) {
         self.status = status
         self.label = label ?? status.defaultLabel
     }
 
-    private var usesGeneralReadyColors: Bool {
-        status == .preparing && theme.resolvedContext(for: colorScheme) == .general
-    }
-
-    private var foregroundToken: ColorToken {
-        usesGeneralReadyColors ? .labelTertiary : status.foregroundToken
-    }
-
-    private var backgroundToken: ColorToken {
-        usesGeneralReadyColors ? .backgroundSecondary : status.backgroundToken
-    }
-
     public var body: some View {
         Text(label)
             .typography(Typography.subheadline)
-            .foregroundStyle(.labcord(foregroundToken))
+            .foregroundStyle(status.foregroundColor)
             .multilineTextAlignment(.center)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, layout.spacing8)
             .padding(.vertical, layout.spacing4)
             .frame(minWidth: 70, minHeight: 28)
-            .background(.labcord(backgroundToken), in: RoundedRectangle(cornerRadius: 8))
+            .background(status.backgroundColor, in: RoundedRectangle(cornerRadius: 8))
             .accessibilityLabel(Text(label))
     }
 }
@@ -51,21 +36,21 @@ private extension ExperimentStatus {
         }
     }
 
-    var foregroundToken: ColorToken {
+    var foregroundColor: Color {
         switch self {
-        case .preparing: .experimentStatusReadyForeground
-        case .inProgress: .experimentStatusInProgressForeground
-        case .paused: .experimentStatusPausedForeground
-        case .completed: .experimentStatusCompletedForeground
+        case .preparing: Color("General/Label/Tertiary", bundle: .module)
+        case .inProgress: Color("General/Experiment/Status/InProgress/Foreground", bundle: .module)
+        case .paused: Color("General/Experiment/Status/Paused/Foreground", bundle: .module)
+        case .completed: Color("General/Experiment/Status/Completed/Foreground", bundle: .module)
         }
     }
 
-    var backgroundToken: ColorToken {
+    var backgroundColor: Color {
         switch self {
-        case .preparing: .experimentStatusReadyBackground
-        case .inProgress: .experimentStatusInProgressBackground
-        case .paused: .experimentStatusPausedBackground
-        case .completed: .experimentStatusCompletedBackground
+        case .preparing: Color("General/Background/Secondary", bundle: .module)
+        case .inProgress: Color("General/Experiment/Status/InProgress/Background", bundle: .module)
+        case .paused: Color("General/Experiment/Status/Paused/Background", bundle: .module)
+        case .completed: Color("General/Experiment/Status/Completed/Background", bundle: .module)
         }
     }
 }

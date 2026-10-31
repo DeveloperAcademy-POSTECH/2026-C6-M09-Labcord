@@ -13,7 +13,7 @@ public struct VoicePlayer: View {
     @State private var isSeeking = false
     @State private var isPressingSlider = false
 
-    @Environment(\.labcordTheme) private var theme
+    private let tokenLayout = LayoutTokens()
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ScaledMetric(relativeTo: .body) private var rowHeight = 28
@@ -86,7 +86,7 @@ public struct VoicePlayer: View {
     }
 
     private var horizontalLayout: some View {
-        HStack(alignment: .center, spacing: theme.layout.spacing12) {
+        HStack(alignment: .center, spacing: tokenLayout.spacing12) {
             playButton
             Color.clear
                 .frame(height: rowHeight)
@@ -102,8 +102,8 @@ public struct VoicePlayer: View {
     }
 
     private var verticalLayout: some View {
-        VStack(alignment: .leading, spacing: theme.layout.spacing8) {
-            HStack(alignment: .firstTextBaseline, spacing: theme.layout.spacing12) {
+        VStack(alignment: .leading, spacing: tokenLayout.spacing8) {
+            HStack(alignment: .firstTextBaseline, spacing: tokenLayout.spacing12) {
                 playButton
                 if showDuration {
                     flexibleDuration
@@ -120,7 +120,7 @@ public struct VoicePlayer: View {
     private var horizontalDuration: some View {
         Text(duration)
             .typography(Typography.callout)
-            .foregroundStyle(.labcord(.labelSecondary))
+            .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
             .frame(minWidth: 44)
             .fixedSize(horizontal: true, vertical: false)
     }
@@ -128,7 +128,7 @@ public struct VoicePlayer: View {
     private var flexibleDuration: some View {
         Text(duration)
             .typography(Typography.callout)
-            .foregroundStyle(.labcord(.labelSecondary))
+            .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
             .frame(maxWidth: .infinity, alignment: .leading)
             .fixedSize(horizontal: false, vertical: true)
     }
@@ -144,7 +144,7 @@ public struct VoicePlayer: View {
                 .id(isPlaying)
                 .transition(.opacity)
             }
-            .foregroundStyle(.labcord(.labelInverse))
+            .foregroundStyle(Color("General/Label/Inverse", bundle: .module))
             .labcordMotion(.state, value: isPlaying)
         }
         .buttonStyle(.labcordIcon(.primary, size: .small))
@@ -185,7 +185,7 @@ public struct VoicePlayer: View {
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
         }
-        .tint(theme.color(.brandPrimary))
+        .tint(Color("General/Brand/Primary", bundle: .module))
         .controlSize(.small)
         .frame(maxWidth: .infinity, minHeight: minimumHeight)
         .labcordSliderPressObservation($isPressingSlider)
@@ -284,9 +284,8 @@ public extension VoicePlayer {
     }
     .padding()
     .frame(maxWidth: .infinity)
-    .foregroundStyle(.labcord(.labelPrimary))
-    .background(.labcord(.backgroundPrimary))
-    .labcordTheme(LabcordTheme(context: .general))
+    .foregroundStyle(Color("General/Label/Primary", bundle: .module))
+    .background(Color("General/Background/Primary", bundle: .module))
 }
 
 #Preview("음성 플레이어 · 큰 글자") {
@@ -294,7 +293,6 @@ public extension VoicePlayer {
     return VoicePlayer(duration: "01:28")
         .padding()
         .environment(\.dynamicTypeSize, .accessibility3)
-        .labcordTheme(LabcordTheme(context: .experiment))
 }
 
 #Preview("음성 플레이어 · 좁은 폭 반응형") {
@@ -303,6 +301,5 @@ public extension VoicePlayer {
         .frame(width: 200)
         .environment(\.dynamicTypeSize, .accessibility3)
         .padding()
-        .labcordTheme(LabcordTheme(context: .general))
 }
 #endif

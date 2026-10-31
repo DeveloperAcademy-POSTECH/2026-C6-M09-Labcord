@@ -1,6 +1,11 @@
 import LabcordDesignSystem
 import SwiftUI
 
+enum CatalogContext: String, CaseIterable, Sendable {
+    case general = "General"
+    case experiment = "Experiment"
+}
+
 enum CatalogSection: String, CaseIterable, Identifiable, Sendable {
     case foundation
     case setup
@@ -27,7 +32,7 @@ enum CatalogSection: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    var context: ThemeContext { self == .run ? .experiment : .general }
+    var context: CatalogContext { self == .run ? .experiment : .general }
 
     var items: [CatalogItem] { CatalogItem.allCases.filter { $0.section == self } }
 }
@@ -119,7 +124,7 @@ enum CatalogItem: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    var context: ThemeContext { section.context }
+    var context: CatalogContext { section.context }
 
     var isToken: Bool {
         switch self {

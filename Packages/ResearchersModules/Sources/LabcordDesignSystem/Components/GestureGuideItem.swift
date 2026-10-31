@@ -11,7 +11,7 @@ public struct GestureGuideItem<Media: View>: View {
     private let layout: Layout
     private let media: Media
 
-    @Environment(\.labcordTheme) private var theme
+    private let tokenLayout = LayoutTokens()
 
     public init(
         title: String = "음성 녹음",
@@ -27,11 +27,11 @@ public struct GestureGuideItem<Media: View>: View {
 
     public var body: some View {
         arrangedContent
-            .padding(theme.layout.spacing12)
+            .padding(tokenLayout.spacing12)
             .frame(idealWidth: width, maxWidth: width)
             .background(
-                .labcord(.fillInverse),
-                in: RoundedRectangle(cornerRadius: theme.layout.radiusMd)
+                Color("Experiment/Fill/Inverse", bundle: .module),
+                in: RoundedRectangle(cornerRadius: tokenLayout.radiusMd)
             )
             .accessibilityElement(children: .contain)
     }
@@ -40,12 +40,12 @@ public struct GestureGuideItem<Media: View>: View {
     private var arrangedContent: some View {
         switch layout {
         case .portrait:
-            VStack(spacing: theme.layout.spacing10) {
+            VStack(spacing: tokenLayout.spacing10) {
                 gestureMedia
                 textContent
             }
         case .landscape:
-            HStack(spacing: theme.layout.spacing8) {
+            HStack(spacing: tokenLayout.spacing8) {
                 gestureMedia
                 textContent
             }
@@ -61,7 +61,7 @@ public struct GestureGuideItem<Media: View>: View {
     private var textContent: some View {
         VStack(
             alignment: layout == .portrait ? .center : .leading,
-            spacing: theme.layout.spacing4
+            spacing: tokenLayout.spacing4
         ) {
             Text(title)
                 .typography(Typography.headline)
@@ -71,7 +71,7 @@ public struct GestureGuideItem<Media: View>: View {
                 .typography(Typography.subheadline)
                 .frame(maxWidth: .infinity, alignment: textAlignment)
         }
-        .foregroundStyle(.labcord(.labelInverse))
+        .foregroundStyle(Color("Experiment/Label/Inverse", bundle: .module))
         .multilineTextAlignment(layout == .portrait ? .center : .leading)
         .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: .infinity, alignment: textAlignment)
@@ -99,6 +99,5 @@ public struct GestureGuideItem<Media: View>: View {
         }
     }
     .padding()
-    .background(.labcord(.backgroundPrimary))
-    .labcordTheme(LabcordTheme(context: .experiment))
+    .background(Color("Experiment/Background/Primary", bundle: .module))
 }

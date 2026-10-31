@@ -69,7 +69,7 @@ struct CatalogRunPageControlScenario: View {
                 )
             Text("현재 페이지: \(selection) / \(count)")
                 .typography(Typography.subheadline)
-                .foregroundStyle(.labcord(.labelSecondary))
+                .foregroundStyle(Color("Experiment/Label/Secondary", bundle: catalogBundle))
             Picker("페이지 수", selection: $count) {
                 Text("2").tag(2)
                 Text("3").tag(3)
@@ -96,7 +96,7 @@ struct CatalogRunTitleScenario: View {
                 .accessibilityIdentifier("design-system-wide-title")
                 Text("좌우로 스크롤해 가로 배치를 확인하세요")
                     .typography(Typography.caption1)
-                    .foregroundStyle(.labcord(.labelTertiary))
+                    .foregroundStyle(Color("Experiment/Label/Tertiary", bundle: catalogBundle))
             } else {
                 preview
             }

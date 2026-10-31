@@ -2,7 +2,7 @@ import LabcordDesignSystem
 import SwiftUI
 
 struct DesignSystemCatalogSheet<Content: View>: View {
-    let context: ThemeContext
+    let context: CatalogContext
     @ViewBuilder let content: () -> Content
 
     @State private var contentHeight: CGFloat = 0
@@ -31,12 +31,12 @@ struct DesignSystemCatalogSheet<Content: View>: View {
                     .clipShape(sheetShape)
                     .background(alignment: .top) {
                         sheetShape
-                            .fill(.labcord(.backgroundGroupedSecondary))
+                            .fill(sheetBackground)
                             .frame(height: height + geometry.safeAreaInsets.bottom)
                             .shadow(
-                                color: theme.color(.effectShadowMediumColor),
-                                radius: theme.effects.shadowMediumRadius,
-                                x: 0, y: theme.effects.shadowMediumOffsetY
+                                color: sheetShadow,
+                                radius: effects.shadowMediumRadius,
+                                x: 0, y: effects.shadowMediumOffsetY
                             )
                             .allowsHitTesting(false)
                     }
@@ -54,15 +54,31 @@ struct DesignSystemCatalogSheet<Content: View>: View {
         .presentationBackground(Color.clear)
         .presentationCornerRadius(0)
         .presentationDragIndicator(.hidden)
-        .labcordTheme(LabcordTheme(context: context))
+
         #else
         sheetContent
             .presentationDragIndicator(.hidden)
-            .labcordTheme(LabcordTheme(context: context))
+
         #endif
     }
 
-    private var theme: LabcordTheme { LabcordTheme(context: context) }
+    private let layout = LayoutTokens()
+
+    private var sheetBackground: Color {
+        context == .general
+            ? Color("General/Background/Grouped/Secondary", bundle: catalogBundle)
+            : Color("Experiment/Background/Grouped/Secondary", bundle: catalogBundle)
+    }
+
+    private var sheetShadow: Color {
+        context == .general
+            ? Color("General/Effect/Shadow/Medium/Color", bundle: catalogBundle)
+            : Color("Experiment/Effect/Shadow/Medium/Color", bundle: catalogBundle)
+    }
+
+    private var effects: EffectTokens {
+        EffectTokens(context: context == .general ? .general : .experiment)
+    }
 
     private var sheetShape: UnevenRoundedRectangle {
         UnevenRoundedRectangle(topLeadingRadius: 28, topTrailingRadius: 28)
@@ -75,7 +91,7 @@ struct DesignSystemCatalogSheet<Content: View>: View {
             .highPriorityGesture(headerDrag)
             .padding(
                 .horizontal,
-                max(60, theme.layout.spacing16 + 34 * headerControlScale + theme.layout.spacing8)
+                max(60, layout.spacing16 + 34 * headerControlScale + layout.spacing8)
             )
             .accessibilityHidden(true)
     }
@@ -130,6 +146,11 @@ struct DesignSystemCatalogSheet<Content: View>: View {
                 }
         }
         .scrollBounceBehavior(.basedOnSize)
+        .foregroundStyle(
+            context == .general
+                ? Color("General/Label/Primary", bundle: catalogBundle)
+                : Color("Experiment/Label/Primary", bundle: catalogBundle)
+        )
         .labcordDismissKeyboardOnTapOutside()
         #if os(iOS)
         .scrollDismissesKeyboard(.interactively)

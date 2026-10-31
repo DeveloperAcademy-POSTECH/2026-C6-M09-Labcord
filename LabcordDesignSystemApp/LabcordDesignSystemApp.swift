@@ -13,7 +13,6 @@ struct LabcordDesignSystemApp: App {
             NavigationStack {
                 DesignSystemCatalog()
             }
-            .labcordTheme(LabcordTheme(context: .general))
         }
     }
 }

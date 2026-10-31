@@ -15,7 +15,9 @@ public struct DesignSystemCatalog: View {
                             .typography(Typography.headline)
                         Text(section.description)
                             .typography(Typography.subheadline)
-                            .foregroundStyle(.labcord(.labelSecondary))
+                            .foregroundStyle(
+                                Color("General/Label/Secondary", bundle: catalogBundle)
+                            )
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     .padding(.vertical, 4)
@@ -92,17 +94,25 @@ private struct DesignSystemCatalogAllPage: View {
 }
 
 private extension View {
-    func catalogList(context: ThemeContext) -> some View {
+    func catalogList(context: CatalogContext) -> some View {
         self
             .scrollContentBackground(.hidden)
-            .foregroundStyle(.labcord(.labelPrimary))
+            .foregroundStyle(
+                context == .general
+                    ? Color("General/Label/Primary", bundle: catalogBundle)
+                    : Color("Experiment/Label/Primary", bundle: catalogBundle)
+            )
             .labcordEntrance()
             .background {
                 Rectangle()
-                    .fill(.labcord(.backgroundPrimary))
+                    .fill(
+                        context == .general
+                            ? Color("General/Background/Primary", bundle: catalogBundle)
+                            : Color("Experiment/Background/Primary", bundle: catalogBundle)
+                    )
                     .ignoresSafeArea()
             }
-            .labcordTheme(LabcordTheme(context: context))
+
             .catalogNavigationBar(context: context)
     }
 }
