@@ -16,12 +16,12 @@ public struct LabcordSeparator: View {
         Group {
             if orientation == .horizontal {
                 Rectangle()
-                    .fill(.labcord(.borderDefault))
+                    .fill(Color("General/Border/Default", bundle: .module))
                     .frame(maxWidth: .infinity)
                     .frame(height: 1)
             } else {
                 Rectangle()
-                    .fill(.labcord(.borderDefault))
+                    .fill(Color("General/Border/Default", bundle: .module))
                     .frame(width: 1)
                     .frame(maxHeight: .infinity)
             }

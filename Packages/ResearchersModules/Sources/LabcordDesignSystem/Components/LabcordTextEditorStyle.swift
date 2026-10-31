@@ -45,7 +45,7 @@ public struct LabcordTextEditorStyle: ViewModifier {
     @State private var inputID = UUID()
 
     @Environment(\.isEnabled) private var isEnabled
-    @Environment(\.labcordTheme) private var theme
+    private let layout = LayoutTokens()
     @ScaledMetric(relativeTo: .subheadline) private var editorHeight: CGFloat = 120
 
     public init(
@@ -104,10 +104,10 @@ public struct LabcordTextEditorStyle: ViewModifier {
         ZStack(alignment: .topLeading) {
             content
                 .typography(Typography.subheadline)
-                .foregroundStyle(LabcordColor(state.foregroundToken))
+                .foregroundStyle((state.foregroundColor))
                 .scrollContentBackground(.hidden)
-                .padding(.horizontal, theme.layout.spacing12 - 5)
-                .padding(.vertical, theme.layout.spacing12 - 8)
+                .padding(.horizontal, layout.spacing12 - 5)
+                .padding(.vertical, layout.spacing12 - 8)
                 .frame(
                     maxWidth: .infinity,
                     minHeight: editorHeight,
@@ -118,9 +118,9 @@ public struct LabcordTextEditorStyle: ViewModifier {
             if isEmpty, let placeholder {
                 placeholder
                     .typography(Typography.subheadline)
-                    .foregroundStyle(LabcordColor(placeholderToken))
-                    .padding(.horizontal, theme.layout.spacing12)
-                    .padding(.vertical, theme.layout.spacing12)
+                    .foregroundStyle((placeholderColor))
+                    .padding(.horizontal, layout.spacing12)
+                    .padding(.vertical, layout.spacing12)
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
             }
@@ -131,13 +131,13 @@ public struct LabcordTextEditorStyle: ViewModifier {
                 maxHeight: editorHeight,
                 alignment: .topLeading
             )
-            .background(LabcordColor(state.backgroundToken))
-            .clipShape(RoundedRectangle(cornerRadius: theme.layout.radiusSm, style: .circular))
+            .background((state.backgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: layout.radiusSm, style: .circular))
             .contentShape(Rectangle())
             .overlay {
-                RoundedRectangle(cornerRadius: theme.layout.radiusSm, style: .circular)
-                    .strokeBorder(LabcordColor(state.borderToken), lineWidth: 1)
-                    .labcordMotion(.state, value: state.borderToken)
+                RoundedRectangle(cornerRadius: layout.radiusSm, style: .circular)
+                    .strokeBorder((state.borderColor), lineWidth: 1)
+                    .labcordMotion(.state, value: state.borderColor)
                     .allowsHitTesting(false)
             }
             .id(inputID)
@@ -164,12 +164,11 @@ public struct LabcordTextEditorStyle: ViewModifier {
         )
     }
 
-    private var placeholderToken: ColorToken {
+    private var placeholderColor: Color {
         switch state {
-        case .disabled:
-            return .labelDisabled
+        case .disabled: return Color("General/Label/Disabled", bundle: .module)
         default:
-            return .labelTertiary
+            return Color("General/Label/Tertiary", bundle: .module)
         }
     }
 

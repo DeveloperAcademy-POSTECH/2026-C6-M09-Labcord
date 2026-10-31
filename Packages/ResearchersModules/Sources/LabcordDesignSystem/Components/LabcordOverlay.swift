@@ -4,12 +4,12 @@ public enum LabcordOverlayStrength: Sendable {
     case `default`
     case strong
 
-    fileprivate var token: ColorToken {
+    fileprivate var color: Color {
         switch self {
         case .default:
-            .overlayScrim
+            Color("General/Overlay/Scrim", bundle: .module)
         case .strong:
-            .overlayStrong
+            Color("General/Overlay/Strong", bundle: .module)
         }
     }
 }
@@ -23,7 +23,7 @@ public struct LabcordOverlay: View {
 
     public var body: some View {
         Rectangle()
-            .fill(.labcord(strength.token))
+            .fill(strength.color)
             .accessibilityHidden(true)
     }
 }
