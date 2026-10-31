@@ -245,3 +245,18 @@ public extension View {
         .labcordInputFocus(focus, equals: value)
     }
 }
+
+#Preview("텍스트 필드 · 상태") {
+    @Previewable @State var text = "실험 이름"
+    _ = FontRegistration.register()
+    return VStack(spacing: 12) {
+        TextField("실험 이름", text: $text)
+            .textFieldStyle(.labcord(isFilled: true))
+        TextField("입력해 주세요", text: .constant(""))
+            .textFieldStyle(.labcord(isError: true))
+        TextField("입력할 수 없음", text: .constant(""))
+            .textFieldStyle(.labcord())
+            .disabled(true)
+    }
+    .padding()
+}

@@ -218,3 +218,13 @@ public extension View {
         .labcordInputFocus(focus, equals: value)
     }
 }
+
+#if !os(watchOS)
+#Preview("텍스트 에디터") {
+    @Previewable @State var text = "실험 기록을 입력해 주세요."
+    _ = FontRegistration.register()
+    return TextEditor(text: $text)
+        .labcordTextEditorStyle(.init(isEmpty: false, isFilled: true))
+        .padding()
+}
+#endif

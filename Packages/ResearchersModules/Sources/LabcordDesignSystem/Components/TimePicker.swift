@@ -78,3 +78,13 @@ public struct TimePicker: View {
         ).transaction(duration.transaction)
     }
 }
+
+#Preview("시간 선택") {
+    @Previewable @State var duration: Duration = .seconds(3_720)
+
+    _ = FontRegistration.register()
+    return TimePicker(duration: $duration)
+        .padding()
+        .background(.labcord(.backgroundPrimary))
+        .labcordTheme(LabcordTheme(context: .experiment))
+}

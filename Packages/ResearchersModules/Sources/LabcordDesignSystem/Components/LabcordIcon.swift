@@ -95,3 +95,19 @@ struct LabcordIconArtwork: View {
             .accessibilityHidden(true)
     }
 }
+
+#Preview("아이콘") {
+    ScrollView {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 16) {
+            ForEach(LabcordIcon.allCases) { icon in
+                VStack(spacing: 4) {
+                    LabcordIconArtwork(icon: icon, size: 24)
+                    Text(icon.rawValue)
+                        .font(.caption2)
+                        .multilineTextAlignment(.center)
+                }
+            }
+        }
+        .padding()
+    }
+}
