@@ -19,7 +19,7 @@ struct CatalogControlDropdownScenario: View {
             if state == .open {
                 Text("Open은 트리거의 표현 미리보기입니다. 탭하면 기본 메뉴가 실제로 열립니다.")
                     .typography(Typography.caption1)
-                    .foregroundStyle(.labcord(.labelSecondary))
+                    .foregroundStyle(Color("General/Label/Secondary", bundle: catalogBundle))
             }
             Picker("크기", selection: $size) {
                 Text("Medium").tag(LabcordControlSize.medium)
@@ -119,7 +119,7 @@ struct CatalogControlOverlayScenario: View {
         VStack(alignment: .leading, spacing: 16) {
             ZStack {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(.labcord(.fillPrimary))
+                    .fill(Color("General/Fill/Primary", bundle: catalogBundle))
                     .frame(height: 48)
                 LabcordOverlay(strength: isStrong ? .strong : .default)
                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))

@@ -1,16 +1,18 @@
 import LabcordDesignSystem
 import SwiftUI
 
+let catalogBundle = LabcordDesignSystemResources.bundle
+
 struct DesignSystemCatalogPage<Content: View>: View {
     @Environment(\.catalogIsEmbedded) private var isEmbedded
 
     private let title: String
-    private let context: ThemeContext
+    private let context: CatalogContext
     private let content: () -> Content
 
     init(
         title: String,
-        context: ThemeContext,
+        context: CatalogContext,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.title = title
@@ -32,13 +34,21 @@ struct DesignSystemCatalogPage<Content: View>: View {
             }
             .labcordDismissKeyboardOnTapOutside()
             .navigationTitle(title)
-            .foregroundStyle(.labcord(.labelPrimary))
+            .foregroundStyle(
+                context == .general
+                    ? Color("General/Label/Primary", bundle: catalogBundle)
+                    : Color("Experiment/Label/Primary", bundle: catalogBundle)
+            )
             .background {
                 Rectangle()
-                    .fill(.labcord(.backgroundPrimary))
+                    .fill(
+                        context == .general
+                            ? Color("General/Background/Primary", bundle: catalogBundle)
+                            : Color("Experiment/Background/Primary", bundle: catalogBundle)
+                    )
                     .ignoresSafeArea()
             }
-            .labcordTheme(LabcordTheme(context: context))
+
             .catalogNavigationBar(context: context)
         }
     }
@@ -49,9 +59,8 @@ extension EnvironmentValues {
 }
 
 extension View {
-    func catalogNavigationBar(context: ThemeContext) -> some View {
+    func catalogNavigationBar(context: CatalogContext) -> some View {
         self
-            .environment(\.colorScheme, context == .experiment ? .dark : .light)
             #if os(iOS)
             .toolbarColorScheme(context == .experiment ? .dark : .light, for: .navigationBar)
             #endif
@@ -81,7 +90,7 @@ struct DesignSystemCatalogCard<Content: View>: View {
             if let description {
                 Text(description)
                     .typography(Typography.subheadline)
-                    .foregroundStyle(.labcord(.labelSecondary))
+                    .opacity(0.7)
                     .fixedSize(horizontal: false, vertical: true)
             }
 

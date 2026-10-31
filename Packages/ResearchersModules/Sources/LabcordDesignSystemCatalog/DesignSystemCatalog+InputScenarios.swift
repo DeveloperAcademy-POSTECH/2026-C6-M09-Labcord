@@ -80,10 +80,12 @@ struct CatalogControlInputScenario: View {
             #if os(watchOS)
             Text(value.isEmpty ? placeholder : value)
                 .typography(Typography.subheadline)
-                .foregroundStyle(.labcord(value.isEmpty ? .labelTertiary : .labelPrimary))
+                .foregroundStyle(value.isEmpty
+                    ? Color("General/Label/Tertiary", bundle: catalogBundle)
+                    : Color("General/Label/Primary", bundle: catalogBundle))
                 .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
                 .padding(12)
-                .background(.labcord(.backgroundGroupedSecondary))
+                .background(Color("General/Background/Grouped/Secondary", bundle: catalogBundle))
             #else
             TextEditor(text: $value)
                 .labcordTextEditorStyle(
@@ -101,7 +103,9 @@ struct CatalogControlInputScenario: View {
             TextField(
                 placeholder, text: $value,
                 prompt: Text(placeholder)
-                    .foregroundStyle(.labcord(isDisabled ? .labelDisabled : .labelTertiary))
+                    .foregroundStyle(isDisabled
+                        ? Color("General/Label/Disabled", bundle: catalogBundle)
+                        : Color("General/Label/Tertiary", bundle: catalogBundle))
             )
                 .textFieldStyle(
                     LabcordTextFieldStyle(
@@ -133,7 +137,7 @@ struct CatalogControlTextProperty: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
                 .typography(Typography.caption1)
-                .foregroundStyle(.labcord(.labelSecondary))
+                .foregroundStyle(Color("General/Label/Secondary", bundle: catalogBundle))
             TextField(title, text: $value)
                 .labcordTextFieldStyle(text: value, focus: $isFocused, size: .medium)
                 .accessibilityLabel(Text(title))
