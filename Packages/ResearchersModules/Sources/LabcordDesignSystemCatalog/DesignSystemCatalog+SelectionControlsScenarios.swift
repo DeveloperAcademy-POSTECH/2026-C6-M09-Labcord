@@ -79,7 +79,9 @@ struct CatalogExperimentListItemScenario: View {
             }
             .accessibilityIdentifier("catalog.review.experimentList.state")
             Picker("배지 상태", selection: $status) {
-                catalogPickerOptions([ExperimentStatus.preparing, .inProgress, .paused, .completed])
+                catalogPickerOptions(
+                    [ExperimentStatus.preparing, .inProgress, .paused, .completed]
+                )
             }
             .accessibilityIdentifier("catalog.review.experimentStatus")
             CatalogDisclosureGroup("콘텐츠 옵션") {
