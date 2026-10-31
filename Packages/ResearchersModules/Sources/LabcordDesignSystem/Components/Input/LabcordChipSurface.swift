@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct LabcordChipSurface<Content: View>: View {
-    let size: LabcordControlSize?
+    let size: ComponentSize?
     let visualStyle: ChipVisualStyle
     let emphasis: ChipEmphasis
     let isSelected: Bool
@@ -12,7 +12,7 @@ struct LabcordChipSurface<Content: View>: View {
     private let layout = LayoutTokens()
 
     init(
-        size: LabcordControlSize?,
+        size: ComponentSize?,
         visualStyle: ChipVisualStyle,
         emphasis: ChipEmphasis,
         isSelected: Bool,
@@ -58,8 +58,8 @@ struct LabcordChipSurface<Content: View>: View {
             .disabled(isDisabled)
     }
 
-    private var resolvedSize: LabcordControlSize {
-        switch size ?? LabcordControlSize(controlSize) {
+    private var resolvedSize: ComponentSize {
+        switch size ?? ComponentSize(controlSize) {
         case .small, .medium:
             return .small
         case .large:
@@ -118,7 +118,7 @@ struct LabcordChipSurface<Content: View>: View {
 }
 
 enum LabcordChipMetrics {
-    static func iconGap(for size: LabcordControlSize) -> CGFloat {
+    static func iconGap(for size: ComponentSize) -> CGFloat {
         size == .large ? 8 : 4
     }
     static let leadingIconSize: CGFloat = 16

@@ -57,7 +57,7 @@ extension InputState {
 }
 
 public struct FormTextFieldStyle: TextFieldStyle {
-    private let size: LabcordControlSize?
+    private let size: ComponentSize?
     private let isFocused: Bool
     private let isFilled: Bool
     private let isError: Bool
@@ -67,7 +67,7 @@ public struct FormTextFieldStyle: TextFieldStyle {
     @Environment(\.isEnabled) private var isEnabled
 
     public init(
-        size: LabcordControlSize? = nil,
+        size: ComponentSize? = nil,
         isFocused: Bool = false,
         isFilled: Bool = false,
         isError: Bool = false,
@@ -92,7 +92,7 @@ public struct FormTextFieldStyle: TextFieldStyle {
         )
     }
 
-    private var resolvedSize: LabcordControlSize {
+    private var resolvedSize: ComponentSize {
         if let size { return size }
         switch controlSize {
         case .mini, .small:
@@ -126,7 +126,7 @@ public struct FormTextFieldStyle: TextFieldStyle {
 
 private struct LabcordTextFieldBody<Label: View>: View {
     nonisolated(unsafe) let configuration: TextField<Label>
-    let size: LabcordControlSize
+    let size: ComponentSize
     let foregroundColor: Color
     let borderColor: Color
     let backgroundColor: Color
@@ -136,7 +136,7 @@ private struct LabcordTextFieldBody<Label: View>: View {
 
     nonisolated init(
         configuration: TextField<Label>,
-        size: LabcordControlSize,
+        size: ComponentSize,
         foregroundColor: Color,
         borderColor: Color,
         backgroundColor: Color,
@@ -184,7 +184,7 @@ private struct LabcordTextFieldBody<Label: View>: View {
 
 public extension TextFieldStyle where Self == FormTextFieldStyle {
     static func labcord(
-        size: LabcordControlSize? = nil,
+        size: ComponentSize? = nil,
         isFocused: Bool = false,
         isFilled: Bool = false,
         isError: Bool = false,
@@ -204,7 +204,7 @@ public extension View {
     func labcordTextFieldStyle(
         text: String,
         focus: FocusState<Bool>.Binding,
-        size: LabcordControlSize? = nil,
+        size: ComponentSize? = nil,
         isError: Bool = false
     ) -> some View {
         textFieldStyle(
@@ -222,7 +222,7 @@ public extension View {
         text: String,
         focus: FocusState<Value?>.Binding,
         equals value: Value,
-        size: LabcordControlSize? = nil,
+        size: ComponentSize? = nil,
         isError: Bool = false
     ) -> some View {
         textFieldStyle(

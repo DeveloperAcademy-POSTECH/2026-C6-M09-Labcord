@@ -2,9 +2,9 @@ import SwiftUI
 
 @MainActor
 public struct CheckboxStyle: ToggleStyle {
-    private let size: LabcordControlSize?
+    private let size: ComponentSize?
 
-    public init(size: LabcordControlSize? = nil) {
+    public init(size: ComponentSize? = nil) {
         self.size = size
     }
 
@@ -14,7 +14,7 @@ public struct CheckboxStyle: ToggleStyle {
 }
 
 public extension ToggleStyle where Self == CheckboxStyle {
-    static func labcordCheckbox(size: LabcordControlSize? = nil) -> CheckboxStyle {
+    static func labcordCheckbox(size: ComponentSize? = nil) -> CheckboxStyle {
         CheckboxStyle(size: size)
     }
 }
@@ -22,7 +22,7 @@ public extension ToggleStyle where Self == CheckboxStyle {
 @MainActor
 private struct LabcordCheckboxToggleBody: View {
     let configuration: ToggleStyleConfiguration
-    let size: LabcordControlSize?
+    let size: ComponentSize?
     @Environment(\.labelsVisibility) private var labelsVisibility
 
     var body: some View {
@@ -51,12 +51,12 @@ struct LabcordSelectionIndicator: View {
 
     let kind: Kind
     let isSelected: Bool
-    var size: LabcordControlSize?
+    var size: ComponentSize?
     @Environment(\.controlSize) private var controlSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ScaledMetric(relativeTo: .body) private var scale: CGFloat = 1
 
-    private var resolvedSize: LabcordControlSize { size ?? LabcordControlSize(controlSize) }
+    private var resolvedSize: ComponentSize { size ?? ComponentSize(controlSize) }
     private var dimension: CGFloat {
         switch resolvedSize {
         case .small: 16

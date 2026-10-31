@@ -3,14 +3,14 @@ import SwiftUI
 public struct RadioButton<Value: Hashable, Label: View>: View {
     private let value: Value
     @Binding private var selection: Value
-    private let size: LabcordControlSize?
+    private let size: ComponentSize?
     private let label: Label
     @Environment(\.labelsVisibility) private var labelsVisibility
 
     public init(
         value: Value,
         selection: Binding<Value>,
-        size: LabcordControlSize? = nil,
+        size: ComponentSize? = nil,
         @ViewBuilder label: () -> Label
     ) {
         self.value = value
@@ -51,7 +51,7 @@ public extension RadioButton where Label == Text {
         _ title: LocalizedStringKey,
         value: Value,
         selection: Binding<Value>,
-        size: LabcordControlSize? = nil
+        size: ComponentSize? = nil
     ) {
         self.init(value: value, selection: selection, size: size) { Text(title) }
     }
