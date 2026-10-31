@@ -29,8 +29,6 @@ public struct LabcordIconButtonStyle: ButtonStyle {
 
     private struct IconButtonContent: View {
         @Environment(\.controlSize) private var controlSize
-        @Environment(\.labcordTheme) private var theme
-        @Environment(\.colorScheme) private var colorScheme
         @Environment(\.isEnabled) private var isEnabled
 
         @ScaledMetric(relativeTo: .body) private var dynamicTypeScale = 1
@@ -96,7 +94,7 @@ public struct LabcordIconButtonStyle: ButtonStyle {
                 }
             }
             .frame(minWidth: scaledContainerSize, minHeight: scaledContainerSize)
-            .foregroundStyle(LabcordColor(appearance.foreground))
+            .foregroundStyle(appearance.foreground)
             .background {
                 backgroundView
             }
@@ -104,7 +102,7 @@ public struct LabcordIconButtonStyle: ButtonStyle {
             .overlay {
                 if let border = appearance.border {
                     Circle()
-                        .strokeBorder(LabcordColor(border), lineWidth: 1)
+                        .strokeBorder(border, lineWidth: 1)
                 }
             }
             .contentShape(Circle())
@@ -115,7 +113,7 @@ public struct LabcordIconButtonStyle: ButtonStyle {
         private var backgroundView: some View {
             if let background = appearance.background {
                 Circle()
-                    .fill(LabcordColor(background))
+                    .fill(background)
             } else {
                 Circle()
                     .fill(Color.clear)
@@ -127,7 +125,7 @@ public struct LabcordIconButtonStyle: ButtonStyle {
                 .progressViewStyle(
                     .labcord(
                         size: metrics.loadingIndicatorSize,
-                        foreground: theme.color(appearance.foreground, colorScheme: colorScheme)
+                        foreground: appearance.foreground
                     )
                 )
                 .scaleEffect(metrics.loadingSlotSize / metrics.loadingIndicatorSize.points)

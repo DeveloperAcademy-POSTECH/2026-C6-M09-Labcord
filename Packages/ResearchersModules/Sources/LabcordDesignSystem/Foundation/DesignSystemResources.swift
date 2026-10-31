@@ -1,5 +1,5 @@
 import Foundation
 
-package enum LabcordDesignSystemResources {
-    package static let bundle = Bundle.module
+public enum LabcordDesignSystemResources {
+    public static let bundle = Bundle.module
 }

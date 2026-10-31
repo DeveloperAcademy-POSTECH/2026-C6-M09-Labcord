@@ -35,14 +35,12 @@ public extension ProgressViewStyle where Self == LabcordProgressViewStyle {
 }
 
 private struct LabcordProgressContent: View {
-    @Environment(\.labcordTheme) private var theme
-    @Environment(\.colorScheme) private var colorScheme
     let size: LabcordProgressViewStyle.Size
     let foreground: Color?
     let configuration: ProgressViewStyleConfiguration
 
     private var resolvedForeground: Color {
-        foreground ?? theme.color(.labelPrimary, colorScheme: colorScheme)
+        foreground ?? Color("General/Label/Primary", bundle: .module)
     }
 
     @ViewBuilder
