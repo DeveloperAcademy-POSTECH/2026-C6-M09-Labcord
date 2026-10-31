@@ -1,8 +1,6 @@
 import SwiftUI
 
 public struct StatusPill: View {
-    @Environment(\.labcordTheme) private var theme
-    @Environment(\.colorScheme) private var colorScheme
     private let message: String
     private let layout = LayoutTokens()
 
@@ -19,9 +17,9 @@ public struct StatusPill: View {
             .background {
                 pillShape
                     .fill(.ultraThinMaterial)
-                    .environment(\.colorScheme, materialColorScheme)
+                    .environment(\.colorScheme, .dark)
             }
-            .background(.labcord(.fillPrimary), in: pillShape)
+            .background(Color("Experiment/Fill/Primary", bundle: .module), in: pillShape)
             .clipShape(pillShape)
             .accessibilityElement(children: .combine)
             .accessibilityLabel(Text(message))
@@ -30,7 +28,7 @@ public struct StatusPill: View {
     private var messageContent: some View {
         Text(message)
             .typography(Typography.bodySemiBold)
-            .foregroundStyle(.labcord(.labelPrimary))
+            .foregroundStyle(Color("Experiment/Label/Primary", bundle: .module))
             .contentTransition(.opacity)
             .labcordMotion(.state, value: message)
             .multilineTextAlignment(.leading)
@@ -43,17 +41,13 @@ public struct StatusPill: View {
         RoundedRectangle(cornerRadius: 60, style: .continuous)
     }
 
-    private var materialColorScheme: ColorScheme {
-        theme.resolvedContext(for: colorScheme) == .experiment ? .dark : .light
-    }
 }
 
 #Preview("상태 안내 · 기본") {
     _ = FontRegistration.register()
     return StatusPill("3초 후 자동 저장됩니다.")
         .padding()
-        .background(.labcord(.backgroundPrimary))
-        .labcordTheme(LabcordTheme(context: .experiment))
+        .background(Color("Experiment/Background/Primary", bundle: .module))
 }
 
 #Preview("상태 안내 · 큰 글자") {
@@ -62,6 +56,5 @@ public struct StatusPill: View {
         .frame(width: 320)
         .environment(\.dynamicTypeSize, .accessibility3)
         .padding()
-        .background(.labcord(.backgroundPrimary))
-        .labcordTheme(LabcordTheme(context: .experiment))
+        .background(Color("Experiment/Background/Primary", bundle: .module))
 }

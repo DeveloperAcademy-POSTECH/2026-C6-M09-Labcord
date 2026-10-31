@@ -6,16 +6,16 @@ public enum LabcordToastType: CaseIterable, Sendable {
     case error
     case info
 
-    fileprivate var foregroundToken: ColorToken {
+    fileprivate var foregroundColor: Color {
         switch self {
         case .success:
-            .feedbackSuccessForeground
+            Color("Experiment/Feedback/Success/Foreground", bundle: .module)
         case .warning:
-            .feedbackWarningForeground
+            Color("Experiment/Feedback/Warning/Foreground", bundle: .module)
         case .error:
-            .feedbackErrorForeground
+            Color("Experiment/Feedback/Error/Foreground", bundle: .module)
         case .info:
-            .feedbackInfoForeground
+            Color("Experiment/Feedback/Info/Foreground", bundle: .module)
         }
     }
 
@@ -34,8 +34,6 @@ public enum LabcordToastType: CaseIterable, Sendable {
 }
 
 public struct LabcordToast: View {
-    @Environment(\.labcordTheme) private var theme
-    @Environment(\.colorScheme) private var colorScheme
 
     private let message: String
     private let type: LabcordToastType
@@ -96,9 +94,9 @@ public struct LabcordToast: View {
         .background {
             Rectangle()
                 .fill(.ultraThinMaterial)
-                .environment(\.colorScheme, materialColorScheme)
+                .environment(\.colorScheme, .dark)
         }
-        .background(.labcord(.fillPrimary))
+        .background(Color("Experiment/Fill/Primary", bundle: .module))
         .clipShape(RoundedRectangle(cornerRadius: layout.radiusSm))
         .accessibilityElement(children: .contain)
     }
@@ -110,10 +108,6 @@ public struct LabcordToast: View {
                 .fixedSize(horizontal: true, vertical: false)
             verticalContent
         }
-    }
-
-    private var materialColorScheme: ColorScheme {
-        theme.resolvedContext(for: colorScheme) == .experiment ? .dark : .light
     }
 
     private var horizontalContent: some View {
@@ -145,7 +139,7 @@ public struct LabcordToast: View {
             if showLeadingIcon {
                 ZStack {
                     LabcordIconArtwork(icon: type.icon, size: 20)
-                        .foregroundStyle(.labcord(type.foregroundToken))
+                        .foregroundStyle(type.foregroundColor)
                         .id(type.icon.rawValue)
                         .transition(.opacity)
                 }
@@ -156,7 +150,7 @@ public struct LabcordToast: View {
 
             Text(message)
                 .typography(Typography.headline)
-                .foregroundStyle(.labcord(.labelPrimary))
+                .foregroundStyle(Color("Experiment/Label/Primary", bundle: .module))
                 .contentTransition(.opacity)
                 .labcordMotion(.state, value: message)
                 .multilineTextAlignment(.leading)
@@ -201,7 +195,7 @@ public struct LabcordToast: View {
         if showDismissButton {
             Button(action: onDismiss) {
                 LabcordIconArtwork(icon: .x, size: 12)
-                    .foregroundStyle(.labcord(.labelSecondary))
+                    .foregroundStyle(Color("Experiment/Label/Secondary", bundle: .module))
             }
             .buttonStyle(.labcordIcon(.tertiary, size: .small))
             .accessibilityLabel(Text("닫기"))
@@ -214,5 +208,5 @@ public struct LabcordToast: View {
     _ = FontRegistration.register()
     return LabcordToast("저장했어요.", type: .success)
         .padding()
-        .background(.labcord(.backgroundPrimary))
+        .background(Color("Experiment/Background/Primary", bundle: .module))
 }

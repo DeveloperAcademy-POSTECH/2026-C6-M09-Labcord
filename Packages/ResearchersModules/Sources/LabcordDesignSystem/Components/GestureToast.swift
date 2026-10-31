@@ -25,7 +25,7 @@ public struct GestureToast: View {
                 Text(subtitle)
                     .typography(Typography.subheadline)
             }
-            .foregroundStyle(.labcord(.fillWhite))
+            .foregroundStyle(Color("Experiment/Fill/White", bundle: .module))
             .multilineTextAlignment(.leading)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -33,7 +33,7 @@ public struct GestureToast: View {
 
             if showsFollowingIcon {
                 LabcordIconArtwork(icon: .checkCircleFill, size: 34)
-                    .foregroundStyle(.labcord(.brandPrimary))
+                    .foregroundStyle(Color("Experiment/Brand/Primary", bundle: .module))
                     .accessibilityHidden(true)
                     .transition(.opacity)
             }
@@ -44,7 +44,7 @@ public struct GestureToast: View {
             Rectangle()
                 .fill(.ultraThinMaterial)
                 .environment(\.colorScheme, .dark)
-                .overlay { Rectangle().fill(.labcord(.fillDark)) }
+                .overlay { Rectangle().fill(Color("Experiment/Fill/Dark", bundle: .module)) }
         }
         .clipShape(RoundedRectangle(cornerRadius: layout.radiusSm, style: .circular))
         .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: showsFollowingIcon)
@@ -57,5 +57,4 @@ public struct GestureToast: View {
     return GestureToast(title: "토스트 문구입니다.", subtitle: "토스트 문구입니다.")
         .frame(maxWidth: 241)
         .padding()
-        .labcordTheme(LabcordTheme(context: .experiment))
 }
