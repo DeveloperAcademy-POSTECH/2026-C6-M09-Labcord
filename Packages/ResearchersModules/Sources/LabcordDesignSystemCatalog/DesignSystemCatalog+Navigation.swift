@@ -43,7 +43,7 @@ enum CatalogItem: String, CaseIterable, Identifiable, Sendable {
     case pageControl, timerItem, statusPill, timerTabItem, timerTabs
     case protocolTimerItem, toast, timerControlButton, experimentControlButton, recordButton
     case titleSection, timePicker, gestureGuideItem, experimentSidePanel
-    case gestureToast
+    case gestureCheckCard
 
     var id: Self { self }
 
@@ -82,7 +82,7 @@ enum CatalogItem: String, CaseIterable, Identifiable, Sendable {
         case .timerTabs: "Timer Tabs"
         case .protocolTimerItem: "Protocol Timer Item"
         case .toast: "Toast"
-        case .gestureToast: "Gesture Check Card"
+        case .gestureCheckCard: "Gesture Check Card"
         case .timerControlButton: "Timer Control Button"
         case .experimentControlButton: "Experiment Control Button"
         case .recordButton: "Record Button"
@@ -104,7 +104,7 @@ enum CatalogItem: String, CaseIterable, Identifiable, Sendable {
         case .pageControl, .timerItem, .statusPill, .timerTabItem, .timerTabs,
              .protocolTimerItem, .toast, .timerControlButton, .experimentControlButton,
              .recordButton, .titleSection, .timePicker, .gestureGuideItem, .experimentSidePanel,
-             .gestureToast:
+             .gestureCheckCard:
             .run
         }
     }
@@ -127,7 +127,7 @@ enum CatalogItem: String, CaseIterable, Identifiable, Sendable {
              .textField, .textArea, .statusBadge, .separator, .overlay, .loadingIndicator,
              .checkbox, .radioButton:
             DesignSystemControlsPage(item: self)
-        case .gestureToast:
+        case .gestureCheckCard:
             DesignSystemGestureCheckCardPage()
         case .toast, .statusPill:
             DesignSystemFeedbackPage(item: self)
