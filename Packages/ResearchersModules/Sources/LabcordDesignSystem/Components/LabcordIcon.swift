@@ -2,6 +2,7 @@ import SwiftUI
 
 // swiftlint:disable identifier_name
 public enum LabcordIcon: String, CaseIterable, Identifiable, Sendable {
+    case arrowCounterClockwiseBold = "arrow-counter-clockwise-bold"
     case arrowCounterClockwise = "arrow-counter-clockwise"
     case arrowIn = "arrow-in"
     case arrowOut = "arrow-out"
@@ -23,6 +24,7 @@ public enum LabcordIcon: String, CaseIterable, Identifiable, Sendable {
     case flask = "flask"
     case folderOpen = "folder-open"
     case gear = "gear"
+    case houseFill = "house-fill"
     case image = "image"
     case linkBreak = "link-break"
     case microphoneFill = "microphone-fill"
@@ -36,6 +38,7 @@ public enum LabcordIcon: String, CaseIterable, Identifiable, Sendable {
     case record = "record"
     case rectangleLandscapeRotate = "rectangle-landscape-rotate"
     case rectanglePortraitRotate = "rectangle-portrait-rotate"
+    case replay = "replay"
     case slidersHorizontal = "sliders-horizontal"
     case stop = "stop"
     case timerFill = "timer-fill"
@@ -45,6 +48,7 @@ public enum LabcordIcon: String, CaseIterable, Identifiable, Sendable {
     case videocameraFill = "videocamera-fill"
     case warningCircle = "warning-circle"
     case warning = "warning"
+    case watchCheck = "watch-check"
     case watch = "watch"
     case waveform = "waveform"
     case xBold = "x-bold"
