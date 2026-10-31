@@ -1,6 +1,6 @@
 # 아이콘
 
-소스: [LabcordIcon.swift](../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/Icon/LabcordIcon.swift), [Icons.xcassets](../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Recources/Icons.xcassets).
+소스: [LabcordIcon.swift](../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/Display/LabcordIcon.swift), [Icons.xcassets](../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Recources/Icons.xcassets).
 
 ```swift
 Image(labcordIcon: .plus)

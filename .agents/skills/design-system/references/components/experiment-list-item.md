@@ -11,4 +11,4 @@ ExperimentListItem(title, date: dateText, status: status,
 - 여러 행의 단일 선택 규칙은 부모에서 ID 기반 Binding으로 연결합니다.
 - 큰 글씨에서는 세로 배치를 사용합니다. 호출부에서 행 높이를 고정해 잘라내지 않습니다.
 
-[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/ExperimentListItem/ExperimentListItem.swift)
+[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/Experiment/ExperimentListItem.swift)

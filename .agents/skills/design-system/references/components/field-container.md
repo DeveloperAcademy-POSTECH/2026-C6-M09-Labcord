@@ -1,6 +1,6 @@
 # Field Container
 
-[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/FieldContainer/FieldContainer.swift)
+[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/Input/FieldContainer.swift)
 
 `name`·`isSaving`·`nameFeedback`·`hasNameError`는 호출부 입력·검증 상태입니다.
 

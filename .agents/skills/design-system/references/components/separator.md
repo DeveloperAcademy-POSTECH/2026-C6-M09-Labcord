@@ -1,6 +1,6 @@
 # Separator
 
-[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/Separator/LabcordSeparator.swift)
+[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/Display/LabcordSeparator.swift)
 
 가로 구분선은 부모가 제안한 너비를 사용합니다.
 

@@ -13,4 +13,4 @@ TimerRecord(setDuration: setDuration, elapsedTime: elapsedTime,
 - 식별색 배정은 호출부가 결정하며, 컴포넌트 자체가 색을 배정하지 않습니다.
 - 설정 시간은 컴포넌트에서 표시하고, 기록 시각은 함께 사용하는 `TimelineItem`에서 전달합니다.
 
-[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/TimerRecord/TimerRecord.swift)
+[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/Timer/TimerRecord.swift)

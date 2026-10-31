@@ -1,6 +1,6 @@
 # Dropdown Trigger
 
-[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/DropdownTrigger/DropdownTrigger.swift)
+[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/Input/DropdownTrigger.swift)
 
 `selectedTitle`·`selectAll`은 현재 값과 선택 액션입니다.
 

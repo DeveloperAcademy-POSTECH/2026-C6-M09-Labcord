@@ -12,4 +12,4 @@ TimePicker(duration: $runningDuration) // 기본값: .running
 - 휠에서 시간은 `0...23`, 분·초는 `0...59`를 선택합니다. 전달받은 Duration은 자동으로 범위에 맞춰지지 않으므로 호출부에서 검증합니다. 취소 가능한 편집은 draft를 씁니다.
 - iOS에서는 휠을 사용합니다. 카운트다운 실행 기능은 없습니다.
 
-[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/TimePicker/TimePicker.swift)
+[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/Timer/TimePicker.swift)

@@ -1,6 +1,6 @@
 # Overlay
 
-[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/Overlay/LabcordOverlay.swift)
+[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/Display/LabcordOverlay.swift)
 
 `content`는 덮을 View입니다. 시각적인 dim만 필요하면 입력을 통과시킵니다.
 
