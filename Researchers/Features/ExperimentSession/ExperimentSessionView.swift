@@ -102,6 +102,13 @@ struct ExperimentSessionView: View {
         .task {
             await store.send(.loadDetail).finish()
         }
+        .onChange(of: store.detail, initial: true) { _, detail in
+            guard let detail else { return }
+
+            timerStore.send(
+                .configure(mode: detail.mode, timerSeconds: detail.timerSeconds)
+            )
+        }
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
             captureStore.send(.cameraViewAppeared)

@@ -19,17 +19,13 @@ struct SessionTimerFeature {
     @ObservableState
     struct State: Equatable {
         var selectedTimerTab: TimerTab = .configured
-        var timerSeconds: [Int]
-        var mode: ExperimentMode
+        var timerSeconds: [Int] = []
+        var mode: ExperimentMode = .free
         var timerCollection = ExperimentTimerCollection()
-
-        init(timerSeconds: [Int] = [5400, 120, 10, 5, 120, 30, 60, 900, 2000, 2500, 3000, 150]) {
-            self.timerSeconds = timerSeconds
-            self.mode = timerSeconds.isEmpty ? .free : .procedure
-        }
     }
 
     enum Action: Equatable {
+        case configure(mode: ExperimentMode, timerSeconds: [Int])
         case timerTabSelected(TimerTab)
         case timerStarted(Int)
         case customTimerStarted(Int)
@@ -56,6 +52,11 @@ struct SessionTimerFeature {
     var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
+            case let .configure(mode, timerSeconds):
+                state.mode = mode
+                state.timerSeconds = timerSeconds
+                return .none
+
             case let .timerTabSelected(tab):
                 state.selectedTimerTab = tab
                 return .none
