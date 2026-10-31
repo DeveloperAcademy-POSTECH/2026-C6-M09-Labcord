@@ -1,6 +1,6 @@
 import SwiftUI
 
-public enum LabcordDropdownState: String, Sendable {
+public enum DropdownState: String, Sendable {
     case `default`
     case filled
     case open
@@ -8,10 +8,10 @@ public enum LabcordDropdownState: String, Sendable {
     case error
 }
 
-public struct LabcordDropdownTriggerLabel: View {
+public struct DropdownTriggerLabel: View {
     private let value: String
     private let size: LabcordControlSize?
-    private let state: LabcordDropdownState
+    private let state: DropdownState
     private let isPresented: Bool
 
     @Environment(\.controlSize) private var controlSize
@@ -21,7 +21,7 @@ public struct LabcordDropdownTriggerLabel: View {
     public init(
         value: String,
         size: LabcordControlSize? = nil,
-        state: LabcordDropdownState = .default,
+        state: DropdownState = .default,
         isPresented: Bool = false
     ) {
         self.value = value
@@ -64,7 +64,7 @@ public struct LabcordDropdownTriggerLabel: View {
         size ?? LabcordControlSize(controlSize)
     }
 
-    private var effectiveState: LabcordDropdownState {
+    private var effectiveState: DropdownState {
         if !isEnabled || state == .disabled {
             return .disabled
         }
@@ -156,10 +156,10 @@ public struct LabcordDropdownTriggerLabel: View {
 
 }
 
-public struct LabcordDropdownTrigger<MenuContent: View>: View {
+public struct DropdownTrigger<MenuContent: View>: View {
     private let value: String
     private let size: LabcordControlSize?
-    private let state: LabcordDropdownState
+    private let state: DropdownState
     private let isPresented: Bool
     private let menuContent: () -> MenuContent
     @State private var isPressed = false
@@ -167,7 +167,7 @@ public struct LabcordDropdownTrigger<MenuContent: View>: View {
     public init(
         value: String,
         size: LabcordControlSize? = nil,
-        state: LabcordDropdownState = .default,
+        state: DropdownState = .default,
         isPresented: Bool = false,
         @ViewBuilder menuContent: @escaping () -> MenuContent
     ) {
@@ -198,7 +198,7 @@ public struct LabcordDropdownTrigger<MenuContent: View>: View {
     }
 
     private var triggerLabel: some View {
-        LabcordDropdownTriggerLabel(
+        DropdownTriggerLabel(
             value: value,
             size: size,
             state: state,
@@ -221,7 +221,7 @@ private struct DropdownMenuPressStyle: ButtonStyle {
 
 #Preview("드롭다운") {
     _ = FontRegistration.register()
-    return LabcordDropdownTrigger(value: "옵션 선택") {
+    return DropdownTrigger(value: "옵션 선택") {
         Button("옵션 1") {}
     }
 }

@@ -1,14 +1,14 @@
 import SwiftUI
 
-public enum LabcordSeparatorOrientation: Sendable {
+public enum SeparatorOrientation: Sendable {
     case horizontal
     case vertical
 }
 
-public struct LabcordSeparator: View {
-    private let orientation: LabcordSeparatorOrientation
+public struct Separator: View {
+    private let orientation: SeparatorOrientation
 
-    public init(orientation: LabcordSeparatorOrientation = .horizontal) {
+    public init(orientation: SeparatorOrientation = .horizontal) {
         self.orientation = orientation
     }
 
@@ -33,10 +33,10 @@ public struct LabcordSeparator: View {
 #Preview("구분선") {
     VStack(spacing: 16) {
         Text("가로")
-        LabcordSeparator()
+        Separator()
         HStack {
             Text("세로")
-            LabcordSeparator(orientation: .vertical)
+            Separator(orientation: .vertical)
             Text("구분")
         }
         .frame(height: 32)

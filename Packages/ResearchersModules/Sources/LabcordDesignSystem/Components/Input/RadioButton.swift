@@ -1,6 +1,6 @@
 import SwiftUI
 
-public struct LabcordRadioButton<Value: Hashable, Label: View>: View {
+public struct RadioButton<Value: Hashable, Label: View>: View {
     private let value: Value
     @Binding private var selection: Value
     private let size: LabcordControlSize?
@@ -46,7 +46,7 @@ public struct LabcordRadioButton<Value: Hashable, Label: View>: View {
     }
 }
 
-public extension LabcordRadioButton where Label == Text {
+public extension RadioButton where Label == Text {
     init(
         _ title: LocalizedStringKey,
         value: Value,
@@ -60,5 +60,5 @@ public extension LabcordRadioButton where Label == Text {
 #Preview("라디오 버튼") {
     @Previewable @State var selection = 1
     _ = FontRegistration.register()
-    return LabcordRadioButton("옵션 1", value: 1, selection: $selection)
+    return RadioButton("옵션 1", value: 1, selection: $selection)
 }

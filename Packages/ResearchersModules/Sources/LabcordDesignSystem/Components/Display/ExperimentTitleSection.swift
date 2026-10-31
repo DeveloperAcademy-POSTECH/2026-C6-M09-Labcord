@@ -1,6 +1,6 @@
 import SwiftUI
 
-public struct TitleSection<Leading: View, Trailing: View>: View {
+public struct ExperimentTitleSection<Leading: View, Trailing: View>: View {
     public enum Layout: String, CaseIterable, Sendable {
         case horizontal
         case vertical
@@ -69,7 +69,7 @@ public struct TitleSection<Leading: View, Trailing: View>: View {
     }
 }
 
-public extension TitleSection where Trailing == EmptyView {
+public extension ExperimentTitleSection where Trailing == EmptyView {
     init(
         title: String,
         layout: Layout,
@@ -87,7 +87,7 @@ public extension TitleSection where Trailing == EmptyView {
 #if DEBUG
 #Preview("Horizontal") {
     _ = FontRegistration.register()
-    return TitleSection(
+    return ExperimentTitleSection(
         title: "촉매 반응 조건 비교 실험 A",
         layout: .horizontal,
         leading: {
@@ -109,7 +109,7 @@ public extension TitleSection where Trailing == EmptyView {
 
 #Preview("Vertical · 긴 제목") {
     _ = FontRegistration.register()
-    return TitleSection(
+    return ExperimentTitleSection(
         title: "아주 긴 실험 제목도 접근성 글자 크기에서 잘리지 않습니다",
         layout: .vertical
     ) {

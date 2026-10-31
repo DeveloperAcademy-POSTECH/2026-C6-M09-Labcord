@@ -16,7 +16,7 @@ public enum LabcordIcon: String, CaseIterable, Identifiable, Sendable {
     case checkBold = "check-bold"
     case checkCircleFill = "check-circle-fill"
     case check = "check"
-    case dotOutline = "dot-outline"
+    case dot = "dot"
     case dotsThreeOutline = "dots-three-outline"
     case dotsThreeVertical = "dots-three-vertical"
     case dotsThree = "dots-three"

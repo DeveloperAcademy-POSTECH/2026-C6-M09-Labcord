@@ -1,7 +1,7 @@
 import SwiftUI
 
 #if os(watchOS)
-public struct LabcordTextEditorStyle: ViewModifier {
+public struct FormTextAreaStyle: ViewModifier {
     public init(
         placeholder: Text? = nil,
         isEmpty: Bool = true,
@@ -34,7 +34,7 @@ public struct LabcordTextEditorStyle: ViewModifier {
     }
 }
 #else
-public struct LabcordTextEditorStyle: ViewModifier {
+public struct FormTextAreaStyle: ViewModifier {
     private let placeholder: Text?
     private let isEmpty: Bool
     private let isFocused: Bool
@@ -154,8 +154,8 @@ public struct LabcordTextEditorStyle: ViewModifier {
             }
     }
 
-    private var state: LabcordInputState {
-        LabcordInputState(
+    private var state: InputState {
+        InputState(
             isEnabled: isEnabled,
             isDisabled: isDisabled,
             isError: isError,
@@ -176,7 +176,7 @@ public struct LabcordTextEditorStyle: ViewModifier {
 #endif
 
 public extension View {
-    func labcordTextEditorStyle(_ style: LabcordTextEditorStyle = .init()) -> some View {
+    func labcordTextEditorStyle(_ style: FormTextAreaStyle = .init()) -> some View {
         modifier(style)
     }
 
@@ -187,7 +187,7 @@ public extension View {
         isError: Bool = false
     ) -> some View {
         labcordTextEditorStyle(
-            LabcordTextEditorStyle(
+            FormTextAreaStyle(
                 placeholder: placeholder,
                 isEmpty: text.isEmpty,
                 isFocused: focus.wrappedValue,
@@ -206,7 +206,7 @@ public extension View {
         isError: Bool = false
     ) -> some View {
         labcordTextEditorStyle(
-            LabcordTextEditorStyle(
+            FormTextAreaStyle(
                 placeholder: placeholder,
                 isEmpty: text.isEmpty,
                 isFocused: focus.wrappedValue == value,
