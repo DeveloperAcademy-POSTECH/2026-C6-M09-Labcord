@@ -16,7 +16,6 @@ public struct DropdownTriggerLabel: View {
 
     @Environment(\.controlSize) private var controlSize
     @Environment(\.isEnabled) private var isEnabled
-    private let layout = LayoutTokens()
 
     public init(
         value: String,
@@ -31,7 +30,7 @@ public struct DropdownTriggerLabel: View {
     }
 
     public var body: some View {
-        HStack(spacing: layout.spacing8) {
+        HStack(spacing: LayoutTokens.spacing8) {
             Text(value)
                 .lineLimit(1)
                 .truncationMode(.tail)
@@ -56,8 +55,8 @@ public struct DropdownTriggerLabel: View {
                 .labcordMotion(.state, value: fillColor)
                 .allowsHitTesting(false)
         }
-        .clipShape(RoundedRectangle(cornerRadius: layout.radiusSm))
-        .contentShape(RoundedRectangle(cornerRadius: layout.radiusSm))
+        .clipShape(RoundedRectangle(cornerRadius: LayoutTokens.radiusSm))
+        .contentShape(RoundedRectangle(cornerRadius: LayoutTokens.radiusSm))
     }
 
     private var resolvedSize: ComponentSize {
@@ -100,7 +99,7 @@ public struct DropdownTriggerLabel: View {
     }
 
     private var horizontalPadding: CGFloat {
-        resolvedSize == .small ? layout.spacing12 : layout.spacing16
+        resolvedSize == .small ? LayoutTokens.spacing12 : LayoutTokens.spacing16
     }
 
     private var verticalPadding: CGFloat {

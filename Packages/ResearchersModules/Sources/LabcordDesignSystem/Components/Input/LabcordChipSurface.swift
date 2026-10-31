@@ -9,7 +9,6 @@ struct LabcordChipSurface<Content: View>: View {
     let content: Content
 
     @Environment(\.controlSize) private var controlSize
-    private let layout = LayoutTokens()
 
     init(
         size: ComponentSize?,
@@ -72,7 +71,7 @@ struct LabcordChipSurface<Content: View>: View {
     }
 
     private var horizontalPadding: CGFloat {
-        resolvedSize == .large ? layout.spacing16 : layout.spacing12
+        resolvedSize == .large ? LayoutTokens.spacing16 : LayoutTokens.spacing12
     }
 
     private var typography: TypographyStyle {

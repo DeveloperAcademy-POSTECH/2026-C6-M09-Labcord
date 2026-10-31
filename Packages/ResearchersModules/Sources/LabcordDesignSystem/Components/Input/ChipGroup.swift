@@ -40,7 +40,7 @@ public struct ChipGroup<Item: Identifiable>: View where Item.ID: Hashable {
     }
 
     public var body: some View {
-        LabcordChipFlowLayout(spacing: LayoutTokens().spacing12) {
+        LabcordChipFlowLayout(spacing: LayoutTokens.spacing12) {
             ForEach(items) { item in
                 LabcordSetupSmallChip(label: label(item)) {
                     withAnimation(layoutAnimation) {
@@ -55,7 +55,7 @@ public struct ChipGroup<Item: Identifiable>: View where Item.ID: Hashable {
                 Button {
                     withAnimation(layoutAnimation, onAdd)
                 } label: {
-                    HStack(spacing: LayoutTokens().spacing4) {
+                    HStack(spacing: LayoutTokens.spacing4) {
                         LabcordIconArtwork(icon: .plus, size: 16, relativeTo: .subheadline)
                         Text("추가")
                             .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
@@ -87,10 +87,8 @@ private struct LabcordSetupSmallChip: View {
     let label: String
     let onDismiss: () -> Void
 
-    private let layout = LayoutTokens()
-
     var body: some View {
-        HStack(spacing: layout.spacing4) {
+        HStack(spacing: LayoutTokens.spacing4) {
             Text(label)
                 .typography(Typography.subheadline)
                 .fixedSize(horizontal: false, vertical: true)
@@ -102,7 +100,7 @@ private struct LabcordSetupSmallChip: View {
             .accessibilityLabel(Text("\(label) 제거"))
         }
         .foregroundStyle(Color("General/Label/Brand", bundle: .module))
-        .padding(.horizontal, layout.spacing12)
+        .padding(.horizontal, LayoutTokens.spacing12)
         .padding(.vertical, 7)
         .frame(minHeight: 34)
         .background(Color("General/Fill/Selected", bundle: .module), in: Capsule())

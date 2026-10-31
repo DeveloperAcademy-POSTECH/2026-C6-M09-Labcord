@@ -10,7 +10,6 @@ public struct ExperimentTitleSection<Leading: View, Trailing: View>: View {
     private let layout: Layout
     private let leading: Leading
     private let trailing: Trailing
-    private let tokens = LayoutTokens()
 
     public init(
         title: String,
@@ -36,7 +35,7 @@ public struct ExperimentTitleSection<Leading: View, Trailing: View>: View {
 
     private var horizontalContent: some View {
         HStack(alignment: .center, spacing: 0) {
-            HStack(alignment: .center, spacing: tokens.spacing16) {
+            HStack(alignment: .center, spacing: LayoutTokens.spacing16) {
                 leading
                 titleView
             }
@@ -51,11 +50,11 @@ public struct ExperimentTitleSection<Leading: View, Trailing: View>: View {
     }
 
     private var verticalContent: some View {
-        HStack(alignment: .center, spacing: tokens.spacing16) {
+        HStack(alignment: .center, spacing: LayoutTokens.spacing16) {
             leading
             titleView
         }
-        .padding(.horizontal, tokens.spacing16)
+        .padding(.horizontal, LayoutTokens.spacing16)
         .frame(maxWidth: .infinity, minHeight: 50, alignment: .leading)
     }
 

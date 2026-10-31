@@ -11,7 +11,6 @@ public struct FieldContainer<Content: View>: View {
     private let content: () -> Content
 
     @Environment(\.isEnabled) private var isEnabled
-    private let layout = LayoutTokens()
 
     public init(
         label: String? = "타이틀",
@@ -34,9 +33,9 @@ public struct FieldContainer<Content: View>: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: layout.spacing8) {
+        VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
             if showTitle {
-                HStack(alignment: .firstTextBaseline, spacing: layout.spacing4) {
+                HStack(alignment: .firstTextBaseline, spacing: LayoutTokens.spacing4) {
                     if let label {
                         Text(label)
                             .typography(Typography.calloutSemiBold)

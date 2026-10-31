@@ -45,7 +45,6 @@ public struct FormTextAreaStyle: ViewModifier {
     @State private var inputID = UUID()
 
     @Environment(\.isEnabled) private var isEnabled
-    private let layout = LayoutTokens()
     @ScaledMetric(relativeTo: .subheadline) private var editorHeight: CGFloat = 120
 
     public init(
@@ -106,8 +105,8 @@ public struct FormTextAreaStyle: ViewModifier {
                 .typography(Typography.subheadline)
                 .foregroundStyle((state.foregroundColor))
                 .scrollContentBackground(.hidden)
-                .padding(.horizontal, layout.spacing12 - 5)
-                .padding(.vertical, layout.spacing12 - 8)
+                .padding(.horizontal, LayoutTokens.spacing12 - 5)
+                .padding(.vertical, LayoutTokens.spacing12 - 8)
                 .frame(
                     maxWidth: .infinity,
                     minHeight: editorHeight,
@@ -119,8 +118,8 @@ public struct FormTextAreaStyle: ViewModifier {
                 placeholder
                     .typography(Typography.subheadline)
                     .foregroundStyle((placeholderColor))
-                    .padding(.horizontal, layout.spacing12)
-                    .padding(.vertical, layout.spacing12)
+                    .padding(.horizontal, LayoutTokens.spacing12)
+                    .padding(.vertical, LayoutTokens.spacing12)
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
             }
@@ -132,10 +131,10 @@ public struct FormTextAreaStyle: ViewModifier {
                 alignment: .topLeading
             )
             .background((state.backgroundColor))
-            .clipShape(RoundedRectangle(cornerRadius: layout.radiusSm, style: .circular))
+            .clipShape(RoundedRectangle(cornerRadius: LayoutTokens.radiusSm, style: .circular))
             .contentShape(Rectangle())
             .overlay {
-                RoundedRectangle(cornerRadius: layout.radiusSm, style: .circular)
+                RoundedRectangle(cornerRadius: LayoutTokens.radiusSm, style: .circular)
                     .strokeBorder((state.borderColor), lineWidth: 1)
                     .labcordMotion(.state, value: state.borderColor)
                     .allowsHitTesting(false)

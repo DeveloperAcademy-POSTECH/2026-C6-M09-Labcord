@@ -132,8 +132,6 @@ private struct LabcordTextFieldBody<Label: View>: View {
     let backgroundColor: Color
     let height: CGFloat
 
-    private let layout = LayoutTokens()
-
     nonisolated init(
         configuration: TextField<Label>,
         size: ComponentSize,
@@ -155,17 +153,17 @@ private struct LabcordTextFieldBody<Label: View>: View {
             .typography(inputTypography)
             .foregroundStyle((foregroundColor))
             .tint((Color("General/Brand/Primary", bundle: .module)))
-            .padding(.horizontal, layout.spacing8)
+            .padding(.horizontal, LayoutTokens.spacing8)
             .frame(
                 maxWidth: .infinity,
                 minHeight: height,
                 alignment: .leading
             )
             .background((backgroundColor))
-            .clipShape(RoundedRectangle(cornerRadius: layout.radiusSm, style: .circular))
+            .clipShape(RoundedRectangle(cornerRadius: LayoutTokens.radiusSm, style: .circular))
             .contentShape(Rectangle())
             .overlay {
-                RoundedRectangle(cornerRadius: layout.radiusSm, style: .circular)
+                RoundedRectangle(cornerRadius: LayoutTokens.radiusSm, style: .circular)
                     .strokeBorder((borderColor), lineWidth: 1)
                     .labcordMotion(.state, value: borderColor)
                     .allowsHitTesting(false)
