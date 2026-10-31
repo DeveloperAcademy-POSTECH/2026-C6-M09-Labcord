@@ -8,10 +8,12 @@ public struct ExperimentTimer: Equatable, Identifiable, Sendable {
     }
 
     public struct PauseInterval: Equatable, Sendable {
+        public let id: UUID
         public let pausedAt: Date
         public let resumedAt: Date?
 
-        public init(pausedAt: Date, resumedAt: Date? = nil) {
+        public init(id: UUID = UUID(), pausedAt: Date, resumedAt: Date? = nil) {
+            self.id = id
             self.pausedAt = pausedAt
             self.resumedAt = resumedAt
         }
@@ -36,10 +38,18 @@ public struct ExperimentTimer: Equatable, Identifiable, Sendable {
         return lastPause.pausedAt
     }
 
-    public init(id: UUID = UUID(), durationSeconds: Int, startedAt: Date) {
+    public init(
+        id: UUID = UUID(),
+        durationSeconds: Int,
+        startedAt: Date,
+        pauseIntervals: [PauseInterval] = [],
+        finishedAt: Date? = nil
+    ) {
         self.id = id
         self.durationSeconds = durationSeconds
         self.startedAt = startedAt
+        self.pauseIntervals = pauseIntervals
+        self.finishedAt = finishedAt
     }
 
     public func remainingSeconds(at date: Date) -> Int {
@@ -63,6 +73,7 @@ public struct ExperimentTimer: Equatable, Identifiable, Sendable {
     public mutating func resume(at date: Date) {
         guard let pausedAt, let lastIndex = pauseIntervals.indices.last else { return }
         pauseIntervals[lastIndex] = PauseInterval(
+            id: pauseIntervals[lastIndex].id,
             pausedAt: pausedAt,
             resumedAt: max(pausedAt, date)
         )
