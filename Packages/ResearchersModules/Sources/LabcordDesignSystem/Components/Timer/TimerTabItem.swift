@@ -64,7 +64,6 @@ public struct TimerTabItem: View {
     }
 }
 
-#if DEBUG
 #Preview("타이머 탭 · 기본·선택") {
     _ = FontRegistration.register()
     return HStack(spacing: 12) {
@@ -73,4 +72,3 @@ public struct TimerTabItem: View {
     }
     .background(Color("Experiment/Background/Primary", bundle: .module))
 }
-#endif

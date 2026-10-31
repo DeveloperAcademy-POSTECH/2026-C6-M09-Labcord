@@ -239,7 +239,6 @@ public struct TimerRecord: View {
     }
 }
 
-#if DEBUG
 #Preview("타이머 기록 · 상태") {
     _ = FontRegistration.register()
     return VStack(alignment: .leading, spacing: 16) {
@@ -265,4 +264,3 @@ public struct TimerRecord: View {
     .frame(maxWidth: .infinity, alignment: .leading)
     .environment(\.dynamicTypeSize, .accessibility3)
 }
-#endif

@@ -108,7 +108,6 @@ private struct ProtocolUploadButtonStyle: ButtonStyle {
     }
 }
 
-#if DEBUG
 #Preview("프로토콜 업로드 · 기본") {
     _ = FontRegistration.register()
     return ProtocolUploadButton()
@@ -134,4 +133,3 @@ private struct ProtocolUploadButtonStyle: ButtonStyle {
     .frame(width: 370)
     .padding()
 }
-#endif

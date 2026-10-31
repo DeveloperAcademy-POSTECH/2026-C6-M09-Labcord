@@ -59,7 +59,6 @@ private extension ExperimentControlButton.State {
     }
 }
 
-#if DEBUG
 #Preview("Experiment Control Button") {
     _ = FontRegistration.register()
     return HStack(spacing: 16) {
@@ -78,4 +77,3 @@ private extension ExperimentControlButton.State {
 }
 
 private func noExperimentControlAction() { }
-#endif
