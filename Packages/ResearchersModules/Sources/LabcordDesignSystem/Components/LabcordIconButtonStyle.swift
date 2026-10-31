@@ -176,3 +176,22 @@ struct LabcordIconButtonMetrics {
         }
     }
 }
+
+#Preview("아이콘 버튼") {
+    HStack(spacing: 12) {
+        Button { } label: {
+            LabcordIconArtwork(icon: .plus, size: 20)
+        }
+        .buttonStyle(.labcordIcon(.primary))
+        Button { } label: {
+            LabcordIconArtwork(icon: .trash, size: 20)
+        }
+        .buttonStyle(.labcordIcon(.secondary))
+        .disabled(true)
+        Button { } label: {
+            LabcordIconArtwork(icon: .plus, size: 20)
+        }
+        .buttonStyle(.labcordIcon(.primary, isLoading: true))
+    }
+    .padding()
+}

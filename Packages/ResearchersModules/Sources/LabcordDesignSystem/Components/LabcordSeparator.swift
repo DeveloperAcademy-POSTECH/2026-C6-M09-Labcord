@@ -29,3 +29,17 @@ public struct LabcordSeparator: View {
         .accessibilityHidden(true)
     }
 }
+
+#Preview("구분선") {
+    VStack(spacing: 16) {
+        Text("가로")
+        LabcordSeparator()
+        HStack {
+            Text("세로")
+            LabcordSeparator(orientation: .vertical)
+            Text("구분")
+        }
+        .frame(height: 32)
+    }
+    .padding()
+}

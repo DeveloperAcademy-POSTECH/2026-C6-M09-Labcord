@@ -295,3 +295,21 @@ func labcordButtonAppearance(
         )
     }
 }
+
+#Preview("버튼") {
+    _ = FontRegistration.register()
+    return VStack(spacing: 12) {
+        Button("기본") { }
+            .buttonStyle(.labcord(.primary))
+        Button("보조") { }
+            .buttonStyle(.labcord(.secondary))
+        Button("비활성화") { }
+            .buttonStyle(.labcord(.tertiary))
+            .disabled(true)
+        Button("삭제", role: .destructive) { }
+            .buttonStyle(.labcord(.primary))
+        Button("불러오는 중") { }
+            .buttonStyle(.labcord(.primary, isLoading: true))
+    }
+    .padding()
+}
