@@ -118,21 +118,19 @@ struct DesignSystemFoundationPage: View {
         }
     }
 
-    private var layout: LayoutTokens { LayoutTokens() }
-
     private var spacingCard: some View {
         DesignSystemCatalogCard("Spacing", description: "토큰 간격으로 배치한 두 도형") {
             VStack(alignment: .leading, spacing: 16) {
                 ForEach([
-                    CatalogMetric("spacing/2", layout.spacing2),
-                    CatalogMetric("spacing/4", layout.spacing4),
-                    CatalogMetric("spacing/8", layout.spacing8),
-                    CatalogMetric("spacing/10", layout.spacing10),
-                    CatalogMetric("spacing/12", layout.spacing12),
-                    CatalogMetric("spacing/16", layout.spacing16),
-                    CatalogMetric("spacing/20", layout.spacing20),
-                    CatalogMetric("spacing/24", layout.spacing24),
-                    CatalogMetric("spacing/32", layout.spacing32)
+                    CatalogMetric("spacing/2", LayoutTokens.spacing2),
+                    CatalogMetric("spacing/4", LayoutTokens.spacing4),
+                    CatalogMetric("spacing/8", LayoutTokens.spacing8),
+                    CatalogMetric("spacing/10", LayoutTokens.spacing10),
+                    CatalogMetric("spacing/12", LayoutTokens.spacing12),
+                    CatalogMetric("spacing/16", LayoutTokens.spacing16),
+                    CatalogMetric("spacing/20", LayoutTokens.spacing20),
+                    CatalogMetric("spacing/24", LayoutTokens.spacing24),
+                    CatalogMetric("spacing/32", LayoutTokens.spacing32)
                 ]) { token in
                     VStack(alignment: .leading, spacing: 8) {
                         CatalogMetricLabel(name: token.name, value: token.value)
@@ -156,10 +154,10 @@ struct DesignSystemFoundationPage: View {
         DesignSystemCatalogCard("Radius", description: "같은 도형에 적용한 모서리 반경") {
             VStack(alignment: .leading, spacing: 16) {
                 ForEach([
-                    CatalogMetric("radius/sm", layout.radiusSm),
-                    CatalogMetric("radius/md", layout.radiusMd),
-                    CatalogMetric("radius/lg", layout.radiusLg),
-                    CatalogMetric("radius/full", layout.radiusFull)
+                    CatalogMetric("radius/sm", LayoutTokens.radiusSm),
+                    CatalogMetric("radius/md", LayoutTokens.radiusMd),
+                    CatalogMetric("radius/lg", LayoutTokens.radiusLg),
+                    CatalogMetric("radius/full", LayoutTokens.radiusFull)
                 ]) { token in
                     VStack(alignment: .leading, spacing: 8) {
                         CatalogMetricLabel(name: token.name, value: token.value)
@@ -178,15 +176,15 @@ struct DesignSystemFoundationPage: View {
         DesignSystemCatalogCard("Size", description: "토큰 크기를 보여주는 도형") {
             VStack(alignment: .leading, spacing: 16) {
                 ForEach([
-                    CatalogMetric("size/icon/default", layout.iconDefaultSize),
-                    CatalogMetric("size/icon/large", layout.iconLargeSize),
-                    CatalogMetric("size/control/default", layout.controlDefaultSize),
-                    CatalogMetric("size/timer-tab/height", layout.timerTabHeight),
-                    CatalogMetric("size/timer-item/height", layout.timerItemHeight)
+                    CatalogMetric("size/icon/default", LayoutTokens.iconDefaultSize),
+                    CatalogMetric("size/icon/large", LayoutTokens.iconLargeSize),
+                    CatalogMetric("size/control/default", LayoutTokens.controlDefaultSize),
+                    CatalogMetric("size/timer-tab/height", LayoutTokens.timerTabHeight),
+                    CatalogMetric("size/timer-item/height", LayoutTokens.timerItemHeight)
                 ]) { token in
                     VStack(alignment: .leading, spacing: 8) {
                         CatalogMetricLabel(name: token.name, value: token.value)
-                        RoundedRectangle(cornerRadius: layout.radiusSm, style: .continuous)
+                        RoundedRectangle(cornerRadius: LayoutTokens.radiusSm, style: .continuous)
                             .fill(Color("General/Label/Brand", bundle: catalogBundle))
                             .frame(width: token.value, height: token.value)
                             .accessibilityHidden(true)
@@ -260,7 +258,6 @@ private struct CatalogFoundationColorCard: View {
 private struct CatalogFoundationEffectsCard: View {
     let context: CatalogContext
 
-    private var layout: LayoutTokens { LayoutTokens() }
     private var effects: EffectTokens {
         EffectTokens(context: context == .general ? .general : .experiment)
     }
@@ -308,7 +305,7 @@ private struct CatalogFoundationEffectsCard: View {
                             .frame(maxWidth: .infinity)
                             .background(
                                 Color("\(context.rawValue)/Fill/Primary", bundle: catalogBundle),
-                                in: RoundedRectangle(cornerRadius: layout.radiusMd)
+                                in: RoundedRectangle(cornerRadius: LayoutTokens.radiusMd)
                             )
                             .foregroundStyle(
                                 Color("\(context.rawValue)/Label/Primary", bundle: catalogBundle)
@@ -352,7 +349,7 @@ private struct CatalogFoundationEffectsCard: View {
                 .frame(maxWidth: .infinity)
                 .background(
                     Color("\(context.rawValue)/Background/Primary", bundle: catalogBundle),
-                    in: RoundedRectangle(cornerRadius: layout.radiusMd)
+                    in: RoundedRectangle(cornerRadius: LayoutTokens.radiusMd)
                 )
                 .foregroundStyle(Color("\(context.rawValue)/Label/Primary", bundle: catalogBundle))
 
