@@ -176,7 +176,7 @@ public struct ExperimentListItem: View {
 #Preview("실험 목록 · 상태") {
     _ = FontRegistration.register()
     return VStack(spacing: 0) {
-        ExperimentListItem(status: .running)
+        ExperimentListItem(status: .inProgress)
         ExperimentListItem(status: .completed)
     }
     .frame(width: 362)
