@@ -1,6 +1,6 @@
 import SwiftUI
 
-public enum LabcordToastType: CaseIterable, Sendable {
+public enum ToastType: CaseIterable, Sendable {
     case success
     case warning
     case error
@@ -33,10 +33,10 @@ public enum LabcordToastType: CaseIterable, Sendable {
     }
 }
 
-public struct LabcordToast: View {
+public struct Toast: View {
 
     private let message: String
-    private let type: LabcordToastType
+    private let type: ToastType
     private let showLeadingIcon: Bool
     private let showDismissButton: Bool
     private let showActionButton: Bool
@@ -47,7 +47,7 @@ public struct LabcordToast: View {
 
     public init(
         _ message: String,
-        type: LabcordToastType = .success,
+        type: ToastType = .success,
         showLeadingIcon: Bool = true,
         actionTitle: String = "다시시도",
         onAction: (() -> Void)? = nil,
@@ -67,7 +67,7 @@ public struct LabcordToast: View {
 
     public init(
         message: String,
-        type: LabcordToastType = .success,
+        type: ToastType = .success,
         showLeadingIcon: Bool = true,
         showDismissButton: Bool = true,
         showActionButton: Bool = true,
@@ -206,7 +206,7 @@ public struct LabcordToast: View {
 
 #Preview("토스트") {
     _ = FontRegistration.register()
-    return LabcordToast("저장했어요.", type: .success)
+    return Toast("저장했어요.", type: .success)
         .padding()
         .background(Color("Experiment/Background/Primary", bundle: .module))
 }

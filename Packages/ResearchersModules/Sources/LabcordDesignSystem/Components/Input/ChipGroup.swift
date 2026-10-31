@@ -1,6 +1,6 @@
 import SwiftUI
 
-public struct LabcordChipGroup<Item: Identifiable>: View where Item.ID: Hashable {
+public struct ChipGroup<Item: Identifiable>: View where Item.ID: Hashable {
     private let items: [Item]
     @Binding private var selection: Set<Item.ID>
     private let label: (Item) -> String
@@ -213,7 +213,7 @@ private struct ChipGroupPreviewContent: View {
     ]
 
     var body: some View {
-        LabcordChipGroup(
+        ChipGroup(
             items: items,
             selection: $selection,
             label: \.title,
@@ -240,7 +240,7 @@ private struct ChipGroupPreviewContent: View {
 
 #Preview("칩 그룹 · 추가 항목") {
     _ = FontRegistration.register()
-    return LabcordChipGroup(
+    return ChipGroup(
         items: [ChipGroupPreviewItem(id: 4, title: "추가 항목")],
         selection: .constant([]),
         label: \.title,
