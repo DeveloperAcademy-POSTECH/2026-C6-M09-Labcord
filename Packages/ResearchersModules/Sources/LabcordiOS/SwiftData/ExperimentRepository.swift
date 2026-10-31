@@ -23,7 +23,7 @@ final class ExperimentRepository {
             return Self.entry(existing)
         }
 
-        let experiment = Experiment(id: id, title: "새 실험", createdAt: date)
+        let experiment = Experiment(id: id, title: "새 실험", createdAt: date, mode: .free)
         context.insert(experiment)
         try context.save()
         return Self.entry(experiment)
