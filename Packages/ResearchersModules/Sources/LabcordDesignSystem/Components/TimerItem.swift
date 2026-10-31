@@ -131,6 +131,7 @@ public struct TimerItem<ID: Hashable>: View {
             icon: actionIcon,
             background: .timerBackground,
             foreground: .timerForeground,
+            role: state == .completed ? .destructive : nil,
             action: action
         )
     }
@@ -188,10 +189,11 @@ private struct TimerItemActionButton: View {
     let icon: LabcordIcon
     let background: ColorToken
     let foreground: ColorToken
+    let role: ButtonRole?
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        Button(role: role, action: action) {
             ZStack {
                 LabcordIconArtwork(icon: icon, size: 24, relativeTo: .body)
                     .id(icon.rawValue)
