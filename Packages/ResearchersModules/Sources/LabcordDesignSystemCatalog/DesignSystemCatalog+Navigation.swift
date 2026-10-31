@@ -73,7 +73,7 @@ enum CatalogItem: String, CaseIterable, Identifiable, Sendable {
         case .accordion: "Accordion"
         case .chipGroup: "Chip Group"
         case .timerSettingSheet: "Timer Setting Sheet"
-        case .timePicker: "Time Picker"
+        case .timePicker: "Timer Picker"
         case .experimentListItem: "Experiment List Item"
         case .pageControl: "Page control"
         case .timerItem: "Timer Item"
@@ -82,11 +82,11 @@ enum CatalogItem: String, CaseIterable, Identifiable, Sendable {
         case .timerTabs: "Timer Tabs"
         case .protocolTimerItem: "Protocol Timer Item"
         case .toast: "Toast"
-        case .gestureToast: "Gesture Toast"
+        case .gestureToast: "Gesture Check Card"
         case .timerControlButton: "Timer Control Button"
         case .experimentControlButton: "Experiment Control Button"
         case .recordButton: "Record Button"
-        case .titleSection: "Title Section"
+        case .titleSection: "Experiment Title Section"
         case .gestureGuideItem: "Gesture Guide Item"
         case .experimentSidePanel: "Experiment Side Panel"
         }
@@ -128,7 +128,7 @@ enum CatalogItem: String, CaseIterable, Identifiable, Sendable {
              .checkbox, .radioButton:
             DesignSystemControlsPage(item: self)
         case .gestureToast:
-            DesignSystemGestureToastPage()
+            DesignSystemGestureCheckCardPage()
         case .toast, .statusPill:
             DesignSystemFeedbackPage(item: self)
         case .timePicker, .gestureGuideItem, .experimentSidePanel:
