@@ -1,4 +1,4 @@
-# Time Picker
+# Timer Picker
 
 부모의 편집 중 시간 Binding을 전달합니다.
 

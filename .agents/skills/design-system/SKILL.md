@@ -60,8 +60,8 @@ description: Labcord 디자인 시스템의 컴포넌트를 사용·수정하거
 - [Timer Control Button](references/components/timer-control-button.md)
 - [Experiment Control Button](references/components/experiment-control-button.md)
 - [Record Button](references/components/record-button.md)
-- [Title Section](references/components/title-section.md)
-- [Time Picker](references/components/time-picker.md)
+- [Experiment Title Section](references/components/title-section.md)
+- [Timer Picker](references/components/time-picker.md)
 - [Gesture Guide Item](references/components/gesture-guide-item.md)
 - [Experiment Side Panel](references/components/experiment-side-panel.md)
 
@@ -71,4 +71,4 @@ description: Labcord 디자인 시스템의 컴포넌트를 사용·수정하거
 - [Voice Player](references/components/voice-player.md)
 - [Record Bottom Sheet](references/components/record-bottom-sheet.md)
 - [Timeline Item](references/components/timeline-item.md)
-- [Experiment Status Timeline Item](references/components/experiment-status-timeline-item.md)
+- [Timeline Experiment State](references/components/experiment-status-timeline-item.md)
