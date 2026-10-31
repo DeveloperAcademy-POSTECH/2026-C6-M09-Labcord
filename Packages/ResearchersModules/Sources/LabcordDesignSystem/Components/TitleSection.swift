@@ -91,13 +91,13 @@ public extension TitleSection where Trailing == EmptyView {
         title: "촉매 반응 조건 비교 실험 A",
         layout: .horizontal,
         leading: {
-            Button("타이머", action: noTitleSectionAction)
+            TimerControlButton(state: .running, action: noTitleSectionAction)
         },
         trailing: {
             HStack(spacing: 24) {
-                Button("음성", action: noTitleSectionAction)
-                Button("사진", action: noTitleSectionAction)
-                Button("영상", action: noTitleSectionAction)
+                RecordButton(type: .audio, action: noTitleSectionAction)
+                RecordButton(type: .capture, action: noTitleSectionAction)
+                RecordButton(type: .video, action: noTitleSectionAction)
             }
         }
     )
@@ -113,7 +113,7 @@ public extension TitleSection where Trailing == EmptyView {
         title: "아주 긴 실험 제목도 접근성 글자 크기에서 잘리지 않습니다",
         layout: .vertical
     ) {
-        Button("타이머", action: noTitleSectionAction)
+        TimerControlButton(state: .running, action: noTitleSectionAction)
     }
     .environment(\.dynamicTypeSize, .accessibility3)
     .frame(width: 401)
