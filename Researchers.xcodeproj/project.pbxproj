@@ -13,7 +13,7 @@
 		8E98D1AF30884D4F00E68666 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 8E98D1AE30884D4F00E68666 /* ComposableArchitecture */; };
 		A10C00103000000000000001 /* LabcordiOS in Frameworks */ = {isa = PBXBuildFile; productRef = A10C00103000000000000002 /* LabcordiOS */; };
 		A10C00103000000000000003 /* LabcordWatchOS in Frameworks */ = {isa = PBXBuildFile; productRef = A10C00103000000000000004 /* LabcordWatchOS */; };
-		D5C00000000000000000000B /* LabcordDesignSystemCatalog in Frameworks */ = {isa = PBXBuildFile; productRef = D5C00000000000000000000A /* LabcordDesignSystemCatalog */; };
+		D5C00000000000000000000B /* LabcordKit in Frameworks */ = {isa = PBXBuildFile; productRef = D5C00000000000000000000A /* LabcordKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -81,7 +81,7 @@
 		D5C000000000000000000005 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
-				D5C00000000000000000000B /* LabcordDesignSystemCatalog in Frameworks */,
+				D5C00000000000000000000B /* LabcordKit in Frameworks */,
 			);
 		};
 /* End PBXFrameworksBuildPhase section */
@@ -184,7 +184,7 @@
 			);
 			name = LabcordDesignSystemApp;
 			packageProductDependencies = (
-				D5C00000000000000000000A /* LabcordDesignSystemCatalog */,
+				D5C00000000000000000000A /* LabcordKit */,
 			);
 			productName = LabcordDesignSystemApp;
 			productReference = D5C000000000000000000002 /* LabcordDesignSystemApp.app */;
@@ -697,10 +697,10 @@
 			package = 8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */;
 			productName = LabcordWatchOS;
 		};
-		D5C00000000000000000000A /* LabcordDesignSystemCatalog */ = {
+		D5C00000000000000000000A /* LabcordKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */;
-			productName = LabcordDesignSystemCatalog;
+			productName = LabcordKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
