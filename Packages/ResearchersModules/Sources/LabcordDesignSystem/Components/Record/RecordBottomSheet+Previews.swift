@@ -1,6 +1,5 @@
 import SwiftUI
 
-#if DEBUG
 #Preview("기록 바텀 시트 · 타이머") {
     _ = FontRegistration.register()
     return RecordBottomSheet()
@@ -76,4 +75,3 @@ import SwiftUI
     .padding(.top, 20)
     .environment(\.dynamicTypeSize, .accessibility3)
 }
-#endif

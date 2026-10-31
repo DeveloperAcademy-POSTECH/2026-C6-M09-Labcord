@@ -43,7 +43,6 @@ public struct TimelineExperimentState: View {
 
 public typealias LabcordExperimentStatusTimelineItem = TimelineExperimentState
 
-#if DEBUG
 #Preview("실험 상태 타임라인") {
     _ = FontRegistration.register()
     return VStack(alignment: .leading, spacing: 0) {
@@ -64,4 +63,3 @@ public typealias LabcordExperimentStatusTimelineItem = TimelineExperimentState
     .frame(maxWidth: .infinity)
     .environment(\.dynamicTypeSize, .accessibility3)
 }
-#endif
