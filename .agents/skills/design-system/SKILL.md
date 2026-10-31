@@ -18,7 +18,7 @@ description: Labcord 디자인 시스템의 컴포넌트를 사용·수정하거
 
 ## 공통 주제
 
-- [테마·색상](references/theme.md) · [Typography](references/typography.md) · [간격·모서리·크기](references/layout.md)
+- [색상](references/theme.md) · [Typography](references/typography.md) · [간격·모서리·크기](references/layout.md)
 - [효과](references/effects.md) · [아이콘](references/icons.md) · [모션](references/motion.md)
 - [포커스·키보드](references/input-focus.md) · [시간 표시](references/time-formatting.md) · [카탈로그·All](references/catalog.md)
 

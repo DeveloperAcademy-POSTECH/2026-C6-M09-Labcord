@@ -3,7 +3,7 @@
 소스: [LayoutTokens.swift](../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Foundation/LayoutTokens.swift).
 
 ```swift
-let layout = LabcordTheme().layout
+let layout = LayoutTokens()
 VStack(spacing: layout.spacing16) { content }
 ```
 
