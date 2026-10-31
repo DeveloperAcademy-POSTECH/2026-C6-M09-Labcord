@@ -124,13 +124,13 @@ public struct RecordBottomSheet: View {
         .padding(.bottom, bottomPadding)
         .frame(maxWidth: .infinity)
         .background(
-            Color("General/Background/Grouped/Secondary", bundle: .module),
+            Color(.General.Background.Grouped.secondary),
             ignoresSafeAreaEdges: []
         )
         .clipShape(RoundedRectangle(cornerRadius: isPresented ? 0 : 28, style: .continuous))
         .shadow(
             color: isPresented
-                ? .clear : Color("General/Effect/Shadow/Medium/Color", bundle: .module),
+                ? .clear : Color(.General.Effect.Shadow.Medium.color),
             radius: EffectTokens(context: .general).shadowMediumRadius,
             x: 0,
             y: EffectTokens(context: .general).shadowMediumOffsetY
@@ -162,7 +162,7 @@ public struct RecordBottomSheet: View {
 
     private var grabber: some View {
         Capsule()
-            .fill(Color("General/Fill/Quaternary", bundle: .module))
+            .fill(Color(.General.Fill.quaternary))
             .frame(width: 36, height: 5)
             .accessibilityHidden(true)
     }
@@ -171,14 +171,14 @@ public struct RecordBottomSheet: View {
         HStack(alignment: .center) {
             Button(action: close) {
                 LabcordIconArtwork(icon: .x, size: 16, relativeTo: .body)
-                    .foregroundStyle(Color("General/Label/Primary", bundle: .module))
+                    .foregroundStyle(Color(.General.Label.primary))
             }
             .buttonStyle(.labcordIcon(.tertiary, size: .medium))
             .accessibilityLabel(Text("닫기"))
 
             Text("기록")
                 .typography(Typography.bodySemiBold)
-                .foregroundStyle(Color("General/Label/Primary", bundle: .module))
+                .foregroundStyle(Color(.General.Label.primary))
                 .frame(maxWidth: .infinity)
 
             Color.clear.frame(width: 34 * headerControlScale, height: 34 * headerControlScale)
@@ -237,7 +237,7 @@ public struct RecordBottomSheet: View {
         VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
             Text("메모")
                 .typography(Typography.calloutSemiBold)
-                .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
+                .foregroundStyle(Color(.General.Label.secondary))
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             if let memoContent {

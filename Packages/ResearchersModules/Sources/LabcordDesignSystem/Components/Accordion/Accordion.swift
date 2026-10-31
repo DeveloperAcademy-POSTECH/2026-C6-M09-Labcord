@@ -105,7 +105,7 @@ public struct Accordion<Content: View>: View {
         )
         .overlay {
             RoundedRectangle(cornerRadius: LayoutTokens.radiusSm)
-                .strokeBorder(Color("General/Border/Default", bundle: .module), lineWidth: 1)
+                .strokeBorder(Color(.General.Border.`default`), lineWidth: 1)
         }
         .accessibilityElement(children: .contain)
     }
@@ -124,20 +124,20 @@ public struct Accordion<Content: View>: View {
 
     private var foregroundColor: Color {
         state == .disabled
-            ? Color("General/Label/Disabled", bundle: .module)
-            : Color("General/Label/Primary", bundle: .module)
+            ? Color(.General.Label.disabled)
+            : Color(.General.Label.primary)
     }
 
     private var countColor: Color {
         state == .disabled
-            ? Color("General/Label/Disabled", bundle: .module)
-            : Color("General/Label/Secondary", bundle: .module)
+            ? Color(.General.Label.disabled)
+            : Color(.General.Label.secondary)
     }
 
     private var backgroundColor: Color {
         state == .disabled
-            ? Color("General/Fill/Secondary", bundle: .module)
-            : Color("General/Background/Grouped/Secondary", bundle: .module)
+            ? Color(.General.Fill.secondary)
+            : Color(.General.Background.Grouped.secondary)
     }
 
     private func toggle() {
@@ -155,7 +155,7 @@ private struct AccordionPreviewContent: View {
         Accordion(isExpanded: $isExpanded) {
             Text("콘텐츠 슬롯")
                 .typography(Typography.subheadline)
-                .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
+                .foregroundStyle(Color(.General.Label.secondary))
         }
     }
 }

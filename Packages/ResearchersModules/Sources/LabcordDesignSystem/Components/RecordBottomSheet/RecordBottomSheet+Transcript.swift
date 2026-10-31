@@ -6,16 +6,16 @@ func recordSheetReadOnlyText(_ text: String) -> some View {
     Text(text.isEmpty ? "내용을 입력해 주세요" : text)
         .typography(Typography.subheadline)
         .foregroundStyle(
-            text.isEmpty ? Color("General/Label/Tertiary", bundle: .module)
-                : Color("General/Label/Primary", bundle: .module)
+            text.isEmpty ? Color(.General.Label.tertiary)
+                : Color(.General.Label.primary)
         )
         .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
         .padding(LayoutTokens.spacing12)
-        .background(Color("General/Background/Grouped/Secondary", bundle: .module))
+        .background(Color(.General.Background.Grouped.secondary))
         .clipShape(RoundedRectangle(cornerRadius: LayoutTokens.radiusSm))
         .overlay {
             RoundedRectangle(cornerRadius: LayoutTokens.radiusSm)
-                .strokeBorder(Color("General/Border/Default", bundle: .module), lineWidth: 1)
+                .strokeBorder(Color(.General.Border.`default`), lineWidth: 1)
         }
 }
 #endif
@@ -53,7 +53,7 @@ struct RecordBottomSheetTranscriptField: View {
 
             Text(help)
                 .typography(Typography.subheadline)
-                .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
+                .foregroundStyle(Color(.General.Label.secondary))
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
         }

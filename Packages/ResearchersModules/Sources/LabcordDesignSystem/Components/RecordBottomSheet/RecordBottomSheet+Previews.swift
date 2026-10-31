@@ -49,16 +49,16 @@ import SwiftUI
         memo: .constant("반응 후 색 변화를 확인했습니다.")
     ) {
         RoundedRectangle(cornerRadius: 8)
-            .fill(Color("General/Fill/Secondary", bundle: .module))
+            .fill(Color(.General.Fill.secondary))
             .overlay {
                 Text("호출자 미디어 슬롯")
                     .typography(Typography.callout)
-                    .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
+                    .foregroundStyle(Color(.General.Label.secondary))
             }
     } memoContent: {
         Text("반응 후 색 변화를 확인했습니다.")
             .typography(Typography.subheadline)
-            .foregroundStyle(Color("General/Label/Primary", bundle: .module))
+            .foregroundStyle(Color(.General.Label.primary))
             .frame(maxWidth: .infinity, minHeight: 120, maxHeight: 120, alignment: .topLeading)
             .padding()
     }
