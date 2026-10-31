@@ -72,5 +72,3 @@ description: Labcord 디자인 시스템의 컴포넌트를 사용·수정하거
 - [Record Bottom Sheet](references/components/record-bottom-sheet.md)
 - [Timeline Item](references/components/timeline-item.md)
 - [Experiment Status Timeline Item](references/components/experiment-status-timeline-item.md)
-- [Photo Viewer](references/components/photo-viewer.md)
-- [Video Player](references/components/video-player.md)
