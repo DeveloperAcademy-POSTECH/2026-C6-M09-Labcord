@@ -45,7 +45,6 @@ public struct ProtocolTimerRow: View {
     }
 }
 
-#if DEBUG
 #Preview("프로토콜 타이머 · 기본") {
     _ = FontRegistration.register()
     return ProtocolTimerRow()
@@ -70,4 +69,3 @@ public struct ProtocolTimerRow: View {
     .frame(width: 179)
     .padding()
 }
-#endif
