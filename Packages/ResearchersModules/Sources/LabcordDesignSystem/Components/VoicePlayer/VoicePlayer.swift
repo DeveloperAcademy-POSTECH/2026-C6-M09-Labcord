@@ -13,7 +13,6 @@ public struct VoicePlayer: View {
     @State private var isSeeking = false
     @State private var isPressingSlider = false
 
-    private let tokenLayout = LayoutTokens()
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ScaledMetric(relativeTo: .body) private var rowHeight = 28
@@ -86,7 +85,7 @@ public struct VoicePlayer: View {
     }
 
     private var horizontalLayout: some View {
-        HStack(alignment: .center, spacing: tokenLayout.spacing12) {
+        HStack(alignment: .center, spacing: LayoutTokens.spacing12) {
             playButton
             Color.clear
                 .frame(height: rowHeight)
@@ -102,8 +101,8 @@ public struct VoicePlayer: View {
     }
 
     private var verticalLayout: some View {
-        VStack(alignment: .leading, spacing: tokenLayout.spacing8) {
-            HStack(alignment: .firstTextBaseline, spacing: tokenLayout.spacing12) {
+        VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
+            HStack(alignment: .firstTextBaseline, spacing: LayoutTokens.spacing12) {
                 playButton
                 if showDuration {
                     flexibleDuration

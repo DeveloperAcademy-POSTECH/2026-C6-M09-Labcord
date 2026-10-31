@@ -46,7 +46,6 @@ public struct RecordBottomSheet: View {
     @State private var transcriptBounds = CGRect.zero
     @State private var isKeyboardVisible = false
 
-    private let tokenLayout = LayoutTokens()
     @Environment(\.isPresented) private var isPresented
     @Environment(\.dismiss) private var dismiss
     @ScaledMetric(relativeTo: .body) private var headerControlScale: CGFloat = 1
@@ -104,7 +103,7 @@ public struct RecordBottomSheet: View {
     }
 
     public var body: some View {
-        VStack(alignment: .center, spacing: tokenLayout.spacing16) {
+        VStack(alignment: .center, spacing: LayoutTokens.spacing16) {
             grabber
             header
             recordContent
@@ -120,8 +119,8 @@ public struct RecordBottomSheet: View {
             memoField
             actions
         }
-        .padding(.horizontal, tokenLayout.spacing16)
-        .padding(.top, tokenLayout.spacing16)
+        .padding(.horizontal, LayoutTokens.spacing16)
+        .padding(.top, LayoutTokens.spacing16)
         .padding(.bottom, bottomPadding)
         .frame(maxWidth: .infinity)
         .background(
@@ -185,7 +184,7 @@ public struct RecordBottomSheet: View {
             Color.clear.frame(width: 34 * headerControlScale, height: 34 * headerControlScale)
                 .accessibilityHidden(true)
         }
-        .padding(.vertical, tokenLayout.spacing4)
+        .padding(.vertical, LayoutTokens.spacing4)
         .frame(maxWidth: .infinity)
     }
 
@@ -219,7 +218,7 @@ public struct RecordBottomSheet: View {
                 onSeek: voiceOnSeek
             )
             .frame(maxWidth: .infinity)
-            .padding(.vertical, tokenLayout.spacing8)
+            .padding(.vertical, LayoutTokens.spacing8)
         case .photo, .video:
             Group {
                 if let mediaContent {
@@ -235,7 +234,7 @@ public struct RecordBottomSheet: View {
     }
 
     private var memoField: some View {
-        VStack(alignment: .leading, spacing: tokenLayout.spacing8) {
+        VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
             Text("메모")
                 .typography(Typography.calloutSemiBold)
                 .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
@@ -252,7 +251,7 @@ public struct RecordBottomSheet: View {
     }
 
     private var actions: some View {
-        HStack(spacing: tokenLayout.spacing16) {
+        HStack(spacing: LayoutTokens.spacing16) {
             Button(role: .destructive, action: onDelete) {
                 Text("삭제")
                     .frame(maxWidth: .infinity)
@@ -280,8 +279,8 @@ public struct RecordBottomSheet: View {
 
 private extension RecordBottomSheet {
     var bottomPadding: CGFloat {
-        let base = isPresented ? 0 : tokenLayout.spacing32
-        return base + (isKeyboardVisible ? tokenLayout.spacing16 : 0)
+        let base = isPresented ? 0 : LayoutTokens.spacing32
+        return base + (isKeyboardVisible ? LayoutTokens.spacing16 : 0)
     }
 
     @ViewBuilder

@@ -10,8 +10,6 @@ public struct ExperimentListItem: View {
     private let showBadge: Bool
     private let showRadioButton: Bool
 
-    private let layout = LayoutTokens()
-
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.isEnabled) private var isEnabled
@@ -56,7 +54,7 @@ public struct ExperimentListItem: View {
 
     public var body: some View {
         adaptiveContent
-        .padding(layout.spacing8)
+        .padding(LayoutTokens.spacing8)
         .padding(.bottom, 0.5)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
@@ -85,7 +83,7 @@ public struct ExperimentListItem: View {
     }
 
     private var horizontalContent: some View {
-        HStack(alignment: .center, spacing: layout.spacing8) {
+        HStack(alignment: .center, spacing: LayoutTokens.spacing8) {
             if showRadioButton { selectionButton }
             titleContent
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -95,13 +93,13 @@ public struct ExperimentListItem: View {
     }
 
     private var verticalContent: some View {
-        VStack(alignment: .leading, spacing: layout.spacing8) {
-            HStack(alignment: .top, spacing: layout.spacing8) {
+        VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
+            HStack(alignment: .top, spacing: LayoutTokens.spacing8) {
                 if showRadioButton { selectionButton }
                 titleContent
             }
 
-            HStack(alignment: .top, spacing: layout.spacing8) {
+            HStack(alignment: .top, spacing: LayoutTokens.spacing8) {
                 if showBadge { statusBadge }
                 Spacer(minLength: 0)
                 openButton
@@ -110,7 +108,7 @@ public struct ExperimentListItem: View {
     }
 
     private var titleContent: some View {
-        VStack(alignment: .leading, spacing: layout.spacing4) {
+        VStack(alignment: .leading, spacing: LayoutTokens.spacing4) {
             Text(title)
                 .typography(Typography.body)
                 .foregroundStyle(Color("General/Label/Primary", bundle: .module))
@@ -126,7 +124,7 @@ public struct ExperimentListItem: View {
     }
 
     private var actionContent: some View {
-        HStack(spacing: layout.spacing8) {
+        HStack(spacing: LayoutTokens.spacing8) {
             if showBadge { statusBadge }
             openButton
         }

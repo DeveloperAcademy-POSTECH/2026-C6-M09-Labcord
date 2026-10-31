@@ -14,7 +14,6 @@ public struct Accordion<Content: View>: View {
     private let state: AccordionState
     private let content: () -> Content
 
-    private let tokenLayout = LayoutTokens()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(
@@ -54,11 +53,11 @@ public struct Accordion<Content: View>: View {
     public var body: some View {
         VStack(
             alignment: .leading,
-            spacing: isOpen ? tokenLayout.spacing16 : tokenLayout.spacing12
+            spacing: isOpen ? LayoutTokens.spacing16 : LayoutTokens.spacing12
         ) {
             Button(action: toggle) {
-                HStack(spacing: tokenLayout.spacing12) {
-                    HStack(spacing: tokenLayout.spacing12) {
+                HStack(spacing: LayoutTokens.spacing12) {
+                    HStack(spacing: LayoutTokens.spacing12) {
                         Text(title)
                             .typography(Typography.callout)
                             .foregroundStyle(foregroundColor)
@@ -97,15 +96,15 @@ public struct Accordion<Content: View>: View {
             }
         }
         .animation(expansionAnimation, value: isOpen)
-        .padding(tokenLayout.spacing16)
+        .padding(LayoutTokens.spacing16)
         .padding(1)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             backgroundColor,
-            in: RoundedRectangle(cornerRadius: tokenLayout.radiusSm)
+            in: RoundedRectangle(cornerRadius: LayoutTokens.radiusSm)
         )
         .overlay {
-            RoundedRectangle(cornerRadius: tokenLayout.radiusSm)
+            RoundedRectangle(cornerRadius: LayoutTokens.radiusSm)
                 .strokeBorder(Color("General/Border/Default", bundle: .module), lineWidth: 1)
         }
         .accessibilityElement(children: .contain)

@@ -4,8 +4,6 @@ public struct TimelineExperimentState: View {
     private let timestamp: String
     private let title: String
 
-    private let tokenLayout = LayoutTokens()
-
     public init(_ title: String, timestamp: String) {
         self.init(timestamp: timestamp, title: title)
     }
@@ -19,7 +17,7 @@ public struct TimelineExperimentState: View {
     }
 
     public var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: tokenLayout.spacing12) {
+        HStack(alignment: .firstTextBaseline, spacing: LayoutTokens.spacing12) {
             Text(timestamp)
                 .typography(Typography.body)
                 .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
@@ -34,8 +32,8 @@ public struct TimelineExperimentState: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.horizontal, tokenLayout.spacing16)
-        .padding(.vertical, tokenLayout.spacing8)
+        .padding(.horizontal, LayoutTokens.spacing16)
+        .padding(.vertical, LayoutTokens.spacing8)
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
     }

@@ -28,8 +28,6 @@ struct RecordBottomSheetTranscriptField: View {
     private let content: AnyView?
     private let help: String
 
-    private let tokenLayout = LayoutTokens()
-
     init(
         transcript: Binding<String>,
         content: AnyView?,
@@ -45,7 +43,7 @@ struct RecordBottomSheetTranscriptField: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: tokenLayout.spacing8) {
+        VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
             if let content {
                 content
                     .frame(maxWidth: .infinity, minHeight: 120)

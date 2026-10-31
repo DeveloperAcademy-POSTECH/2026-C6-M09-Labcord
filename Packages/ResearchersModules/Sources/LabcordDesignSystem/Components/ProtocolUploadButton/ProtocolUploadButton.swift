@@ -35,7 +35,7 @@ public struct ProtocolUploadButton: View {
 
     public var body: some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: LayoutTokens().spacing4) {
+            VStack(alignment: .leading, spacing: LayoutTokens.spacing4) {
                 Text(title)
                     .typography(Typography.bodySemiBold)
                     .fixedSize(horizontal: false, vertical: true)
@@ -46,7 +46,7 @@ public struct ProtocolUploadButton: View {
                     .multilineTextAlignment(.leading)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(LayoutTokens().spacing16)
+            .padding(LayoutTokens.spacing16)
         }
         .buttonStyle(ProtocolUploadButtonStyle(state: state))
         .disabled(state == .disabled)
@@ -70,19 +70,19 @@ private struct ProtocolUploadButtonStyle: ButtonStyle {
                 alignment: .topLeading
             )
             .background {
-                RoundedRectangle(cornerRadius: LayoutTokens().radiusSm)
+                RoundedRectangle(cornerRadius: LayoutTokens.radiusSm)
                     .fill(backgroundColor)
                     .labcordMotion(.state, value: backgroundColor)
             }
-            .clipShape(RoundedRectangle(cornerRadius: LayoutTokens().radiusSm))
+            .clipShape(RoundedRectangle(cornerRadius: LayoutTokens.radiusSm))
             .overlay {
-                RoundedRectangle(cornerRadius: LayoutTokens().radiusSm)
+                RoundedRectangle(cornerRadius: LayoutTokens.radiusSm)
                     .strokeBorder(Color("General/Border/Focused", bundle: .module), lineWidth: 1)
                     .opacity(state == .selected && isEnabled ? 1 : 0)
                     .labcordMotion(.state, value: effectiveState.rawValue)
                     .allowsHitTesting(false)
             }
-            .contentShape(RoundedRectangle(cornerRadius: LayoutTokens().radiusSm))
+            .contentShape(RoundedRectangle(cornerRadius: LayoutTokens.radiusSm))
             .labcordPressFeedback(configuration.isPressed, isSubtle: true)
     }
 
