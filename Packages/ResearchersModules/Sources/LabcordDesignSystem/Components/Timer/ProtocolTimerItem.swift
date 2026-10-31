@@ -61,7 +61,6 @@ public struct ProtocolTimerItem: View {
     }
 }
 
-#if DEBUG
 #Preview("Short") {
     _ = FontRegistration.register()
     return ProtocolTimerItem(value: "5", unit: "분")
@@ -75,4 +74,3 @@ public struct ProtocolTimerItem: View {
         .padding()
         .background(Color("Experiment/Background/Primary", bundle: .module))
 }
-#endif

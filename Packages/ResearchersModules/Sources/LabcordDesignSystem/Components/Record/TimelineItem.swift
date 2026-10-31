@@ -181,7 +181,6 @@ public struct TimelineItem: View {
 
 public typealias LabcordTimelineItem = TimelineItem
 
-#if DEBUG
 #Preview("타임라인 · 미디어") {
     _ = FontRegistration.register()
     return ScrollView {
@@ -220,4 +219,3 @@ public typealias LabcordTimelineItem = TimelineItem
     .frame(maxWidth: .infinity)
     .environment(\.dynamicTypeSize, .accessibility3)
 }
-#endif

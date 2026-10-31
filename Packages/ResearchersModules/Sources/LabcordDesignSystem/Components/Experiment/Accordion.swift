@@ -149,7 +149,6 @@ public struct Accordion<Content: View>: View {
     }
 }
 
-#if DEBUG
 private struct AccordionPreviewContent: View {
     @State private var isExpanded = true
 
@@ -195,4 +194,3 @@ private struct DisabledAccordionPreviewContent: View {
         .frame(width: 370)
         .padding()
 }
-#endif
