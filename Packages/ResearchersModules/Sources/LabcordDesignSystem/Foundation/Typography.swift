@@ -9,7 +9,6 @@ public enum Typography {
         letterSpacing: 0.4
     )
     public static let largeTitleBold = largeTitle.weight(.bold)
-    public static let largeTitleEmphasized = largeTitle.weight(.bold)
 
     public static let title1 = TypographyStyle(
         font: .custom("PretendardVariable-Regular", size: 28, relativeTo: .title),
@@ -17,7 +16,6 @@ public enum Typography {
         letterSpacing: 0.38
     )
     public static let title1Bold = title1.weight(.bold)
-    public static let title1Emphasized = title1.weight(.bold)
 
     public static let title2 = TypographyStyle(
         font: .custom("PretendardVariable-Regular", size: 22, relativeTo: .title2),
@@ -25,7 +23,6 @@ public enum Typography {
         letterSpacing: -0.26
     )
     public static let title2Bold = title2.weight(.bold)
-    public static let title2Emphasized = title2.weight(.bold)
 
     public static let title3 = TypographyStyle(
         font: .custom("PretendardVariable-Regular", size: 20, relativeTo: .title3),
@@ -82,5 +79,36 @@ public enum Typography {
         letterSpacing: 0.06
     )
     public static let caption2SemiBold = caption2.weight(.semibold)
+}
+#elseif os(watchOS)
+import SwiftUI
+
+@MainActor
+public enum Typography {
+    public static let largeTitle = system(.largeTitle)
+    public static let largeTitleBold = largeTitle.weight(.bold)
+    public static let title1 = system(.title)
+    public static let title1Bold = title1.weight(.bold)
+    public static let title2 = system(.title2)
+    public static let title2Bold = title2.weight(.bold)
+    public static let title3 = system(.title3)
+    public static let title3SemiBold = title3.weight(.semibold)
+    public static let headline = system(.headline)
+    public static let body = system(.body)
+    public static let bodySemiBold = body.weight(.semibold)
+    public static let callout = system(.callout)
+    public static let calloutSemiBold = callout.weight(.semibold)
+    public static let subheadline = system(.subheadline)
+    public static let subheadlineSemiBold = subheadline.weight(.semibold)
+    public static let footnote = system(.footnote)
+    public static let footnoteSemiBold = footnote.weight(.semibold)
+    public static let caption1 = system(.caption)
+    public static let caption1SemiBold = caption1.weight(.semibold)
+    public static let caption2 = system(.caption2)
+    public static let caption2SemiBold = caption2.weight(.semibold)
+
+    private static func system(_ style: Font.TextStyle) -> TypographyStyle {
+        TypographyStyle(font: .system(style), lineHeight: .variable, letterSpacing: 0)
+    }
 }
 #endif
