@@ -100,6 +100,7 @@ struct ExperimentSessionView: View {
             }
         }
         .task {
+            await store.send(.enterSession).finish()
             await store.send(.loadDetail).finish()
         }
         .onChange(of: store.detail, initial: true) { _, detail in

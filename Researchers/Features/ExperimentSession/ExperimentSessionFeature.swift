@@ -15,6 +15,12 @@ struct ExperimentSessionFeature {
         var capture = CameraCaptureFeature.State()
         var permissionRequestGeneration = 0
         var isReturningHome = false
+        var entryID: UUID?
+        var hasEntered = false
+        var isEntering = false
+        var entryFailed = false
+        var isCompleting = false
+        var completionFailed = false
 
         var isReady: Bool {
             permissions.camera.status == .authorized
@@ -26,6 +32,10 @@ struct ExperimentSessionFeature {
     }
 
     enum Action: Equatable {
+        case enterSession
+        case entrySaved
+        case entrySaveFailed
+        case dismissEntryFailure
         case loadDetail
         case detailLoaded(ExperimentSessionDetail)
         case permissions(SessionPermissionsFeature.Action)
@@ -36,11 +46,16 @@ struct ExperimentSessionFeature {
         case videoStartRequested
         case appBecameActive
         case stopTapped
+        case stopCompleted
+        case stopFailed
+        case dismissStopFailure
         case returnHomeTapped
         case homeExitCompleted
     }
 
     @Dependency(\.experimentClient) var experimentClient
+    @Dependency(\.date.now) var now
+    @Dependency(\.uuid) var uuid
     @Dependency(\.cameraSessionClient) var cameraSessionClient
     @Dependency(\.speechRecordingClient) var speechRecordingClient
 
@@ -59,6 +74,39 @@ struct ExperimentSessionFeature {
 
         Reduce { state, action in
             switch action {
+            case .enterSession:
+                guard !state.hasEntered, !state.isEntering, !state.isReturningHome else {
+                    return .none
+                }
+                let entryID = state.entryID ?? uuid()
+                state.entryID = entryID
+                state.isEntering = true
+                state.entryFailed = false
+                let experimentID = state.experimentID
+                let enteredAt = now
+                return .run { send in
+                    do {
+                        try await experimentClient.markInProgress(experimentID, entryID, enteredAt)
+                        await send(.entrySaved)
+                    } catch {
+                        await send(.entrySaveFailed)
+                    }
+                }
+
+            case .entrySaved:
+                state.isEntering = false
+                state.hasEntered = true
+                return .none
+
+            case .entrySaveFailed:
+                state.isEntering = false
+                state.entryFailed = true
+                return .none
+
+            case .dismissEntryFailure:
+                state.entryFailed = false
+                return .none
+
             case .loadDetail:
                 let experimentID = state.experimentID
                 return .run { send in
@@ -78,10 +126,37 @@ struct ExperimentSessionFeature {
                 return .none
 
             case .stopTapped:
+                guard state.hasEntered, !state.isEntering,
+                      !state.isCompleting, !state.isReturningHome else { return .none }
+                state.isCompleting = true
+                state.completionFailed = false
+                let experimentID = state.experimentID
+                let completedAt = now
+                return .run { send in
+                    do {
+                        try await experimentClient.complete(experimentID, completedAt)
+                        await send(.stopCompleted)
+                    } catch {
+                        await send(.stopFailed)
+                    }
+                }
+
+            case .stopCompleted:
+                state.isCompleting = false
+                return .none
+
+            case .stopFailed:
+                state.isCompleting = false
+                state.completionFailed = true
+                return .none
+
+            case .dismissStopFailure:
+                state.completionFailed = false
                 return .none
 
             case .returnHomeTapped:
-                guard !state.isReturningHome else { return .none }
+                guard !state.isReturningHome, !state.isEntering,
+                      !state.isCompleting else { return .none }
                 state.isReturningHome = true
                 let ownerID = state.capture.camera.ownerID
                 return .run { send in

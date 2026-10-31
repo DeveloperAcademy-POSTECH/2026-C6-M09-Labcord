@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum ExperimentStatus: String, Codable {
+public enum ExperimentStatus: String, Codable, Sendable {
     case preparing
     case inProgress
     case paused

@@ -62,15 +62,20 @@ struct AppFeature {
                 state.path.append(.session(ExperimentSessionFeature.State(experimentID: entry.id)))
                 return .send(.home(.list(.created(entry))))
 
-            case let .path(.element(id: id, action: .session(.stopTapped))):
+            case let .path(.element(id: id, action: .session(.stopCompleted))):
                 return .send(.showResult(id))
 
             case let .path(.element(id: id, action: .session(.homeExitCompleted))):
                 return .send(.returnHome(id))
 
             case let .showResult(id):
-                guard state.path.ids.last == id else { return .none }
-                state.path.append(.result(ExperimentResultFeature.State()))
+                guard state.path.ids.last == id,
+                      let experimentID = state.path[id: id, case: \.session]?.experimentID else {
+                    return .none
+                }
+                state.path.append(
+                    .result(ExperimentResultFeature.State(experimentID: experimentID))
+                )
                 return .none
 
             case let .path(.element(id: id, action: .result(.homeTapped))):

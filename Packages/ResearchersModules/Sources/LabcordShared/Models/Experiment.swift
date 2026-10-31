@@ -52,4 +52,19 @@ public final class Experiment {
         self.records = records
         self.statusHistory = [ExperimentStatusEntry(status: status, date: createdAt)]
     }
+
+    public func markInProgress(at date: Date, entryID: UUID) {
+        guard !statusHistory.contains(where: { $0.id == entryID }) else { return }
+        status = .inProgress
+        statusHistory.append(
+            ExperimentStatusEntry(id: entryID, status: .inProgress, date: date)
+        )
+    }
+
+    public func complete(at date: Date) {
+        guard status != .completed else { return }
+        endedAt.append(date)
+        status = .completed
+        statusHistory.append(ExperimentStatusEntry(status: .completed, date: date))
+    }
 }
