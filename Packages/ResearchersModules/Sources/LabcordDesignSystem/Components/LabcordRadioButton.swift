@@ -60,9 +60,5 @@ public extension LabcordRadioButton where Label == Text {
 #Preview("라디오 버튼") {
     @Previewable @State var selection = 1
     _ = FontRegistration.register()
-    return VStack(alignment: .leading, spacing: 12) {
-        LabcordRadioButton("옵션 1", value: 1, selection: $selection)
-        LabcordRadioButton("옵션 2", value: 2, selection: $selection)
-    }
-    .padding()
+    return LabcordRadioButton("옵션 1", value: 1, selection: $selection)
 }

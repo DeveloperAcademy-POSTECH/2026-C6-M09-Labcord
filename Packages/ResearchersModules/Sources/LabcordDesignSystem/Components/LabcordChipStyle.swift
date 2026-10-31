@@ -272,10 +272,7 @@ private struct LabcordChipInlineToggleStyle: ToggleStyle {
     _ = FontRegistration.register()
     return VStack(alignment: .leading, spacing: 12) {
         LabcordChip(isSelected: $isSelected, label: "실험 기록")
-        Toggle("선택 칩", isOn: $isSelected)
-            .toggleStyle(.labcordChip(style: .outline))
-        Button("버튼 칩") {}
-            .buttonStyle(.labcordChip())
+        Toggle("선택 칩", isOn: $isSelected).toggleStyle(.labcordChip(style: .outline))
+        Button("버튼 칩") {}.buttonStyle(.labcordChip())
     }
-    .padding()
 }
