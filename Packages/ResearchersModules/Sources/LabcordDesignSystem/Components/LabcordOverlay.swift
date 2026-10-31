@@ -70,3 +70,21 @@ public struct LabcordOverlayFade: View {
         return Color("Gradient/Fade/\(name)/\(variant)", bundle: .module)
     }
 }
+
+#Preview("오버레이") {
+    HStack(spacing: 12) {
+        Color.green.overlay { LabcordOverlay() }
+        Color.green.overlay { LabcordOverlay(strength: .strong) }
+    }
+    .frame(height: 160)
+    .padding()
+}
+
+#Preview("오버레이 페이드") {
+    HStack(spacing: 12) {
+        Color.green.overlay { LabcordOverlayFade(edge: .top) }
+        Color.green.overlay { LabcordOverlayFade(edge: .bottom) }
+    }
+    .frame(height: 160)
+    .padding()
+}

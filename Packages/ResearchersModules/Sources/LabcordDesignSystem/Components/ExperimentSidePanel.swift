@@ -210,3 +210,27 @@ public extension ExperimentSidePanel where Content == EmptyView {
         self.init(layout: layout, isExpanded: isExpanded, content: EmptyView.init)
     }
 }
+
+#Preview("실험 패널 · 가로") {
+    @Previewable @State var isExpanded = true
+
+    ExperimentSidePanel(layout: .landscape, isExpanded: $isExpanded) {
+        Text("실험 도구")
+            .foregroundStyle(.white)
+    }
+    .frame(width: 450, height: 430)
+    .background(.labcord(.backgroundPrimary))
+    .labcordTheme(LabcordTheme(context: .experiment))
+}
+
+#Preview("실험 패널 · 세로") {
+    @Previewable @State var isExpanded = false
+
+    ExperimentSidePanel(layout: .portrait, isExpanded: $isExpanded) {
+        Text("실험 도구")
+            .foregroundStyle(.white)
+    }
+    .frame(width: 402, height: 430)
+    .background(.labcord(.backgroundPrimary))
+    .labcordTheme(LabcordTheme(context: .experiment))
+}

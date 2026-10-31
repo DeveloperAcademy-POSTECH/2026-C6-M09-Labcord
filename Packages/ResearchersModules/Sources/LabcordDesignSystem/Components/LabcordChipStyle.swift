@@ -266,3 +266,16 @@ private struct LabcordChipInlineToggleStyle: ToggleStyle {
         .accessibilityValue(configuration.isOn ? "선택됨" : "선택 안 됨")
     }
 }
+
+#Preview("칩 · 선택과 버튼") {
+    @Previewable @State var isSelected = true
+    _ = FontRegistration.register()
+    return VStack(alignment: .leading, spacing: 12) {
+        LabcordChip(isSelected: $isSelected, label: "실험 기록")
+        Toggle("선택 칩", isOn: $isSelected)
+            .toggleStyle(.labcordChip(style: .outline))
+        Button("버튼 칩") {}
+            .buttonStyle(.labcordChip())
+    }
+    .padding()
+}

@@ -69,3 +69,14 @@ private extension ExperimentStatus {
         }
     }
 }
+
+#Preview("실험 상태 배지") {
+    _ = FontRegistration.register()
+    return VStack(spacing: 12) {
+        LabcordStatusBadge(status: .preparing)
+        LabcordStatusBadge(status: .inProgress)
+        LabcordStatusBadge(status: .paused)
+        LabcordStatusBadge(status: .completed)
+    }
+    .padding()
+}
