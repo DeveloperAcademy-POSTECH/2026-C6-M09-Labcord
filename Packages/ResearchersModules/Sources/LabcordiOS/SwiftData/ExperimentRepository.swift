@@ -16,6 +16,22 @@ final class ExperimentRepository {
             .map(Self.entry)
     }
 
+    func loadDetail(id: UUID) throws -> ExperimentSessionDetail? {
+        let context = try makeContext()
+        var request = FetchDescriptor<Experiment>(predicate: #Predicate { $0.id == id })
+        request.fetchLimit = 1
+        guard let experiment = try context.fetch(request).first else { return nil }
+
+        let timerSeconds = experiment.mode == .procedure
+            ? experiment.procedure?.timerSeconds ?? []
+            : []
+        return ExperimentSessionDetail(
+            title: experiment.title,
+            timerSeconds: timerSeconds,
+            mode: experiment.mode
+        )
+    }
+
     func create(id: UUID, at date: Date) throws -> ExperimentListEntry {
         let context = try makeContext()
         let request = FetchDescriptor<Experiment>(predicate: #Predicate { $0.id == id })
