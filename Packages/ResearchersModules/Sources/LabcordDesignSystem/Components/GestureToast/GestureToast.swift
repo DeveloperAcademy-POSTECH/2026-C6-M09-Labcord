@@ -1,6 +1,6 @@
 import SwiftUI
 
-public struct GestureCheckCard: View {
+public struct GestureToast: View {
     private let title: String
     private let subtitle: String
     private let showsFollowingIcon: Bool
@@ -52,11 +52,11 @@ public struct GestureCheckCard: View {
     }
 }
 
-public typealias GestureToast = GestureCheckCard
+public typealias GestureCheckCard = GestureToast
 
 #Preview("제스처 인식 안내") {
     _ = FontRegistration.register()
-    return GestureCheckCard(title: "토스트 문구입니다.", subtitle: "토스트 문구입니다.")
+    return GestureToast(title: "토스트 문구입니다.", subtitle: "토스트 문구입니다.")
         .frame(maxWidth: 241)
         .padding()
 }
