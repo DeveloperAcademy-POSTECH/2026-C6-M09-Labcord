@@ -1,6 +1,6 @@
 import SwiftUI
 
-public struct GestureToast: View {
+public struct GestureCheckCard: View {
     private let title: String
     private let subtitle: String
     private let showsFollowingIcon: Bool
@@ -32,7 +32,7 @@ public struct GestureToast: View {
             .layoutPriority(1)
 
             if showsFollowingIcon {
-                LabcordIconArtwork(icon: .checkCircleFill, size: 34)
+                LabcordIconArtwork(icon: .checkBold, size: 34)
                     .foregroundStyle(Color("Experiment/Brand/Primary", bundle: .module))
                     .accessibilityHidden(true)
                     .transition(.opacity)
@@ -52,9 +52,11 @@ public struct GestureToast: View {
     }
 }
 
+public typealias GestureToast = GestureCheckCard
+
 #Preview("제스처 인식 안내") {
     _ = FontRegistration.register()
-    return GestureToast(title: "토스트 문구입니다.", subtitle: "토스트 문구입니다.")
+    return GestureCheckCard(title: "토스트 문구입니다.", subtitle: "토스트 문구입니다.")
         .frame(maxWidth: 241)
         .padding()
 }
