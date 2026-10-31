@@ -61,7 +61,7 @@ public struct ExperimentTitleSection<Leading: View, Trailing: View>: View {
     private var titleView: some View {
         Text(title)
             .typography(Typography.headline)
-            .foregroundStyle(Color(.General.Label.secondary))
+            .foregroundStyle(Color(.Experiment.Label.secondary))
             .multilineTextAlignment(.leading)
             .fixedSize(horizontal: false, vertical: true)
             .layoutPriority(1)
@@ -89,20 +89,19 @@ public extension ExperimentTitleSection where Trailing == EmptyView {
         title: "촉매 반응 조건 비교 실험 A",
         layout: .horizontal,
         leading: {
-            Button("타이머", action: noTitleSectionAction)
+            TimerControlButton(state: .running, action: noTitleSectionAction)
         },
         trailing: {
             HStack(spacing: 24) {
-                Button("음성", action: noTitleSectionAction)
-                Button("사진", action: noTitleSectionAction)
-                Button("영상", action: noTitleSectionAction)
+                RecordButton(type: .audio, action: noTitleSectionAction)
+                RecordButton(type: .capture, action: noTitleSectionAction)
+                RecordButton(type: .video, action: noTitleSectionAction)
             }
         }
     )
     .frame(width: 749)
     .padding()
-    .background(Color(.General.Background.primary))
-
+    .background(Color(.Experiment.Background.primary))
 }
 
 #Preview("Vertical · 긴 제목") {
@@ -111,13 +110,12 @@ public extension ExperimentTitleSection where Trailing == EmptyView {
         title: "아주 긴 실험 제목도 접근성 글자 크기에서 잘리지 않습니다",
         layout: .vertical
     ) {
-        Button("타이머", action: noTitleSectionAction)
+        TimerControlButton(state: .running, action: noTitleSectionAction)
     }
     .environment(\.dynamicTypeSize, .accessibility3)
     .frame(width: 401)
     .padding()
-    .background(Color(.General.Background.primary))
-
+    .background(Color(.Experiment.Background.primary))
 }
 
 private func noTitleSectionAction() { }
