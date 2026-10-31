@@ -28,7 +28,7 @@ enum CatalogSection: String, CaseIterable, Identifiable, Sendable {
         case .foundation: "토큰, 아이콘, 버튼, 입력, 공통 상태"
         case .setup: "프로토콜, 샘플 선택, 타이머 설정, 실험 목록"
         case .run: "실행 타이머, 제어, 기록 시작, 안내 메시지"
-        case .review: "타임라인, 기록, 음성 재생, 기록 시트"
+        case .review: "타임라인, 기록, 음성 플레이어, 기록 시트"
         }
     }
 

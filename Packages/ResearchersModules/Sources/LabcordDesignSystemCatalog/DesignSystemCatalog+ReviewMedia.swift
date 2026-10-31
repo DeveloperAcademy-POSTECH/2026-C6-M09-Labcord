@@ -1,8 +1,5 @@
 import LabcordDesignSystem
 import SwiftUI
-#if os(iOS)
-import AVKit
-#endif
 
 struct CatalogSampleMedia: View {
     var isVideo = false
@@ -21,81 +18,6 @@ struct CatalogSampleMedia: View {
         .accessibilityLabel(Text(isVideo ? "영상 예시" : "사진 예시"))
     }
 }
-
-struct CatalogLoopingVideo: View {
-    #if os(iOS)
-    @State private var playback = CatalogVideoPlayback()
-    @Environment(\.scenePhase) private var scenePhase
-    #endif
-
-    var body: some View {
-        #if os(iOS)
-        VideoPlayer(player: playback.player)
-            .overlay(alignment: .topLeading) {
-                Text("로컬 반복 재생 데모")
-                    .font(.caption2)
-                    .foregroundStyle(.white)
-                    .padding(4)
-                    .background(.black.opacity(0.65), in: Capsule())
-                    .padding(8)
-                    .allowsHitTesting(false)
-            }
-            .aspectRatio(370.0 / 201.0, contentMode: .fit)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .onAppear { playback.start() }
-            .onChange(of: scenePhase) { _, phase in
-                if phase == .active { playback.resume() } else { playback.suspend() }
-            }
-            .onDisappear { playback.stop() }
-            .accessibilityIdentifier("catalog.review.video.looping")
-        #else
-        CatalogSampleMedia(isVideo: true)
-            .overlay(alignment: .bottom) {
-                Text("영상 재생 데모는 iOS에서 확인할 수 있어요")
-                    .typography(Typography.footnote)
-            }
-        #endif
-    }
-}
-
-#if os(iOS)
-@MainActor
-private final class CatalogVideoPlayback {
-    let player = AVQueuePlayer()
-    private var looper: AVPlayerLooper?
-    private var resumesAfterInterruption: Bool?
-
-    func start() {
-        guard looper == nil, let url = Bundle.module.url(
-            forResource: "catalog-video-demo", withExtension: "mp4"
-        ) else {
-            return
-        }
-        looper = AVPlayerLooper(player: player, templateItem: AVPlayerItem(url: url))
-        player.isMuted = true
-        player.play()
-    }
-
-    func suspend() {
-        if resumesAfterInterruption == nil { resumesAfterInterruption = player.rate > 0 }
-        player.pause()
-    }
-
-    func resume() {
-        guard let shouldResume = resumesAfterInterruption else { return }
-        resumesAfterInterruption = nil
-        if shouldResume { player.play() }
-    }
-
-    func stop() {
-        player.pause()
-        resumesAfterInterruption = nil
-        looper?.disableLooping()
-        looper = nil
-        player.removeAllItems()
-    }
-}
-#endif
 
 struct CatalogTextEditor: View {
     @Binding var value: String

@@ -1,4 +1,3 @@
-import AVFoundation
 import LabcordDesignSystem
 import Observation
 import SwiftUI
@@ -74,7 +73,7 @@ struct CatalogRecordSheetSample: View {
     private var mediaContent: AnyView? {
         switch type {
         case .photo: AnyView(CatalogSampleMedia())
-        case .video: AnyView(CatalogLoopingVideo())
+        case .video: AnyView(CatalogSampleMedia(isVideo: true))
         case .timer, .voice: nil
         }
     }
@@ -108,12 +107,9 @@ enum CatalogTimerRecordExample: String, CaseIterable {
 @Observable
 @MainActor
 private final class CatalogAudioPlayback {
-    private static weak var activePlayback: CatalogAudioPlayback?
     private(set) var isPlaying = false
     private(set) var progress = 0.25
-    @ObservationIgnored private var player: AVAudioPlayer?
-    @ObservationIgnored private var sessionIsActive = false
-    @ObservationIgnored private var resumesAfterEditing = false
+    private var resumesAfterEditing = false
 
     var isPlayingBinding: Binding<Bool> {
         Binding(get: { self.isPlaying }, set: { $0 ? self.play() : self.pause() })
@@ -125,19 +121,18 @@ private final class CatalogAudioPlayback {
 
     func updateProgress() async {
         while isPlaying, !Task.isCancelled {
-            guard let player, player.isPlaying else { stop(); return }
-            progress = player.duration > 0 ? player.currentTime / player.duration : 0
             do {
-                try await Task.sleep(for: .milliseconds(16))
+                try await Task.sleep(for: .milliseconds(100))
             } catch { return }
+            guard isPlaying else { return }
+            progress = min(progress + 0.0125, 1)
+            if progress >= 1 { pause() }
         }
     }
 
     func stop() {
         resumesAfterEditing = false
         pause()
-        player?.stop()
-        player?.currentTime = 0
         progress = 0
     }
 
@@ -155,45 +150,15 @@ private final class CatalogAudioPlayback {
     private func seek(_ value: Double) {
         guard value.isFinite else { return }
         progress = min(max(value, 0), 1)
-        if let player { player.currentTime = progress * player.duration }
     }
 
     private func play() {
-        guard !isPlaying else { return }
-        do {
-            if player == nil {
-                guard let url = Bundle.module.url(
-                    forResource: "catalog-audio-sample", withExtension: "wav"
-                ) else { return }
-                player = try AVAudioPlayer(contentsOf: url)
-            }
-            guard let player, player.duration > 0 else { return }
-            if Self.activePlayback !== self { Self.activePlayback?.stop() }
-            #if os(iOS) || os(watchOS)
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playback, mode: .default, options: .mixWithOthers)
-            try session.setActive(true)
-            sessionIsActive = true
-            #endif
-            seek(progress >= 1 ? 0 : progress)
-            guard player.play() else { pause(); return }
-            Self.activePlayback = self
-            isPlaying = true
-        } catch { stop() }
+        if progress >= 1 { progress = 0 }
+        isPlaying = true
     }
 
     private func pause() {
-        player?.pause()
-        if let player, player.duration > 0 {
-            progress = player.currentTime / player.duration
-        }
         isPlaying = false
-        if Self.activePlayback === self { Self.activePlayback = nil }
-        guard sessionIsActive else { return }
-        #if os(iOS) || os(watchOS)
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-        #endif
-        sessionIsActive = false
     }
 }
 

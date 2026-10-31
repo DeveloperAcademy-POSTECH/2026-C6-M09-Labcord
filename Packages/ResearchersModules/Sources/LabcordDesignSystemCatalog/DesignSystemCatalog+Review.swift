@@ -175,7 +175,7 @@ struct DesignSystemReviewPage: View {
     }
 
     private var voicePlayerCard: some View {
-        DesignSystemCatalogCard("Voice Player", description: "음성 재생과 위치 탐색") {
+        DesignSystemCatalogCard("Voice Player", description: "무음 상태에서 재생 상태와 위치 탐색 확인") {
             Toggle("재생 시간 표시", isOn: $showsVoiceDuration)
                 .accessibilityIdentifier("catalog.review.voice.duration")
             CatalogVoiceSample(showDuration: showsVoiceDuration)
@@ -200,8 +200,8 @@ struct DesignSystemReviewPage: View {
                 }
                 .accessibilityIdentifier("catalog.review.recordSheet.timerExample")
             }
-            if recordType == .video {
-                Text("영상은 로컬 재생 데모를 자동으로 반복합니다.")
+            if recordType == .video || recordType == .voice {
+                Text(recordType == .video ? "영상은 이미지 예시로 표시합니다." : "음성은 무음 예시로 표시합니다.")
                     .typography(Typography.footnote)
                     .foregroundStyle(Color("General/Label/Secondary", bundle: catalogBundle))
             }
@@ -255,7 +255,7 @@ private extension DesignSystemReviewPage {
         DesignSystemCatalogCard(
             isVideo ? "Video Player" : "Photo Viewer",
             description: isVideo
-                ? "영상을 눌러 자동·반복 재생" : "사진을 눌러 사진과 메모 확인"
+                ? "영상 예시와 메모 확인" : "사진을 눌러 사진과 메모 확인"
         ) {
             Picker("메모 상태", selection: $recordContentState) {
                 catalogPickerOptions(RecordContentState.allCases)
