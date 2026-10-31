@@ -37,25 +37,25 @@ public struct LabcordOverlayFade: View {
 
     public var body: some View {
         ZStack {
-            fade(gray: 0.4000000059604645, opacity: 0.5, blendMode: .luminosity)
-            fade(gray: 0.699999988079071, blendMode: .plusDarker)
-            fade(gray: 0, opacity: 0.10000000149011612, blendMode: .colorBurn)
-            fade(gray: 0.4000000059604645, blendMode: .multiply)
-            fade(gray: 0.501960813999176, blendMode: .colorDodge)
+            fade(color: "Gray40", opacity: 0.5, blendMode: .luminosity)
+            fade(color: "Gray70", blendMode: .plusDarker)
+            fade(color: "Black", opacity: 0.10000000149011612, blendMode: .colorBurn)
+            fade(color: "Gray40", blendMode: .multiply)
+            fade(color: "Gray50", blendMode: .colorDodge)
         }
         .allowsHitTesting(false)
         .accessibilityHidden(true)
     }
 
     private func fade(
-        gray: Double,
+        color: String,
         opacity: Double = 1,
         blendMode: BlendMode
     ) -> some View {
         LinearGradient(
             stops: [
-                .init(color: color(gray: gray, opacity: edge == .top ? 1 : 0), location: 0),
-                .init(color: color(gray: gray, opacity: edge == .top ? 0 : 1), location: 1)
+                .init(color: fadeColor(color, isOpaque: edge == .top), location: 0),
+                .init(color: fadeColor(color, isOpaque: edge == .bottom), location: 1)
             ],
             startPoint: .top,
             endPoint: .bottom
@@ -65,7 +65,8 @@ public struct LabcordOverlayFade: View {
         .blendMode(blendMode)
     }
 
-    private func color(gray: Double, opacity: Double) -> Color {
-        Color(.sRGB, red: gray, green: gray, blue: gray, opacity: opacity)
+    private func fadeColor(_ name: String, isOpaque: Bool) -> Color {
+        let variant = isOpaque ? "Opaque" : "Clear"
+        return Color("Gradient/Fade/\(name)/\(variant)", bundle: .module)
     }
 }

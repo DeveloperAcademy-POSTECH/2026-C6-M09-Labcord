@@ -22,45 +22,7 @@ public enum LayoutToken: String, CaseIterable, Sendable {
 }
 
 public struct LayoutTokens: Sendable {
-    public let spacing2: CGFloat
-    public let spacing4: CGFloat
-    public let spacing8: CGFloat
-    public let spacing12: CGFloat
-    public let spacing16: CGFloat
-    public let spacing24: CGFloat
-    public let spacing32: CGFloat
-    public let radiusSm: CGFloat
-    public let radiusMd: CGFloat
-    public let radiusLg: CGFloat
-    public let radiusFull: CGFloat
-    public let spacing20: CGFloat
-    public let spacing10: CGFloat
-    public let iconDefaultSize: CGFloat
-    public let iconLargeSize: CGFloat
-    public let controlDefaultSize: CGFloat
-    public let timerTabHeight: CGFloat
-    public let timerItemHeight: CGFloat
-
-    public init() {
-        spacing2 = 2
-        spacing4 = 4
-        spacing8 = 8
-        spacing12 = 12
-        spacing16 = 16
-        spacing24 = 24
-        spacing32 = 32
-        radiusSm = 8
-        radiusMd = 12
-        radiusLg = 16
-        radiusFull = 999
-        spacing20 = 20
-        spacing10 = 10
-        iconDefaultSize = 20
-        iconLargeSize = 28
-        controlDefaultSize = 50
-        timerTabHeight = 54
-        timerItemHeight = 60
-    }
+    public init() {}
 
     public subscript(_ token: LayoutToken) -> CGFloat {
         switch token {

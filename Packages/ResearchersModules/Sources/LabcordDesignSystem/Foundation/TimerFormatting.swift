@@ -1,4 +1,5 @@
 import Foundation
+import LabcordShared
 
 public struct TimerDurationComponents: Equatable, Sendable {
     public let value: String
@@ -16,18 +17,9 @@ public struct TimerDurationFormatStyle: FormatStyle, Sendable {
 
     public func components(_ duration: Duration) -> TimerDurationComponents {
         let total = duration.components.seconds
-        let magnitude = total.magnitude
-        let hours = magnitude / 3_600
-        let minutes = magnitude % 3_600 / 60
-        let seconds = magnitude % 60
+        let formatted = TimerDurationFormatter.components(magnitude: total.magnitude)
         let sign = total < 0 ? "-" : ""
-        let parts: [(UInt64, String)] = [
-            (hours, "시간"), (minutes, "분"), (seconds, "초")
-        ].filter { $0.0 > 0 }
-        let last = parts.last ?? (0, "초")
-        let prefix = parts.dropLast().map { "\($0.0)\($0.1)" }
-        let value = (prefix + [String(last.0)]).joined(separator: " ")
-        return TimerDurationComponents(value: sign + value, unit: last.1)
+        return TimerDurationComponents(value: sign + formatted.value, unit: formatted.unit)
     }
 }
 
