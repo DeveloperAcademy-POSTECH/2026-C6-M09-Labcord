@@ -1,6 +1,6 @@
 # Button
 
-[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/Input/LabcordButtonStyle.swift)
+[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/Input/IOSButtonStyle.swift)
 
 `save`·`isSaving`·`canSave`는 기존 호출부의 액션·상태입니다.
 
