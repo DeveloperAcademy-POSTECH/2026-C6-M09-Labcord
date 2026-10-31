@@ -33,7 +33,7 @@ public struct TimerTabItem: View {
                 .typography(isSelected ? Typography.bodySemiBold : Typography.body)
                 .transaction { $0.animation = nil }
                 .foregroundStyle(
-                    .labcord(foregroundToken)
+                    foregroundColor
                 )
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
@@ -42,7 +42,7 @@ public struct TimerTabItem: View {
                 .frame(minHeight: style == .plain ? 54 : nil)
                 .background {
                     if style == .pill && isSelected {
-                        Capsule().fill(.labcord(.fillSelected))
+                        Capsule().fill(Color("Experiment/Fill/Selected", bundle: .module))
                     }
                 }
                 .labcordMotion(.state, value: isSelected)
@@ -53,8 +53,10 @@ public struct TimerTabItem: View {
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
-    private var foregroundToken: ColorToken {
-        style == .pill ? .labelBrand : (isSelected ? .labelPrimary : .labelTertiary)
+    private var foregroundColor: Color {
+        style == .pill ? Color("Experiment/Label/Brand", bundle: .module)
+            : (isSelected ? Color("Experiment/Label/Primary", bundle: .module)
+                : Color("Experiment/Label/Tertiary", bundle: .module))
     }
 
     private var horizontalPadding: CGFloat {
@@ -69,7 +71,6 @@ public struct TimerTabItem: View {
         TimerTabItem(title: "세팅된 타이머", isSelected: true) { }
         TimerTabItem(title: "진행중인 타이머", isSelected: false) { }
     }
-    .background(.labcord(.backgroundPrimary))
-    .labcordTheme(LabcordTheme(context: .experiment))
+    .background(Color("Experiment/Background/Primary", bundle: .module))
 }
 #endif

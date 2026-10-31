@@ -22,7 +22,7 @@ public struct ProtocolTimerRow: View {
         HStack(spacing: 0) {
             Text(duration, format: .labcordDuration)
                 .typography(Typography.body)
-                .foregroundStyle(.labcord(.labelPrimary))
+                .foregroundStyle(Color("General/Label/Primary", bundle: .module))
                 .contentTransition(.numericText())
                 .labcordMotion(.state, value: duration)
                 .fixedSize(horizontal: false, vertical: true)
@@ -38,7 +38,10 @@ public struct ProtocolTimerRow: View {
         .padding(.trailing, layout.spacing8)
         .padding(.vertical, layout.spacing12)
         .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
-        .background(.labcord(.fillPrimary), in: RoundedRectangle(cornerRadius: layout.radiusSm))
+        .background(
+            Color("General/Fill/Primary", bundle: .module),
+            in: RoundedRectangle(cornerRadius: layout.radiusSm)
+        )
     }
 }
 

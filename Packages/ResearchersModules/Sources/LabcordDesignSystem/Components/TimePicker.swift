@@ -37,7 +37,7 @@ public struct TimePicker: View {
     private var separator: some View {
         Text(":")
             .typography(Typography.title1)
-            .foregroundStyle(.labcord(.labelPrimary))
+            .foregroundStyle(Color("Experiment/Label/Primary", bundle: .module))
             .frame(width: 14)
             .accessibilityHidden(true)
     }
@@ -85,6 +85,5 @@ public struct TimePicker: View {
     _ = FontRegistration.register()
     return TimePicker(duration: $duration)
         .padding()
-        .background(.labcord(.backgroundPrimary))
-        .labcordTheme(LabcordTheme(context: .experiment))
+        .background(Color("Experiment/Background/Primary", bundle: .module))
 }

@@ -10,8 +10,7 @@ public struct TimerSettingSheet: View {
     private let onDelete: () -> Void
     private let onConfirm: () -> Void
 
-    @Environment(\.labcordTheme) private var theme
-    @Environment(\.colorScheme) private var colorScheme
+    private let tokenLayout = LayoutTokens()
     @Environment(\.isPresented) private var isPresented
     @Environment(\.dismiss) private var dismiss
     @ScaledMetric(relativeTo: .body) private var headerControlScale: CGFloat = 1
@@ -49,9 +48,9 @@ public struct TimerSettingSheet: View {
     }
 
     public var body: some View {
-        VStack(spacing: theme.layout.spacing16) {
+        VStack(spacing: tokenLayout.spacing16) {
             Capsule()
-                .fill(.labcord(.timerSheetGrabber))
+                .fill(Color("General/Timer/Sheet/Grabber", bundle: .module))
                 .frame(width: 36, height: 5)
                 .accessibilityHidden(true)
 
@@ -59,7 +58,7 @@ public struct TimerSettingSheet: View {
 
             durationPicker
 
-            HStack(spacing: theme.layout.spacing16) {
+            HStack(spacing: tokenLayout.spacing16) {
                 Button(role: .destructive, action: onDelete) {
                     Text("삭제")
                         .frame(maxWidth: .infinity)
@@ -74,22 +73,25 @@ public struct TimerSettingSheet: View {
             }
             .padding(.horizontal, -6)
         }
-        .padding(.top, theme.layout.spacing16)
-        .padding(.horizontal, theme.layout.spacing16)
-        .padding(.bottom, isPresented ? 0 : theme.layout.spacing32)
+        .padding(.top, tokenLayout.spacing16)
+        .padding(.horizontal, tokenLayout.spacing16)
+        .padding(.bottom, isPresented ? 0 : tokenLayout.spacing32)
         .frame(maxWidth: .infinity, alignment: .center)
-        .background(.labcord(.backgroundGroupedSecondary), ignoresSafeAreaEdges: [])
+        .background(
+            Color("General/Background/Grouped/Secondary", bundle: .module),
+            ignoresSafeAreaEdges: []
+        )
         .clipShape(RoundedRectangle(cornerRadius: isPresented ? 0 : 28))
         .shadow(
             color: isPresented ? .clear : resolvedShadowColor,
-            radius: theme.effects(for: colorScheme).shadowMediumRadius,
+            radius: EffectTokens().shadowMediumRadius,
             x: 0,
-            y: theme.effects(for: colorScheme).shadowMediumOffsetY
+            y: EffectTokens().shadowMediumOffsetY
         )
     }
 
     private var resolvedShadowColor: Color {
-        theme.color(.effectShadowMediumColor, colorScheme: colorScheme)
+        Color("General/Effect/Shadow/Medium/Color", bundle: .module)
     }
 
     private var header: some View {
@@ -102,7 +104,7 @@ public struct TimerSettingSheet: View {
 
             Text("타이머")
                 .typography(Typography.bodySemiBold)
-                .foregroundStyle(.labcord(.labelPrimary))
+                .foregroundStyle(Color("General/Label/Primary", bundle: .module))
                 .frame(maxWidth: .infinity)
 
             Color.clear

@@ -23,7 +23,7 @@ struct TimePickerWheel: UIViewRepresentable {
 
     func updateUIView(_ picker: UIPickerView, context: Context) {
         let coordinator = context.coordinator
-        let appearanceChanged = coordinator.update(self, environment: context.environment)
+        let appearanceChanged = coordinator.update(self)
         picker.isUserInteractionEnabled = context.environment.isEnabled
         picker.alpha = context.environment.isEnabled ? 1 : 0.4
         if context.environment.isEnabled {
@@ -59,8 +59,8 @@ struct TimePickerWheel: UIViewRepresentable {
             self.parent = parent
         }
 
-        func update(_ parent: TimePickerWheel, environment: EnvironmentValues) -> Bool {
-            let nextColor = UIColor(LabcordColor(.labelPrimary).resolve(in: environment))
+        func update(_ parent: TimePickerWheel) -> Bool {
+            let nextColor = UIColor(Color("Experiment/Label/Primary", bundle: .module))
             let changed = parent.scale != self.parent.scale || color != nextColor
             self.parent = parent
             color = nextColor

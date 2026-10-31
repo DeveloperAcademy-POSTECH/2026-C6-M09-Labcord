@@ -37,8 +37,8 @@ public struct ExperimentControlButton<Icon: View>: View {
         }
         .buttonStyle(
             RunIconButtonStyle(
-                background: .fillPrimary,
-                foreground: .labelSecondary,
+                background: Color("Experiment/Fill/Primary", bundle: .module),
+                foreground: Color("Experiment/Label/Secondary", bundle: .module),
                 iconSize: 20
             )
         )
@@ -74,8 +74,7 @@ private extension ExperimentControlButton.State {
         )
     }
     .padding()
-    .background(.labcord(.backgroundPrimary))
-    .labcordTheme(LabcordTheme(context: .experiment))
+    .background(Color("Experiment/Background/Primary", bundle: .module))
 }
 
 private func noExperimentControlAction() { }
