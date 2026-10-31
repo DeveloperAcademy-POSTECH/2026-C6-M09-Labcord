@@ -9,9 +9,9 @@ struct CatalogSampleMedia: View {
 
     var body: some View {
         ZStack {
-            Rectangle().fill(.labcord(.backgroundSecondary))
+            Rectangle().fill(Color("General/Background/Secondary", bundle: catalogBundle))
             Circle()
-                .fill(.labcord(.brandPrimary))
+                .fill(Color("General/Brand/Primary", bundle: catalogBundle))
                 .padding(isVideo ? 36 : 24)
         }
         .aspectRatio(16.0 / 9.0, contentMode: .fit)
@@ -105,10 +105,12 @@ struct CatalogTextEditor: View {
 #if os(watchOS)
         Text(value.isEmpty ? "내용을 입력해 주세요" : value)
             .typography(Typography.subheadline)
-            .foregroundStyle(.labcord(value.isEmpty ? .labelTertiary : .labelPrimary))
+            .foregroundStyle(value.isEmpty
+                ? Color("General/Label/Tertiary", bundle: catalogBundle)
+                : Color("General/Label/Primary", bundle: catalogBundle))
             .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
             .padding(12)
-            .background(.labcord(.backgroundGroupedSecondary))
+            .background(Color("General/Background/Grouped/Secondary", bundle: catalogBundle))
         #else
         TextEditor(text: $value)
             .labcordTextEditorStyle(

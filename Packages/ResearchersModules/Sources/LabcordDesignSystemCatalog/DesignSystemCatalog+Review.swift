@@ -100,9 +100,12 @@ struct DesignSystemReviewPage: View {
                             .resizable()
                             .scaledToFit()
                             .frame(width: 24, height: 24)
-                            .foregroundStyle(.labcord(.labelInverse))
+                            .foregroundStyle(Color("General/Label/Inverse", bundle: catalogBundle))
                             .padding(14)
-                            .background(.labcord(.brandPrimary), in: Circle())
+                            .background(
+                                Color("General/Brand/Primary", bundle: catalogBundle),
+                                in: Circle()
+                            )
                     }
             }
             .buttonStyle(LabcordPlainButtonStyle())
@@ -164,7 +167,7 @@ struct DesignSystemReviewPage: View {
             } else {
                 Text("실행 후 종료 전에 삭제한 타이머만 삭제 기록을 표시합니다.")
                     .typography(Typography.footnote)
-                    .foregroundStyle(.labcord(.labelSecondary))
+                    .foregroundStyle(Color("General/Label/Secondary", bundle: catalogBundle))
                     .accessibilityIdentifier("catalog.review.timerRecord.deletionGuard")
             }
 
@@ -200,7 +203,7 @@ struct DesignSystemReviewPage: View {
             if recordType == .video {
                 Text("영상은 로컬 재생 데모를 자동으로 반복합니다.")
                     .typography(Typography.footnote)
-                    .foregroundStyle(.labcord(.labelSecondary))
+                    .foregroundStyle(Color("General/Label/Secondary", bundle: catalogBundle))
             }
             Button("기록 바텀 시트 열기", action: openRecord)
                 .buttonStyle(.labcord(.primary, size: .medium))
@@ -269,9 +272,14 @@ private extension DesignSystemReviewPage {
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 24, height: 24)
-                                .foregroundStyle(.labcord(.labelInverse))
+                                .foregroundStyle(
+                                    Color("General/Label/Inverse", bundle: catalogBundle)
+                                )
                                 .padding(14)
-                                .background(.labcord(.brandPrimary), in: Circle())
+                                .background(
+                                    Color("General/Brand/Primary", bundle: catalogBundle),
+                                    in: Circle()
+                                )
                         }
                     }
             }
