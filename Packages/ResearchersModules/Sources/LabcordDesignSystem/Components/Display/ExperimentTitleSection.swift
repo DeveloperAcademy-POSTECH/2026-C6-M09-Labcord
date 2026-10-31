@@ -84,7 +84,6 @@ public extension ExperimentTitleSection where Trailing == EmptyView {
     }
 }
 
-#if DEBUG
 #Preview("Horizontal") {
     _ = FontRegistration.register()
     return ExperimentTitleSection(
@@ -121,4 +120,3 @@ public extension ExperimentTitleSection where Trailing == EmptyView {
 }
 
 private func noTitleSectionAction() { }
-#endif
