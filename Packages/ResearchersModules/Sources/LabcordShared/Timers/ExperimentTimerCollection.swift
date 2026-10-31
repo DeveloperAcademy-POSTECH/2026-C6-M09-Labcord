@@ -25,10 +25,10 @@ public struct ExperimentTimerCollection: Equatable, Sendable {
     }
 
     @discardableResult
-    public mutating func start(durationSeconds: Int, at date: Date) -> Bool {
+    public mutating func start(id: UUID = UUID(), durationSeconds: Int, at date: Date) -> Bool {
         advance(to: date)
         guard durationSeconds > 0, canStartTimer else { return false }
-        timers.append(ExperimentTimer(durationSeconds: durationSeconds, startedAt: date))
+        timers.append(ExperimentTimer(id: id, durationSeconds: durationSeconds, startedAt: date))
         return true
     }
 
