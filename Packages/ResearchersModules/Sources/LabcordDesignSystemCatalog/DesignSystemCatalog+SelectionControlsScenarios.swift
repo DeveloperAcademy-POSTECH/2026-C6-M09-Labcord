@@ -3,7 +3,7 @@ import LabcordShared
 import SwiftUI
 
 struct CatalogCheckboxScenario: View {
-    @State private var size = LabcordControlSize.small
+    @State private var size = ComponentSize.small
     @State private var isSelected = false
 
     var body: some View {
@@ -13,7 +13,7 @@ struct CatalogCheckboxScenario: View {
                 .labelsVisibility(.hidden)
                 .accessibilityIdentifier("catalog.checkbox.preview")
             Picker("크기", selection: $size) {
-                catalogPickerOptions(LabcordControlSize.allCases)
+                catalogPickerOptions(ComponentSize.allCases)
             }
             .accessibilityIdentifier("catalog.checkbox.size")
             Picker("선택", selection: $isSelected) {
@@ -26,7 +26,7 @@ struct CatalogCheckboxScenario: View {
 }
 
 struct CatalogRadioButtonScenario: View {
-    @State private var size = LabcordControlSize.small
+    @State private var size = ComponentSize.small
     @State private var selection = 2
 
     private var isSelected: Binding<Bool> {
@@ -39,7 +39,7 @@ struct CatalogRadioButtonScenario: View {
                 .labelsVisibility(.hidden)
                 .accessibilityIdentifier("catalog.radioButton.preview")
             Picker("크기", selection: $size) {
-                catalogPickerOptions(LabcordControlSize.allCases)
+                catalogPickerOptions(ComponentSize.allCases)
             }
             .accessibilityIdentifier("catalog.radioButton.size")
             Picker("선택", selection: isSelected) {
