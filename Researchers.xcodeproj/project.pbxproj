@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		8E1069BA308A776B00BF375F /* LabcordKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8E1069B9308A776B00BF375F /* LabcordKit */; };
 		8E1069BC308A7AAD00BF375F /* LabcordKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8E1069BB308A7AAD00BF375F /* LabcordKit */; };
 		8E2E27333084877E0043EEB3 /* ResearchWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8E98D1AD30884D1500E68666 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 8E98D1AC30884D1500E68666 /* ComposableArchitecture */; };
@@ -76,7 +75,6 @@
 			isa = PBXFrameworksBuildPhase;
 			files = (
 				8E98D1AF30884D4F00E68666 /* ComposableArchitecture in Frameworks */,
-				8E1069BA308A776B00BF375F /* LabcordKit in Frameworks */,
 				A10C00103000000000000003 /* LabcordWatchOS in Frameworks */,
 			);
 		};
@@ -163,7 +161,6 @@
 			name = "ResearchWatch Watch App";
 			packageProductDependencies = (
 				8E98D1AE30884D4F00E68666 /* ComposableArchitecture */,
-				8E1069B9308A776B00BF375F /* LabcordKit */,
 				A10C00103000000000000004 /* LabcordWatchOS */,
 			);
 			productName = "ResearchWatch Watch App";
@@ -675,11 +672,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		8E1069B9308A776B00BF375F /* LabcordKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */;
-			productName = LabcordKit;
-		};
 		8E1069BB308A7AAD00BF375F /* LabcordKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */;
