@@ -28,7 +28,7 @@ public struct LabcordRadioButton<Value: Hashable, Label: View>: View {
                 if labelsVisibility != .hidden {
                     label
                         .typography(Typography.body)
-                        .foregroundStyle(.labcord(.labelPrimary))
+                        .foregroundStyle(Color("General/Label/Primary", bundle: .module))
                 }
             }
             .contentShape(Rectangle())

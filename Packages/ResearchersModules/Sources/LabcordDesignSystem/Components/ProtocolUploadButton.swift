@@ -63,7 +63,7 @@ private struct ProtocolUploadButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .foregroundStyle(.labcord(foregroundToken))
+            .foregroundStyle(foregroundColor)
             .frame(
                 maxWidth: .infinity,
                 minHeight: 100,
@@ -71,13 +71,13 @@ private struct ProtocolUploadButtonStyle: ButtonStyle {
             )
             .background {
                 RoundedRectangle(cornerRadius: LayoutTokens().radiusSm)
-                    .fill(.labcord(backgroundToken))
-                    .labcordMotion(.state, value: backgroundToken)
+                    .fill(backgroundColor)
+                    .labcordMotion(.state, value: backgroundColor)
             }
             .clipShape(RoundedRectangle(cornerRadius: LayoutTokens().radiusSm))
             .overlay {
                 RoundedRectangle(cornerRadius: LayoutTokens().radiusSm)
-                    .strokeBorder(.labcord(.borderFocused), lineWidth: 1)
+                    .strokeBorder(Color("General/Border/Focused", bundle: .module), lineWidth: 1)
                     .opacity(state == .selected && isEnabled ? 1 : 0)
                     .labcordMotion(.state, value: effectiveState.rawValue)
                     .allowsHitTesting(false)
@@ -90,18 +90,20 @@ private struct ProtocolUploadButtonStyle: ButtonStyle {
         isEnabled ? state : .disabled
     }
 
-    private var foregroundToken: ColorToken {
-        effectiveState == .disabled ? .labelDisabled : .labelPrimary
+    private var foregroundColor: Color {
+        effectiveState == .disabled
+            ? Color("General/Label/Disabled", bundle: .module)
+            : Color("General/Label/Primary", bundle: .module)
     }
 
-    private var backgroundToken: ColorToken {
+    private var backgroundColor: Color {
         switch effectiveState {
         case .selected:
-            .fillSelected
+            Color("General/Fill/Selected", bundle: .module)
         case .default:
-            .fillSecondary
+            Color("General/Fill/Secondary", bundle: .module)
         case .disabled:
-            .fillDisabled
+            Color("General/Fill/Disabled", bundle: .module)
         }
     }
 }

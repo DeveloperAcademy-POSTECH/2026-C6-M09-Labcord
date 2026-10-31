@@ -5,7 +5,6 @@ import SwiftUI
     _ = FontRegistration.register()
     return RecordBottomSheet()
         .padding(.top, 20)
-        .labcordTheme(LabcordTheme(context: .general))
 }
 
 #Preview("기록 바텀 시트 · 음성") {
@@ -17,7 +16,6 @@ import SwiftUI
         memo: .constant("전사와 메모를 확인했습니다.")
     )
     .padding(.top, 20)
-    .labcordTheme(LabcordTheme(context: .general))
 }
 
 #Preview("기록 바텀 시트 · 전사 슬롯") {
@@ -42,7 +40,6 @@ import SwiftUI
 #endif
     }
     .padding(.top, 20)
-    .labcordTheme(LabcordTheme(context: .general))
 }
 
 #Preview("기록 바텀 시트 · 미디어") {
@@ -53,21 +50,20 @@ import SwiftUI
         memo: .constant("반응 후 색 변화를 확인했습니다.")
     ) {
         RoundedRectangle(cornerRadius: 8)
-            .fill(.labcord(.fillSecondary))
+            .fill(Color("General/Fill/Secondary", bundle: .module))
             .overlay {
                 Text("호출자 미디어 슬롯")
                     .typography(Typography.callout)
-                    .foregroundStyle(.labcord(.labelSecondary))
+                    .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
             }
     } memoContent: {
         Text("반응 후 색 변화를 확인했습니다.")
             .typography(Typography.subheadline)
-            .foregroundStyle(.labcord(.labelPrimary))
+            .foregroundStyle(Color("General/Label/Primary", bundle: .module))
             .frame(maxWidth: .infinity, minHeight: 120, maxHeight: 120, alignment: .topLeading)
             .padding()
     }
     .padding(.top, 20)
-    .labcordTheme(LabcordTheme(context: .general))
 }
 
 #Preview("기록 바텀 시트 · 큰 글자") {
@@ -79,6 +75,5 @@ import SwiftUI
     )
     .padding(.top, 20)
     .environment(\.dynamicTypeSize, .accessibility3)
-    .labcordTheme(LabcordTheme(context: .experiment))
 }
 #endif

@@ -40,8 +40,6 @@ public struct LabcordButtonStyle: ButtonStyle {
 
     private struct ButtonContent: View {
         @Environment(\.controlSize) private var controlSize
-        @Environment(\.labcordTheme) private var theme
-        @Environment(\.colorScheme) private var colorScheme
         @Environment(\.isEnabled) private var isEnabled
         @ScaledMetric(relativeTo: .body) private var cornerRadiusScale: CGFloat = 1
 
@@ -97,7 +95,7 @@ public struct LabcordButtonStyle: ButtonStyle {
         private var styledContent: some View {
             buttonContent
             .typography(metrics.typography)
-            .foregroundStyle(LabcordColor(appearance.foreground))
+            .foregroundStyle(appearance.foreground)
             .padding(.horizontal, horizontalPadding)
             .padding(.vertical, isLoading ? 0 : metrics.verticalPadding)
             .frame(minHeight: metrics.height)
@@ -108,7 +106,7 @@ public struct LabcordButtonStyle: ButtonStyle {
             .overlay {
                 if let border = appearance.border {
                     buttonShape
-                        .strokeBorder(LabcordColor(border), lineWidth: 1)
+                        .strokeBorder(border, lineWidth: 1)
                 }
             }
             .contentShape(buttonShape)
@@ -134,7 +132,7 @@ public struct LabcordButtonStyle: ButtonStyle {
         private var backgroundView: some View {
             if let background = appearance.background {
                 buttonShape
-                    .fill(LabcordColor(background))
+                    .fill(background)
             } else {
                 buttonShape
                     .fill(Color.clear)
@@ -146,7 +144,7 @@ public struct LabcordButtonStyle: ButtonStyle {
                 .progressViewStyle(
                     .labcord(
                         size: metrics.loadingIndicatorSize,
-                        foreground: theme.color(appearance.foreground, colorScheme: colorScheme)
+                        foreground: appearance.foreground
                     )
                 )
                 .accessibilityHidden(true)
@@ -239,9 +237,9 @@ private struct LabcordButtonLabelStyle: LabelStyle {
 }
 
 struct LabcordButtonAppearance {
-    let background: ColorToken?
-    let foreground: ColorToken
-    let border: ColorToken?
+    let background: Color?
+    let foreground: Color
+    let border: Color?
 }
 
 func labcordButtonAppearance(
@@ -252,45 +250,49 @@ func labcordButtonAppearance(
     if isDisabled {
         return LabcordButtonAppearance(
             background: variant == .quaternary || variant == .accent
-                ? nil : .actionDisabledBackground,
-            foreground: .actionDisabledForeground,
+                ? nil : Color("General/Action/Disabled/Background", bundle: .module),
+            foreground: Color("General/Action/Disabled/Foreground", bundle: .module),
             border: nil
         )
     }
 
+    let subtleBackground = Color("General/Action/Destructive/Subtle Background", bundle: .module)
+    let subtleForeground = Color("General/Action/Destructive/Subtle Foreground", bundle: .module)
+    let secondaryLabel = Color("General/Label/Secondary", bundle: .module)
     switch variant {
     case .primary:
         return LabcordButtonAppearance(
-            background: isDestructive ? .actionDestructiveBackground : .actionPrimaryBackground,
-            foreground: isDestructive ? .actionDestructiveForeground : .labelInverse,
-            border: isDestructive ? .actionDestructiveBackground : nil
+            background: isDestructive
+                ? Color("General/Action/Destructive/Background", bundle: .module)
+                : Color("General/Action/Primary/Background", bundle: .module),
+            foreground: isDestructive
+                ? Color("General/Action/Destructive/Foreground", bundle: .module)
+                : Color("General/Label/Inverse", bundle: .module),
+            border: isDestructive
+                ? Color("General/Action/Destructive/Background", bundle: .module)
+                : nil
         )
     case .secondary:
         return LabcordButtonAppearance(
             background: isDestructive
-                ? .actionDestructiveSubtleBackground
-                : .actionSecondaryBackground,
+                ? subtleBackground : Color("General/Action/Secondary/Background", bundle: .module),
             foreground: isDestructive
-                ? .actionDestructiveSubtleForeground
-                : .actionSecondaryForeground,
+                ? subtleForeground : Color("General/Action/Secondary/Foreground", bundle: .module),
             border: nil
         )
     case .tertiary:
         return LabcordButtonAppearance(
-            background: isDestructive ? .actionDestructiveSubtleBackground : .fillSecondary,
-            foreground: isDestructive ? .actionDestructiveSubtleForeground : .labelSecondary,
+            background: isDestructive
+                ? subtleBackground : Color("General/Fill/Secondary", bundle: .module),
+            foreground: isDestructive ? subtleForeground : secondaryLabel,
             border: nil
         )
-    case .quaternary:
+    case .quaternary, .accent:
+        let normal = variant == .accent
+            ? Color("General/Label/Brand", bundle: .module) : secondaryLabel
         return LabcordButtonAppearance(
             background: nil,
-            foreground: isDestructive ? .actionDestructiveSubtleForeground : .labelSecondary,
-            border: nil
-        )
-    case .accent:
-        return LabcordButtonAppearance(
-            background: nil,
-            foreground: isDestructive ? .actionDestructiveSubtleForeground : .labelBrand,
+            foreground: isDestructive ? subtleForeground : normal,
             border: nil
         )
     }

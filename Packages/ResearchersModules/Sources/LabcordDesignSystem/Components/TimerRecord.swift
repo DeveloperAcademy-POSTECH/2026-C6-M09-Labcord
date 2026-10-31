@@ -31,18 +31,18 @@ public enum LabcordTimerIdentity: String, CaseIterable, Sendable {
     case identity04
     case identity05
 
-    fileprivate var colorToken: ColorToken {
+    fileprivate var color: Color {
         switch self {
         case .identity01:
-            .timerIdentity01
+            Color("General/Timer/Identity/01", bundle: .module)
         case .identity02:
-            .timerIdentity02
+            Color("General/Timer/Identity/02", bundle: .module)
         case .identity03:
-            .timerIdentity03
+            Color("General/Timer/Identity/03", bundle: .module)
         case .identity04:
-            .timerIdentity04
+            Color("General/Timer/Identity/04", bundle: .module)
         case .identity05:
-            .timerIdentity05
+            Color("General/Timer/Identity/05", bundle: .module)
         }
     }
 }
@@ -55,7 +55,7 @@ public struct TimerRecord: View {
     private let state: LabcordTimerRecordState
     private let identity: LabcordTimerIdentity
 
-    @Environment(\.labcordTheme) private var theme
+    private let tokenLayout = LayoutTokens()
 
     public init(
         setDuration: Duration,
@@ -109,13 +109,13 @@ public struct TimerRecord: View {
 
     private var singleLineContent: some View {
         ViewThatFits(in: .horizontal) {
-            HStack(alignment: .center, spacing: theme.layout.spacing8) {
+            HStack(alignment: .center, spacing: tokenLayout.spacing8) {
                 durationLabel
                 stateLabel
             }
             .fixedSize(horizontal: true, vertical: true)
 
-            VStack(alignment: .leading, spacing: theme.layout.spacing8) {
+            VStack(alignment: .leading, spacing: tokenLayout.spacing8) {
                 durationLabel
                 stateLabel
             }
@@ -124,28 +124,28 @@ public struct TimerRecord: View {
     }
 
     private var pausedContent: some View {
-        VStack(alignment: .leading, spacing: theme.layout.spacing8) {
+        VStack(alignment: .leading, spacing: tokenLayout.spacing8) {
             ViewThatFits(in: .horizontal) {
-                HStack(alignment: .firstTextBaseline, spacing: theme.layout.spacing8) {
+                HStack(alignment: .firstTextBaseline, spacing: tokenLayout.spacing8) {
                     durationLabel
                     pausedStatus
                 }
                 .fixedSize(horizontal: true, vertical: true)
 
-                VStack(alignment: .leading, spacing: theme.layout.spacing8) {
+                VStack(alignment: .leading, spacing: tokenLayout.spacing8) {
                     durationLabel
                     pausedStatus
                 }
             }
 
             ViewThatFits(in: .horizontal) {
-                HStack(alignment: .firstTextBaseline, spacing: theme.layout.spacing16) {
+                HStack(alignment: .firstTextBaseline, spacing: tokenLayout.spacing16) {
                     elapsedDetail
                     cumulativeDetail
                 }
                 .fixedSize(horizontal: true, vertical: true)
 
-                VStack(alignment: .leading, spacing: theme.layout.spacing8) {
+                VStack(alignment: .leading, spacing: tokenLayout.spacing8) {
                     elapsedDetail
                     cumulativeDetail
                 }
@@ -154,12 +154,12 @@ public struct TimerRecord: View {
     }
 
     private var pausedStatus: some View {
-        HStack(alignment: .firstTextBaseline, spacing: theme.layout.spacing8) {
+        HStack(alignment: .firstTextBaseline, spacing: tokenLayout.spacing8) {
             stateLabel
 
             Text(pauseCount)
                 .typography(Typography.bodySemiBold)
-                .foregroundStyle(.labcord(.labelPrimary))
+                .foregroundStyle(Color("General/Label/Primary", bundle: .module))
                 .contentTransition(.numericText())
                 .labcordMotion(.state, value: pauseCount)
                 .fixedSize(horizontal: true, vertical: false)
@@ -169,7 +169,7 @@ public struct TimerRecord: View {
     private var stateLabel: some View {
         Text(state.title)
             .typography(Typography.bodySemiBold)
-            .foregroundStyle(.labcord(.labelPrimary))
+            .foregroundStyle(Color("General/Label/Primary", bundle: .module))
             .contentTransition(.opacity)
             .labcordMotion(.state, value: state.rawValue)
             .fixedSize(horizontal: false, vertical: true)
@@ -185,13 +185,13 @@ public struct TimerRecord: View {
 
     private func timeDetail(_ title: LocalizedStringKey, value: String) -> some View {
         ViewThatFits(in: .horizontal) {
-            HStack(alignment: .firstTextBaseline, spacing: theme.layout.spacing8) {
+            HStack(alignment: .firstTextBaseline, spacing: tokenLayout.spacing8) {
                 detailTitle(title)
                 detailValue(value)
             }
             .fixedSize(horizontal: true, vertical: true)
 
-            VStack(alignment: .leading, spacing: theme.layout.spacing8) {
+            VStack(alignment: .leading, spacing: tokenLayout.spacing8) {
                 detailTitle(title)
                 detailValue(value)
             }
@@ -201,13 +201,13 @@ public struct TimerRecord: View {
     private func detailTitle(_ title: LocalizedStringKey) -> some View {
         Text(title)
             .typography(Typography.body)
-            .foregroundStyle(.labcord(.labelTertiary))
+            .foregroundStyle(Color("General/Label/Tertiary", bundle: .module))
     }
 
     private func detailValue(_ value: String) -> some View {
         Text(value)
             .typography(Typography.bodySemiBold)
-            .foregroundStyle(.labcord(.labelSecondary))
+            .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
             .contentTransition(.numericText())
             .labcordMotion(.state, value: value)
             .fixedSize(horizontal: false, vertical: true)
@@ -216,14 +216,14 @@ public struct TimerRecord: View {
     private var durationLabel: some View {
         Text(setDuration)
             .typography(Typography.bodySemiBold)
-            .foregroundStyle(.labcord(.labelPrimary))
+            .foregroundStyle(Color("General/Label/Primary", bundle: .module))
             .contentTransition(.numericText())
             .labcordMotion(.state, value: setDuration)
-            .padding(.leading, theme.layout.spacing4 + 3)
+            .padding(.leading, tokenLayout.spacing4 + 3)
             .frame(minHeight: 22, alignment: .leading)
             .overlay(alignment: .leading) {
                 Rectangle()
-                    .fill(.labcord(identity.colorToken))
+                    .fill(identity.color)
                     .frame(width: 3)
                     .accessibilityHidden(true)
             }
@@ -248,9 +248,8 @@ public struct TimerRecord: View {
         }
     }
     .padding()
-    .foregroundStyle(.labcord(.labelPrimary))
-    .background(.labcord(.backgroundPrimary))
-    .labcordTheme(LabcordTheme(context: .general))
+    .foregroundStyle(Color("General/Label/Primary", bundle: .module))
+    .background(Color("General/Background/Primary", bundle: .module))
 }
 
 #Preview("타이머 기록 · 큰 글자") {
@@ -265,6 +264,5 @@ public struct TimerRecord: View {
     .padding()
     .frame(maxWidth: .infinity, alignment: .leading)
     .environment(\.dynamicTypeSize, .accessibility3)
-    .labcordTheme(LabcordTheme(context: .experiment))
 }
 #endif

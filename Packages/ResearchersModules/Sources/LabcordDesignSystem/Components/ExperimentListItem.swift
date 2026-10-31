@@ -61,13 +61,13 @@ public struct ExperimentListItem: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
             Rectangle()
-                .fill(.labcord(.fillSelected))
+                .fill(Color("General/Fill/Selected", bundle: .module))
                 .opacity(isSelected ? 1 : 0)
                 .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: isSelected)
         }
         .overlay(alignment: .bottom) {
             Rectangle()
-                .fill(.labcord(.borderDefault))
+                .fill(Color("General/Border/Default", bundle: .module))
                 .frame(height: 0.5)
                 .accessibilityHidden(true)
         }
@@ -113,14 +113,14 @@ public struct ExperimentListItem: View {
         VStack(alignment: .leading, spacing: layout.spacing4) {
             Text(title)
                 .typography(Typography.body)
-                .foregroundStyle(.labcord(.labelPrimary))
+                .foregroundStyle(Color("General/Label/Primary", bundle: .module))
                 .contentTransition(.opacity)
                 .labcordMotion(.state, value: title)
                 .fixedSize(horizontal: false, vertical: true)
 
             Text(date)
                 .typography(Typography.subheadline)
-                .foregroundStyle(.labcord(.labelTertiary))
+                .foregroundStyle(Color("General/Label/Tertiary", bundle: .module))
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -138,14 +138,16 @@ public struct ExperimentListItem: View {
             .accessibilityHint(Text(title))
     }
 
-    private var openIconForeground: ColorToken {
-        isEnabled ? .labelTertiary : .actionDisabledForeground
+    private var openIconForeground: Color {
+        isEnabled
+            ? Color("General/Label/Tertiary", bundle: .module)
+            : Color("General/Action/Disabled/Foreground", bundle: .module)
     }
 
     private var openButton: some View {
         Button(action: onSelect) {
             LabcordIconArtwork(icon: .caretRight, size: 16)
-                .foregroundStyle(.labcord(openIconForeground))
+                .foregroundStyle(openIconForeground)
         }
         .buttonStyle(.labcordIcon(.quaternary, size: .medium))
         .accessibilityLabel(Text("실험 열기"))

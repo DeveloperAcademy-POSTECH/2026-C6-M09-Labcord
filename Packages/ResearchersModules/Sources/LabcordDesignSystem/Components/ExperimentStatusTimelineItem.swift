@@ -4,7 +4,7 @@ public struct ExperimentStatusTimelineItem: View {
     private let timestamp: String
     private let title: String
 
-    @Environment(\.labcordTheme) private var theme
+    private let tokenLayout = LayoutTokens()
 
     public init(_ title: String, timestamp: String) {
         self.init(timestamp: timestamp, title: title)
@@ -19,23 +19,23 @@ public struct ExperimentStatusTimelineItem: View {
     }
 
     public var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: theme.layout.spacing12) {
+        HStack(alignment: .firstTextBaseline, spacing: tokenLayout.spacing12) {
             Text(timestamp)
                 .typography(Typography.body)
-                .foregroundStyle(.labcord(.labelSecondary))
+                .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
                 .frame(minWidth: 70, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
 
             Text(title)
                 .typography(Typography.bodySemiBold)
-                .foregroundStyle(.labcord(.labelPrimary))
+                .foregroundStyle(Color("General/Label/Primary", bundle: .module))
                 .contentTransition(.opacity)
                 .labcordMotion(.state, value: title)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.horizontal, theme.layout.spacing16)
-        .padding(.vertical, theme.layout.spacing8)
+        .padding(.horizontal, tokenLayout.spacing16)
+        .padding(.vertical, tokenLayout.spacing8)
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
     }
@@ -51,9 +51,8 @@ public typealias LabcordExperimentStatusTimelineItem = ExperimentStatusTimelineI
         ExperimentStatusTimelineItem(timestamp: "10:25:09", title: "실험 일시정지")
         ExperimentStatusTimelineItem(timestamp: "11:02:41", title: "실험 종료")
     }
-    .foregroundStyle(.labcord(.labelPrimary))
-    .background(.labcord(.backgroundPrimary))
-    .labcordTheme(LabcordTheme(context: .general))
+    .foregroundStyle(Color("General/Label/Primary", bundle: .module))
+    .background(Color("General/Background/Primary", bundle: .module))
 }
 
 #Preview("실험 상태 타임라인 · 큰 글자") {
@@ -64,6 +63,5 @@ public typealias LabcordExperimentStatusTimelineItem = ExperimentStatusTimelineI
     )
     .frame(maxWidth: .infinity)
     .environment(\.dynamicTypeSize, .accessibility3)
-    .labcordTheme(LabcordTheme(context: .experiment))
 }
 #endif
