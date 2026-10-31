@@ -34,15 +34,15 @@ public enum TimerIdentity: String, CaseIterable, Sendable {
     fileprivate var color: Color {
         switch self {
         case .identity01:
-            Color("General/Timer/Identity/01", bundle: .module)
+            Color(.General.Timer.Identity._01)
         case .identity02:
-            Color("General/Timer/Identity/02", bundle: .module)
+            Color(.General.Timer.Identity._02)
         case .identity03:
-            Color("General/Timer/Identity/03", bundle: .module)
+            Color(.General.Timer.Identity._03)
         case .identity04:
-            Color("General/Timer/Identity/04", bundle: .module)
+            Color(.General.Timer.Identity._04)
         case .identity05:
-            Color("General/Timer/Identity/05", bundle: .module)
+            Color(.General.Timer.Identity._05)
         }
     }
 }
@@ -157,7 +157,7 @@ public struct TimerRecord: View {
 
             Text(pauseCount)
                 .typography(Typography.bodySemiBold)
-                .foregroundStyle(Color("General/Label/Primary", bundle: .module))
+                .foregroundStyle(Color(.General.Label.primary))
                 .contentTransition(.numericText())
                 .labcordMotion(.state, value: pauseCount)
                 .fixedSize(horizontal: true, vertical: false)
@@ -167,7 +167,7 @@ public struct TimerRecord: View {
     private var stateLabel: some View {
         Text(state.title)
             .typography(Typography.bodySemiBold)
-            .foregroundStyle(Color("General/Label/Primary", bundle: .module))
+            .foregroundStyle(Color(.General.Label.primary))
             .contentTransition(.opacity)
             .labcordMotion(.state, value: state.rawValue)
             .fixedSize(horizontal: false, vertical: true)
@@ -199,13 +199,13 @@ public struct TimerRecord: View {
     private func detailTitle(_ title: LocalizedStringKey) -> some View {
         Text(title)
             .typography(Typography.body)
-            .foregroundStyle(Color("General/Label/Tertiary", bundle: .module))
+            .foregroundStyle(Color(.General.Label.tertiary))
     }
 
     private func detailValue(_ value: String) -> some View {
         Text(value)
             .typography(Typography.bodySemiBold)
-            .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
+            .foregroundStyle(Color(.General.Label.secondary))
             .contentTransition(.numericText())
             .labcordMotion(.state, value: value)
             .fixedSize(horizontal: false, vertical: true)
@@ -214,7 +214,7 @@ public struct TimerRecord: View {
     private var durationLabel: some View {
         Text(setDuration)
             .typography(Typography.bodySemiBold)
-            .foregroundStyle(Color("General/Label/Primary", bundle: .module))
+            .foregroundStyle(Color(.General.Label.primary))
             .contentTransition(.numericText())
             .labcordMotion(.state, value: setDuration)
             .padding(.leading, LayoutTokens.spacing4 + 3)
@@ -245,8 +245,8 @@ public struct TimerRecord: View {
         }
     }
     .padding()
-    .foregroundStyle(Color("General/Label/Primary", bundle: .module))
-    .background(Color("General/Background/Primary", bundle: .module))
+    .foregroundStyle(Color(.General.Label.primary))
+    .background(Color(.General.Background.primary))
 }
 
 #Preview("타이머 기록 · 큰 글자") {

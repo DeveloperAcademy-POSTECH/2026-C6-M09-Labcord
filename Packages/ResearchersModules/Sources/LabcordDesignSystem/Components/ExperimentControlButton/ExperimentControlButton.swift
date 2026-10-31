@@ -37,8 +37,8 @@ public struct ExperimentControlButton<Icon: View>: View {
         }
         .buttonStyle(
             RunIconButtonStyle(
-                background: Color("Experiment/Fill/Primary", bundle: .module),
-                foreground: Color("Experiment/Label/Secondary", bundle: .module),
+                background: Color(.Experiment.Fill.primary),
+                foreground: Color(.Experiment.Label.secondary),
                 iconSize: 20
             )
         )
@@ -73,7 +73,7 @@ private extension ExperimentControlButton.State {
         )
     }
     .padding()
-    .background(Color("Experiment/Background/Primary", bundle: .module))
+    .background(Color(.Experiment.Background.primary))
 }
 
 private func noExperimentControlAction() { }
