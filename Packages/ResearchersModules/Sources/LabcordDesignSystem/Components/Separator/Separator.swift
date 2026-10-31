@@ -16,12 +16,12 @@ public struct Separator: View {
         Group {
             if orientation == .horizontal {
                 Rectangle()
-                    .fill(Color("General/Border/Default", bundle: .module))
+                    .fill(Color(.General.Border.`default`))
                     .frame(maxWidth: .infinity)
                     .frame(height: 1)
             } else {
                 Rectangle()
-                    .fill(Color("General/Border/Default", bundle: .module))
+                    .fill(Color(.General.Border.`default`))
                     .frame(width: 1)
                     .frame(maxHeight: .infinity)
             }

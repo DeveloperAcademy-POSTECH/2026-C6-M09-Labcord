@@ -40,7 +40,7 @@ private struct LabcordProgressContent: View {
     let configuration: ProgressViewStyleConfiguration
 
     private var resolvedForeground: Color {
-        foreground ?? Color("General/Label/Primary", bundle: .module)
+        foreground ?? Color(.General.Label.primary)
     }
 
     @ViewBuilder
@@ -50,7 +50,7 @@ private struct LabcordProgressContent: View {
                 .progressViewStyle(.linear)
                 .tint(resolvedForeground)
         } else if let label = configuration.label {
-            HStack(spacing: LayoutTokens().spacing8) {
+            HStack(spacing: LayoutTokens.spacing8) {
                 LabcordLoadingIndicator(size: size, foreground: resolvedForeground)
                 label
             }

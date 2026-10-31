@@ -1,6 +1,5 @@
 import SwiftUI
 
-// swiftlint:disable identifier_name
 public enum Icon: String, CaseIterable, Identifiable, Sendable {
     case arrowCounterClockwiseBold = "arrow-counter-clockwise-bold"
     case arrowCounterClockwise = "arrow-counter-clockwise"
@@ -53,6 +52,7 @@ public enum Icon: String, CaseIterable, Identifiable, Sendable {
     case waveform = "waveform"
     case xBold = "x-bold"
     case xCircle = "x-circle"
+    // swiftlint:disable:next identifier_name
     case x = "x"
 
     public var id: String {
@@ -64,7 +64,6 @@ public enum Icon: String, CaseIterable, Identifiable, Sendable {
     }
 
 }
-// swiftlint:enable identifier_name
 
 public extension Image {
     init(labcordIcon icon: Icon) {

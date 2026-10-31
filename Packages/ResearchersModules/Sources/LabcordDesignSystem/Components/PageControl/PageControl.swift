@@ -3,7 +3,7 @@ import SwiftUI
 public struct PageControl: View {
     @Binding private var selection: Int
     private let pageCount: Int
-    private let layout = LayoutTokens()
+
     @State private var pressedPage: Int?
 
     public init(
@@ -35,14 +35,14 @@ public struct PageControl: View {
 
     public var body: some View {
         ZStack {
-            HStack(spacing: layout.spacing8) {
+            HStack(spacing: LayoutTokens.spacing8) {
                 if pageCount > 0 {
                     ForEach(1...pageCount, id: \.self) { page in
                         Circle()
                             .fill(
                                 page == selection
-                                    ? Color("Experiment/Label/Primary", bundle: .module)
-                                    : Color("Experiment/Label/Quaternary", bundle: .module)
+                                    ? Color(.Experiment.Label.primary)
+                                    : Color(.Experiment.Label.quaternary)
                             )
                             .frame(width: dotDiameter(for: page), height: dotDiameter(for: page))
                             .labcordPressFeedback(pressedPage == page, isSubtle: true)
@@ -89,7 +89,7 @@ public struct PageControl: View {
     }
 
     private func interiorHitWidth(index: Int) -> CGFloat? {
-        index > 0 && index < pageCount - 1 ? 6 + layout.spacing8 : nil
+        index > 0 && index < pageCount - 1 ? 6 + LayoutTokens.spacing8 : nil
     }
 
     private func pageButton(index: Int) -> some View {
@@ -136,7 +136,7 @@ private struct PageControlPressStyle: ButtonStyle {
     _ = FontRegistration.register()
     return PageControl(pageCount: 2, selection: $selection)
         .frame(width: 297)
-        .background(Color("Experiment/Background/Primary", bundle: .module))
+        .background(Color(.Experiment.Background.primary))
 }
 
 #Preview("세 페이지 · 큰 글자") {
@@ -146,5 +146,5 @@ private struct PageControlPressStyle: ButtonStyle {
     return PageControl(pageCount: 3, selection: $selection)
         .frame(width: 297)
         .environment(\.dynamicTypeSize, .accessibility3)
-        .background(Color("Experiment/Background/Primary", bundle: .module))
+        .background(Color(.Experiment.Background.primary))
 }
