@@ -1,7 +1,7 @@
 import SwiftUI
 
 @MainActor
-public struct LabcordIconButtonStyle: ButtonStyle {
+public struct IconButtonStyle: ButtonStyle {
     public typealias Variant = LabcordButtonStyle.Variant
 
     private let variant: Variant
@@ -138,20 +138,20 @@ public struct LabcordIconButtonStyle: ButtonStyle {
     }
 }
 
-public extension ButtonStyle where Self == LabcordIconButtonStyle {
+public extension ButtonStyle where Self == IconButtonStyle {
     static func labcordIcon(
-        _ variant: LabcordIconButtonStyle.Variant,
+        _ variant: IconButtonStyle.Variant,
         size: LabcordControlSize? = nil,
         isLoading: Bool = false
-    ) -> LabcordIconButtonStyle {
-        LabcordIconButtonStyle(variant, size: size, isLoading: isLoading)
+    ) -> IconButtonStyle {
+        IconButtonStyle(variant, size: size, isLoading: isLoading)
     }
 }
 
 struct LabcordIconButtonMetrics {
     let containerSize: CGFloat
     let iconSize: CGFloat
-    let loadingIndicatorSize: LabcordProgressViewStyle.Size
+    let loadingIndicatorSize: LoadingIndicatorStyle.Size
     let loadingSlotSize: CGFloat
 
     init(size: LabcordControlSize) {

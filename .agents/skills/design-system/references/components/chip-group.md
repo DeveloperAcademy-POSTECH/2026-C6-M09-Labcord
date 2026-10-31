@@ -3,7 +3,7 @@
 `samples`는 안정적인 ID를 가진 `Identifiable` 배열이며 `selectedIDs`는 같은 ID 타입의 집합입니다.
 
 ```swift
-LabcordChipGroup(samples, selection: $selectedIDs, label: \.title,
+ChipGroup(samples, selection: $selectedIDs, label: \.title,
                  onRemove: removeSample, onAdd: addSample)
 ```
 

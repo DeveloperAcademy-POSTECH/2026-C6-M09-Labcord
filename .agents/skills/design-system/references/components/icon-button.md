@@ -1,6 +1,6 @@
 # Icon Button
 
-[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/Input/LabcordIconButtonStyle.swift)
+[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/Input/IconButtonStyle.swift)
 
 `remove`·`isRemoving`은 호출부 액션·상태입니다.
 

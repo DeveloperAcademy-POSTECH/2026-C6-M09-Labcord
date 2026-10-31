@@ -62,7 +62,7 @@ private struct CatalogPrimitiveSwatchPreview: View {
             if let edge = swatch.gradientEdge {
                 Rectangle()
                     .fill(Color("General/Background/Primary", bundle: catalogBundle))
-                    .overlay { LabcordOverlayFade(edge: edge) }
+                    .overlay { OverlayFade(edge: edge) }
                     .aspectRatio(416.0 / 210.0, contentMode: .fit)
                     .frame(maxWidth: 416)
                     .clipShape(RoundedRectangle(cornerRadius: 12))

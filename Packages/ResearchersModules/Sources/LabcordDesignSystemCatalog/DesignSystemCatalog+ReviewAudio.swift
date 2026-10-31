@@ -25,8 +25,8 @@ struct CatalogVoiceSample: View {
 }
 
 struct CatalogRecordSheetSample: View {
-    let type: LabcordRecordType
-    let identity: LabcordTimerIdentity
+    let type: RecordType
+    let identity: TimerIdentity
     var timerExample = CatalogTimerRecordExample.short
     @Binding var memo: String
     @Binding var transcript: String
@@ -86,7 +86,7 @@ enum CatalogTimerRecordExample: String, CaseIterable {
     case longSecond = "긴 기록 2"
 
     var setDuration: String { self == .short ? "30초" : "23:59:59시간" }
-    var sheetState: LabcordTimerRecordState { self == .short ? .start : .paused }
+    var sheetState: TimerRecordState { self == .short ? .start : .paused }
 
     var elapsedTime: String {
         switch self {

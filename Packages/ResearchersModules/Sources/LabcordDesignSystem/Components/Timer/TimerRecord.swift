@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 
-public enum LabcordTimerRecordState: String, CaseIterable, Sendable {
+public enum TimerRecordState: String, CaseIterable, Sendable {
     case start
     case paused
     case resume
@@ -24,7 +24,7 @@ public enum LabcordTimerRecordState: String, CaseIterable, Sendable {
     }
 }
 
-public enum LabcordTimerIdentity: String, CaseIterable, Sendable {
+public enum TimerIdentity: String, CaseIterable, Sendable {
     case identity01
     case identity02
     case identity03
@@ -52,8 +52,8 @@ public struct TimerRecord: View {
     private let elapsedTime: String
     private let cumulativeTime: String
     private let pauseCount: String
-    private let state: LabcordTimerRecordState
-    private let identity: LabcordTimerIdentity
+    private let state: TimerRecordState
+    private let identity: TimerIdentity
 
     private let tokenLayout = LayoutTokens()
 
@@ -62,8 +62,8 @@ public struct TimerRecord: View {
         elapsedTime: Duration,
         cumulativeTime: Duration,
         pauseCount: Int,
-        state: LabcordTimerRecordState,
-        identity: LabcordTimerIdentity
+        state: TimerRecordState,
+        identity: TimerIdentity
     ) {
         self.init(
             setDuration: setDuration.formatted(.labcordDuration),
@@ -80,8 +80,8 @@ public struct TimerRecord: View {
         elapsedTime: String = "4초 실행",
         cumulativeTime: String = "4초",
         pauseCount: String = "(1)",
-        state: LabcordTimerRecordState = .end,
-        identity: LabcordTimerIdentity = .identity01
+        state: TimerRecordState = .end,
+        identity: TimerIdentity = .identity01
     ) {
         self.setDuration = setDuration
         self.elapsedTime = elapsedTime
@@ -243,7 +243,7 @@ public struct TimerRecord: View {
 #Preview("타이머 기록 · 상태") {
     _ = FontRegistration.register()
     return VStack(alignment: .leading, spacing: 16) {
-        ForEach(LabcordTimerRecordState.allCases, id: \.rawValue) { state in
+        ForEach(TimerRecordState.allCases, id: \.rawValue) { state in
             TimerRecord(state: state, identity: .identity01)
         }
     }

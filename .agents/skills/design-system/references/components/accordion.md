@@ -3,7 +3,7 @@
 부모의 펼침 Binding과 실제 항목 개수, 콘텐츠를 전달합니다.
 
 ```swift
-LabcordAccordion("샘플", count: samples.count, isExpanded: $isExpanded) {
+Accordion("샘플", count: samples.count, isExpanded: $isExpanded) {
     samplesContent
 }
 ```

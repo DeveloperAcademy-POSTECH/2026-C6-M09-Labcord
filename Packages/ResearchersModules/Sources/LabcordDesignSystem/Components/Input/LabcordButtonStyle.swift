@@ -172,7 +172,7 @@ struct LabcordButtonMetrics {
     let spacing: CGFloat
     let cornerRadius: CGFloat
     let iconSize: CGFloat
-    let loadingIndicatorSize: LabcordProgressViewStyle.Size
+    let loadingIndicatorSize: LoadingIndicatorStyle.Size
     let typography: TypographyStyle
 
     @MainActor

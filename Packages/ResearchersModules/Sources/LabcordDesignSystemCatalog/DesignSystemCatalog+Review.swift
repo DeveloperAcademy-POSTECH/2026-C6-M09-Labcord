@@ -5,19 +5,19 @@ struct DesignSystemReviewPage: View {
     let item: CatalogItem
 
     @State private var presentedRecord: CatalogRecordPresentation?
-    @State private var recordType = LabcordRecordType.photo
-    @State private var recordContentState = LabcordRecordContentState.filled
+    @State private var recordType = RecordType.photo
+    @State private var recordContentState = RecordContentState.filled
     @State private var recordMemo = ""
     @State private var recordTranscript = ""
     @State private var savedRecordMemo = "실험 결과를 기록했어요."
     @State private var savedRecordTranscript = "샘플 B, 반응 시작 5분 후 연한 노란색으로 변했고 침전은 없음"
     @State private var timerRecordExample = CatalogTimerRecordExample.short
     @State private var sheetTimerExample = CatalogTimerRecordExample.short
-    @State private var timerRecordState = LabcordTimerRecordState.paused
-    @State private var timerIdentity = LabcordTimerIdentity.identity02
+    @State private var timerRecordState = TimerRecordState.paused
+    @State private var timerIdentity = TimerIdentity.identity02
     @State private var deletionScenario = CatalogTimerDeletionScenario.duringRun
-    @State private var timelineType = LabcordTimelineItemType.voice
-    @State private var timelineState = LabcordTimelineItemState.default
+    @State private var timelineType = TimelineItemType.voice
+    @State private var timelineState = TimelineItemState.default
     @State private var showsTimelineMemo = true
     @State private var showsVoiceDuration = true
 
@@ -54,11 +54,11 @@ struct DesignSystemReviewPage: View {
     private var timelineItemCard: some View {
         DesignSystemCatalogCard("Timeline Item", description: "4종류 × 기본·선택 상태와 메모 표시") {
             Picker("종류", selection: $timelineType) {
-                catalogPickerOptions(LabcordTimelineItemType.allCases)
+                catalogPickerOptions(TimelineItemType.allCases)
             }
             .accessibilityIdentifier("catalog.review.timeline.type")
             Picker("상태", selection: $timelineState) {
-                catalogPickerOptions(LabcordTimelineItemState.allCases)
+                catalogPickerOptions(TimelineItemState.allCases)
             }
             .accessibilityIdentifier("catalog.review.timeline.state")
             Toggle("메모 표시", isOn: $showsTimelineMemo)
@@ -123,7 +123,7 @@ struct DesignSystemReviewPage: View {
         DesignSystemCatalogCard(
             "Experiment Status Timeline Item", description: "실험 상태가 바뀐 시점의 기록"
         ) {
-            ExperimentStatusTimelineItem("실험 시작", timestamp: "10:17:24")
+            TimelineExperimentState("실험 시작", timestamp: "10:17:24")
         }
     }
 
@@ -137,11 +137,11 @@ struct DesignSystemReviewPage: View {
                 if example != .short { timerRecordState = .paused }
             }
             Picker("상태", selection: $timerRecordState) {
-                catalogPickerOptions(LabcordTimerRecordState.allCases)
+                catalogPickerOptions(TimerRecordState.allCases)
             }
             .accessibilityIdentifier("catalog.review.timerRecord.state")
             Picker("Timer Identity", selection: $timerIdentity) {
-                catalogPickerOptions(LabcordTimerIdentity.allCases, capitalized: false)
+                catalogPickerOptions(TimerIdentity.allCases, capitalized: false)
             }
             .accessibilityIdentifier("catalog.review.timerRecord.identity")
             Button("타이머 삭제", role: .destructive) { timerRecordState = .deleted }
@@ -187,11 +187,11 @@ struct DesignSystemReviewPage: View {
             "Record Bottom Sheet", description: "4종류 × 메모 Empty·Filled 상태의 실제 모달"
         ) {
             Picker("종류", selection: $recordType) {
-                catalogPickerOptions(LabcordRecordType.allCases)
+                catalogPickerOptions(RecordType.allCases)
             }
             .accessibilityIdentifier("catalog.review.recordSheet.type")
             Picker("메모 상태", selection: $recordContentState) {
-                catalogPickerOptions(LabcordRecordContentState.allCases)
+                catalogPickerOptions(RecordContentState.allCases)
             }
             .accessibilityIdentifier("catalog.review.recordSheet.content")
             if recordType == .timer {
@@ -258,7 +258,7 @@ private extension DesignSystemReviewPage {
                 ? "영상을 눌러 자동·반복 재생" : "사진을 눌러 사진과 메모 확인"
         ) {
             Picker("메모 상태", selection: $recordContentState) {
-                catalogPickerOptions(LabcordRecordContentState.allCases)
+                catalogPickerOptions(RecordContentState.allCases)
             }
             .accessibilityIdentifier(
                 isVideo
@@ -292,8 +292,8 @@ private extension DesignSystemReviewPage {
     }
 
     func openMediaRecord(
-        _ type: LabcordRecordType,
-        contentState: LabcordRecordContentState? = nil
+        _ type: RecordType,
+        contentState: RecordContentState? = nil
     ) {
         recordType = type
         if let contentState { recordContentState = contentState }
@@ -302,7 +302,7 @@ private extension DesignSystemReviewPage {
 }
 
 private struct CatalogRecordPresentation: Identifiable {
-    let type: LabcordRecordType
+    let type: RecordType
     let timerExample: CatalogTimerRecordExample
     let transcriptAtOpen: String
 

@@ -2,7 +2,7 @@ import LabcordDesignSystem
 import SwiftUI
 
 struct CatalogFeedbackToastScenario: View {
-    @State private var tone = LabcordToastType.success
+    @State private var tone = ToastType.success
     @State private var message = "프로토콜을 저장했어요."
     @State private var actionTitle = "다시시도"
     @State private var showsIcon = true
@@ -14,7 +14,7 @@ struct CatalogFeedbackToastScenario: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             if isVisible {
-                LabcordToast(
+                Toast(
                     message, type: tone,
                     showLeadingIcon: showsIcon, actionTitle: actionTitle,
                     onAction: showsAction ? {
@@ -31,7 +31,7 @@ struct CatalogFeedbackToastScenario: View {
                     .accessibilityIdentifier("catalog.scenario.toast.restore")
             }
             Picker("알림 종류", selection: $tone) {
-                ForEach(LabcordToastType.allCases, id: \.self) { tone in
+                ForEach(ToastType.allCases, id: \.self) { tone in
                     Text(String(describing: tone).capitalized).tag(tone)
                 }
             }
@@ -72,12 +72,12 @@ struct CatalogSetupAccordionScenario: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            LabcordAccordion(
+            Accordion(
                 title, count: chipItems.count,
                 showsCount: showsCount, isExpanded: $isExpanded,
                 state: isDisabled ? .disabled : .default
             ) {
-                LabcordChipGroup(
+                ChipGroup(
                     chipItems, label: \.title,
                     onRemove: { item in chipItems.removeAll { $0.id == item.id } },
                     onAdd: {

@@ -1,11 +1,11 @@
 # Status Badge
 
-[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/Feedback/LabcordStatusBadge.swift)
+[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/Feedback/StatusBadge.swift)
 
 `status`는 실험의 현재 `LabcordShared.ExperimentStatus`입니다.
 
 ```swift
-LabcordStatusBadge(status: status)
+StatusBadge(status: status)
 ```
 
 - `label:`을 생략하면 상태에 맞는 기본 문구를 사용합니다. 문구를 바꾸면 접근성 레이블에도 반영됩니다.

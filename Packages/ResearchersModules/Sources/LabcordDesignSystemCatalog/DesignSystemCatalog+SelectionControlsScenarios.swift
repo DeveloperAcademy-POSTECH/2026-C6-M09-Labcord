@@ -35,7 +35,7 @@ struct CatalogRadioButtonScenario: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            LabcordRadioButton("첫 번째 항목", value: 1, selection: $selection, size: size)
+            RadioButton("첫 번째 항목", value: 1, selection: $selection, size: size)
                 .labelsVisibility(.hidden)
                 .accessibilityIdentifier("catalog.radioButton.preview")
             Picker("크기", selection: $size) {
@@ -48,9 +48,9 @@ struct CatalogRadioButtonScenario: View {
             }
             .accessibilityIdentifier("catalog.radioButton.selected")
             VStack(alignment: .leading, spacing: 8) {
-                LabcordRadioButton("첫 번째 항목", value: 1, selection: $selection, size: size)
+                RadioButton("첫 번째 항목", value: 1, selection: $selection, size: size)
                     .accessibilityIdentifier("catalog.radioButton.optionOne")
-                LabcordRadioButton("두 번째 항목", value: 2, selection: $selection, size: size)
+                RadioButton("두 번째 항목", value: 2, selection: $selection, size: size)
                     .accessibilityIdentifier("catalog.radioButton.optionTwo")
             }
         }

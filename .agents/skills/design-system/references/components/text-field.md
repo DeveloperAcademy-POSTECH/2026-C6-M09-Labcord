@@ -1,6 +1,6 @@
 # Text Field
 
-[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/Input/LabcordTextFieldStyle.swift)
+[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/Input/FormTextFieldStyle.swift)
 
 iOS 예제의 `name`은 부모의 문자열 Binding이고 `focus`는 이 화면의 `FocusState<Bool>`입니다.
 

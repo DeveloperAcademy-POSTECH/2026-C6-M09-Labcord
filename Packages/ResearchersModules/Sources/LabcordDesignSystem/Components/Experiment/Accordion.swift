@@ -1,17 +1,17 @@
 import SwiftUI
 
-public enum LabcordAccordionState: String, Sendable {
+public enum AccordionState: String, Sendable {
     case `default`
     case disabled
 }
 
-public struct LabcordAccordion<Content: View>: View {
+public struct Accordion<Content: View>: View {
     @Binding private var isExpanded: Bool
 
     private let title: String
     private let count: String
     private let showsCount: Bool
-    private let state: LabcordAccordionState
+    private let state: AccordionState
     private let content: () -> Content
 
     private let tokenLayout = LayoutTokens()
@@ -22,7 +22,7 @@ public struct LabcordAccordion<Content: View>: View {
         count: Int? = nil,
         showsCount: Bool = true,
         isExpanded: Binding<Bool>,
-        state: LabcordAccordionState = .default,
+        state: AccordionState = .default,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.init(
@@ -40,7 +40,7 @@ public struct LabcordAccordion<Content: View>: View {
         count: String = "4",
         showsCount: Bool = true,
         isExpanded: Binding<Bool>,
-        state: LabcordAccordionState = .default,
+        state: AccordionState = .default,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.title = title
@@ -154,7 +154,7 @@ private struct AccordionPreviewContent: View {
     @State private var isExpanded = true
 
     var body: some View {
-        LabcordAccordion(isExpanded: $isExpanded) {
+        Accordion(isExpanded: $isExpanded) {
             Text("콘텐츠 슬롯")
                 .typography(Typography.subheadline)
                 .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
@@ -164,7 +164,7 @@ private struct AccordionPreviewContent: View {
 
 private struct DisabledAccordionPreviewContent: View {
     var body: some View {
-        LabcordAccordion(
+        Accordion(
             title: "비활성 항목",
             isExpanded: .constant(false),
             state: .disabled

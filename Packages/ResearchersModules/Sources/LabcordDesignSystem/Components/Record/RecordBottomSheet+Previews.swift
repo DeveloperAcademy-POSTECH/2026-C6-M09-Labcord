@@ -31,7 +31,7 @@ import SwiftUI
 #else
         TextEditor(text: .constant("호출자 전사 슬롯"))
             .labcordTextEditorStyle(
-                LabcordTextEditorStyle(
+                FormTextAreaStyle(
                     placeholder: Text("내용을 입력해 주세요"),
                     isEmpty: false,
                     isFilled: true

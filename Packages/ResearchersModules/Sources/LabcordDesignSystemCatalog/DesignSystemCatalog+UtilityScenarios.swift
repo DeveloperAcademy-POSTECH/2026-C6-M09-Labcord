@@ -7,7 +7,7 @@ struct CatalogControlStatusBadgeScenario: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            LabcordStatusBadge(status: status)
+            StatusBadge(status: status)
                 .accessibilityIdentifier("catalog.scenario.statusBadge.preview")
             Picker("상태", selection: $status) {
                 catalogPickerOptions(
@@ -30,12 +30,12 @@ struct CatalogControlSeparatorScenario: View {
                 if isVertical {
                     HStack(spacing: 12) {
                         Text("Default")
-                        LabcordSeparator(orientation: .vertical)
+                        Separator(orientation: .vertical)
                             .frame(height: 24)
                         Text("Vertical")
                     }
                 } else {
-                    LabcordSeparator()
+                    Separator()
                 }
             }
             .accessibilityElement(children: .contain)
@@ -50,7 +50,7 @@ struct CatalogControlSeparatorScenario: View {
 }
 
 struct CatalogControlLoadingScenario: View {
-    @State private var size = LabcordProgressViewStyle.Size.small
+    @State private var size = LoadingIndicatorStyle.Size.small
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -59,7 +59,7 @@ struct CatalogControlLoadingScenario: View {
                 .accessibilityLabel(Text("로딩 중"))
                 .accessibilityIdentifier("catalog.scenario.loading.preview")
             Picker("크기", selection: $size) {
-                ForEach(LabcordProgressViewStyle.Size.allCases, id: \.rawValue) { size in
+                ForEach(LoadingIndicatorStyle.Size.allCases, id: \.rawValue) { size in
                     Text(String(describing: size).capitalized).tag(size)
                 }
             }
