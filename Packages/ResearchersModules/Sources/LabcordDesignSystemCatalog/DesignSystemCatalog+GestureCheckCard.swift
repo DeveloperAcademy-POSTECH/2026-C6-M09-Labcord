@@ -7,7 +7,7 @@ struct DesignSystemGestureCheckCardPage: View {
     var body: some View {
         DesignSystemCatalogPage(title: "Gesture Check Card", context: .experiment) {
             DesignSystemCatalogCard("Gesture Check Card", description: "제스처 인식 결과와 안내 문구") {
-                GestureCheckCard(
+                GestureToast(
                     title: "토스트 문구입니다.",
                     subtitle: "토스트 문구입니다.",
                     showsFollowingIcon: showsFollowingIcon
