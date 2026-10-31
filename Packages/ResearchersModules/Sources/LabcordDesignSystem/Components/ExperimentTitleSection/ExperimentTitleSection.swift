@@ -61,7 +61,7 @@ public struct ExperimentTitleSection<Leading: View, Trailing: View>: View {
     private var titleView: some View {
         Text(title)
             .typography(Typography.headline)
-            .foregroundStyle(Color("Experiment/Label/Secondary", bundle: .module))
+            .foregroundStyle(Color(.Experiment.Label.secondary))
             .multilineTextAlignment(.leading)
             .fixedSize(horizontal: false, vertical: true)
             .layoutPriority(1)
@@ -101,7 +101,7 @@ public extension ExperimentTitleSection where Trailing == EmptyView {
     )
     .frame(width: 749)
     .padding()
-    .background(Color("Experiment/Background/Primary", bundle: .module))
+    .background(Color(.Experiment.Background.primary))
 }
 
 #Preview("Vertical · 긴 제목") {
@@ -115,7 +115,7 @@ public extension ExperimentTitleSection where Trailing == EmptyView {
     .environment(\.dynamicTypeSize, .accessibility3)
     .frame(width: 401)
     .padding()
-    .background(Color("Experiment/Background/Primary", bundle: .module))
+    .background(Color(.Experiment.Background.primary))
 }
 
 private func noTitleSectionAction() { }

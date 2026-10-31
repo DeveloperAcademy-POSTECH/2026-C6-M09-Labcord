@@ -49,7 +49,7 @@ public struct TimerSettingSheet: View {
     public var body: some View {
         VStack(spacing: LayoutTokens.spacing16) {
             Capsule()
-                .fill(Color("General/Timer/Sheet/Grabber", bundle: .module))
+                .fill(Color(.General.Timer.Sheet.grabber))
                 .frame(width: 36, height: 5)
                 .accessibilityHidden(true)
 
@@ -77,7 +77,7 @@ public struct TimerSettingSheet: View {
         .padding(.bottom, isPresented ? 0 : LayoutTokens.spacing32)
         .frame(maxWidth: .infinity, alignment: .center)
         .background(
-            Color("General/Background/Grouped/Secondary", bundle: .module),
+            Color(.General.Background.Grouped.secondary),
             ignoresSafeAreaEdges: []
         )
         .clipShape(RoundedRectangle(cornerRadius: isPresented ? 0 : 28))
@@ -90,7 +90,7 @@ public struct TimerSettingSheet: View {
     }
 
     private var resolvedShadowColor: Color {
-        Color("General/Effect/Shadow/Medium/Color", bundle: .module)
+        Color(.General.Effect.Shadow.Medium.color)
     }
 
     private var header: some View {
@@ -103,7 +103,7 @@ public struct TimerSettingSheet: View {
 
             Text("타이머")
                 .typography(Typography.bodySemiBold)
-                .foregroundStyle(Color("General/Label/Primary", bundle: .module))
+                .foregroundStyle(Color(.General.Label.primary))
                 .frame(maxWidth: .infinity)
 
             Color.clear

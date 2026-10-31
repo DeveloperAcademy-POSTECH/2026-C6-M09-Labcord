@@ -25,9 +25,9 @@ public struct TimerControlButton: View {
         .buttonStyle(
             RunIconButtonStyle(
                 background: state == .running
-                    ? Color("Experiment/Timer/Background", bundle: .module)
-                    : Color("Experiment/Fill/Primary", bundle: .module),
-                foreground: Color("Experiment/Timer/Foreground", bundle: .module),
+                    ? Color(.Experiment.Timer.background)
+                    : Color(.Experiment.Fill.primary),
+                foreground: Color(.Experiment.Timer.foreground),
                 iconSize: 20
             )
         )
@@ -58,7 +58,7 @@ private extension TimerControlButton.State {
         TimerControlButton(state: .disabled, action: noTimerControlAction)
     }
     .padding()
-    .background(Color("Experiment/Background/Primary", bundle: .module))
+    .background(Color(.Experiment.Background.primary))
 }
 
 private func noTimerControlAction() { }

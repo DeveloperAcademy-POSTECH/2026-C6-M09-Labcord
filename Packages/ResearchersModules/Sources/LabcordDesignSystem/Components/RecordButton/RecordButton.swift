@@ -58,8 +58,8 @@ public struct RecordButton: View {
         }
         .buttonStyle(
             RunIconButtonStyle(
-                background: Color("Experiment/Fill/Secondary", bundle: .module),
-                foreground: Color("Experiment/Label/Brand", bundle: .module),
+                background: Color(.Experiment.Fill.secondary),
+                foreground: Color(.Experiment.Label.brand),
                 iconSize: LayoutTokens.iconDefaultSize
             )
         )
@@ -122,7 +122,7 @@ private extension RecordButton.State {
         RecordButton(type: .audio, state: .disabled, action: noRecordAction)
     }
     .padding()
-    .background(Color("Experiment/Background/Primary", bundle: .module))
+    .background(Color(.Experiment.Background.primary))
 }
 
 private func noRecordAction() { }

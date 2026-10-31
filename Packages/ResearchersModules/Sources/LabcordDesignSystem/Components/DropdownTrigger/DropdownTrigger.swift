@@ -50,7 +50,7 @@ public struct DropdownTriggerLabel: View {
         .frame(idealWidth: width, maxWidth: width, minHeight: height, alignment: .leading)
         .background {
             Rectangle()
-                .fill((fillColor ?? Color("General/Fill/Secondary", bundle: .module)))
+                .fill((fillColor ?? Color(.General.Fill.secondary)))
                 .opacity(fillColor == nil ? 0 : 1)
                 .labcordMotion(.state, value: fillColor)
                 .allowsHitTesting(false)
@@ -137,17 +137,17 @@ public struct DropdownTriggerLabel: View {
 
     private var foregroundColor: Color {
         switch effectiveState {
-        case .default: return Color("General/Label/Tertiary", bundle: .module)
-        case .filled, .open: return Color("General/Label/Primary", bundle: .module)
-        case .disabled: return Color("General/Label/Disabled", bundle: .module)
-        case .error: return Color("General/Feedback/Error/Foreground", bundle: .module)
+        case .default: return Color(.General.Label.tertiary)
+        case .filled, .open: return Color(.General.Label.primary)
+        case .disabled: return Color(.General.Label.disabled)
+        case .error: return Color(.General.Feedback.Error.foreground)
         }
     }
 
     private var fillColor: Color? {
         switch effectiveState {
-        case .disabled: return Color("General/Fill/Secondary", bundle: .module)
-        case .error: return Color("General/Feedback/Error/Subtle", bundle: .module)
+        case .disabled: return Color(.General.Fill.secondary)
+        case .error: return Color(.General.Feedback.Error.subtle)
         case .default, .filled, .open:
             return nil
         }

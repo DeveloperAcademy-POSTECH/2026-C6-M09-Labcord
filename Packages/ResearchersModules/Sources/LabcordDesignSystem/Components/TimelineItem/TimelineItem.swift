@@ -92,7 +92,7 @@ public struct TimelineItem: View {
         HStack(alignment: .top, spacing: LayoutTokens.spacing12) {
             Text(timestamp)
                 .typography(Typography.body)
-                .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
+                .foregroundStyle(Color(.General.Label.secondary))
                 .frame(minWidth: 70, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -100,7 +100,7 @@ public struct TimelineItem: View {
                 if type == .voice {
                     Text(title)
                         .typography(Typography.bodySemiBold)
-                        .foregroundStyle(Color("General/Label/Primary", bundle: .module))
+                        .foregroundStyle(Color(.General.Label.primary))
                         .contentTransition(.opacity)
                         .labcordMotion(.state, value: title)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -150,12 +150,12 @@ public struct TimelineItem: View {
         VStack(alignment: .leading, spacing: LayoutTokens.spacing12) {
             Text(memoTitle)
                 .typography(Typography.calloutSemiBold)
-                .foregroundStyle(Color("General/Label/Tertiary", bundle: .module))
+                .foregroundStyle(Color(.General.Label.tertiary))
                 .fixedSize(horizontal: false, vertical: true)
 
             Text(memo)
                 .typography(Typography.callout)
-                .foregroundStyle(Color("General/Label/Primary", bundle: .module))
+                .foregroundStyle(Color(.General.Label.primary))
                 .contentTransition(.opacity)
                 .labcordMotion(.state, value: memo)
                 .fixedSize(horizontal: false, vertical: true)
@@ -164,14 +164,14 @@ public struct TimelineItem: View {
         .padding(LayoutTokens.spacing12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            Color("General/Timeline/Memo/Background", bundle: .module),
+            Color(.General.Timeline.Memo.background),
             in: RoundedRectangle(cornerRadius: LayoutTokens.radiusSm)
         )
     }
 
     private var selectionBackground: some View {
         RoundedRectangle(cornerRadius: LayoutTokens.radiusSm)
-            .fill(Color("General/Fill/Primary", bundle: .module))
+            .fill(Color(.General.Fill.primary))
             .opacity(state == .selected ? 1 : 0)
             .labcordMotion(.state, value: state.rawValue)
             .allowsHitTesting(false)
@@ -192,18 +192,18 @@ public typealias LabcordTimelineItem = TimelineItem
                 state: .default
             ) {
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(Color("General/Fill/Secondary", bundle: .module))
+                    .fill(Color(.General.Fill.secondary))
                     .frame(height: 160)
                     .overlay {
                         Text("호출자 미디어 슬롯")
                             .typography(Typography.callout)
-                            .foregroundStyle(Color("General/Label/Secondary", bundle: .module))
+                            .foregroundStyle(Color(.General.Label.secondary))
                     }
             }
         }
     }
-    .foregroundStyle(Color("General/Label/Primary", bundle: .module))
-    .background(Color("General/Background/Primary", bundle: .module))
+    .foregroundStyle(Color(.General.Label.primary))
+    .background(Color(.General.Background.primary))
 }
 
 #Preview("타임라인 · 큰 글자") {
