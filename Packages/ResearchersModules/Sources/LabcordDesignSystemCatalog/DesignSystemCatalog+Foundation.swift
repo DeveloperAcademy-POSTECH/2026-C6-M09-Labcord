@@ -143,12 +143,19 @@ struct DesignSystemFoundationPage: View {
         DesignSystemCatalogCard("Spacing", description: "토큰 간격으로 배치한 두 도형") {
             VStack(alignment: .leading, spacing: 16) {
                 ForEach([
-                    LayoutToken.spacing2, .spacing4, .spacing8, .spacing10, .spacing12,
-                    .spacing16, .spacing20, .spacing24, .spacing32
-                ], id: \.rawValue) { token in
+                    CatalogMetric("spacing/2", layout.spacing2),
+                    CatalogMetric("spacing/4", layout.spacing4),
+                    CatalogMetric("spacing/8", layout.spacing8),
+                    CatalogMetric("spacing/10", layout.spacing10),
+                    CatalogMetric("spacing/12", layout.spacing12),
+                    CatalogMetric("spacing/16", layout.spacing16),
+                    CatalogMetric("spacing/20", layout.spacing20),
+                    CatalogMetric("spacing/24", layout.spacing24),
+                    CatalogMetric("spacing/32", layout.spacing32)
+                ]) { token in
                     VStack(alignment: .leading, spacing: 8) {
-                        CatalogMetricLabel(name: token.rawValue, value: layout[token])
-                        HStack(spacing: layout[token]) {
+                        CatalogMetricLabel(name: token.name, value: token.value)
+                        HStack(spacing: token.value) {
                             Rectangle().fill(.labcord(.labelBrand)).frame(width: 20, height: 20)
                             Rectangle().fill(.labcord(.labelBrand)).frame(width: 20, height: 20)
                         }
@@ -164,11 +171,14 @@ struct DesignSystemFoundationPage: View {
         DesignSystemCatalogCard("Radius", description: "같은 도형에 적용한 모서리 반경") {
             VStack(alignment: .leading, spacing: 16) {
                 ForEach([
-                    LayoutToken.radiusSm, .radiusMd, .radiusLg, .radiusFull
-                ], id: \.rawValue) { token in
+                    CatalogMetric("radius/sm", layout.radiusSm),
+                    CatalogMetric("radius/md", layout.radiusMd),
+                    CatalogMetric("radius/lg", layout.radiusLg),
+                    CatalogMetric("radius/full", layout.radiusFull)
+                ]) { token in
                     VStack(alignment: .leading, spacing: 8) {
-                        CatalogMetricLabel(name: token.rawValue, value: layout[token])
-                        RoundedRectangle(cornerRadius: layout[token], style: .continuous)
+                        CatalogMetricLabel(name: token.name, value: token.value)
+                        RoundedRectangle(cornerRadius: token.value, style: .continuous)
                             .fill(.labcord(.fillPrimary))
                             .frame(height: 60)
                             .accessibilityHidden(true)
@@ -183,14 +193,17 @@ struct DesignSystemFoundationPage: View {
         DesignSystemCatalogCard("Size", description: "토큰 크기를 보여주는 도형") {
             VStack(alignment: .leading, spacing: 16) {
                 ForEach([
-                    LayoutToken.iconDefaultSize, .iconLargeSize, .controlDefaultSize,
-                    .timerTabHeight, .timerItemHeight
-                ], id: \.rawValue) { token in
+                    CatalogMetric("size/icon/default", layout.iconDefaultSize),
+                    CatalogMetric("size/icon/large", layout.iconLargeSize),
+                    CatalogMetric("size/control/default", layout.controlDefaultSize),
+                    CatalogMetric("size/timer-tab/height", layout.timerTabHeight),
+                    CatalogMetric("size/timer-item/height", layout.timerItemHeight)
+                ]) { token in
                     VStack(alignment: .leading, spacing: 8) {
-                        CatalogMetricLabel(name: token.rawValue, value: layout[token])
+                        CatalogMetricLabel(name: token.name, value: token.value)
                         RoundedRectangle(cornerRadius: layout.radiusSm, style: .continuous)
                             .fill(.labcord(.labelBrand))
-                            .frame(width: layout[token], height: layout[token])
+                            .frame(width: token.value, height: token.value)
                             .accessibilityHidden(true)
                     }
                 }
@@ -199,6 +212,18 @@ struct DesignSystemFoundationPage: View {
         .accessibilityIdentifier("foundation.card.size")
     }
 
+}
+
+private struct CatalogMetric: Identifiable {
+    let name: String
+    let value: CGFloat
+
+    var id: String { name }
+
+    init(_ name: String, _ value: CGFloat) {
+        self.name = name
+        self.value = value
+    }
 }
 
 private struct CatalogMetricLabel: View {
@@ -251,21 +276,41 @@ private struct CatalogFoundationEffectsCard: View {
     private var layout: LayoutTokens { LabcordTheme(context: context).layout }
     private var effects: EffectTokens { LabcordTheme(context: context).effects }
 
+    private var blurMetrics: [CatalogMetric] {
+        [
+            CatalogMetric("Effect/Blur/Soft/Radius", effects.blurSoftRadius),
+            CatalogMetric("Effect/Blur/Medium/Radius", effects.blurMediumRadius),
+            CatalogMetric("Effect/Blur/Strong/Radius", effects.blurStrongRadius)
+        ]
+    }
+
+    private var shadowMetrics: [CatalogMetric] {
+        [
+            CatalogMetric("Effect/Shadow/Soft/Radius", effects.shadowSoftRadius),
+            CatalogMetric("Effect/Shadow/Soft/OffsetY", effects.shadowSoftOffsetY),
+            CatalogMetric("Effect/Shadow/Soft/Spread", effects.shadowSoftSpread),
+            CatalogMetric("Effect/Shadow/Medium/Radius", effects.shadowMediumRadius),
+            CatalogMetric("Effect/Shadow/Medium/OffsetY", effects.shadowMediumOffsetY),
+            CatalogMetric("Effect/Shadow/Medium/Spread", effects.shadowMediumSpread),
+            CatalogMetric("Effect/Shadow/Strong/Radius", effects.shadowStrongRadius),
+            CatalogMetric("Effect/Shadow/Strong/OffsetY", effects.shadowStrongOffsetY),
+            CatalogMetric("Effect/Shadow/Strong/Spread", effects.shadowStrongSpread)
+        ]
+    }
+
     var body: some View {
         DesignSystemCatalogCard(
             context == .general ? "General · Effect" : "Experiment · Effect",
             description: "현재 맥락의 수치와 native SwiftUI 예시. 원본 background blur와 콘텐츠 blur는 표현 방식이 다릅니다."
         ) {
             VStack(alignment: .leading, spacing: 20) {
-                ForEach(EffectToken.allCases, id: \.rawValue) { token in
-                    CatalogMetricLabel(name: token.rawValue, value: effects[token])
+                ForEach(blurMetrics + shadowMetrics) { token in
+                    CatalogMetricLabel(name: token.name, value: token.value)
                 }
 
-                ForEach([
-                    EffectToken.blurSoftRadius, .blurMediumRadius, .blurStrongRadius
-                ], id: \.rawValue) { token in
+                ForEach(blurMetrics) { token in
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("콘텐츠 blur · \(token.rawValue)")
+                        Text("콘텐츠 blur · \(token.name)")
                             .typography(Typography.caption1)
                             .fixedSize(horizontal: false, vertical: true)
                         Text("Aa")
@@ -278,7 +323,7 @@ private struct CatalogFoundationEffectsCard: View {
                             )
                             .foregroundStyle(.labcord(.labelPrimary))
                             .labcordTheme(LabcordTheme(context: context))
-                            .blur(radius: effects[token])
+                            .blur(radius: token.value)
                             .padding(48)
                             .accessibilityHidden(true)
                     }
