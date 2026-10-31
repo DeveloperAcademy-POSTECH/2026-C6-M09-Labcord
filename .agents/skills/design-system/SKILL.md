@@ -10,7 +10,7 @@ description: Labcord 디자인 시스템의 컴포넌트를 사용·수정하거
 
 ## 공통 경계
 
-- 앱 코드에서 `import LabcordDesignSystem`을 사용합니다.
+- iOS 앱 코드에서 `import LabcordDesignSystem`을 사용합니다. Watch용 디자인 시스템은 별도로 다룹니다.
 - native SwiftUI 제어·Style·Binding·FocusState·role·disabled·접근성 사용 방식을 유지합니다.
 - 상태·실행·재생·저장·통신은 호출부가 소유합니다. 기존 Feature 상태를 복제하거나 실제 동작에 빈 콜백·상수 Binding을 연결하지 않습니다.
 - 공통 UI는 카탈로그에 역의존하지 않으며 제품 기능은 카탈로그의 샘플 엔진·상태에 의존하지 않습니다.

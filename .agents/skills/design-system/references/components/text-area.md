@@ -13,4 +13,3 @@ TextEditor(text: $memo)
 
 - 플레이스홀더는 실제 입력값이 아닙니다. 빈 값·활성·오류 표시는 현재 문자열과 포커스로 연결합니다.
 - 실제 입력 비활성화는 native `.disabled`로 처리합니다. 전체 박스 노출·바깥 탭 해제는 [입력 포커스](../input-focus.md)를 따릅니다.
-- Watch의 modifier는 내용을 그대로 반환합니다. 이 예제가 Watch에 `TextEditor` 지원을 추가하지는 않습니다.
