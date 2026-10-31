@@ -11,8 +11,7 @@ public struct ExperimentSidePanel<Content: View>: View {
     private let layout: Layout
     private let content: () -> Content
 
-    @Environment(\.labcordTheme) private var theme
-    @Environment(\.colorScheme) private var colorScheme
+    private let tokenLayout = LayoutTokens()
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -39,9 +38,9 @@ public struct ExperimentSidePanel<Content: View>: View {
             .compositingGroup()
             .shadow(
                 color: shadowColor,
-                radius: theme.effects(for: colorScheme).shadowSoftRadius / 2,
+                radius: EffectTokens().shadowSoftRadius / 2,
                 x: 0,
-                y: theme.effects(for: colorScheme).shadowSoftOffsetY
+                y: EffectTokens().shadowSoftOffsetY
             )
             .accessibilityElement(children: .contain)
     }
@@ -83,7 +82,7 @@ public struct ExperimentSidePanel<Content: View>: View {
     private var handle: some View {
         Button(action: toggle) {
             handleLabel
-                .background(.labcord(.fillDark), in: panelShape)
+                .background(Color("Experiment/Fill/Dark", bundle: .module), in: panelShape)
                 .contentShape(panelShape)
         }
         .buttonStyle(LabcordPlainButtonStyle())
@@ -99,13 +98,13 @@ public struct ExperimentSidePanel<Content: View>: View {
         switch layout {
         case .portrait:
             handleIcon
-                .padding(.top, theme.layout.spacing4)
-                .padding(.horizontal, theme.layout.spacing8)
+                .padding(.top, tokenLayout.spacing4)
+                .padding(.horizontal, tokenLayout.spacing8)
                 .frame(width: handleLength)
         case .landscape:
             handleIcon
-                .padding(.leading, theme.layout.spacing4)
-                .padding(.vertical, theme.layout.spacing8)
+                .padding(.leading, tokenLayout.spacing4)
+                .padding(.vertical, tokenLayout.spacing8)
                 .frame(height: handleLength)
         }
     }
@@ -116,7 +115,7 @@ public struct ExperimentSidePanel<Content: View>: View {
             size: 28,
             relativeTo: .body
         )
-        .foregroundStyle(.labcord(.labelBrand))
+        .foregroundStyle(Color("Experiment/Label/Brand", bundle: .module))
         .rotationEffect(.degrees(layout == .landscape && !isExpanded ? 180 : 0))
     }
 
@@ -134,14 +133,14 @@ public struct ExperimentSidePanel<Content: View>: View {
                         maxHeight: .infinity,
                         alignment: .bottom
                     )
-                    .padding(.top, theme.layout.spacing12)
-                    .padding(.horizontal, theme.layout.spacing16)
-                    .padding(.bottom, theme.layout.spacing32)
+                    .padding(.top, tokenLayout.spacing12)
+                    .padding(.horizontal, tokenLayout.spacing16)
+                    .padding(.bottom, tokenLayout.spacing32)
                     .frame(minHeight: 366)
                     .transition(contentTransition(edge: .bottom))
             }
         }
-        .background(.labcord(.fillDark), in: panelShape)
+        .background(Color("Experiment/Fill/Dark", bundle: .module), in: panelShape)
         .clipShape(panelShape)
     }
 
@@ -153,14 +152,14 @@ public struct ExperimentSidePanel<Content: View>: View {
             if isExpanded {
                 content()
                     .frame(maxWidth: .infinity, minHeight: 322)
-                    .padding(.leading, theme.layout.spacing16)
+                    .padding(.leading, tokenLayout.spacing16)
                     .padding(.trailing, 62)
                     .padding(.top, 80)
                     .frame(maxWidth: .infinity, minHeight: 402)
                     .transition(contentTransition(edge: .trailing))
             }
         }
-        .background(.labcord(.fillDark), in: panelShape)
+        .background(Color("Experiment/Fill/Dark", bundle: .module), in: panelShape)
         .clipShape(panelShape)
     }
 
@@ -170,19 +169,19 @@ public struct ExperimentSidePanel<Content: View>: View {
 
     private var panelShape: UnevenRoundedRectangle {
         UnevenRoundedRectangle(
-            topLeadingRadius: theme.layout.radiusLg,
-            bottomLeadingRadius: layout == .landscape ? theme.layout.radiusLg : 0,
+            topLeadingRadius: tokenLayout.radiusLg,
+            bottomLeadingRadius: layout == .landscape ? tokenLayout.radiusLg : 0,
             bottomTrailingRadius: 0,
-            topTrailingRadius: layout == .portrait ? theme.layout.radiusLg : 0
+            topTrailingRadius: layout == .portrait ? tokenLayout.radiusLg : 0
         )
     }
 
     private var handleLength: CGFloat {
-        max(83, scaledIconSize + theme.layout.spacing16)
+        max(83, scaledIconSize + tokenLayout.spacing16)
     }
 
     private var handleHitInset: CGFloat {
-        max(0, (44 - scaledIconSize - theme.layout.spacing4) / 2)
+        max(0, (44 - scaledIconSize - tokenLayout.spacing4) / 2)
     }
 
     private var usesIntrinsicAccessibilitySize: Bool {
@@ -190,11 +189,11 @@ public struct ExperimentSidePanel<Content: View>: View {
     }
 
     private var landscapeWidth: CGFloat {
-        isExpanded ? 400 : 62 + scaledIconSize + theme.layout.spacing4
+        isExpanded ? 400 : 62 + scaledIconSize + tokenLayout.spacing4
     }
 
     private var shadowColor: Color {
-        theme.color(.effectShadowSoftColor, colorScheme: colorScheme)
+        Color("Experiment/Effect/Shadow/Soft/Color", bundle: .module)
     }
 
     private func toggle() {
@@ -219,8 +218,7 @@ public extension ExperimentSidePanel where Content == EmptyView {
             .foregroundStyle(.white)
     }
     .frame(width: 450, height: 430)
-    .background(.labcord(.backgroundPrimary))
-    .labcordTheme(LabcordTheme(context: .experiment))
+    .background(Color("Experiment/Background/Primary", bundle: .module))
 }
 
 #Preview("실험 패널 · 세로") {
@@ -231,6 +229,5 @@ public extension ExperimentSidePanel where Content == EmptyView {
             .foregroundStyle(.white)
     }
     .frame(width: 402, height: 430)
-    .background(.labcord(.backgroundPrimary))
-    .labcordTheme(LabcordTheme(context: .experiment))
+    .background(Color("Experiment/Background/Primary", bundle: .module))
 }

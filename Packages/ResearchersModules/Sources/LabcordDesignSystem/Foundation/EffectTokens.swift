@@ -1,5 +1,10 @@
 import CoreGraphics
 
+public enum EffectContext: Sendable {
+    case general
+    case experiment
+}
+
 public struct EffectTokens: Sendable {
     public let blurSoftRadius: CGFloat
     public let blurMediumRadius: CGFloat
@@ -14,7 +19,7 @@ public struct EffectTokens: Sendable {
     public let shadowStrongOffsetY: CGFloat = 12
     public let shadowStrongSpread: CGFloat = 0
 
-    public init(context: ThemeContext = .general) {
+    public init(context: EffectContext = .general) {
         if context == .experiment {
             blurSoftRadius = 12
             blurMediumRadius = 24
