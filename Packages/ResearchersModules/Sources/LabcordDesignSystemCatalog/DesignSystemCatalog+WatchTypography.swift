@@ -24,7 +24,6 @@ enum CatalogWatchTypography: String, CaseIterable {
     case caption1 = "Caption 1"
     case caption2 = "Caption 2"
     case footnote1 = "Footnote 1"
-    case footnote2 = "Footnote 2"
 
     var pointSize: CGFloat {
         switch self {
@@ -36,7 +35,6 @@ enum CatalogWatchTypography: String, CaseIterable {
         case .caption1: 15
         case .caption2: 14
         case .footnote1: 13
-        case .footnote2: 12
         }
     }
 
@@ -50,7 +48,7 @@ enum CatalogWatchTypography: String, CaseIterable {
         case .body: .body
         case .caption1: .caption
         case .caption2: .caption2
-        case .footnote1, .footnote2: .footnote
+        case .footnote1: .footnote
         }
     }
 
@@ -67,7 +65,6 @@ enum CatalogWatchTypography: String, CaseIterable {
         case .caption1: Typography.caption1
         case .caption2: Typography.caption2
         case .footnote1: Typography.footnote
-        case .footnote2: Typography.footnote2
         }
     }
     #endif

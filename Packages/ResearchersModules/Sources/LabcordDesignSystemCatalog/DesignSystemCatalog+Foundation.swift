@@ -9,20 +9,20 @@ enum CatalogTypography: String, CaseIterable {
     case title2 = "Title 2"
     case title2Emphasized = "Title 2 Emphasized"
     case title3 = "Title 3"
-    case title3Emphasized = "Title 3 Emphasized"
+    case title3SemiBold = "Title 3 SemiBold"
     case headline = "Headline"
     case body = "Body"
-    case bodyEmphasized = "Body Emphasized"
+    case bodySemiBold = "Body SemiBold"
     case callout = "Callout"
-    case calloutEmphasized = "Callout Emphasized"
+    case calloutSemiBold = "Callout SemiBold"
     case subheadline = "Subheadline"
-    case subheadlineEmphasized = "Subheadline Emphasized"
+    case subheadlineSemiBold = "Subheadline SemiBold"
     case footnote = "Footnote"
-    case footnoteEmphasized = "Footnote Emphasized"
+    case footnoteSemiBold = "Footnote SemiBold"
     case caption1 = "Caption 1"
-    case caption1Emphasized = "Caption 1 Emphasized"
+    case caption1SemiBold = "Caption 1 SemiBold"
     case caption2 = "Caption 2"
-    case caption2Emphasized = "Caption 2 Emphasized"
+    case caption2SemiBold = "Caption 2 SemiBold"
 
     @MainActor
     var style: TypographyStyle {
@@ -34,20 +34,20 @@ enum CatalogTypography: String, CaseIterable {
         case .title2: Typography.title2
         case .title2Emphasized: Typography.title2Emphasized
         case .title3: Typography.title3
-        case .title3Emphasized: Typography.title3Emphasized
+        case .title3SemiBold: Typography.title3SemiBold
         case .headline: Typography.headline
         case .body: Typography.body
-        case .bodyEmphasized: Typography.bodyEmphasized
+        case .bodySemiBold: Typography.bodySemiBold
         case .callout: Typography.callout
-        case .calloutEmphasized: Typography.calloutEmphasized
+        case .calloutSemiBold: Typography.calloutSemiBold
         case .subheadline: Typography.subheadline
-        case .subheadlineEmphasized: Typography.subheadlineEmphasized
+        case .subheadlineSemiBold: Typography.subheadlineSemiBold
         case .footnote: Typography.footnote
-        case .footnoteEmphasized: Typography.footnoteEmphasized
+        case .footnoteSemiBold: Typography.footnoteSemiBold
         case .caption1: Typography.caption1
-        case .caption1Emphasized: Typography.caption1Emphasized
+        case .caption1SemiBold: Typography.caption1SemiBold
         case .caption2: Typography.caption2
-        case .caption2Emphasized: Typography.caption2Emphasized
+        case .caption2SemiBold: Typography.caption2SemiBold
         }
     }
 }

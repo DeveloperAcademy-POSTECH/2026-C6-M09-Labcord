@@ -159,7 +159,7 @@ struct CatalogDisclosureGroup<Content: View>: View {
         #if os(watchOS)
         VStack(alignment: .leading, spacing: 12) {
             titleLabel
-                .typography(Typography.calloutEmphasized)
+                .typography(Typography.calloutSemiBold)
             content()
         }
         #else

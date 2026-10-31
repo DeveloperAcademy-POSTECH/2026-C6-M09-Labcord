@@ -1,4 +1,5 @@
 import LabcordDesignSystem
+import LabcordShared
 import SwiftUI
 
 struct CatalogCheckboxScenario: View {
@@ -62,7 +63,7 @@ struct CatalogExperimentListItemScenario: View {
     @State private var showRadioButton = true
     @State private var title = "실험 제목"
     @State private var date = "2026.10.13"
-    @State private var status = LabcordStatusBadge.Status.ready
+    @State private var status = ExperimentStatus.preparing
     @State private var openCount = 0
 
     var body: some View {
@@ -78,7 +79,7 @@ struct CatalogExperimentListItemScenario: View {
             }
             .accessibilityIdentifier("catalog.review.experimentList.state")
             Picker("배지 상태", selection: $status) {
-                catalogPickerOptions(LabcordStatusBadge.Status.allCases)
+                catalogPickerOptions([ExperimentStatus.preparing, .inProgress, .paused, .completed])
             }
             .accessibilityIdentifier("catalog.review.experimentStatus")
             CatalogDisclosureGroup("콘텐츠 옵션") {

@@ -50,7 +50,7 @@ let package = Package(
         ),
         .target(
             name: "LabcordDesignSystemCatalog",
-            dependencies: ["LabcordDesignSystem"]
+            dependencies: ["LabcordDesignSystem", "LabcordShared"]
         ),
         .target(
             name: "LabcordiOS",
