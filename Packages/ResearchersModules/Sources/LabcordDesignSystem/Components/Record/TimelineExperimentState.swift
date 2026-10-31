@@ -1,6 +1,6 @@
 import SwiftUI
 
-public struct ExperimentStatusTimelineItem: View {
+public struct TimelineExperimentState: View {
     private let timestamp: String
     private let title: String
 
@@ -41,15 +41,15 @@ public struct ExperimentStatusTimelineItem: View {
     }
 }
 
-public typealias LabcordExperimentStatusTimelineItem = ExperimentStatusTimelineItem
+public typealias LabcordTimelineExperimentState = TimelineExperimentState
 
 #if DEBUG
 #Preview("실험 상태 타임라인") {
     _ = FontRegistration.register()
     return VStack(alignment: .leading, spacing: 0) {
-        ExperimentStatusTimelineItem()
-        ExperimentStatusTimelineItem(timestamp: "10:25:09", title: "실험 일시정지")
-        ExperimentStatusTimelineItem(timestamp: "11:02:41", title: "실험 종료")
+        TimelineExperimentState()
+        TimelineExperimentState(timestamp: "10:25:09", title: "실험 일시정지")
+        TimelineExperimentState(timestamp: "11:02:41", title: "실험 종료")
     }
     .foregroundStyle(Color("General/Label/Primary", bundle: .module))
     .background(Color("General/Background/Primary", bundle: .module))
@@ -57,7 +57,7 @@ public typealias LabcordExperimentStatusTimelineItem = ExperimentStatusTimelineI
 
 #Preview("실험 상태 타임라인 · 큰 글자") {
     _ = FontRegistration.register()
-    return ExperimentStatusTimelineItem(
+    return TimelineExperimentState(
         timestamp: "오후 10:17:24",
         title: "실험 상태가 변경되었습니다"
     )

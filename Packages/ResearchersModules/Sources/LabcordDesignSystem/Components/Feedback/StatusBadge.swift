@@ -1,7 +1,7 @@
 import LabcordShared
 import SwiftUI
 
-public struct LabcordStatusBadge: View {
+public struct StatusBadge: View {
 
     private let status: ExperimentStatus
     private let label: String
@@ -58,10 +58,10 @@ private extension ExperimentStatus {
 #Preview("실험 상태 배지") {
     _ = FontRegistration.register()
     return VStack(spacing: 12) {
-        LabcordStatusBadge(status: .preparing)
-        LabcordStatusBadge(status: .inProgress)
-        LabcordStatusBadge(status: .paused)
-        LabcordStatusBadge(status: .completed)
+        StatusBadge(status: .preparing)
+        StatusBadge(status: .inProgress)
+        StatusBadge(status: .paused)
+        StatusBadge(status: .completed)
     }
     .padding()
 }

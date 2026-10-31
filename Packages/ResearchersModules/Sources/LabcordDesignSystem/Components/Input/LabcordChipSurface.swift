@@ -2,8 +2,8 @@ import SwiftUI
 
 struct LabcordChipSurface<Content: View>: View {
     let size: LabcordControlSize?
-    let visualStyle: LabcordChipVisualStyle
-    let emphasis: LabcordChipEmphasis
+    let visualStyle: ChipVisualStyle
+    let emphasis: ChipEmphasis
     let isSelected: Bool
     let isDisabled: Bool
     let content: Content
@@ -13,8 +13,8 @@ struct LabcordChipSurface<Content: View>: View {
 
     init(
         size: LabcordControlSize?,
-        visualStyle: LabcordChipVisualStyle,
-        emphasis: LabcordChipEmphasis,
+        visualStyle: ChipVisualStyle,
+        emphasis: ChipEmphasis,
         isSelected: Bool,
         isDisabled: Bool,
         @ViewBuilder content: () -> Content
