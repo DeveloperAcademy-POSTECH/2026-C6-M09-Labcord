@@ -72,7 +72,7 @@ private struct CatalogPrimitiveSwatchPreview: View {
                     }
                     .accessibilityHidden(true)
                 Text(swatch.label)
-                    .typography(Typography.title2Emphasized)
+                    .typography(Typography.title2Bold)
                 Text(edge == .top ? "Opaque → Clear · 5 layers" : "Clear → Opaque · 5 layers")
                     .typography(Typography.subheadline)
             } else if let value = CatalogPrimitiveData.colors[swatch.name] {
@@ -88,7 +88,7 @@ private struct CatalogPrimitiveSwatchPreview: View {
                     }
                     .accessibilityHidden(true)
                 Text(swatch.label)
-                    .typography(Typography.title2Emphasized)
+                    .typography(Typography.title2Bold)
                 Text(value.hex)
                     .typography(Typography.body)
                     .monospacedDigit()

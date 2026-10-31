@@ -28,11 +28,11 @@ enum CatalogTypography: String, CaseIterable {
     var style: TypographyStyle {
         switch self {
         case .largeTitle: Typography.largeTitle
-        case .largeTitleEmphasized: Typography.largeTitleEmphasized
+        case .largeTitleEmphasized: Typography.largeTitleBold
         case .title1: Typography.title1
-        case .title1Emphasized: Typography.title1Emphasized
+        case .title1Emphasized: Typography.title1Bold
         case .title2: Typography.title2
-        case .title2Emphasized: Typography.title2Emphasized
+        case .title2Emphasized: Typography.title2Bold
         case .title3: Typography.title3
         case .title3SemiBold: Typography.title3SemiBold
         case .headline: Typography.headline
