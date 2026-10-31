@@ -22,10 +22,15 @@ final class ExperimentRepository {
         if let existing = try context.fetch(request).first {
             return Self.entry(existing)
         }
-
-        let experiment = Experiment(id: id, title: "새 실험", createdAt: date, mode: .free)
+        
+        let defaults = UserDefaults.standard
+        let nextNumber = defaults.integer(forKey: "lastExperimentNumber") + 1
+        let experiment = Experiment(id: id, title: "새 실험 (\(nextNumber))", createdAt: date, mode: .free)
+        
         context.insert(experiment)
         try context.save()
+        
+        defaults.set(nextNumber, forKey: "lastExperimentNumber")
         return Self.entry(experiment)
     }
 
