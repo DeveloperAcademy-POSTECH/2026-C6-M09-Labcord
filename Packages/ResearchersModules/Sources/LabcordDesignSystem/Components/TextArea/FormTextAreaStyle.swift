@@ -165,9 +165,9 @@ public struct FormTextAreaStyle: ViewModifier {
 
     private var placeholderColor: Color {
         switch state {
-        case .disabled: return Color("General/Label/Disabled", bundle: .module)
+        case .disabled: return Color(.General.Label.disabled)
         default:
-            return Color("General/Label/Tertiary", bundle: .module)
+            return Color(.General.Label.tertiary)
         }
     }
 

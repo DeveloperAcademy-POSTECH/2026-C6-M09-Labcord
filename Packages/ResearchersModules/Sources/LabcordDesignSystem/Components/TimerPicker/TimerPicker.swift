@@ -44,9 +44,7 @@ public struct TimerPicker: View {
     }
 
     private var foregroundColor: Color {
-        Color(
-            usage == .setup ? "General/Label/Primary" : "Experiment/Label/Primary", bundle: .module
-        )
+        Color(usage == .setup ? .General.Label.primary : .Experiment.Label.primary)
     }
 
     private var separator: some View {
@@ -103,5 +101,5 @@ public struct TimerPicker: View {
     _ = FontRegistration.register()
     return TimerPicker(duration: $duration)
         .padding()
-        .background(Color("Experiment/Background/Primary", bundle: .module))
+        .background(Color(.Experiment.Background.primary))
 }
