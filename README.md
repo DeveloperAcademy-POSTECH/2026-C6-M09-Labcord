@@ -36,6 +36,12 @@ Swift · SwiftUI · WatchKit · SwiftData · SwiftPackage · App Intent · Visio
 
 ---
 
+## 디자인 시스템
+
+공통 UI 사용법은 [디자인 시스템 가이드](.agents/skills/design-system/SKILL.md)에서 확인할 수 있어요.
+
+---
+
 ## Team
 
 | 역할 | 팀원 |
