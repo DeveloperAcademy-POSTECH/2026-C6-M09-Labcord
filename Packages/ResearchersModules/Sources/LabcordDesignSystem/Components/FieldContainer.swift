@@ -39,14 +39,14 @@ public struct FieldContainer<Content: View>: View {
                 HStack(alignment: .firstTextBaseline, spacing: theme.layout.spacing4) {
                     if let label {
                         Text(label)
-                            .typography(Typography.calloutEmphasized)
+                            .typography(Typography.calloutSemiBold)
                             .foregroundStyle(LabcordColor(labelToken))
                             .labcordMotion(.state, value: labelToken)
                     }
 
                     if required {
                         Text("*")
-                            .typography(Typography.calloutEmphasized)
+                            .typography(Typography.calloutSemiBold)
                             .foregroundStyle(LabcordColor(requiredToken))
                             .labcordMotion(.state, value: requiredToken)
                     }
