@@ -7,9 +7,9 @@ public enum OverlayStrength: Sendable {
     fileprivate var color: Color {
         switch self {
         case .default:
-            Color("General/Overlay/Scrim", bundle: .module)
+            Color(.General.Overlay.scrim)
         case .strong:
-            Color("General/Overlay/Strong", bundle: .module)
+            Color(.General.Overlay.strong)
         }
     }
 }

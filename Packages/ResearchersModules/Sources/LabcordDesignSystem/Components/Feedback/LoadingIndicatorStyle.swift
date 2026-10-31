@@ -40,7 +40,7 @@ private struct LabcordProgressContent: View {
     let configuration: ProgressViewStyleConfiguration
 
     private var resolvedForeground: Color {
-        foreground ?? Color("General/Label/Primary", bundle: .module)
+        foreground ?? Color(.General.Label.primary)
     }
 
     @ViewBuilder

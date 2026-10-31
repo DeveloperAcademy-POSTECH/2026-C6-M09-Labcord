@@ -9,13 +9,13 @@ public enum ToastType: CaseIterable, Sendable {
     fileprivate var foregroundColor: Color {
         switch self {
         case .success:
-            Color("Experiment/Feedback/Success/Foreground", bundle: .module)
+            Color(.Experiment.Feedback.Success.foreground)
         case .warning:
-            Color("Experiment/Feedback/Warning/Foreground", bundle: .module)
+            Color(.Experiment.Feedback.Warning.foreground)
         case .error:
-            Color("Experiment/Feedback/Error/Foreground", bundle: .module)
+            Color(.Experiment.Feedback.Error.foreground)
         case .info:
-            Color("Experiment/Feedback/Info/Foreground", bundle: .module)
+            Color(.Experiment.Feedback.Info.foreground)
         }
     }
 
@@ -95,7 +95,7 @@ public struct Toast: View {
                 .fill(.ultraThinMaterial)
                 .environment(\.colorScheme, .dark)
         }
-        .background(Color("Experiment/Fill/Primary", bundle: .module))
+        .background(Color(.Experiment.Fill.primary))
         .clipShape(RoundedRectangle(cornerRadius: LayoutTokens.radiusSm))
         .accessibilityElement(children: .contain)
     }
@@ -149,7 +149,7 @@ public struct Toast: View {
 
             Text(message)
                 .typography(Typography.headline)
-                .foregroundStyle(Color("Experiment/Label/Primary", bundle: .module))
+                .foregroundStyle(Color(.Experiment.Label.primary))
                 .contentTransition(.opacity)
                 .labcordMotion(.state, value: message)
                 .multilineTextAlignment(.leading)
@@ -194,7 +194,7 @@ public struct Toast: View {
         if showDismissButton {
             Button(action: onDismiss) {
                 LabcordIconArtwork(icon: .x, size: 12)
-                    .foregroundStyle(Color("Experiment/Label/Secondary", bundle: .module))
+                    .foregroundStyle(Color(.Experiment.Label.secondary))
             }
             .buttonStyle(.labcordIcon(.tertiary, size: .small))
             .accessibilityLabel(Text("닫기"))
@@ -207,5 +207,5 @@ public struct Toast: View {
     _ = FontRegistration.register()
     return Toast("저장했어요.", type: .success)
         .padding()
-        .background(Color("Experiment/Background/Primary", bundle: .module))
+        .background(Color(.Experiment.Background.primary))
 }

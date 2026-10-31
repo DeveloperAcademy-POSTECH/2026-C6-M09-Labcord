@@ -41,8 +41,8 @@ public struct PageControl: View {
                         Circle()
                             .fill(
                                 page == selection
-                                    ? Color("Experiment/Label/Primary", bundle: .module)
-                                    : Color("Experiment/Label/Quaternary", bundle: .module)
+                                    ? Color(.Experiment.Label.primary)
+                                    : Color(.Experiment.Label.quaternary)
                             )
                             .frame(width: dotDiameter(for: page), height: dotDiameter(for: page))
                             .labcordPressFeedback(pressedPage == page, isSubtle: true)
@@ -136,7 +136,7 @@ private struct PageControlPressStyle: ButtonStyle {
     _ = FontRegistration.register()
     return PageControl(pageCount: 2, selection: $selection)
         .frame(width: 297)
-        .background(Color("Experiment/Background/Primary", bundle: .module))
+        .background(Color(.Experiment.Background.primary))
 }
 
 #Preview("세 페이지 · 큰 글자") {
@@ -146,5 +146,5 @@ private struct PageControlPressStyle: ButtonStyle {
     return PageControl(pageCount: 3, selection: $selection)
         .frame(width: 297)
         .environment(\.dynamicTypeSize, .accessibility3)
-        .background(Color("Experiment/Background/Primary", bundle: .module))
+        .background(Color(.Experiment.Background.primary))
 }

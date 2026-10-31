@@ -37,19 +37,19 @@ private extension ExperimentStatus {
 
     var foregroundColor: Color {
         switch self {
-        case .preparing: Color("General/Label/Tertiary", bundle: .module)
-        case .inProgress: Color("General/Experiment/Status/InProgress/Foreground", bundle: .module)
-        case .paused: Color("General/Experiment/Status/Paused/Foreground", bundle: .module)
-        case .completed: Color("General/Experiment/Status/Completed/Foreground", bundle: .module)
+        case .preparing: Color(.General.Label.tertiary)
+        case .inProgress: Color(.General.Experiment.Status.InProgress.foreground)
+        case .paused: Color(.General.Experiment.Status.Paused.foreground)
+        case .completed: Color(.General.Experiment.Status.Completed.foreground)
         }
     }
 
     var backgroundColor: Color {
         switch self {
-        case .preparing: Color("General/Background/Secondary", bundle: .module)
-        case .inProgress: Color("General/Experiment/Status/InProgress/Background", bundle: .module)
-        case .paused: Color("General/Experiment/Status/Paused/Background", bundle: .module)
-        case .completed: Color("General/Experiment/Status/Completed/Background", bundle: .module)
+        case .preparing: Color(.General.Background.secondary)
+        case .inProgress: Color(.General.Experiment.Status.InProgress.background)
+        case .paused: Color(.General.Experiment.Status.Paused.background)
+        case .completed: Color(.General.Experiment.Status.Completed.background)
         }
     }
 }

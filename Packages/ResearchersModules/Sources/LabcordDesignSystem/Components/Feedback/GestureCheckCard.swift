@@ -25,7 +25,7 @@ public struct GestureCheckCard: View {
                 Text(subtitle)
                     .typography(Typography.subheadline)
             }
-            .foregroundStyle(Color("Experiment/Fill/White", bundle: .module))
+            .foregroundStyle(Color(.Experiment.Fill.white))
             .multilineTextAlignment(.leading)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -33,7 +33,7 @@ public struct GestureCheckCard: View {
 
             if showsFollowingIcon {
                 LabcordIconArtwork(icon: .checkBold, size: 34)
-                    .foregroundStyle(Color("Experiment/Brand/Primary", bundle: .module))
+                    .foregroundStyle(Color(.Experiment.Brand.primary))
                     .accessibilityHidden(true)
                     .transition(.opacity)
             }
@@ -44,7 +44,7 @@ public struct GestureCheckCard: View {
             Rectangle()
                 .fill(.ultraThinMaterial)
                 .environment(\.colorScheme, .dark)
-                .overlay { Rectangle().fill(Color("Experiment/Fill/Dark", bundle: .module)) }
+                .overlay { Rectangle().fill(Color(.Experiment.Fill.dark)) }
         }
         .clipShape(RoundedRectangle(cornerRadius: LayoutTokens.radiusSm, style: .circular))
         .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: showsFollowingIcon)

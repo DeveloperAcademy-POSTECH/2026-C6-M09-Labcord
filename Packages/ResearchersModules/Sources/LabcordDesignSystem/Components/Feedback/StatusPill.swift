@@ -18,7 +18,7 @@ public struct StatusPill: View {
                     .fill(.ultraThinMaterial)
                     .environment(\.colorScheme, .dark)
             }
-            .background(Color("Experiment/Fill/Primary", bundle: .module), in: pillShape)
+            .background(Color(.Experiment.Fill.primary), in: pillShape)
             .clipShape(pillShape)
             .accessibilityElement(children: .combine)
             .accessibilityLabel(Text(message))
@@ -27,7 +27,7 @@ public struct StatusPill: View {
     private var messageContent: some View {
         Text(message)
             .typography(Typography.bodySemiBold)
-            .foregroundStyle(Color("Experiment/Label/Primary", bundle: .module))
+            .foregroundStyle(Color(.Experiment.Label.primary))
             .contentTransition(.opacity)
             .labcordMotion(.state, value: message)
             .multilineTextAlignment(.leading)
@@ -46,7 +46,7 @@ public struct StatusPill: View {
     _ = FontRegistration.register()
     return StatusPill("3초 후 자동 저장됩니다.")
         .padding()
-        .background(Color("Experiment/Background/Primary", bundle: .module))
+        .background(Color(.Experiment.Background.primary))
 }
 
 #Preview("상태 안내 · 큰 글자") {
@@ -55,5 +55,5 @@ public struct StatusPill: View {
         .frame(width: 320)
         .environment(\.dynamicTypeSize, .accessibility3)
         .padding()
-        .background(Color("Experiment/Background/Primary", bundle: .module))
+        .background(Color(.Experiment.Background.primary))
 }
