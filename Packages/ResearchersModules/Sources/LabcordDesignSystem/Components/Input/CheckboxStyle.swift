@@ -1,7 +1,7 @@
 import SwiftUI
 
 @MainActor
-public struct LabcordCheckboxStyle: ToggleStyle {
+public struct CheckboxStyle: ToggleStyle {
     private let size: LabcordControlSize?
 
     public init(size: LabcordControlSize? = nil) {
@@ -13,9 +13,9 @@ public struct LabcordCheckboxStyle: ToggleStyle {
     }
 }
 
-public extension ToggleStyle where Self == LabcordCheckboxStyle {
-    static func labcordCheckbox(size: LabcordControlSize? = nil) -> LabcordCheckboxStyle {
-        LabcordCheckboxStyle(size: size)
+public extension ToggleStyle where Self == CheckboxStyle {
+    static func labcordCheckbox(size: LabcordControlSize? = nil) -> CheckboxStyle {
+        CheckboxStyle(size: size)
     }
 }
 

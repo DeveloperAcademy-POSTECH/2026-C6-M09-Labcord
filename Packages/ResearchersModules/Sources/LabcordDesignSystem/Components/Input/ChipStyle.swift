@@ -1,25 +1,25 @@
 import SwiftUI
 
-public enum LabcordChipVisualStyle: String, Sendable {
+public enum ChipVisualStyle: String, Sendable {
     case solid
     case outline
 }
 
-public enum LabcordChipEmphasis: String, Sendable {
+public enum ChipEmphasis: String, Sendable {
     case strong
     case weak
 }
 
-public struct LabcordChipStyle: ToggleStyle {
+public struct ChipStyle: ToggleStyle {
     private let size: LabcordControlSize?
-    private let visualStyle: LabcordChipVisualStyle
-    private let emphasis: LabcordChipEmphasis
+    private let visualStyle: ChipVisualStyle
+    private let emphasis: ChipEmphasis
     private let isDisabled: Bool
 
     public init(
         size: LabcordControlSize? = nil,
-        style: LabcordChipVisualStyle = .solid,
-        emphasis: LabcordChipEmphasis = .strong,
+        style: ChipVisualStyle = .solid,
+        emphasis: ChipEmphasis = .strong,
         isDisabled: Bool = false
     ) {
         self.size = size
@@ -39,16 +39,16 @@ public struct LabcordChipStyle: ToggleStyle {
     }
 }
 
-public struct LabcordChipButtonStyle: ButtonStyle {
+public struct ChipButtonStyle: ButtonStyle {
     private let size: LabcordControlSize?
-    private let visualStyle: LabcordChipVisualStyle
-    private let emphasis: LabcordChipEmphasis
+    private let visualStyle: ChipVisualStyle
+    private let emphasis: ChipEmphasis
     private let isSelected: Bool
 
     public init(
         size: LabcordControlSize? = nil,
-        style: LabcordChipVisualStyle = .solid,
-        emphasis: LabcordChipEmphasis = .strong,
+        style: ChipVisualStyle = .solid,
+        emphasis: ChipEmphasis = .strong,
         isSelected: Bool = false
     ) {
         self.size = size
@@ -68,14 +68,14 @@ public struct LabcordChipButtonStyle: ButtonStyle {
     }
 }
 
-public struct LabcordChip: View {
+public struct Chip: View {
     @Binding private var isSelected: Bool
 
     private let label: String
     private let leadingIcon: LabcordIcon?
     private let size: LabcordControlSize?
-    private let visualStyle: LabcordChipVisualStyle
-    private let emphasis: LabcordChipEmphasis
+    private let visualStyle: ChipVisualStyle
+    private let emphasis: ChipEmphasis
     private let onDismiss: (() -> Void)?
 
     @Environment(\.isEnabled) private var isEnabled
@@ -86,8 +86,8 @@ public struct LabcordChip: View {
         label: String,
         leadingIcon: LabcordIcon? = nil,
         size: LabcordControlSize? = nil,
-        style: LabcordChipVisualStyle = .solid,
-        emphasis: LabcordChipEmphasis = .strong,
+        style: ChipVisualStyle = .solid,
+        emphasis: ChipEmphasis = .strong,
         onDismiss: (() -> Void)? = nil
     ) {
         _isSelected = isSelected
@@ -150,14 +150,14 @@ public struct LabcordChip: View {
     }
 }
 
-public extension ToggleStyle where Self == LabcordChipStyle {
+public extension ToggleStyle where Self == ChipStyle {
     static func labcordChip(
         size: LabcordControlSize? = nil,
-        style: LabcordChipVisualStyle = .solid,
-        emphasis: LabcordChipEmphasis = .strong,
+        style: ChipVisualStyle = .solid,
+        emphasis: ChipEmphasis = .strong,
         isDisabled: Bool = false
-    ) -> LabcordChipStyle {
-        LabcordChipStyle(
+    ) -> ChipStyle {
+        ChipStyle(
             size: size,
             style: style,
             emphasis: emphasis,
@@ -166,14 +166,14 @@ public extension ToggleStyle where Self == LabcordChipStyle {
     }
 }
 
-public extension ButtonStyle where Self == LabcordChipButtonStyle {
+public extension ButtonStyle where Self == ChipButtonStyle {
     static func labcordChip(
         size: LabcordControlSize? = nil,
-        style: LabcordChipVisualStyle = .solid,
-        emphasis: LabcordChipEmphasis = .strong,
+        style: ChipVisualStyle = .solid,
+        emphasis: ChipEmphasis = .strong,
         isSelected: Bool = false
-    ) -> LabcordChipButtonStyle {
-        LabcordChipButtonStyle(
+    ) -> ChipButtonStyle {
+        ChipButtonStyle(
             size: size,
             style: style,
             emphasis: emphasis,
@@ -185,8 +185,8 @@ public extension ButtonStyle where Self == LabcordChipButtonStyle {
 private struct LabcordChipToggleBody: View {
     nonisolated(unsafe) let configuration: ToggleStyleConfiguration
     let size: LabcordControlSize?
-    let visualStyle: LabcordChipVisualStyle
-    let emphasis: LabcordChipEmphasis
+    let visualStyle: ChipVisualStyle
+    let emphasis: ChipEmphasis
     let isDisabled: Bool
 
     @Environment(\.isEnabled) private var isEnabled
@@ -194,8 +194,8 @@ private struct LabcordChipToggleBody: View {
     nonisolated init(
         configuration: ToggleStyleConfiguration,
         size: LabcordControlSize?,
-        visualStyle: LabcordChipVisualStyle,
-        emphasis: LabcordChipEmphasis,
+        visualStyle: ChipVisualStyle,
+        emphasis: ChipEmphasis,
         isDisabled: Bool
     ) {
         self.configuration = configuration
@@ -221,8 +221,8 @@ private struct LabcordChipToggleBody: View {
 private struct LabcordChipButtonBody: View {
     nonisolated(unsafe) let configuration: ButtonStyleConfiguration
     let size: LabcordControlSize?
-    let visualStyle: LabcordChipVisualStyle
-    let emphasis: LabcordChipEmphasis
+    let visualStyle: ChipVisualStyle
+    let emphasis: ChipEmphasis
     let isSelected: Bool
 
     @Environment(\.isEnabled) private var isEnabled
@@ -230,8 +230,8 @@ private struct LabcordChipButtonBody: View {
     nonisolated init(
         configuration: ButtonStyleConfiguration,
         size: LabcordControlSize?,
-        visualStyle: LabcordChipVisualStyle,
-        emphasis: LabcordChipEmphasis,
+        visualStyle: ChipVisualStyle,
+        emphasis: ChipEmphasis,
         isSelected: Bool
     ) {
         self.configuration = configuration
@@ -271,7 +271,7 @@ private struct LabcordChipInlineToggleStyle: ToggleStyle {
     @Previewable @State var isSelected = true
     _ = FontRegistration.register()
     return VStack(alignment: .leading, spacing: 12) {
-        LabcordChip(isSelected: $isSelected, label: "실험 기록")
+        Chip(isSelected: $isSelected, label: "실험 기록")
         Toggle("선택 칩", isOn: $isSelected).toggleStyle(.labcordChip(style: .outline))
         Button("버튼 칩") {}.buttonStyle(.labcordChip())
     }

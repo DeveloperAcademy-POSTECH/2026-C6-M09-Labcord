@@ -3,14 +3,14 @@ import SwiftUI
 
 struct CatalogControlDropdownScenario: View {
     @State private var size = LabcordControlSize.medium
-    @State private var state = LabcordDropdownState.filled
+    @State private var state = DropdownState.filled
     @State private var value = "전체 상태"
 
-    private let states: [LabcordDropdownState] = [.default, .filled, .open, .disabled, .error]
+    private let states: [DropdownState] = [.default, .filled, .open, .disabled, .error]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            LabcordDropdownTrigger(value: value, size: size, state: state) {
+            DropdownTrigger(value: value, size: size, state: state) {
                 Button("준비") { value = "준비" }
                 Button("진행 중") { value = "진행 중" }
                 Button("완료") { value = "완료" }
@@ -41,8 +41,8 @@ struct CatalogControlDropdownScenario: View {
 
 struct CatalogControlChipScenario: View {
     @State private var size = LabcordControlSize.small
-    @State private var visualStyle = LabcordChipVisualStyle.solid
-    @State private var emphasis = LabcordChipEmphasis.strong
+    @State private var visualStyle = ChipVisualStyle.solid
+    @State private var emphasis = ChipEmphasis.strong
     @State private var isSelected = true
     @State private var isDisabled = false
     @State private var isVisible = true
@@ -64,7 +64,7 @@ struct CatalogControlChipScenario: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             if isVisible {
-                LabcordChip(
+                Chip(
                     isSelected: $isSelected, label: label, leadingIcon: showsIcon ? icon : nil,
                     size: size, style: visualStyle, emphasis: emphasis,
                     onDismiss: isDismissible ? { isVisible = false } : nil
@@ -82,13 +82,13 @@ struct CatalogControlChipScenario: View {
             }
             .accessibilityIdentifier("catalog.scenario.chip.size")
             Picker("스타일", selection: $visualStyle) {
-                Text("Solid").tag(LabcordChipVisualStyle.solid)
-                Text("Outline").tag(LabcordChipVisualStyle.outline)
+                Text("Solid").tag(ChipVisualStyle.solid)
+                Text("Outline").tag(ChipVisualStyle.outline)
             }
             .accessibilityIdentifier("catalog.scenario.chip.style")
             Picker("강조", selection: $emphasis) {
-                Text("Strong").tag(LabcordChipEmphasis.strong)
-                Text("Weak").tag(LabcordChipEmphasis.weak)
+                Text("Strong").tag(ChipEmphasis.strong)
+                Text("Weak").tag(ChipEmphasis.weak)
             }
             .accessibilityIdentifier("catalog.scenario.chip.emphasis")
             Picker("상태", selection: state) {
@@ -121,7 +121,7 @@ struct CatalogControlOverlayScenario: View {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(Color("General/Fill/Primary", bundle: catalogBundle))
                     .frame(height: 48)
-                LabcordOverlay(strength: isStrong ? .strong : .default)
+                Overlay(strength: isStrong ? .strong : .default)
                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 Text("Overlay")
                     .typography(Typography.subheadline)
@@ -143,7 +143,7 @@ struct CatalogControlOverlayScenario: View {
                 .typography(Typography.subheadline)
             Color.white
                 .frame(height: 100)
-                .overlay { LabcordOverlayFade(edge: edge) }
+                .overlay { OverlayFade(edge: edge) }
         }
     }
 }

@@ -1,6 +1,6 @@
 import SwiftUI
 
-public enum LabcordOverlayStrength: Sendable {
+public enum OverlayStrength: Sendable {
     case `default`
     case strong
 
@@ -14,10 +14,10 @@ public enum LabcordOverlayStrength: Sendable {
     }
 }
 
-public struct LabcordOverlay: View {
-    private let strength: LabcordOverlayStrength
+public struct Overlay: View {
+    private let strength: OverlayStrength
 
-    public init(strength: LabcordOverlayStrength = .default) {
+    public init(strength: OverlayStrength = .default) {
         self.strength = strength
     }
 
@@ -28,7 +28,7 @@ public struct LabcordOverlay: View {
     }
 }
 
-public struct LabcordOverlayFade: View {
+public struct OverlayFade: View {
     private let edge: VerticalEdge
 
     public init(edge: VerticalEdge = .top) {
@@ -73,8 +73,8 @@ public struct LabcordOverlayFade: View {
 
 #Preview("오버레이") {
     HStack(spacing: 12) {
-        Color.green.overlay { LabcordOverlay() }
-        Color.green.overlay { LabcordOverlay(strength: .strong) }
+        Color.green.overlay { Overlay() }
+        Color.green.overlay { Overlay(strength: .strong) }
     }
     .frame(height: 160)
     .padding()
@@ -82,8 +82,8 @@ public struct LabcordOverlayFade: View {
 
 #Preview("오버레이 페이드") {
     HStack(spacing: 12) {
-        Color.green.overlay { LabcordOverlayFade(edge: .top) }
-        Color.green.overlay { LabcordOverlayFade(edge: .bottom) }
+        Color.green.overlay { OverlayFade(edge: .top) }
+        Color.green.overlay { OverlayFade(edge: .bottom) }
     }
     .frame(height: 160)
     .padding()
