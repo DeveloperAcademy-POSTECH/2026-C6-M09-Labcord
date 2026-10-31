@@ -10,51 +10,67 @@ public struct LabcordProgressViewStyle: ProgressViewStyle {
     }
 
     private let size: Size
-    private let foregroundToken: ColorToken
+    private let foreground: Color?
 
     public init(
         size: Size = .small,
-        foreground: ColorToken = .labelPrimary
+        foreground: Color? = nil
     ) {
         self.size = size
-        foregroundToken = foreground
+        self.foreground = foreground
     }
 
-    @ViewBuilder
     public func makeBody(configuration: Configuration) -> some View {
-        if configuration.fractionCompleted != nil {
-            ProgressView(configuration)
-                .progressViewStyle(.linear)
-                .tint(LabcordColor(foregroundToken))
-        } else if let label = configuration.label {
-            HStack(spacing: LayoutTokens().spacing8) {
-                LabcordLoadingIndicator(size: size, foregroundToken: foregroundToken)
-                label
-            }
-            .accessibilityElement(children: .combine)
-        } else {
-            LabcordLoadingIndicator(size: size, foregroundToken: foregroundToken)
-                .accessibilityElement(children: .ignore)
-        }
+        LabcordProgressContent(size: size, foreground: foreground, configuration: configuration)
     }
 }
 
 public extension ProgressViewStyle where Self == LabcordProgressViewStyle {
     static func labcord(
         size: LabcordProgressViewStyle.Size = .small,
-        foreground: ColorToken = .labelPrimary
+        foreground: Color? = nil
     ) -> LabcordProgressViewStyle {
         LabcordProgressViewStyle(size: size, foreground: foreground)
     }
 }
 
+private struct LabcordProgressContent: View {
+    @Environment(\.labcordTheme) private var theme
+    @Environment(\.colorScheme) private var colorScheme
+    let size: LabcordProgressViewStyle.Size
+    let foreground: Color?
+    let configuration: ProgressViewStyleConfiguration
+
+    private var resolvedForeground: Color {
+        foreground ?? theme.color(.labelPrimary, colorScheme: colorScheme)
+    }
+
+    @ViewBuilder
+    var body: some View {
+        if configuration.fractionCompleted != nil {
+            ProgressView(configuration)
+                .progressViewStyle(.linear)
+                .tint(resolvedForeground)
+        } else if let label = configuration.label {
+            HStack(spacing: LayoutTokens().spacing8) {
+                LabcordLoadingIndicator(size: size, foreground: resolvedForeground)
+                label
+            }
+            .accessibilityElement(children: .combine)
+        } else {
+            LabcordLoadingIndicator(size: size, foreground: resolvedForeground)
+                .accessibilityElement(children: .ignore)
+        }
+    }
+}
+
 private struct LabcordLoadingIndicator: View {
-    private let foregroundToken: ColorToken
+    private let foreground: Color
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ScaledMetric private var scaledSize: CGFloat
 
-    init(size: LabcordProgressViewStyle.Size, foregroundToken: ColorToken) {
-        self.foregroundToken = foregroundToken
+    init(size: LabcordProgressViewStyle.Size, foreground: Color) {
+        self.foreground = foreground
         _scaledSize = ScaledMetric(wrappedValue: size.points, relativeTo: .body)
     }
 
@@ -67,7 +83,7 @@ private struct LabcordLoadingIndicator: View {
                     HStack(spacing: 0) {
                         ForEach(0..<3) { dot in
                             Circle()
-                                .fill(.labcord(foregroundToken))
+                                .fill(foreground)
                                 .frame(width: scaledSize * 3 / 16, height: scaledSize * 3 / 16)
                                 .scaleEffect(activeDot == dot ? 5.0 / 3 : 1)
                                 .frame(width: scaledSize * 5 / 16, height: scaledSize * 5 / 16)
@@ -88,7 +104,7 @@ private struct LabcordLoadingIndicator: View {
             .resizable()
             .interpolation(.high)
             .scaledToFit()
-            .foregroundStyle(.labcord(foregroundToken))
+            .foregroundStyle(foreground)
             .frame(width: scaledSize, height: scaledSize)
             .accessibilityHidden(true)
     }

@@ -21,7 +21,7 @@ public struct GestureToast: View {
         HStack(alignment: .center, spacing: layout.spacing4) {
             VStack(alignment: .leading, spacing: layout.spacing4) {
                 Text(title)
-                    .typography(Typography.bodyEmphasized)
+                    .typography(Typography.bodySemiBold)
                 Text(subtitle)
                     .typography(Typography.subheadline)
             }
@@ -52,7 +52,6 @@ public struct GestureToast: View {
     }
 }
 
-#if DEBUG
 #Preview("제스처 인식 안내") {
     _ = FontRegistration.register()
     return GestureToast(title: "토스트 문구입니다.", subtitle: "토스트 문구입니다.")
@@ -60,4 +59,3 @@ public struct GestureToast: View {
         .padding()
         .labcordTheme(LabcordTheme(context: .experiment))
 }
-#endif

@@ -1,6 +1,6 @@
 import SwiftUI
 
-public enum LabcordToastTone: CaseIterable, Sendable {
+public enum LabcordToastType: CaseIterable, Sendable {
     case success
     case warning
     case error
@@ -38,7 +38,7 @@ public struct LabcordToast: View {
     @Environment(\.colorScheme) private var colorScheme
 
     private let message: String
-    private let tone: LabcordToastTone
+    private let type: LabcordToastType
     private let showLeadingIcon: Bool
     private let showDismissButton: Bool
     private let showActionButton: Bool
@@ -49,7 +49,7 @@ public struct LabcordToast: View {
 
     public init(
         _ message: String,
-        tone: LabcordToastTone = .success,
+        type: LabcordToastType = .success,
         showLeadingIcon: Bool = true,
         actionTitle: String = "다시시도",
         onAction: (() -> Void)? = nil,
@@ -57,7 +57,7 @@ public struct LabcordToast: View {
     ) {
         self.init(
             message: message,
-            tone: tone,
+            type: type,
             showLeadingIcon: showLeadingIcon,
             showDismissButton: onDismiss != nil,
             showActionButton: onAction != nil,
@@ -69,7 +69,7 @@ public struct LabcordToast: View {
 
     public init(
         message: String,
-        tone: LabcordToastTone = .success,
+        type: LabcordToastType = .success,
         showLeadingIcon: Bool = true,
         showDismissButton: Bool = true,
         showActionButton: Bool = true,
@@ -78,7 +78,7 @@ public struct LabcordToast: View {
         onDismiss: @escaping () -> Void = {}
     ) {
         self.message = message
-        self.tone = tone
+        self.type = type
         self.showLeadingIcon = showLeadingIcon
         self.showDismissButton = showDismissButton
         self.showActionButton = showActionButton
@@ -144,12 +144,12 @@ public struct LabcordToast: View {
         HStack(alignment: .center, spacing: layout.spacing16) {
             if showLeadingIcon {
                 ZStack {
-                    LabcordIconArtwork(icon: tone.icon, size: 20)
-                        .foregroundStyle(.labcord(tone.foregroundToken))
-                        .id(tone.icon.rawValue)
+                    LabcordIconArtwork(icon: type.icon, size: 20)
+                        .foregroundStyle(.labcord(type.foregroundToken))
+                        .id(type.icon.rawValue)
                         .transition(.opacity)
                 }
-                .labcordMotion(.state, value: tone.icon.rawValue)
+                .labcordMotion(.state, value: type.icon.rawValue)
                 .transition(.opacity)
                 .accessibilityHidden(true)
             }
@@ -208,4 +208,11 @@ public struct LabcordToast: View {
             .transition(.opacity)
         }
     }
+}
+
+#Preview("토스트") {
+    _ = FontRegistration.register()
+    return LabcordToast("저장했어요.", type: .success)
+        .padding()
+        .background(.labcord(.backgroundPrimary))
 }
