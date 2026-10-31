@@ -147,7 +147,6 @@ public struct TimerSettingSheet: View {
     }
 }
 
-#if DEBUG
 private struct TimerSettingSheetPreviewContent: View {
     @State private var hours = 0
     @State private var minutes = 0
@@ -190,4 +189,3 @@ private struct TimerSettingSheetPreviewContent: View {
     )
     .frame(width: 390)
 }
-#endif
