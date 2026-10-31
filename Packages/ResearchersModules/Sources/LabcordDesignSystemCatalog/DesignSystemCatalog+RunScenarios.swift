@@ -119,7 +119,7 @@ struct CatalogRunRecordButtonScenario: View {
 
 struct CatalogRunExperimentControlScenario: View {
     @State private var isDisabled = false
-    @State private var icon = LabcordIcon.arrowsCounterClockwise
+    @State private var icon = Icon.arrowsCounterClockwise
     @State private var actionCount = 0
 
     var body: some View {
@@ -135,7 +135,7 @@ struct CatalogRunExperimentControlScenario: View {
             }
             .accessibilityIdentifier("catalog.scenario.experimentControl.state")
             Picker("아이콘", selection: $icon) {
-                ForEach(LabcordIcon.allCases) { icon in Text(icon.rawValue).tag(icon) }
+                ForEach(Icon.allCases) { icon in Text(icon.rawValue).tag(icon) }
             }
             .accessibilityIdentifier("catalog.scenario.experimentControl.icon")
             Text("실행 \(actionCount)회")
