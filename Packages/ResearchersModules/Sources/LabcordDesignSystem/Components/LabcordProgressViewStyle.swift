@@ -109,3 +109,15 @@ private struct LabcordLoadingIndicator: View {
             .accessibilityHidden(true)
     }
 }
+
+#Preview("진행 표시") {
+    VStack(spacing: 16) {
+        ProgressView()
+            .progressViewStyle(.labcord(size: .small))
+        ProgressView("불러오는 중")
+            .progressViewStyle(.labcord(size: .medium))
+        ProgressView(value: 0.6)
+            .progressViewStyle(.labcord(size: .large))
+    }
+    .padding()
+}
