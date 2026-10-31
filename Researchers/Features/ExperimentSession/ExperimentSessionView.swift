@@ -99,6 +99,9 @@ struct ExperimentSessionView: View {
                     }
             }
         }
+        .task {
+            await store.send(.loadDetail).finish()
+        }
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
             captureStore.send(.cameraViewAppeared)

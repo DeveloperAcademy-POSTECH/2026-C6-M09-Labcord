@@ -8,6 +8,7 @@ struct ExperimentSessionFeature {
     @ObservableState
     struct State: Equatable {
         let experimentID: UUID
+        var detail: ExperimentSessionDetail?
         
         var permissions = SessionPermissionsFeature.State()
         var voice = VoiceRecordingFeature.State()
@@ -25,6 +26,8 @@ struct ExperimentSessionFeature {
     }
 
     enum Action: Equatable {
+        case loadDetail
+        case detailLoaded(ExperimentSessionDetail)
         case permissions(SessionPermissionsFeature.Action)
         case voice(VoiceRecordingFeature.Action)
         case capture(CameraCaptureFeature.Action)
@@ -37,6 +40,7 @@ struct ExperimentSessionFeature {
         case homeExitCompleted
     }
 
+    @Dependency(\.experimentClient) var experimentClient
     @Dependency(\.cameraSessionClient) var cameraSessionClient
     @Dependency(\.speechRecordingClient) var speechRecordingClient
 
@@ -55,6 +59,19 @@ struct ExperimentSessionFeature {
 
         Reduce { state, action in
             switch action {
+            case .loadDetail:
+                let experimentID = state.experimentID
+                return .run { send in
+                    guard let detail = try? await experimentClient.loadDetail(experimentID) else {
+                        return
+                    }
+                    await send(.detailLoaded(detail))
+                }
+
+            case let .detailLoaded(detail):
+                state.detail = detail
+                return .none
+
             case .appBecameActive:
                 guard !state.isReady else { return .none }
                 state.permissionRequestGeneration += 1
