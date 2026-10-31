@@ -161,51 +161,36 @@ public struct VoicePlayer: View {
 
     @ViewBuilder
     private func progressControl(minimumHeight: CGFloat? = nil) -> some View {
-        if let waveform {
-            waveform
-                .frame(maxWidth: .infinity, minHeight: 6, maxHeight: 6)
-                .clipShape(Capsule())
-                .frame(maxWidth: .infinity, minHeight: minimumHeight)
-                .contentShape(Rectangle())
-                .accessibilityElement()
-                .accessibilityLabel(Text("음성 재생 위치"))
-                .accessibilityValue(
-                    Text(progress.formatted(.percent.precision(.fractionLength(0))))
-                )
-                .accessibilityAdjustableAction { direction in
-                    guard isEnabled else { return }
-                    switch direction {
-                    case .increment:
-                        progress = min(progress + 0.05, 1)
-                    case .decrement:
-                        progress = max(progress - 0.05, 0)
-                    @unknown default:
-                        break
-                    }
-                    onSeek?(progress)
-                }
-        } else {
-            Slider(value: $progress, in: 0...1) { isEditing in
-                let shouldCommit = !isEditing && isSeeking && isEnabled
-                let finalProgress = progress
-                updateEditing(isEditing)
-                if shouldCommit {
-                    onSeek?(finalProgress)
-                }
+        Slider(value: $progress, in: 0...1) { isEditing in
+            let shouldCommit = !isEditing && isSeeking && isEnabled
+            let finalProgress = progress
+            updateEditing(isEditing)
+            if shouldCommit {
+                onSeek?(finalProgress)
             }
-            .sliderThumbVisibility(.hidden)
-            .overlay {
-                seekThumb
+        }
+        .sliderThumbVisibility(.hidden)
+        .opacity(waveform == nil ? 1 : 0.01)
+        .overlay {
+            if let waveform {
+                waveform
+                    .frame(maxWidth: .infinity, minHeight: 6, maxHeight: 6)
+                    .clipShape(Capsule())
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
             }
-            .tint(theme.color(.brandPrimary))
-            .controlSize(.small)
-            .frame(maxWidth: .infinity, minHeight: minimumHeight)
-            .labcordSliderPressObservation($isPressingSlider)
-            .accessibilityLabel(Text("음성 재생 위치"))
-            .accessibilityValue(Text(progress.formatted(.percent.precision(.fractionLength(0)))))
         }
+        .overlay {
+            seekThumb
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        }
+        .tint(theme.color(.brandPrimary))
+        .controlSize(.small)
+        .frame(maxWidth: .infinity, minHeight: minimumHeight)
+        .labcordSliderPressObservation($isPressingSlider)
+        .accessibilityLabel(Text("음성 재생 위치"))
+        .accessibilityValue(Text(progress.formatted(.percent.precision(.fractionLength(0)))))
     }
 
     private func updateEditing(_ isEditing: Bool) {
