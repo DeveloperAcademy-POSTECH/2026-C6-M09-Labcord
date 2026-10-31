@@ -11,7 +11,6 @@ public struct ExperimentSidePanel<Content: View>: View {
     private let layout: Layout
     private let content: () -> Content
 
-    private let tokenLayout = LayoutTokens()
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -98,13 +97,13 @@ public struct ExperimentSidePanel<Content: View>: View {
         switch layout {
         case .portrait:
             handleIcon
-                .padding(.top, tokenLayout.spacing4)
-                .padding(.horizontal, tokenLayout.spacing8)
+                .padding(.top, LayoutTokens.spacing4)
+                .padding(.horizontal, LayoutTokens.spacing8)
                 .frame(width: handleLength)
         case .landscape:
             handleIcon
-                .padding(.leading, tokenLayout.spacing4)
-                .padding(.vertical, tokenLayout.spacing8)
+                .padding(.leading, LayoutTokens.spacing4)
+                .padding(.vertical, LayoutTokens.spacing8)
                 .frame(height: handleLength)
         }
     }
@@ -133,9 +132,9 @@ public struct ExperimentSidePanel<Content: View>: View {
                         maxHeight: .infinity,
                         alignment: .bottom
                     )
-                    .padding(.top, tokenLayout.spacing12)
-                    .padding(.horizontal, tokenLayout.spacing16)
-                    .padding(.bottom, tokenLayout.spacing32)
+                    .padding(.top, LayoutTokens.spacing12)
+                    .padding(.horizontal, LayoutTokens.spacing16)
+                    .padding(.bottom, LayoutTokens.spacing32)
                     .frame(minHeight: 366)
                     .transition(contentTransition(edge: .bottom))
             }
@@ -152,7 +151,7 @@ public struct ExperimentSidePanel<Content: View>: View {
             if isExpanded {
                 content()
                     .frame(maxWidth: .infinity, minHeight: 322)
-                    .padding(.leading, tokenLayout.spacing16)
+                    .padding(.leading, LayoutTokens.spacing16)
                     .padding(.trailing, 62)
                     .padding(.top, 80)
                     .frame(maxWidth: .infinity, minHeight: 402)
@@ -169,19 +168,19 @@ public struct ExperimentSidePanel<Content: View>: View {
 
     private var panelShape: UnevenRoundedRectangle {
         UnevenRoundedRectangle(
-            topLeadingRadius: tokenLayout.radiusLg,
-            bottomLeadingRadius: layout == .landscape ? tokenLayout.radiusLg : 0,
+            topLeadingRadius: LayoutTokens.radiusLg,
+            bottomLeadingRadius: layout == .landscape ? LayoutTokens.radiusLg : 0,
             bottomTrailingRadius: 0,
-            topTrailingRadius: layout == .portrait ? tokenLayout.radiusLg : 0
+            topTrailingRadius: layout == .portrait ? LayoutTokens.radiusLg : 0
         )
     }
 
     private var handleLength: CGFloat {
-        max(83, scaledIconSize + tokenLayout.spacing16)
+        max(83, scaledIconSize + LayoutTokens.spacing16)
     }
 
     private var handleHitInset: CGFloat {
-        max(0, (44 - scaledIconSize - tokenLayout.spacing4) / 2)
+        max(0, (44 - scaledIconSize - LayoutTokens.spacing4) / 2)
     }
 
     private var usesIntrinsicAccessibilitySize: Bool {
@@ -189,7 +188,7 @@ public struct ExperimentSidePanel<Content: View>: View {
     }
 
     private var landscapeWidth: CGFloat {
-        isExpanded ? 400 : 62 + scaledIconSize + tokenLayout.spacing4
+        isExpanded ? 400 : 62 + scaledIconSize + LayoutTokens.spacing4
     }
 
     private var shadowColor: Color {

@@ -11,8 +11,6 @@ public struct GestureGuideItem<Media: View>: View {
     private let layout: Layout
     private let media: Media
 
-    private let tokenLayout = LayoutTokens()
-
     public init(
         title: String = "음성 녹음",
         description: String = "손바닥을 활짝 펼쳤다가 주먹 쥐기",
@@ -27,11 +25,11 @@ public struct GestureGuideItem<Media: View>: View {
 
     public var body: some View {
         arrangedContent
-            .padding(tokenLayout.spacing12)
+            .padding(LayoutTokens.spacing12)
             .frame(idealWidth: width, maxWidth: width)
             .background(
                 Color("Experiment/Fill/Inverse", bundle: .module),
-                in: RoundedRectangle(cornerRadius: tokenLayout.radiusMd)
+                in: RoundedRectangle(cornerRadius: LayoutTokens.radiusMd)
             )
             .accessibilityElement(children: .contain)
     }
@@ -40,12 +38,12 @@ public struct GestureGuideItem<Media: View>: View {
     private var arrangedContent: some View {
         switch layout {
         case .portrait:
-            VStack(spacing: tokenLayout.spacing10) {
+            VStack(spacing: LayoutTokens.spacing10) {
                 gestureMedia
                 textContent
             }
         case .landscape:
-            HStack(spacing: tokenLayout.spacing8) {
+            HStack(spacing: LayoutTokens.spacing8) {
                 gestureMedia
                 textContent
             }
@@ -61,7 +59,7 @@ public struct GestureGuideItem<Media: View>: View {
     private var textContent: some View {
         VStack(
             alignment: layout == .portrait ? .center : .leading,
-            spacing: tokenLayout.spacing4
+            spacing: LayoutTokens.spacing4
         ) {
             Text(title)
                 .typography(Typography.headline)

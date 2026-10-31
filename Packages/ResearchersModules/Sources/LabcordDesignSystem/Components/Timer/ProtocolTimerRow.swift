@@ -4,8 +4,6 @@ public struct ProtocolTimerRow: View {
     private let duration: Duration
     private let onEdit: () -> Void
 
-    private let layout = LayoutTokens()
-
     public init(_ duration: Duration, onEdit: @escaping () -> Void) {
         self.init(duration: duration, onEdit: onEdit)
     }
@@ -34,13 +32,13 @@ public struct ProtocolTimerRow: View {
             .buttonStyle(.labcordIcon(.quaternary, size: .medium))
             .accessibilityLabel(Text("타이머 수정"))
         }
-        .padding(.leading, layout.spacing12)
-        .padding(.trailing, layout.spacing8)
-        .padding(.vertical, layout.spacing12)
+        .padding(.leading, LayoutTokens.spacing12)
+        .padding(.trailing, LayoutTokens.spacing8)
+        .padding(.vertical, LayoutTokens.spacing12)
         .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
         .background(
             Color("General/Fill/Primary", bundle: .module),
-            in: RoundedRectangle(cornerRadius: layout.radiusSm)
+            in: RoundedRectangle(cornerRadius: LayoutTokens.radiusSm)
         )
     }
 }

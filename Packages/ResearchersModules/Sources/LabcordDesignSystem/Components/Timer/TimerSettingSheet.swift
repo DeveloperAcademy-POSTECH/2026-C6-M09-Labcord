@@ -10,7 +10,6 @@ public struct TimerSettingSheet: View {
     private let onDelete: () -> Void
     private let onConfirm: () -> Void
 
-    private let tokenLayout = LayoutTokens()
     @Environment(\.isPresented) private var isPresented
     @Environment(\.dismiss) private var dismiss
     @ScaledMetric(relativeTo: .body) private var headerControlScale: CGFloat = 1
@@ -48,7 +47,7 @@ public struct TimerSettingSheet: View {
     }
 
     public var body: some View {
-        VStack(spacing: tokenLayout.spacing16) {
+        VStack(spacing: LayoutTokens.spacing16) {
             Capsule()
                 .fill(Color("General/Timer/Sheet/Grabber", bundle: .module))
                 .frame(width: 36, height: 5)
@@ -58,7 +57,7 @@ public struct TimerSettingSheet: View {
 
             durationPicker
 
-            HStack(spacing: tokenLayout.spacing16) {
+            HStack(spacing: LayoutTokens.spacing16) {
                 Button(role: .destructive, action: onDelete) {
                     Text("삭제")
                         .frame(maxWidth: .infinity)
@@ -73,9 +72,9 @@ public struct TimerSettingSheet: View {
             }
             .padding(.horizontal, -6)
         }
-        .padding(.top, tokenLayout.spacing16)
-        .padding(.horizontal, tokenLayout.spacing16)
-        .padding(.bottom, isPresented ? 0 : tokenLayout.spacing32)
+        .padding(.top, LayoutTokens.spacing16)
+        .padding(.horizontal, LayoutTokens.spacing16)
+        .padding(.bottom, isPresented ? 0 : LayoutTokens.spacing32)
         .frame(maxWidth: .infinity, alignment: .center)
         .background(
             Color("General/Background/Grouped/Secondary", bundle: .module),

@@ -37,7 +37,6 @@ public struct RecordButton: View {
     private let type: Kind
     private let state: State
     private let action: () -> Void
-    private let layout = LayoutTokens()
 
     public init(
         type: Kind = .audio,
@@ -53,15 +52,15 @@ public struct RecordButton: View {
         Button(action: action) {
             RecordButtonIcon(
                 icon: type.icon,
-                slotSize: layout.iconDefaultSize,
-                artworkCanvasSize: type == .video ? layout.iconDefaultSize : 22
+                slotSize: LayoutTokens.iconDefaultSize,
+                artworkCanvasSize: type == .video ? LayoutTokens.iconDefaultSize : 22
             )
         }
         .buttonStyle(
             RunIconButtonStyle(
                 background: Color("Experiment/Fill/Secondary", bundle: .module),
                 foreground: Color("Experiment/Label/Brand", bundle: .module),
-                iconSize: layout.iconDefaultSize
+                iconSize: LayoutTokens.iconDefaultSize
             )
         )
         .disabled(state == .disabled)

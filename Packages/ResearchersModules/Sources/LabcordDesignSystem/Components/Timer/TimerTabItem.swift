@@ -5,7 +5,6 @@ public struct TimerTabItem: View {
     private let isSelected: Bool
     private let action: () -> Void
     private let style: TimerTabs.Style
-    private let layout = LayoutTokens()
 
     public init(
         title: String,
@@ -38,7 +37,10 @@ public struct TimerTabItem: View {
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, horizontalPadding)
-                .padding(.vertical, style == .pill ? layout.spacing8 : layout.spacing16)
+                .padding(
+                    .vertical,
+                    style == .pill ? LayoutTokens.spacing8 : LayoutTokens.spacing16
+                )
                 .frame(minHeight: style == .plain ? 54 : nil)
                 .background {
                     if style == .pill && isSelected {
@@ -60,7 +62,9 @@ public struct TimerTabItem: View {
     }
 
     private var horizontalPadding: CGFloat {
-        style == .pill ? (isSelected ? layout.spacing16 : layout.spacing12) : layout.spacing8
+        style == .pill
+            ? (isSelected ? LayoutTokens.spacing16 : LayoutTokens.spacing12)
+            : LayoutTokens.spacing8
     }
 }
 

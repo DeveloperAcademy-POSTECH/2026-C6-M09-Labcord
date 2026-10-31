@@ -9,7 +9,6 @@ public struct ProtocolTimerItem: View {
     private let value: String
     private let unit: String
     private let format: Format
-    private let layout = LayoutTokens()
 
     public init(
         value: String,
@@ -39,7 +38,7 @@ public struct ProtocolTimerItem: View {
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(layout.spacing4)
+        .padding(LayoutTokens.spacing4)
         .frame(minWidth: 90, minHeight: 60)
         .background(Color("Experiment/Fill/Primary", bundle: .module), in: roundedShape)
         .clipShape(roundedShape)
@@ -57,7 +56,7 @@ public struct ProtocolTimerItem: View {
     }
 
     private var roundedShape: RoundedRectangle {
-        RoundedRectangle(cornerRadius: layout.radiusMd, style: .continuous)
+        RoundedRectangle(cornerRadius: LayoutTokens.radiusMd, style: .continuous)
     }
 }
 

@@ -17,7 +17,6 @@ public struct TimerTabs: View {
     private let style: Style
     private let leftTitle: String
     private let rightTitle: String
-    private let layout = LayoutTokens()
 
     public init(
         selection: Binding<Selection>,
@@ -54,7 +53,7 @@ public struct TimerTabs: View {
     }
 
     public var body: some View {
-        HStack(alignment: .center, spacing: layout.spacing12) {
+        HStack(alignment: .center, spacing: LayoutTokens.spacing12) {
             TimerTabItem(
                 title: leftTitle,
                 isSelected: selection == .set,
@@ -63,7 +62,7 @@ public struct TimerTabs: View {
                 selection = .set
             }
 
-            HStack(alignment: .center, spacing: layout.spacing4) {
+            HStack(alignment: .center, spacing: LayoutTokens.spacing4) {
                 TimerTabItem(
                     title: rightTitle,
                     isSelected: selection == .running,
@@ -88,7 +87,7 @@ public struct TimerTabs: View {
                 .labcordMotion(.state, value: showCount)
             }
         }
-        .padding(style == .pill ? layout.spacing4 : 0)
+        .padding(style == .pill ? LayoutTokens.spacing4 : 0)
         .frame(minHeight: style == .plain ? 54 : nil)
         .labcordMotion(.layout, value: style)
         .accessibilityElement(children: .contain)

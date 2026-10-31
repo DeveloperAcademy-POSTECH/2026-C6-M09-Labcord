@@ -55,8 +55,6 @@ public struct TimerRecord: View {
     private let state: TimerRecordState
     private let identity: TimerIdentity
 
-    private let tokenLayout = LayoutTokens()
-
     public init(
         setDuration: Duration,
         elapsedTime: Duration,
@@ -109,13 +107,13 @@ public struct TimerRecord: View {
 
     private var singleLineContent: some View {
         ViewThatFits(in: .horizontal) {
-            HStack(alignment: .center, spacing: tokenLayout.spacing8) {
+            HStack(alignment: .center, spacing: LayoutTokens.spacing8) {
                 durationLabel
                 stateLabel
             }
             .fixedSize(horizontal: true, vertical: true)
 
-            VStack(alignment: .leading, spacing: tokenLayout.spacing8) {
+            VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
                 durationLabel
                 stateLabel
             }
@@ -124,28 +122,28 @@ public struct TimerRecord: View {
     }
 
     private var pausedContent: some View {
-        VStack(alignment: .leading, spacing: tokenLayout.spacing8) {
+        VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
             ViewThatFits(in: .horizontal) {
-                HStack(alignment: .firstTextBaseline, spacing: tokenLayout.spacing8) {
+                HStack(alignment: .firstTextBaseline, spacing: LayoutTokens.spacing8) {
                     durationLabel
                     pausedStatus
                 }
                 .fixedSize(horizontal: true, vertical: true)
 
-                VStack(alignment: .leading, spacing: tokenLayout.spacing8) {
+                VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
                     durationLabel
                     pausedStatus
                 }
             }
 
             ViewThatFits(in: .horizontal) {
-                HStack(alignment: .firstTextBaseline, spacing: tokenLayout.spacing16) {
+                HStack(alignment: .firstTextBaseline, spacing: LayoutTokens.spacing16) {
                     elapsedDetail
                     cumulativeDetail
                 }
                 .fixedSize(horizontal: true, vertical: true)
 
-                VStack(alignment: .leading, spacing: tokenLayout.spacing8) {
+                VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
                     elapsedDetail
                     cumulativeDetail
                 }
@@ -154,7 +152,7 @@ public struct TimerRecord: View {
     }
 
     private var pausedStatus: some View {
-        HStack(alignment: .firstTextBaseline, spacing: tokenLayout.spacing8) {
+        HStack(alignment: .firstTextBaseline, spacing: LayoutTokens.spacing8) {
             stateLabel
 
             Text(pauseCount)
@@ -185,13 +183,13 @@ public struct TimerRecord: View {
 
     private func timeDetail(_ title: LocalizedStringKey, value: String) -> some View {
         ViewThatFits(in: .horizontal) {
-            HStack(alignment: .firstTextBaseline, spacing: tokenLayout.spacing8) {
+            HStack(alignment: .firstTextBaseline, spacing: LayoutTokens.spacing8) {
                 detailTitle(title)
                 detailValue(value)
             }
             .fixedSize(horizontal: true, vertical: true)
 
-            VStack(alignment: .leading, spacing: tokenLayout.spacing8) {
+            VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
                 detailTitle(title)
                 detailValue(value)
             }
@@ -219,7 +217,7 @@ public struct TimerRecord: View {
             .foregroundStyle(Color("General/Label/Primary", bundle: .module))
             .contentTransition(.numericText())
             .labcordMotion(.state, value: setDuration)
-            .padding(.leading, tokenLayout.spacing4 + 3)
+            .padding(.leading, LayoutTokens.spacing4 + 3)
             .frame(minHeight: 22, alignment: .leading)
             .overlay(alignment: .leading) {
                 Rectangle()

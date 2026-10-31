@@ -20,7 +20,6 @@ public struct TimerItem<ID: Hashable>: View {
     private let state: State
     private let onToggle: () -> Void
     private let onRemove: () -> Void
-    private let layout = LayoutTokens()
 
     public init(
         _ timerID: ID,
@@ -64,12 +63,12 @@ public struct TimerItem<ID: Hashable>: View {
 
     public var body: some View {
         ViewThatFits(in: .horizontal) {
-            HStack(alignment: .center, spacing: layout.spacing8) {
+            HStack(alignment: .center, spacing: LayoutTokens.spacing8) {
                 timerText
                 actionButton
             }
 
-            VStack(alignment: .leading, spacing: layout.spacing8) {
+            VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
                 timerText
                 HStack {
                     Spacer(minLength: 0)
@@ -77,7 +76,7 @@ public struct TimerItem<ID: Hashable>: View {
                 }
             }
         }
-        .padding(layout.spacing8)
+        .padding(LayoutTokens.spacing8)
         .frame(
             maxWidth: .infinity,
             minHeight: format == .minuteSecond ? 71 : 69,
