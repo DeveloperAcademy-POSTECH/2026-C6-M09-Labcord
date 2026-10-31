@@ -1,6 +1,6 @@
 import SwiftUI
 
-public enum LabcordControlSize: String, CaseIterable, Sendable {
+public enum ComponentSize: String, CaseIterable, Sendable {
     case small
     case medium
     case large
@@ -18,3 +18,5 @@ public enum LabcordControlSize: String, CaseIterable, Sendable {
         }
     }
 }
+
+public typealias LabcordControlSize = ComponentSize

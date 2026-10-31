@@ -2,7 +2,7 @@ import LabcordDesignSystem
 import SwiftUI
 
 struct CatalogControlDropdownScenario: View {
-    @State private var size = LabcordControlSize.medium
+    @State private var size = ComponentSize.medium
     @State private var state = DropdownState.filled
     @State private var value = "전체 상태"
 
@@ -22,8 +22,8 @@ struct CatalogControlDropdownScenario: View {
                     .foregroundStyle(Color("General/Label/Secondary", bundle: catalogBundle))
             }
             Picker("크기", selection: $size) {
-                Text("Medium").tag(LabcordControlSize.medium)
-                Text("Large").tag(LabcordControlSize.large)
+                Text("Medium").tag(ComponentSize.medium)
+                Text("Large").tag(ComponentSize.large)
             }
             .accessibilityIdentifier("catalog.scenario.dropdown.size")
             Picker("상태", selection: $state) {
@@ -40,7 +40,7 @@ struct CatalogControlDropdownScenario: View {
 }
 
 struct CatalogControlChipScenario: View {
-    @State private var size = LabcordControlSize.small
+    @State private var size = ComponentSize.small
     @State private var visualStyle = ChipVisualStyle.solid
     @State private var emphasis = ChipEmphasis.strong
     @State private var isSelected = true
@@ -49,7 +49,7 @@ struct CatalogControlChipScenario: View {
     @State private var showsIcon = true
     @State private var isDismissible = true
     @State private var label = "중요"
-    private let icon = LabcordIcon.plus
+    private let icon = Icon.plus
 
     private var state: Binding<CatalogControlChipState> {
         Binding(
@@ -77,8 +77,8 @@ struct CatalogControlChipScenario: View {
                     .accessibilityIdentifier("catalog.scenario.chip.restore")
             }
             Picker("크기", selection: $size) {
-                Text("Small").tag(LabcordControlSize.small)
-                Text("Large").tag(LabcordControlSize.large)
+                Text("Small").tag(ComponentSize.small)
+                Text("Large").tag(ComponentSize.large)
             }
             .accessibilityIdentifier("catalog.scenario.chip.size")
             Picker("스타일", selection: $visualStyle) {
