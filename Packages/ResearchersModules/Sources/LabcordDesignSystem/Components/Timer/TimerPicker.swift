@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 
-public struct TimePicker: View {
+public struct TimerPicker: View {
     public enum Usage: Sendable {
         case setup, running
     }
@@ -101,7 +101,7 @@ public struct TimePicker: View {
     @Previewable @State var duration: Duration = .seconds(3_720)
 
     _ = FontRegistration.register()
-    return TimePicker(duration: $duration)
+    return TimerPicker(duration: $duration)
         .padding()
         .background(Color("Experiment/Background/Primary", bundle: .module))
 }

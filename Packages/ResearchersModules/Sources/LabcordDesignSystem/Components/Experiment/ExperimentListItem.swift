@@ -133,7 +133,7 @@ public struct ExperimentListItem: View {
     }
 
     private var selectionButton: some View {
-        LabcordRadioButton(value: true, selection: $isSelected, size: .medium) { EmptyView() }
+        RadioButton(value: true, selection: $isSelected, size: .medium) { EmptyView() }
             .accessibilityLabel(Text("실험 선택"))
             .accessibilityHint(Text(title))
     }
@@ -154,7 +154,7 @@ public struct ExperimentListItem: View {
     }
 
     private var statusBadge: some View {
-        LabcordStatusBadge(status: status)
+        StatusBadge(status: status)
     }
 
 }

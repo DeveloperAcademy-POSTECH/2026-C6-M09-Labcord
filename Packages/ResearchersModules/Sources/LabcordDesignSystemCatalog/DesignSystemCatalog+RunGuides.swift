@@ -30,7 +30,7 @@ struct DesignSystemRunGuidesPage: View {
 
     private var timePickerCard: some View {
         DesignSystemCatalogCard("Time Picker", description: "00부터 시작하는 시·분·초 휠 · 0초에서는 시작 비활성화") {
-            TimePicker(duration: $duration)
+            TimerPicker(duration: $duration)
                 .disabled(countdown.isRunning)
                 .accessibilityIdentifier("catalog.timePicker")
             Button(startTitle, action: toggleTimer)

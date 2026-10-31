@@ -85,11 +85,11 @@ struct RecordBottomSheetTranscriptField: View {
 
 public extension RecordBottomSheet {
     init<MediaContent: View, MemoContent: View>(
-        type: LabcordRecordType = .timer,
-        contentState: LabcordRecordContentState = .empty,
+        type: RecordType = .timer,
+        contentState: RecordContentState = .empty,
         setDuration: String = "30초",
-        timerIdentity: LabcordTimerIdentity = .identity01,
-        timerState: LabcordTimerRecordState = .start,
+        timerIdentity: TimerIdentity = .identity01,
+        timerState: TimerRecordState = .start,
         timerElapsedTime: String = "4초 실행",
         timerCumulativeTime: String = "4초",
         timerPauseCount: String = "(1)",
@@ -135,11 +135,11 @@ public extension RecordBottomSheet {
     }
 
     init<TranscriptContent: View>(
-        type: LabcordRecordType = .timer,
-        contentState: LabcordRecordContentState = .empty,
+        type: RecordType = .timer,
+        contentState: RecordContentState = .empty,
         setDuration: String = "30초",
-        timerIdentity: LabcordTimerIdentity = .identity01,
-        timerState: LabcordTimerRecordState = .start,
+        timerIdentity: TimerIdentity = .identity01,
+        timerState: TimerRecordState = .start,
         timerElapsedTime: String = "4초 실행",
         timerCumulativeTime: String = "4초",
         timerPauseCount: String = "(1)",
@@ -190,12 +190,12 @@ public extension RecordBottomSheet {
 
     init(
         timerSetDuration: String,
-        timerIdentity: LabcordTimerIdentity,
-        timerState: LabcordTimerRecordState,
+        timerIdentity: TimerIdentity,
+        timerState: TimerRecordState,
         timerElapsedTime: String,
         timerCumulativeTime: String,
         timerPauseCount: String,
-        contentState: LabcordRecordContentState,
+        contentState: RecordContentState,
         memo: Binding<String>,
         onDismiss: (() -> Void)? = nil,
         onSave: @escaping () -> Void,
@@ -216,7 +216,7 @@ public extension RecordBottomSheet {
         progress: Binding<Double>,
         transcript: Binding<String>,
         memo: Binding<String>,
-        contentState: LabcordRecordContentState,
+        contentState: RecordContentState,
         onEditingChanged: ((Bool) -> Void)? = nil,
         onToggle: (() -> Void)? = nil,
         onSeek: ((Double) -> Void)? = nil,
@@ -235,7 +235,7 @@ public extension RecordBottomSheet {
 
     init<PhotoContent: View>(
         photoContent: PhotoContent,
-        contentState: LabcordRecordContentState,
+        contentState: RecordContentState,
         memo: Binding<String>,
         onDismiss: (() -> Void)? = nil,
         onSave: @escaping () -> Void,
@@ -250,7 +250,7 @@ public extension RecordBottomSheet {
 
     init<VideoContent: View>(
         videoContent: VideoContent,
-        contentState: LabcordRecordContentState,
+        contentState: RecordContentState,
         memo: Binding<String>,
         onDismiss: (() -> Void)? = nil,
         onSave: @escaping () -> Void,

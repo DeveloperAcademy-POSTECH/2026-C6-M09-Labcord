@@ -3,24 +3,24 @@ import SwiftUI
 import UIKit
 #endif
 
-public enum LabcordRecordType: String, CaseIterable, Sendable {
+public enum RecordType: String, CaseIterable, Sendable {
     case timer
     case voice
     case photo
     case video
 }
 
-public enum LabcordRecordContentState: String, CaseIterable, Sendable {
+public enum RecordContentState: String, CaseIterable, Sendable {
     case empty
     case filled
 }
 
 public struct RecordBottomSheet: View {
-    private let type: LabcordRecordType
-    private let contentState: LabcordRecordContentState
+    private let type: RecordType
+    private let contentState: RecordContentState
     private let setDuration: String
-    private let timerIdentity: LabcordTimerIdentity
-    private let timerState: LabcordTimerRecordState
+    private let timerIdentity: TimerIdentity
+    private let timerState: TimerRecordState
     private let timerElapsedTime: String
     private let timerCumulativeTime: String
     private let timerPauseCount: String
@@ -52,11 +52,11 @@ public struct RecordBottomSheet: View {
     @ScaledMetric(relativeTo: .body) private var headerControlScale: CGFloat = 1
 
     public init(
-        type: LabcordRecordType = .timer,
-        contentState: LabcordRecordContentState = .empty,
+        type: RecordType = .timer,
+        contentState: RecordContentState = .empty,
         setDuration: String = "30초",
-        timerIdentity: LabcordTimerIdentity = .identity01,
-        timerState: LabcordTimerRecordState = .start,
+        timerIdentity: TimerIdentity = .identity01,
+        timerState: TimerRecordState = .start,
         timerElapsedTime: String = "4초 실행",
         timerCumulativeTime: String = "4초",
         timerPauseCount: String = "(1)",

@@ -175,7 +175,7 @@ struct CatalogRunTimerControlScenario: View {
             }
             .disabled(duration <= .zero && state != .running)
             .accessibilityIdentifier("catalog.motion.timerControl")
-            TimePicker(duration: $duration)
+            TimerPicker(duration: $duration)
                 .disabled(countdown.isRunning)
                 .accessibilityIdentifier("catalog.scenario.timerControl.duration")
             CatalogCountdownStatus(

@@ -1,6 +1,6 @@
 import SwiftUI
 
-public enum LabcordInputState: Sendable {
+public enum InputState: Sendable {
     case empty
     case focused
     case filled
@@ -8,7 +8,7 @@ public enum LabcordInputState: Sendable {
     case disabled
 }
 
-extension LabcordInputState {
+extension InputState {
     init(
         isEnabled: Bool,
         isDisabled: Bool,
@@ -56,7 +56,7 @@ extension LabcordInputState {
     }
 }
 
-public struct LabcordTextFieldStyle: TextFieldStyle {
+public struct FormTextFieldStyle: TextFieldStyle {
     private let size: LabcordControlSize?
     private let isFocused: Bool
     private let isFilled: Bool
@@ -104,8 +104,8 @@ public struct LabcordTextFieldStyle: TextFieldStyle {
         }
     }
 
-    private var state: LabcordInputState {
-        LabcordInputState(
+    private var state: InputState {
+        InputState(
             isEnabled: isEnabled,
             isDisabled: isDisabled,
             isError: isError,
@@ -182,15 +182,15 @@ private struct LabcordTextFieldBody<Label: View>: View {
     }
 }
 
-public extension TextFieldStyle where Self == LabcordTextFieldStyle {
+public extension TextFieldStyle where Self == FormTextFieldStyle {
     static func labcord(
         size: LabcordControlSize? = nil,
         isFocused: Bool = false,
         isFilled: Bool = false,
         isError: Bool = false,
         isDisabled: Bool = false
-    ) -> LabcordTextFieldStyle {
-        LabcordTextFieldStyle(
+    ) -> FormTextFieldStyle {
+        FormTextFieldStyle(
             size: size,
             isFocused: isFocused,
             isFilled: isFilled,

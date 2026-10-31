@@ -115,7 +115,7 @@ struct CatalogRunTitleScenario: View {
     }
 
     private var preview: some View {
-        TitleSection(
+        ExperimentTitleSection(
             title: title, layout: isHorizontal ? .horizontal : .vertical,
             leading: {
                 TimerControlButton(state: .running) { actionCount += 1 }

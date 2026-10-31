@@ -1,6 +1,6 @@
 import SwiftUI
 
-public struct LabcordProgressViewStyle: ProgressViewStyle {
+public struct LoadingIndicatorStyle: ProgressViewStyle {
     public enum Size: CGFloat, CaseIterable, Sendable {
         case small = 16
         case medium = 20
@@ -25,17 +25,17 @@ public struct LabcordProgressViewStyle: ProgressViewStyle {
     }
 }
 
-public extension ProgressViewStyle where Self == LabcordProgressViewStyle {
+public extension ProgressViewStyle where Self == LoadingIndicatorStyle {
     static func labcord(
-        size: LabcordProgressViewStyle.Size = .small,
+        size: LoadingIndicatorStyle.Size = .small,
         foreground: Color? = nil
-    ) -> LabcordProgressViewStyle {
-        LabcordProgressViewStyle(size: size, foreground: foreground)
+    ) -> LoadingIndicatorStyle {
+        LoadingIndicatorStyle(size: size, foreground: foreground)
     }
 }
 
 private struct LabcordProgressContent: View {
-    let size: LabcordProgressViewStyle.Size
+    let size: LoadingIndicatorStyle.Size
     let foreground: Color?
     let configuration: ProgressViewStyleConfiguration
 
@@ -67,7 +67,7 @@ private struct LabcordLoadingIndicator: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ScaledMetric private var scaledSize: CGFloat
 
-    init(size: LabcordProgressViewStyle.Size, foreground: Color) {
+    init(size: LoadingIndicatorStyle.Size, foreground: Color) {
         self.foreground = foreground
         _scaledSize = ScaledMetric(wrappedValue: size.points, relativeTo: .body)
     }

@@ -1,13 +1,13 @@
 import SwiftUI
 
-public enum LabcordTimelineItemType: String, CaseIterable, Sendable {
+public enum TimelineItemType: String, CaseIterable, Sendable {
     case voice
     case photo
     case video
     case timer
 }
 
-public enum LabcordTimelineItemState: String, CaseIterable, Sendable {
+public enum TimelineItemState: String, CaseIterable, Sendable {
     case `default`
     case selected
 }
@@ -18,8 +18,8 @@ public struct TimelineItem: View {
     private let memoTitle: String
     private let memo: String
     private let showMemo: Bool
-    private let type: LabcordTimelineItemType
-    private let state: LabcordTimelineItemState
+    private let type: TimelineItemType
+    private let state: TimelineItemState
     private let content: AnyView?
 
     private let tokenLayout = LayoutTokens()
@@ -31,8 +31,8 @@ public struct TimelineItem: View {
         memoTitle: String = "메모",
         memo: String = "",
         showMemo: Bool = false,
-        type: LabcordTimelineItemType = .voice,
-        state: LabcordTimelineItemState = .default,
+        type: TimelineItemType = .voice,
+        state: TimelineItemState = .default,
         @ViewBuilder content: () -> Content
     ) {
         self.init(
@@ -53,8 +53,8 @@ public struct TimelineItem: View {
         memoTitle: String = "메모",
         memo: String = "색이 연한 노란색으로 변했으나 침전은 없음",
         showMemo: Bool = true,
-        type: LabcordTimelineItemType = .voice,
-        state: LabcordTimelineItemState = .default,
+        type: TimelineItemType = .voice,
+        state: TimelineItemState = .default,
         content: AnyView? = nil
     ) {
         self.timestamp = timestamp
@@ -73,8 +73,8 @@ public struct TimelineItem: View {
         memoTitle: String = "메모",
         memo: String = "색이 연한 노란색으로 변했으나 침전은 없음",
         showMemo: Bool = true,
-        type: LabcordTimelineItemType = .voice,
-        state: LabcordTimelineItemState = .default,
+        type: TimelineItemType = .voice,
+        state: TimelineItemState = .default,
         @ViewBuilder content: () -> Content
     ) {
         self.init(

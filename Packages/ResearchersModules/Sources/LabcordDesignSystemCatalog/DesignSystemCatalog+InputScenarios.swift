@@ -89,7 +89,7 @@ struct CatalogControlInputScenario: View {
             #else
             TextEditor(text: $value)
                 .labcordTextEditorStyle(
-                    LabcordTextEditorStyle(
+                    FormTextAreaStyle(
                         placeholder: placeholder, isEmpty: value.isEmpty,
                         isFocused: isFocused, isFilled: !value.isEmpty,
                         isError: isError, isDisabled: isDisabled
@@ -108,7 +108,7 @@ struct CatalogControlInputScenario: View {
                         : Color("General/Label/Tertiary", bundle: catalogBundle))
             )
                 .textFieldStyle(
-                    LabcordTextFieldStyle(
+                    FormTextFieldStyle(
                         isFocused: isFocused, isFilled: !value.isEmpty,
                         isError: isError, isDisabled: isDisabled
                     )

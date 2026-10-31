@@ -73,7 +73,7 @@ struct DesignSystemControlsPage: View {
                     "Chip Group",
                     description: "항목을 선택하고 추가·제거하는 칩 목록"
                 ) {
-                    LabcordChipGroup(
+                    ChipGroup(
                         chipItems,
                         selection: $selectedChipIDs,
                         label: \.title,
