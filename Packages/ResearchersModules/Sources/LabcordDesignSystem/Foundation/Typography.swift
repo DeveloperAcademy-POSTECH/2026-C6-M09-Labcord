@@ -1,57 +1,8 @@
+#if os(iOS)
 import SwiftUI
 
 @MainActor
 public enum Typography {
-#if os(watchOS)
-    private static func system(
-        _ textStyle: Font.TextStyle,
-        weight: Font.Weight? = nil
-    ) -> TypographyStyle {
-        let baseFont = Font.system(textStyle)
-        let font = weight.map { baseFont.weight($0) } ?? baseFont
-
-        return TypographyStyle(
-            font: font,
-            lineHeight: .variable,
-            letterSpacing: 0
-        )
-    }
-
-    public static let largeTitle = system(.largeTitle)
-    public static let largeTitleBold = largeTitle.weight(.bold)
-    public static let largeTitleEmphasized = largeTitle.weight(.bold)
-
-    public static let title1 = system(.title)
-    public static let title1Bold = title1.weight(.bold)
-    public static let title1Emphasized = title1.weight(.bold)
-
-    public static let title2 = system(.title2)
-    public static let title2Bold = title2.weight(.bold)
-    public static let title2Emphasized = title2.weight(.bold)
-
-    public static let title3 = system(.title3)
-    public static let title3SemiBold = title3.weight(.semibold)
-
-    public static let headline = system(.headline, weight: .semibold)
-
-    public static let body = system(.body)
-    public static let bodySemiBold = body.weight(.semibold)
-
-    public static let callout = system(.callout)
-    public static let calloutSemiBold = callout.weight(.semibold)
-
-    public static let subheadline = system(.subheadline)
-    public static let subheadlineSemiBold = subheadline.weight(.semibold)
-
-    public static let footnote = system(.footnote)
-    public static let footnoteSemiBold = footnote.weight(.semibold)
-
-    public static let caption1 = system(.caption)
-    public static let caption1SemiBold = caption1.weight(.semibold)
-
-    public static let caption2 = system(.caption2)
-    public static let caption2SemiBold = caption2.weight(.semibold)
-#else
     public static let largeTitle = TypographyStyle(
         font: .custom("PretendardVariable-Regular", size: 34, relativeTo: .largeTitle),
         lineHeight: .exact(points: 41),
@@ -131,5 +82,5 @@ public enum Typography {
         letterSpacing: 0.06
     )
     public static let caption2SemiBold = caption2.weight(.semibold)
-#endif
 }
+#endif
