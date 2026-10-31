@@ -1,6 +1,6 @@
 import SwiftUI
 
-package enum LabcordMotion: Sendable {
+public enum LabcordMotion: Sendable {
     case press
     case release
     case state
@@ -8,7 +8,7 @@ package enum LabcordMotion: Sendable {
     case entrance
     case settle
 
-    package var animation: Animation {
+    public var animation: Animation {
         switch self {
         case .press: .spring(response: 0.18, dampingFraction: 0.9)
         case .release: .spring(response: 0.34, dampingFraction: 0.68)
@@ -21,7 +21,7 @@ package enum LabcordMotion: Sendable {
 }
 
 extension View {
-    package func labcordMotion<Value: Equatable>(
+    public func labcordMotion<Value: Equatable>(
         _ motion: LabcordMotion = .state,
         value: Value
     ) -> some View {
@@ -32,15 +32,15 @@ extension View {
         modifier(LabcordPressModifier(isPressed: isPressed, isSubtle: isSubtle))
     }
 
-    package func labcordEntrance() -> some View {
+    public func labcordEntrance() -> some View {
         modifier(LabcordEntranceModifier())
     }
 }
 
-package struct LabcordPlainButtonStyle: ButtonStyle {
-    package init() {}
+public struct LabcordPlainButtonStyle: ButtonStyle {
+    public init() {}
 
-    package func makeBody(configuration: Configuration) -> some View {
+    public func makeBody(configuration: Configuration) -> some View {
         configuration.label.labcordPressFeedback(configuration.isPressed, isSubtle: true)
     }
 }
