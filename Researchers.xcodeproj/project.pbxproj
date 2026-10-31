@@ -15,7 +15,6 @@
 		A10C00103000000000000001 /* LabcordiOS in Frameworks */ = {isa = PBXBuildFile; productRef = A10C00103000000000000002 /* LabcordiOS */; };
 		A10C00103000000000000003 /* LabcordWatchOS in Frameworks */ = {isa = PBXBuildFile; productRef = A10C00103000000000000004 /* LabcordWatchOS */; };
 		D5C00000000000000000000B /* LabcordDesignSystemCatalog in Frameworks */ = {isa = PBXBuildFile; productRef = D5C00000000000000000000A /* LabcordDesignSystemCatalog */; };
-		D5C00000000000000000000D /* LabcordDesignSystemCatalog in Frameworks */ = {isa = PBXBuildFile; productRef = D5C00000000000000000000C /* LabcordDesignSystemCatalog */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -71,7 +70,6 @@
 				8E98D1AD30884D1500E68666 /* ComposableArchitecture in Frameworks */,
 				8E1069BC308A7AAD00BF375F /* LabcordKit in Frameworks */,
 				A10C00103000000000000001 /* LabcordiOS in Frameworks */,
-				D5C00000000000000000000D /* LabcordDesignSystemCatalog in Frameworks */,
 			);
 		};
 		8E2E27263084877E0043EEB3 /* Frameworks */ = {
@@ -144,7 +142,6 @@
 				8E98D1AC30884D1500E68666 /* ComposableArchitecture */,
 				8E1069BB308A7AAD00BF375F /* LabcordKit */,
 				A10C00103000000000000002 /* LabcordiOS */,
-				D5C00000000000000000000C /* LabcordDesignSystemCatalog */,
 			);
 			productName = Researchers;
 			productReference = 8E0691153080743D0081547E /* Researchers.app */;
@@ -709,11 +706,6 @@
 			productName = LabcordWatchOS;
 		};
 		D5C00000000000000000000A /* LabcordDesignSystemCatalog */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */;
-			productName = LabcordDesignSystemCatalog;
-		};
-		D5C00000000000000000000C /* LabcordDesignSystemCatalog */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */;
 			productName = LabcordDesignSystemCatalog;
