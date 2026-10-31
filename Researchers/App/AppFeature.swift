@@ -84,7 +84,7 @@ struct AppFeature {
             case let .returnHome(id):
                 guard state.path.ids.last == id else { return .none }
                 state.path.removeAll()
-                return .none
+                return .send(.home(.list(.load)))
 
             case .home, .path:
                 return .none
