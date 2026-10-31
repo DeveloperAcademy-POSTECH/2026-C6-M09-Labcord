@@ -43,7 +43,6 @@ public struct Toast: View {
     private let actionTitle: String
     private let onAction: () -> Void
     private let onDismiss: () -> Void
-    private let layout = LayoutTokens()
 
     public init(
         _ message: String,
@@ -88,8 +87,8 @@ public struct Toast: View {
     public var body: some View {
         toastContent
         .labcordMotion(.layout, value: [showLeadingIcon, showActionButton, showDismissButton])
-        .padding(.horizontal, layout.spacing16)
-        .padding(.vertical, layout.spacing12)
+        .padding(.horizontal, LayoutTokens.spacing16)
+        .padding(.vertical, LayoutTokens.spacing12)
         .frame(minHeight: showActionButton ? 60 : nil)
         .background {
             Rectangle()
@@ -97,7 +96,7 @@ public struct Toast: View {
                 .environment(\.colorScheme, .dark)
         }
         .background(Color("Experiment/Fill/Primary", bundle: .module))
-        .clipShape(RoundedRectangle(cornerRadius: layout.radiusSm))
+        .clipShape(RoundedRectangle(cornerRadius: LayoutTokens.radiusSm))
         .accessibilityElement(children: .contain)
     }
 
@@ -111,7 +110,7 @@ public struct Toast: View {
     }
 
     private var horizontalContent: some View {
-        HStack(alignment: .center, spacing: layout.spacing16) {
+        HStack(alignment: .center, spacing: LayoutTokens.spacing16) {
             leadingContent
             if showActionButton || showDismissButton {
                 actionsContent
@@ -121,7 +120,7 @@ public struct Toast: View {
     }
 
     private var verticalContent: some View {
-        VStack(alignment: .leading, spacing: layout.spacing12) {
+        VStack(alignment: .leading, spacing: LayoutTokens.spacing12) {
             leadingContent
             if showActionButton || showDismissButton {
                 HStack {
@@ -135,7 +134,7 @@ public struct Toast: View {
 
     @ViewBuilder
     private var leadingContent: some View {
-        HStack(alignment: .center, spacing: layout.spacing16) {
+        HStack(alignment: .center, spacing: LayoutTokens.spacing16) {
             if showLeadingIcon {
                 ZStack {
                     LabcordIconArtwork(icon: type.icon, size: 20)
@@ -162,13 +161,13 @@ public struct Toast: View {
     @ViewBuilder
     private var actionsContent: some View {
         ViewThatFits(in: .horizontal) {
-            HStack(alignment: .center, spacing: layout.spacing12) {
+            HStack(alignment: .center, spacing: LayoutTokens.spacing12) {
                 actionButton
                 dismissButton
             }
             .fixedSize(horizontal: true, vertical: false)
 
-            VStack(alignment: .trailing, spacing: layout.spacing12) {
+            VStack(alignment: .trailing, spacing: LayoutTokens.spacing12) {
                 actionButton
                 dismissButton
             }

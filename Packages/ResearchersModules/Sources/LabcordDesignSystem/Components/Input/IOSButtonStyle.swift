@@ -177,33 +177,32 @@ struct LabcordButtonMetrics {
 
     @MainActor
     init(size: ComponentSize, variant: IOSButtonStyle.Variant) {
-        let layout = LayoutTokens()
 
         switch size {
         case .small:
             height = 32
-            horizontalPadding = layout.spacing12
+            horizontalPadding = LayoutTokens.spacing12
             verticalPadding = 6
-            spacing = layout.spacing4
-            cornerRadius = layout.radiusFull
+            spacing = LayoutTokens.spacing4
+            cornerRadius = LayoutTokens.radiusFull
             iconSize = 16
             loadingIndicatorSize = .small
             typography = Typography.subheadline
         case .medium:
             height = 38
-            horizontalPadding = layout.spacing16
-            verticalPadding = layout.spacing8
-            spacing = layout.spacing8
-            cornerRadius = layout.radiusFull
+            horizontalPadding = LayoutTokens.spacing16
+            verticalPadding = LayoutTokens.spacing8
+            spacing = LayoutTokens.spacing8
+            cornerRadius = LayoutTokens.radiusFull
             iconSize = 20
             loadingIndicatorSize = .medium
             typography = Typography.callout
         case .large:
             height = 50
-            horizontalPadding = layout.spacing24
+            horizontalPadding = LayoutTokens.spacing24
             verticalPadding = 13
-            spacing = layout.spacing8
-            cornerRadius = layout.radiusFull
+            spacing = LayoutTokens.spacing8
+            cornerRadius = LayoutTokens.radiusFull
             iconSize = variant == .quaternary || variant == .accent ? 16 : 24
             loadingIndicatorSize = .large
             typography = Typography.body

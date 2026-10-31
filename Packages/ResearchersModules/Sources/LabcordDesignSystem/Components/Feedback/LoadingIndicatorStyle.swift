@@ -50,7 +50,7 @@ private struct LabcordProgressContent: View {
                 .progressViewStyle(.linear)
                 .tint(resolvedForeground)
         } else if let label = configuration.label {
-            HStack(spacing: LayoutTokens().spacing8) {
+            HStack(spacing: LayoutTokens.spacing8) {
                 LabcordLoadingIndicator(size: size, foreground: resolvedForeground)
                 label
             }

@@ -3,7 +3,7 @@ import SwiftUI
 public struct PageControl: View {
     @Binding private var selection: Int
     private let pageCount: Int
-    private let layout = LayoutTokens()
+
     @State private var pressedPage: Int?
 
     public init(
@@ -35,7 +35,7 @@ public struct PageControl: View {
 
     public var body: some View {
         ZStack {
-            HStack(spacing: layout.spacing8) {
+            HStack(spacing: LayoutTokens.spacing8) {
                 if pageCount > 0 {
                     ForEach(1...pageCount, id: \.self) { page in
                         Circle()
@@ -89,7 +89,7 @@ public struct PageControl: View {
     }
 
     private func interiorHitWidth(index: Int) -> CGFloat? {
-        index > 0 && index < pageCount - 1 ? 6 + layout.spacing8 : nil
+        index > 0 && index < pageCount - 1 ? 6 + LayoutTokens.spacing8 : nil
     }
 
     private func pageButton(index: Int) -> some View {

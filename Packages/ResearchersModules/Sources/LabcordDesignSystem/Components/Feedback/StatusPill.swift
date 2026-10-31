@@ -2,7 +2,6 @@ import SwiftUI
 
 public struct StatusPill: View {
     private let message: String
-    private let layout = LayoutTokens()
 
     public init(_ message: String) {
         self.message = message
@@ -33,8 +32,8 @@ public struct StatusPill: View {
             .labcordMotion(.state, value: message)
             .multilineTextAlignment(.leading)
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, layout.spacing20)
-            .padding(.vertical, layout.spacing12)
+            .padding(.horizontal, LayoutTokens.spacing20)
+            .padding(.vertical, LayoutTokens.spacing12)
     }
 
     private var pillShape: RoundedRectangle {

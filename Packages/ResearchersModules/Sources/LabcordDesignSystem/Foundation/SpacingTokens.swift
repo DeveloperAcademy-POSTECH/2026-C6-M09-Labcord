@@ -1,13 +1,13 @@
 import CoreGraphics
 
 public extension LayoutTokens {
-    var spacing2: CGFloat { 2 }
-    var spacing4: CGFloat { 4 }
-    var spacing8: CGFloat { 8 }
-    var spacing10: CGFloat { 10 }
-    var spacing12: CGFloat { 12 }
-    var spacing16: CGFloat { 16 }
-    var spacing20: CGFloat { 20 }
-    var spacing24: CGFloat { 24 }
-    var spacing32: CGFloat { 32 }
+    static let spacing2: CGFloat = 2
+    static let spacing4: CGFloat = 4
+    static let spacing8: CGFloat = 8
+    static let spacing10: CGFloat = 10
+    static let spacing12: CGFloat = 12
+    static let spacing16: CGFloat = 16
+    static let spacing20: CGFloat = 20
+    static let spacing24: CGFloat = 24
+    static let spacing32: CGFloat = 32
 }

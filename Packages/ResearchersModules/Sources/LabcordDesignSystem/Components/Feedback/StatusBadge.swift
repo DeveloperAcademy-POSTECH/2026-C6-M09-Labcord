@@ -5,7 +5,6 @@ public struct StatusBadge: View {
 
     private let status: ExperimentStatus
     private let label: String
-    private let layout = LayoutTokens()
 
     public init(status: ExperimentStatus, label: String? = nil) {
         self.status = status
@@ -18,8 +17,8 @@ public struct StatusBadge: View {
             .foregroundStyle(status.foregroundColor)
             .multilineTextAlignment(.center)
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, layout.spacing8)
-            .padding(.vertical, layout.spacing4)
+            .padding(.horizontal, LayoutTokens.spacing8)
+            .padding(.vertical, LayoutTokens.spacing4)
             .frame(minWidth: 70, minHeight: 28)
             .background(status.backgroundColor, in: RoundedRectangle(cornerRadius: 8))
             .accessibilityLabel(Text(label))

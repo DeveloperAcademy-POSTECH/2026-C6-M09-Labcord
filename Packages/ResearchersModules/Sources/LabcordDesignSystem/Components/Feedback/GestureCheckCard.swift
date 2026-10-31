@@ -4,7 +4,7 @@ public struct GestureCheckCard: View {
     private let title: String
     private let subtitle: String
     private let showsFollowingIcon: Bool
-    private let layout = LayoutTokens()
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(
@@ -18,8 +18,8 @@ public struct GestureCheckCard: View {
     }
 
     public var body: some View {
-        HStack(alignment: .center, spacing: layout.spacing4) {
-            VStack(alignment: .leading, spacing: layout.spacing4) {
+        HStack(alignment: .center, spacing: LayoutTokens.spacing4) {
+            VStack(alignment: .leading, spacing: LayoutTokens.spacing4) {
                 Text(title)
                     .typography(Typography.bodySemiBold)
                 Text(subtitle)
@@ -38,15 +38,15 @@ public struct GestureCheckCard: View {
                     .transition(.opacity)
             }
         }
-        .padding(.horizontal, layout.spacing16)
-        .padding(.vertical, layout.spacing12)
+        .padding(.horizontal, LayoutTokens.spacing16)
+        .padding(.vertical, LayoutTokens.spacing12)
         .background {
             Rectangle()
                 .fill(.ultraThinMaterial)
                 .environment(\.colorScheme, .dark)
                 .overlay { Rectangle().fill(Color("Experiment/Fill/Dark", bundle: .module)) }
         }
-        .clipShape(RoundedRectangle(cornerRadius: layout.radiusSm, style: .circular))
+        .clipShape(RoundedRectangle(cornerRadius: LayoutTokens.radiusSm, style: .circular))
         .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: showsFollowingIcon)
         .accessibilityElement(children: .combine)
     }
