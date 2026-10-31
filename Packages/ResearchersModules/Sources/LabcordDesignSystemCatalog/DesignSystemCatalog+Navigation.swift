@@ -46,7 +46,7 @@ enum CatalogItem: String, CaseIterable, Identifiable, Sendable {
     case pageControl, timerItem, statusPill, timerTabItem, timerTabs
     case protocolTimerItem, toast, timerControlButton, experimentControlButton, recordButton
     case titleSection, timePicker, gestureGuideItem, experimentSidePanel
-    case gestureToast
+    case gestureCheckCard
     case timerRecord, voicePlayer, recordBottomSheet, timelineItem, experimentStatusTimelineItem
     case photoViewer, videoPlayer
 
@@ -87,7 +87,7 @@ enum CatalogItem: String, CaseIterable, Identifiable, Sendable {
         case .timerTabs: "Timer Tabs"
         case .protocolTimerItem: "Protocol Timer Item"
         case .toast: "Toast"
-        case .gestureToast: "Gesture Toast"
+        case .gestureCheckCard: "Gesture Check Card"
         case .timerRecord: "Timer Record"
         case .voicePlayer: "Voice Player"
         case .recordBottomSheet: "Record Bottom Sheet"
@@ -116,7 +116,7 @@ enum CatalogItem: String, CaseIterable, Identifiable, Sendable {
         case .pageControl, .timerItem, .statusPill, .timerTabItem, .timerTabs,
              .protocolTimerItem, .toast, .timerControlButton, .experimentControlButton,
              .recordButton, .titleSection, .timePicker, .gestureGuideItem, .experimentSidePanel,
-             .gestureToast:
+             .gestureCheckCard:
             .run
         case .timerRecord, .voicePlayer, .recordBottomSheet, .timelineItem,
              .experimentStatusTimelineItem, .photoViewer, .videoPlayer:
@@ -142,8 +142,8 @@ enum CatalogItem: String, CaseIterable, Identifiable, Sendable {
              .textField, .textArea, .statusBadge, .separator, .overlay, .loadingIndicator,
              .checkbox, .radioButton:
             DesignSystemControlsPage(item: self)
-        case .gestureToast:
-            DesignSystemGestureToastPage()
+        case .gestureCheckCard:
+            DesignSystemGestureCheckCardPage()
         case .toast, .statusPill:
             DesignSystemFeedbackPage(item: self)
         case .timePicker, .gestureGuideItem, .experimentSidePanel:

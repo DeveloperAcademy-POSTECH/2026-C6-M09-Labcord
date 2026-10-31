@@ -56,7 +56,7 @@ description: Labcord 디자인 시스템의 컴포넌트를 사용·수정하거
 - [Timer Tabs](references/components/timer-tabs.md)
 - [Protocol Timer Item](references/components/protocol-timer-item.md)
 - [Toast](references/components/toast.md)
-- [Gesture Toast](references/components/gesture-toast.md)
+- [Gesture Check Card](references/components/gesture-check-card.md)
 - [Timer Control Button](references/components/timer-control-button.md)
 - [Experiment Control Button](references/components/experiment-control-button.md)
 - [Record Button](references/components/record-button.md)

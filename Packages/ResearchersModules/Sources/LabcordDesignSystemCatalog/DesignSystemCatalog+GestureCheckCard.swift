@@ -1,13 +1,13 @@
 import LabcordDesignSystem
 import SwiftUI
 
-struct DesignSystemGestureToastPage: View {
+struct DesignSystemGestureCheckCardPage: View {
     @State private var showsFollowingIcon = true
 
     var body: some View {
-        DesignSystemCatalogPage(title: "Gesture Toast", context: .experiment) {
-            DesignSystemCatalogCard("Gesture Toast", description: "제스처 인식 결과와 안내 문구") {
-                GestureToast(
+        DesignSystemCatalogPage(title: "Gesture Check Card", context: .experiment) {
+            DesignSystemCatalogCard("Gesture Check Card", description: "제스처 인식 결과와 안내 문구") {
+                GestureCheckCard(
                     title: "토스트 문구입니다.",
                     subtitle: "토스트 문구입니다.",
                     showsFollowingIcon: showsFollowingIcon
@@ -24,6 +24,6 @@ struct DesignSystemGestureToastPage: View {
 #Preview("제스처 알림 카탈로그") {
     _ = FontRegistration.register()
     return NavigationStack {
-        DesignSystemGestureToastPage()
+        DesignSystemGestureCheckCardPage()
     }
 }
