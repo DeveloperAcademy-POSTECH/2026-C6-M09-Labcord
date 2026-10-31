@@ -21,7 +21,7 @@ struct DesignSystemRunPage: View {
     }
 
     private var titleSectionCard: some View {
-        DesignSystemCatalogCard("Title Section", description: "가로와 세로 화면에서의 실험 제목과 동작") {
+        DesignSystemCatalogCard("Experiment Title Section", description: "가로·세로 실험 제목과 동작") {
             CatalogRunTitleScenario()
         }
     }

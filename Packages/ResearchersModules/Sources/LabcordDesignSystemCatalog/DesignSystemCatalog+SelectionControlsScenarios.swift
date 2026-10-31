@@ -56,7 +56,6 @@ struct CatalogRadioButtonScenario: View {
         }
     }
 }
-
 struct CatalogExperimentListItemScenario: View {
     @State private var isSelected = false
     @State private var showBadge = true

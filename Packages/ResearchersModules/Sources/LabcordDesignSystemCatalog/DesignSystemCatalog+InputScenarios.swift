@@ -21,7 +21,6 @@ struct CatalogControlInputScenario: View {
             ? "필요한 관찰 내용을 기록해 주세요." : "입력한 이름을 확인해 주세요.")
         _required = State(initialValue: !isMultiline)
     }
-
     private var identifier: String { "catalog.scenario.\(isMultiline ? "textArea" : "textField")" }
     private var isError: Bool { forcedState == .error }
     private var isDisabled: Bool { forcedState == .disabled }
@@ -41,7 +40,6 @@ struct CatalogControlInputScenario: View {
             }
         )
     }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             FieldContainer(
@@ -119,7 +117,6 @@ struct CatalogControlInputScenario: View {
         }
     }
 }
-
 private enum CatalogControlInputState: String, CaseIterable {
     case empty = "Empty"
     case focused = "Focused"
@@ -127,7 +124,6 @@ private enum CatalogControlInputState: String, CaseIterable {
     case error = "Error"
     case disabled = "Disabled"
 }
-
 struct CatalogControlTextProperty: View {
     let title: String
     @Binding var value: String
@@ -144,7 +140,6 @@ struct CatalogControlTextProperty: View {
         }
     }
 }
-
 struct CatalogDisclosureGroup<Content: View>: View {
     private let title: LocalizedStringKey
     private let identifier: String?
@@ -158,7 +153,6 @@ struct CatalogDisclosureGroup<Content: View>: View {
         self.identifier = identifier
         self.content = content
     }
-
     var body: some View {
         #if os(watchOS)
         VStack(alignment: .leading, spacing: 12) {

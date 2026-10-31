@@ -121,7 +121,7 @@ struct DesignSystemReviewPage: View {
 
     private var experimentStatusTimelineItemCard: some View {
         DesignSystemCatalogCard(
-            "Experiment Status Timeline Item", description: "실험 상태가 바뀐 시점의 기록"
+            "Timeline Experiment State", description: "실험 상태가 바뀐 시점의 기록"
         ) {
             TimelineExperimentState("실험 시작", timestamp: "10:17:24")
         }

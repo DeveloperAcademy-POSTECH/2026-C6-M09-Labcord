@@ -38,7 +38,6 @@ struct CatalogControlDropdownScenario: View {
         }
     }
 }
-
 struct CatalogControlChipScenario: View {
     @State private var size = ComponentSize.small
     @State private var visualStyle = ChipVisualStyle.solid
@@ -60,7 +59,6 @@ struct CatalogControlChipScenario: View {
             }
         )
     }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             if isVisible {
@@ -105,13 +103,11 @@ struct CatalogControlChipScenario: View {
         }
     }
 }
-
 private enum CatalogControlChipState: String, CaseIterable {
     case normal = "Default"
     case selected = "Selected"
     case disabled = "Disabled"
 }
-
 struct CatalogControlOverlayScenario: View {
     @State private var isStrong = false
 
@@ -136,7 +132,6 @@ struct CatalogControlOverlayScenario: View {
             fadeExample(edge: .bottom, title: "Fade · Bottom")
         }
     }
-
     private func fadeExample(edge: VerticalEdge, title: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
