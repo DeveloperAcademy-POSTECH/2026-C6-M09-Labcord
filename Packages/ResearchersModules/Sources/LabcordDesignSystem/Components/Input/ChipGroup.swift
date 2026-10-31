@@ -196,7 +196,6 @@ private struct LabcordChipFlowLayout: Layout {
     }
 }
 
-#if DEBUG
 private struct ChipGroupPreviewItem: Identifiable {
     let id: Int
     let title: String
@@ -250,4 +249,3 @@ private struct ChipGroupPreviewContent: View {
     .frame(width: 368)
     .padding()
 }
-#endif

@@ -159,7 +159,6 @@ public struct ExperimentListItem: View {
 
 }
 
-#if DEBUG
 #Preview("실험 목록 · 기본") {
     _ = FontRegistration.register()
     return ExperimentListItem()
@@ -184,4 +183,3 @@ public struct ExperimentListItem: View {
     .frame(width: 362)
     .padding()
 }
-#endif

@@ -50,7 +50,6 @@ private extension TimerControlButton.State {
     }
 }
 
-#if DEBUG
 #Preview("Timer Control Button") {
     _ = FontRegistration.register()
     return HStack(spacing: 16) {
@@ -63,4 +62,3 @@ private extension TimerControlButton.State {
 }
 
 private func noTimerControlAction() { }
-#endif

@@ -114,7 +114,6 @@ private extension RecordButton.State {
     }
 }
 
-#if DEBUG
 #Preview("Record Button") {
     _ = FontRegistration.register()
     return HStack(spacing: 16) {
@@ -128,4 +127,3 @@ private extension RecordButton.State {
 }
 
 private func noRecordAction() { }
-#endif

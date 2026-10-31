@@ -275,7 +275,6 @@ public extension VoicePlayer {
     }
 }
 
-#if DEBUG
 #Preview("음성 플레이어 · 기본/재생") {
     _ = FontRegistration.register()
     return VStack(spacing: 20) {
@@ -302,4 +301,3 @@ public extension VoicePlayer {
         .environment(\.dynamicTypeSize, .accessibility3)
         .padding()
 }
-#endif

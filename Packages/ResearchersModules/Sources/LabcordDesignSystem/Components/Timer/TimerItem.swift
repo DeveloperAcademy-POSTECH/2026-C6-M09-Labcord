@@ -227,7 +227,6 @@ private extension LabcordIcon {
     }
 }
 
-#if DEBUG
 private func noTimerAction() { }
 #Preview("실행 중") {
     _ = FontRegistration.register()
@@ -271,4 +270,3 @@ private func noTimerAction() { }
     .padding()
     .background(Color("Experiment/Background/Primary", bundle: .module))
 }
-#endif

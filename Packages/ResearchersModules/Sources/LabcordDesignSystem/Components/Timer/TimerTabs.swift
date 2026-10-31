@@ -96,7 +96,6 @@ public struct TimerTabs: View {
     }
 }
 
-#if DEBUG
 #Preview("기본") {
     @Previewable @State var selection = TimerTabs.Selection.set
 
@@ -114,4 +113,3 @@ public struct TimerTabs: View {
         .padding()
         .background(Color("Experiment/Background/Primary", bundle: .module))
 }
-#endif
