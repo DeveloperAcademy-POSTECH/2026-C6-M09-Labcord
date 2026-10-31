@@ -19,15 +19,15 @@ public struct EffectTokens: Sendable {
     public let blurSoftRadius: CGFloat
     public let blurMediumRadius: CGFloat
     public let blurStrongRadius: CGFloat
-    public let shadowSoftRadius: CGFloat
-    public let shadowSoftOffsetY: CGFloat
-    public let shadowSoftSpread: CGFloat
-    public let shadowMediumRadius: CGFloat
-    public let shadowMediumOffsetY: CGFloat
-    public let shadowMediumSpread: CGFloat
-    public let shadowStrongRadius: CGFloat
-    public let shadowStrongOffsetY: CGFloat
-    public let shadowStrongSpread: CGFloat
+    public let shadowSoftRadius: CGFloat = 8
+    public let shadowSoftOffsetY: CGFloat = 2
+    public let shadowSoftSpread: CGFloat = 0
+    public let shadowMediumRadius: CGFloat = 20
+    public let shadowMediumOffsetY: CGFloat = 6
+    public let shadowMediumSpread: CGFloat = 0
+    public let shadowStrongRadius: CGFloat = 36
+    public let shadowStrongOffsetY: CGFloat = 12
+    public let shadowStrongSpread: CGFloat = 0
 
     public init(context: ThemeContext = .general) {
         if context == .experiment {
@@ -39,16 +39,6 @@ public struct EffectTokens: Sendable {
             blurMediumRadius = 16
             blurStrongRadius = 24
         }
-
-        shadowSoftRadius = 8
-        shadowSoftOffsetY = 2
-        shadowSoftSpread = 0
-        shadowMediumRadius = 20
-        shadowMediumOffsetY = 6
-        shadowMediumSpread = 0
-        shadowStrongRadius = 36
-        shadowStrongOffsetY = 12
-        shadowStrongSpread = 0
     }
 
     public subscript(_ token: EffectToken) -> CGFloat {

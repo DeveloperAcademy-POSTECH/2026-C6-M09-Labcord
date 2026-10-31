@@ -40,6 +40,8 @@ public struct LabcordButtonStyle: ButtonStyle {
 
     private struct ButtonContent: View {
         @Environment(\.controlSize) private var controlSize
+        @Environment(\.labcordTheme) private var theme
+        @Environment(\.colorScheme) private var colorScheme
         @Environment(\.isEnabled) private var isEnabled
         @ScaledMetric(relativeTo: .body) private var cornerRadiusScale: CGFloat = 1
 
@@ -144,7 +146,7 @@ public struct LabcordButtonStyle: ButtonStyle {
                 .progressViewStyle(
                     .labcord(
                         size: metrics.loadingIndicatorSize,
-                        foreground: appearance.foreground
+                        foreground: theme.color(appearance.foreground, colorScheme: colorScheme)
                     )
                 )
                 .accessibilityHidden(true)
