@@ -126,7 +126,6 @@ private struct PageControlPressStyle: ButtonStyle {
     }
 }
 
-#if DEBUG
 #Preview("두 페이지") {
     @Previewable @State var selection = 1
 
@@ -147,4 +146,3 @@ private struct PageControlPressStyle: ButtonStyle {
         .background(.labcord(.backgroundPrimary))
         .labcordTheme(LabcordTheme(context: .experiment))
 }
-#endif
