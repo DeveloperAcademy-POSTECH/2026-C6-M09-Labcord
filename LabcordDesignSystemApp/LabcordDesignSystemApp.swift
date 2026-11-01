@@ -41,6 +41,7 @@ private struct CatalogRootView: View {
         ) {
             LiveActivityContent(
                 state: liveActivityDemo.state,
+                isVideoStopComplete: liveActivityDemo.isVideoStopComplete,
                 onStop: { liveActivityDemo.dismiss() },
                 onRetry: { liveActivityDemo.dismiss() }
             )

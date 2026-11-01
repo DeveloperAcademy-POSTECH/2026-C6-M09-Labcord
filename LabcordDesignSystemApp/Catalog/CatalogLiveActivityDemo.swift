@@ -7,6 +7,7 @@ final class CatalogLiveActivityDemo {
     var isPresented = false
     var isExpanded = false
     var state: LiveActivityContent.State = .audioRecording(transcript: "실험 내용을 기록하고 있어요.")
+    var isVideoStopComplete = false
     var placement: LiveActivityPlacement?
 
     private var transitionTask: Task<Void, Never>?
@@ -15,11 +16,12 @@ final class CatalogLiveActivityDemo {
         LiveActivityPlacement.forDevice(identifier: Self.modelIdentifier)
     }
 
-    func show(state: LiveActivityContent.State) {
+    func show(state: LiveActivityContent.State, isVideoStopComplete: Bool) {
         guard let devicePlacement else { return }
         transitionTask?.cancel()
         isDismissing = false
         self.state = state
+        self.isVideoStopComplete = isVideoStopComplete
         placement = devicePlacement
         isExpanded = false
         isPresented = true

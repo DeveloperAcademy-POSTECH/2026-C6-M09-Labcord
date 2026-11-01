@@ -95,7 +95,7 @@ struct CatalogLiveActivityContentScenario: View {
             }
             if let demo {
                 Button("Dynamic Island 위치에 표시") {
-                    demo.show(state: state)
+                    demo.show(state: state, isVideoStopComplete: isVideoStopComplete)
                 }
                 .disabled(demo.devicePlacement == nil)
                 Button("표시 닫기") { demo.dismiss() }
