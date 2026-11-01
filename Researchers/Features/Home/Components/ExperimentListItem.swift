@@ -19,10 +19,16 @@ struct ExperimentListItem: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                Text(entry.statusTitle)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: true, vertical: false)
+                HStack(spacing: 4) {
+                    Text(entry.statusTitle)
+                    if entry.hasRunningTimer {
+                        Image(systemName: "timer")
+                            .accessibilityLabel("실행 중인 타이머 있음")
+                    }
+                }
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: true, vertical: false)
 
                 Image(systemName: "chevron.right")
                     .foregroundStyle(.secondary)
@@ -48,10 +54,9 @@ struct ExperimentListItem: View {
 extension ExperimentListEntry {
     var statusTitle: String {
         switch status {
-        case .preparing: "준비"
-        case .inProgress: "진행 중"
+        case .ready: "준비"
         case .paused: "일시 정지"
-        case .completed: "종료"
+        case .completed: "완료"
         }
     }
 

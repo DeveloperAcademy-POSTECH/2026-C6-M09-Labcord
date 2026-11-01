@@ -6,24 +6,31 @@ nonisolated public struct ExperimentListEntry: Equatable, Identifiable, Sendable
     public let title: String
     public let createdAt: Date
     public let status: Status
+    public let hasRunningTimer: Bool
 
-    public init(id: UUID, title: String, createdAt: Date, status: Status) {
+    public init(
+        id: UUID,
+        title: String,
+        createdAt: Date,
+        status: Status,
+        hasRunningTimer: Bool
+    ) {
         self.id = id
         self.title = title
         self.createdAt = createdAt
         self.status = status
+        self.hasRunningTimer = hasRunningTimer
     }
 
     public enum Status: String, Equatable, Sendable {
-        case preparing
-        case inProgress
+        case ready
         case paused
         case completed
 
         public init(_ status: ExperimentStatus) {
             switch status {
-            case .preparing: self = .preparing
-            case .inProgress: self = .inProgress
+            case .ready: self = .ready
+            case .running: self = .paused
             case .paused: self = .paused
             case .completed: self = .completed
             }
@@ -31,7 +38,7 @@ nonisolated public struct ExperimentListEntry: Equatable, Identifiable, Sendable
     }
 
     public var isActive: Bool {
-        status == .inProgress || status == .paused
+        status == .paused
     }
 
     public static func newestFirst(_ lhs: Self, _ rhs: Self) -> Bool {

@@ -1,12 +1,16 @@
-import LabcordShared
 import SwiftUI
 
 public struct StatusBadge: View {
+    public enum Status: Equatable, Sendable {
+        case ready
+        case paused
+        case completed
+    }
 
-    private let status: ExperimentStatus
+    private let status: Status
     private let label: String
 
-    public init(status: ExperimentStatus, label: String? = nil) {
+    public init(status: Status, label: String? = nil) {
         self.status = status
         self.label = label ?? status.defaultLabel
     }
@@ -25,11 +29,10 @@ public struct StatusBadge: View {
     }
 }
 
-private extension ExperimentStatus {
+private extension StatusBadge.Status {
     var defaultLabel: String {
         switch self {
-        case .preparing: "준비"
-        case .inProgress: "진행 중"
+        case .ready: "준비"
         case .paused: "일시정지"
         case .completed: "완료"
         }
@@ -37,8 +40,7 @@ private extension ExperimentStatus {
 
     var foregroundColor: Color {
         switch self {
-        case .preparing: Color(.General.Label.tertiary)
-        case .inProgress: Color(.General.Experiment.Status.InProgress.foreground)
+        case .ready: Color(.General.Label.tertiary)
         case .paused: Color(.General.Experiment.Status.Paused.foreground)
         case .completed: Color(.General.Experiment.Status.Completed.foreground)
         }
@@ -46,8 +48,7 @@ private extension ExperimentStatus {
 
     var backgroundColor: Color {
         switch self {
-        case .preparing: Color(.General.Background.secondary)
-        case .inProgress: Color(.General.Experiment.Status.InProgress.background)
+        case .ready: Color(.General.Background.secondary)
         case .paused: Color(.General.Experiment.Status.Paused.background)
         case .completed: Color(.General.Experiment.Status.Completed.background)
         }
@@ -57,8 +58,7 @@ private extension ExperimentStatus {
 #Preview("실험 상태 배지") {
     _ = FontRegistration.register()
     return VStack(spacing: 12) {
-        StatusBadge(status: .preparing)
-        StatusBadge(status: .inProgress)
+        StatusBadge(status: .ready)
         StatusBadge(status: .paused)
         StatusBadge(status: .completed)
     }

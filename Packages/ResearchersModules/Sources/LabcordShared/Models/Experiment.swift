@@ -35,7 +35,7 @@ public final class Experiment {
         startedAt: Date? = nil,
         endedAt: [Date] = [],
         pauses: [Pause] = [],
-        status: ExperimentStatus = .preparing,
+        status: ExperimentStatus = .ready,
         mode: ExperimentMode = .free,
         procedure: ExperimentProtocol? = nil,
         records: [ExperimentRecord] = []
@@ -53,13 +53,18 @@ public final class Experiment {
         self.statusHistory = [ExperimentStatusEntry(status: status, date: createdAt)]
     }
 
-    public func recordExit(status: ExperimentStatus, at date: Date, entryID: UUID) {
-        guard status == .inProgress || status == .paused else { return }
+    public func recordExit(at date: Date, entryID: UUID) {
         guard !statusHistory.contains(where: { $0.id == entryID }) else { return }
-        self.status = status
+        status = .paused
         statusHistory.append(
-            ExperimentStatusEntry(id: entryID, status: status, date: date)
+            ExperimentStatusEntry(id: entryID, status: .paused, date: date)
         )
+    }
+
+    public func recordEntry(at date: Date) {
+        guard status == .ready || status == .paused else { return }
+        status = .running
+        statusHistory.append(ExperimentStatusEntry(status: .running, date: date))
     }
 
     public func complete(at date: Date) {
