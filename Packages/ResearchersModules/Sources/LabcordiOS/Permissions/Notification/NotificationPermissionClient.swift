@@ -24,7 +24,8 @@ public struct NotificationPermissionClient: Sendable {
 
     public init(
         currentStatus: @escaping @MainActor @Sendable () async -> NotificationPermissionStatus,
-        requestAccess: @escaping @MainActor @Sendable () async throws -> NotificationPermissionStatus
+        requestAccess:
+            @escaping @MainActor @Sendable () async throws -> NotificationPermissionStatus
     ) {
         self.currentStatus = currentStatus
         self.requestAccess = requestAccess
