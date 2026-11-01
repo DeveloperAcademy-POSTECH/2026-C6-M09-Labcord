@@ -24,8 +24,8 @@ description: Labcord 디자인 시스템의 컴포넌트를 사용·수정하거
 
 ## 입력·공통 제어
 
-- [Button](references/components/button.md)
-- [Icon Button](references/components/icon-button.md)
+- [iOS Button Style](references/components/button.md)
+- [iOS Icon Button Style](references/components/icon-button.md)
 - [Dropdown Trigger](references/components/dropdown-trigger.md)
 - [Chip](references/components/chip.md)
 - [Checkbox](references/components/checkbox.md)
@@ -37,10 +37,17 @@ description: Labcord 디자인 시스템의 컴포넌트를 사용·수정하거
 - [Separator](references/components/separator.md)
 - [Overlay](references/components/overlay.md)
 - [Status Badge](references/components/status-badge.md)
+- [Navigation Page Title](references/components/navigation-page-title.md)
+- [Tooltip Gesture Guide](references/components/tooltip-gesture-guide.md)
+- [Progress Ring](references/components/progress-ring.md)
 
 ## 실험 준비
 
 - [Protocol Upload Button](references/components/protocol-upload-button.md)
+- [File Type Icon](references/components/file-type-icon.md)
+- [Protocol File Upload Progress](references/components/protocol-file-upload-progress.md)
+- [Protocol File Metadata](references/components/protocol-file-metadata.md)
+- [Protocol Photo Item](references/components/protocol-photo-item.md)
 - [Protocol Timer Row](references/components/protocol-timer-row.md)
 - [Accordion](references/components/accordion.md)
 - [Chip Group](references/components/chip-group.md)
@@ -64,6 +71,7 @@ description: Labcord 디자인 시스템의 컴포넌트를 사용·수정하거
 - [Timer Picker](references/components/time-picker.md)
 - [Gesture Guide Item](references/components/gesture-guide-item.md)
 - [Experiment Side Panel](references/components/experiment-side-panel.md)
+- [Slide to End Button](references/components/slide-to-end-button.md)
 
 ## 기록 검토
 
@@ -72,3 +80,7 @@ description: Labcord 디자인 시스템의 컴포넌트를 사용·수정하거
 - [Record Bottom Sheet](references/components/record-bottom-sheet.md)
 - [Timeline Item](references/components/timeline-item.md)
 - [Timeline Experiment State](references/components/experiment-status-timeline-item.md)
+
+## Live Activity 디자인
+
+- [Live Activity 컴포넌트](references/components/live-activity.md)
