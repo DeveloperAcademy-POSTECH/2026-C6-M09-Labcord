@@ -136,7 +136,7 @@ struct SessionTimerFeature {
                 state.timerCollection.advance(to: date)
                 let finished = state.timerCollection.timers.filter { timer in
                     timer.status == .finished
-                        && previous.timers.first(where: { $0.id == timer.id })?.status != .finished
+                        && previous.timers.first { $0.id == timer.id }?.status != .finished
                 }
                 if !finished.isEmpty {
                     return persist(
@@ -182,7 +182,7 @@ struct SessionTimerFeature {
         state: inout State
     ) -> Effect<Action> {
         let changes = collection.timers.compactMap { timer -> TimerChange? in
-            let old = previous.timers.first(where: { $0.id == timer.id })
+            let old = previous.timers.first { $0.id == timer.id }
             return old == timer ? nil : TimerChange(timer: timer, endedAt: nil)
         }
         guard !changes.isEmpty else { return .none }

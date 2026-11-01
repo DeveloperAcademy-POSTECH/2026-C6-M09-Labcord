@@ -10,7 +10,7 @@ struct ExperimentSessionFeature {
         let experimentID: UUID
         var detail: ExperimentSessionDetail?
         var timer: SessionTimerFeature.State
-        
+
         var permissions = SessionPermissionsFeature.State()
         var voice: VoiceRecordingFeature.State
         var capture: CameraCaptureFeature.State

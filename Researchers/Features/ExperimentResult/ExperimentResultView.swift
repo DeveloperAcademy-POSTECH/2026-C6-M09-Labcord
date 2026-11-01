@@ -46,7 +46,7 @@ struct ExperimentResultView: View {
             "mode: \(detail.mode)",
             "procedure: \(String(describing: detail.procedure))",
             "pauses.count: \(detail.pauses.count)",
-            "records.count: \(detail.records.count)",
+            "records.count: \(detail.records.count)"
         ]
 
         for (index, pause) in detail.pauses.enumerated() {
