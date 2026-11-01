@@ -37,8 +37,6 @@ extension View {
     }
 }
 
-public typealias LabcordPlainButtonStyle = PressFeedbackButtonStyle
-
 public struct PressFeedbackButtonStyle: ButtonStyle {
     public init() {}
 
