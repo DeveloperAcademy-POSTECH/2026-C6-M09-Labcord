@@ -84,7 +84,11 @@ struct CameraCaptureView: View {
 }
 
 #Preview {
-    CameraCaptureView(store: Store(initialState: CameraCaptureFeature.State()) {
-        CameraCaptureFeature()
-    })
+    CameraCaptureView(
+        store: Store(
+            initialState: CameraCaptureFeature.State(experimentID: UUID())
+        ) {
+            CameraCaptureFeature()
+        }
+    )
 }
