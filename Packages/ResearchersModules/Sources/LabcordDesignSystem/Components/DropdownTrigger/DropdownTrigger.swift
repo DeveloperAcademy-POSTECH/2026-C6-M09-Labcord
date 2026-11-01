@@ -38,9 +38,10 @@ public struct DropdownTriggerLabel: View {
 
             LabcordIconArtwork(
                 icon: effectiveState == .open ? .caretUp : .caretDown,
-                size: 16,
+                size: iconSize,
                 relativeTo: fontTextStyle
             )
+            .foregroundStyle(iconColor)
         }
         .typography(textStyle)
         .foregroundStyle((foregroundColor))
@@ -133,6 +134,18 @@ public struct DropdownTriggerLabel: View {
         case .large, .extraLarge:
             return .body
         }
+    }
+
+    private var iconSize: CGFloat {
+        switch resolvedSize {
+        case .small: 16
+        case .medium: 20
+        case .large, .extraLarge: 24
+        }
+    }
+
+    private var iconColor: Color {
+        effectiveState == .default ? Color(.General.Label.primary) : foregroundColor
     }
 
     private var foregroundColor: Color {

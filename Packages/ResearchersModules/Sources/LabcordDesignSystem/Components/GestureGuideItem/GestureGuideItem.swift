@@ -52,7 +52,7 @@ public struct GestureGuideItem<Media: View>: View {
 
     private var gestureMedia: some View {
         media
-            .frame(width: 90, height: 100)
+            .frame(width: 90, height: 90)
             .clipped()
     }
 
@@ -76,7 +76,7 @@ public struct GestureGuideItem<Media: View>: View {
     }
 
     private var width: CGFloat {
-        layout == .portrait ? 380 / 3 : 321
+        layout == .portrait ? 130 : 321
     }
 
     private var textAlignment: Alignment {

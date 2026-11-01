@@ -170,10 +170,10 @@ public struct RecordBottomSheet: View {
     private var header: some View {
         HStack(alignment: .center) {
             Button(action: close) {
-                LabcordIconArtwork(icon: .x, size: 16, relativeTo: .body)
-                    .foregroundStyle(Color(.General.Label.primary))
+                LabcordIconArtwork(icon: .x, size: 24, relativeTo: .body)
+                    .foregroundStyle(Color(.General.Label.secondary))
             }
-            .buttonStyle(.labcordIcon(.tertiary, size: .medium))
+            .buttonStyle(.labcordIcon(.plain, size: .large))
             .accessibilityLabel(Text("닫기"))
 
             Text("기록")
@@ -181,10 +181,9 @@ public struct RecordBottomSheet: View {
                 .foregroundStyle(Color(.General.Label.primary))
                 .frame(maxWidth: .infinity)
 
-            Color.clear.frame(width: 34 * headerControlScale, height: 34 * headerControlScale)
+            Color.clear.frame(width: 50 * headerControlScale, height: 50 * headerControlScale)
                 .accessibilityHidden(true)
         }
-        .padding(.vertical, LayoutTokens.spacing4)
         .frame(maxWidth: .infinity)
     }
 

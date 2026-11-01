@@ -56,7 +56,8 @@ public struct TimerTabItem: View {
     }
 
     private var foregroundColor: Color {
-        style == .pill ? Color(.Experiment.Label.brand)
+        style == .pill ? (isSelected
+            ? Color(.Experiment.Label.brand) : Color(.Experiment.Label.quaternary))
             : (isSelected ? Color(.Experiment.Label.primary)
                 : Color(.Experiment.Label.tertiary))
     }

@@ -15,6 +15,7 @@ public struct Accordion<Content: View>: View {
     private let content: () -> Content
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.isEnabled) private var isEnabled
 
     public init(
         _ title: String,
@@ -87,7 +88,7 @@ public struct Accordion<Content: View>: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .disabled(state == .disabled)
+            .disabled(isDisabled)
 
             if isOpen {
                 content()
@@ -111,7 +112,7 @@ public struct Accordion<Content: View>: View {
     }
 
     private var isOpen: Bool {
-        state == .default && isExpanded
+        !isDisabled && isExpanded
     }
 
     private var expansionAnimation: Animation? {
@@ -119,35 +120,39 @@ public struct Accordion<Content: View>: View {
     }
 
     private var hasCount: Bool {
-        showsCount && !count.isEmpty && count != "0"
+        showsCount && !count.isEmpty
+    }
+
+    private var isDisabled: Bool {
+        state == .disabled || !isEnabled
     }
 
     private var foregroundColor: Color {
-        state == .disabled
+        isDisabled
             ? Color(.General.Label.disabled)
             : Color(.General.Label.primary)
     }
 
     private var countColor: Color {
-        state == .disabled
+        isDisabled
             ? Color(.General.Label.disabled)
             : Color(.General.Label.tertiary)
     }
 
     private var iconColor: Color {
-        state == .disabled
+        isDisabled
             ? Color(.General.Label.disabled)
             : Color(.General.Label.secondary)
     }
 
     private var backgroundColor: Color {
-        state == .disabled
+        isDisabled
             ? Color(.General.Fill.secondary)
             : Color(.General.Background.Grouped.secondary)
     }
 
     private func toggle() {
-        guard state == .default else { return }
+        guard !isDisabled else { return }
         withAnimation(expansionAnimation) {
             isExpanded.toggle()
         }

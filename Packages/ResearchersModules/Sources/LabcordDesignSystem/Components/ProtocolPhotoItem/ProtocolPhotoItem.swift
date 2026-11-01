@@ -12,7 +12,7 @@ public struct ProtocolPhotoItem<Content: View>: View {
     private let action: () -> Void
     @Environment(\.isEnabled) private var isEnabled
     @ScaledMetric(relativeTo: .body) private var height: CGFloat = 100
-    @ScaledMetric(relativeTo: .body) private var addWidth: CGFloat = 42
+    @ScaledMetric(relativeTo: .body) private var addWidth: CGFloat = 41.5
 
     public init(onRemove: @escaping () -> Void, @ViewBuilder content: () -> Content) {
         self.mode = .photo

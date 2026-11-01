@@ -27,11 +27,6 @@ public struct NavigationPageTitle: View {
                 .foregroundStyle(Color(.General.Label.primary))
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity, alignment: .center)
-
-            if onBack != nil {
-                Color.clear.frame(width: 50, height: 50)
-                    .accessibilityHidden(true)
-            }
         }
         .frame(minHeight: 50)
         .padding(.horizontal, LayoutTokens.spacing16)

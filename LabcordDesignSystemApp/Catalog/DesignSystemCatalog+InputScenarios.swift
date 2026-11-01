@@ -11,6 +11,7 @@ struct CatalogControlInputScenario: View {
     @State private var required: Bool
     @State private var showsTitle = true
     @State private var showsFeedback = true
+    @State private var showsTextCount = true
     @State private var forcedState: CatalogControlInputState?
     @FocusState private var isFocused: Bool
 
@@ -45,6 +46,8 @@ struct CatalogControlInputScenario: View {
             FieldContainer(
                 label: label, required: required, feedback: feedback,
                 showTitle: showsTitle, showFeedback: showsFeedback,
+                textCount: isMultiline ? nil : value.count,
+                textLimit: isMultiline ? nil : 60, showTextCount: showsTextCount,
                 isError: isError, isDisabled: isDisabled
             ) {
                 nativeInput
@@ -59,6 +62,10 @@ struct CatalogControlInputScenario: View {
                     .accessibilityIdentifier(identifier + ".showTitle")
                 Toggle("안내 문구 표시", isOn: $showsFeedback)
                     .accessibilityIdentifier(identifier + ".showFeedback")
+                if !isMultiline {
+                    Toggle("글자 수 표시", isOn: $showsTextCount)
+                        .accessibilityIdentifier(identifier + ".showTextCount")
+                }
                 Toggle("필수 표시", isOn: $required)
                     .accessibilityIdentifier(identifier + ".required")
                 CatalogControlTextProperty(title: "표시 제목", value: $label)
