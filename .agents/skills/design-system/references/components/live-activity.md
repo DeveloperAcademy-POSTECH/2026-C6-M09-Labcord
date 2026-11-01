@@ -17,3 +17,9 @@ LiveActivityContainer {
 - 이 뷰들은 화면 구성 요소입니다. ActivityKit 상태 관리, 위젯 확장, App Intents와 실제 Live Activity 실행은 포함하지 않으며, 위젯 환경 지원도 별도 확인이 필요합니다.
 
 [컨테이너](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/LiveActivity/LiveActivityContainer.swift) · [콘텐츠](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/LiveActivity/LiveActivityContent.swift) · [컨트롤](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/LiveActivity/LiveActivityControlButton.swift) · [상태 표시](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/LiveActivity/LiveActivityStatusIndicator.swift)
+
+## 앱 안에서 표시
+
+`AnimatedLiveActivityContainer`는 접힌 캡슐과 펼친 콘텐츠 사이의 전환을 표현합니다. 전체 창을 채우는 뷰에 `liveActivityOverlay`를 적용하고, 확인된 기기의 창 상단 기준 좌표를 `LiveActivityPlacement`로 전달합니다. 위치가 없거나 가로 화면이면 표시하지 않습니다. 표시 여부, 펼침 상태와 콘텐츠 동작은 호출부에서 관리합니다.
+
+카탈로그의 **05 Live Activity**에서 이 기기의 위치를 직접 보정해 저장한 뒤 상단 표시를 확인할 수 있습니다. 이 위치는 시스템 Dynamic Island를 제어하는 값이 아닙니다.
