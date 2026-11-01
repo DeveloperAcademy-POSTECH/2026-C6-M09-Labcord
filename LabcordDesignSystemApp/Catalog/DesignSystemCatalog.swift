@@ -21,7 +21,9 @@ public struct DesignSystemCatalog: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     .padding(.vertical, 4)
+                    .catalogDisclosure(context: .general)
                 }
+                .catalogListRow(context: .general)
                 .accessibilityIdentifier("catalog.section.\(section.rawValue)")
             }
         }
@@ -42,17 +44,23 @@ private struct DesignSystemCatalogSectionPage: View {
                     Text("All")
                         .typography(Typography.body)
                         .padding(.vertical, 4)
+                        .catalogDisclosure(context: section.context)
                 }
+                .catalogListRow(context: section.context)
                 .accessibilityIdentifier("catalog.all.\(section.rawValue)")
             }
 
             if section == .foundation {
-                Section("Foundation Tokens") {
+                Section {
                     itemLinks(section.items.filter(\.isToken))
+                } header: {
+                    sectionHeading("Foundation Tokens")
                 }
                 if section.items.contains(where: { !$0.isToken }) {
-                    Section("Components") {
+                    Section {
                         itemLinks(section.items.filter { !$0.isToken })
+                    } header: {
+                        sectionHeading("Components")
                     }
                 }
             } else {
@@ -72,9 +80,16 @@ private struct DesignSystemCatalogSectionPage: View {
                     .typography(Typography.body)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.vertical, 4)
+                    .catalogDisclosure(context: section.context)
             }
+            .catalogListRow(context: section.context)
             .accessibilityIdentifier("catalog.component.\(item.rawValue)")
         }
+    }
+
+    private func sectionHeading(_ title: String) -> some View {
+        Text(title)
+            .foregroundStyle(Color("General/Label/Secondary", bundle: catalogBundle))
     }
 }
 
@@ -94,6 +109,44 @@ private struct DesignSystemCatalogAllPage: View {
 }
 
 private extension View {
+    func catalogDisclosure(context: CatalogContext) -> some View {
+        HStack {
+            self
+            Spacer(minLength: 8)
+            Image(systemName: "chevron.right")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(
+                    Color(
+                        context == .general
+                            ? "General/Label/Secondary" : "Experiment/Label/Secondary",
+                        bundle: catalogBundle
+                    )
+                )
+                .accessibilityHidden(true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    func catalogListRow(context: CatalogContext) -> some View {
+        self
+            .navigationLinkIndicatorVisibility(.hidden)
+            .listRowBackground(
+                Color(
+                    context == .general
+                        ? "General/Background/Grouped/Secondary"
+                        : "Experiment/Background/Grouped/Secondary",
+                    bundle: catalogBundle
+                )
+            )
+            .listRowSeparatorTint(
+                Color(
+                    context == .general
+                        ? "General/Separator/Default" : "Experiment/Separator/Default",
+                    bundle: catalogBundle
+                )
+            )
+    }
+
     func catalogList(context: CatalogContext) -> some View {
         self
             .scrollContentBackground(.hidden)
