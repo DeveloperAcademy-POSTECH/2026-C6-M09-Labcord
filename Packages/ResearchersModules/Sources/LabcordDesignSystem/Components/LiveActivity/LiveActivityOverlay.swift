@@ -82,10 +82,23 @@ public extension View {
                     .frame(maxWidth: .infinity, alignment: .top)
                     .offset(x: placement.horizontalOffset)
                     .padding(.top, placement.top)
-                    .accessibilityAction(.escape) { onDismiss?() }
+                    .modifier(ConditionalEscapeAction(onDismiss: onDismiss))
                 }
             }
             .ignoresSafeArea(.container, edges: .top)
+        }
+    }
+}
+
+private struct ConditionalEscapeAction: ViewModifier {
+    let onDismiss: (() -> Void)?
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if let onDismiss {
+            content.accessibilityAction(.escape, onDismiss)
+        } else {
+            content
         }
     }
 }
