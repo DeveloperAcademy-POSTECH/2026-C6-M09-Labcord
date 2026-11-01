@@ -46,7 +46,7 @@ struct PortraitSessionView: View {
 #Preview {
     PortraitSessionView(
         store: Store(
-            initialState: CameraCaptureFeature.State()
+            initialState: CameraCaptureFeature.State(experimentID: UUID())
         ) {
             CameraCaptureFeature()
         },
