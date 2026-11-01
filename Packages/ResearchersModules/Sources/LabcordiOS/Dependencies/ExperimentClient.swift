@@ -11,7 +11,9 @@ public struct ExperimentClient: Sendable {
     public var saveTimer: @MainActor @Sendable (UUID, ExperimentTimer, Date?) throws -> Void
     public var savePhoto: @MainActor @Sendable (UUID, UUID, Date, Data) throws -> Void
     public var saveVideo: @MainActor @Sendable (UUID, UUID, Date, URL) throws -> Void
+    public var saveAudio: @MainActor @Sendable (UUID, UUID, Date, URL, String) throws -> Void
     public var cancelVideoSave: @MainActor @Sendable (UUID, UUID, URL) throws -> Void
+    public var cancelAudioSave: @MainActor @Sendable (UUID, UUID, URL) throws -> Void
     public var complete: @MainActor @Sendable (UUID, Date) throws -> Void
     public var delete: @MainActor @Sendable (UUID) throws -> Void
 
@@ -24,7 +26,9 @@ public struct ExperimentClient: Sendable {
         saveTimer: @escaping @MainActor @Sendable (UUID, ExperimentTimer, Date?) throws -> Void,
         savePhoto: @escaping @MainActor @Sendable (UUID, UUID, Date, Data) throws -> Void,
         saveVideo: @escaping @MainActor @Sendable (UUID, UUID, Date, URL) throws -> Void,
+        saveAudio: @escaping @MainActor @Sendable (UUID, UUID, Date, URL, String) throws -> Void,
         cancelVideoSave: @escaping @MainActor @Sendable (UUID, UUID, URL) throws -> Void,
+        cancelAudioSave: @escaping @MainActor @Sendable (UUID, UUID, URL) throws -> Void,
         complete: @escaping @MainActor @Sendable (UUID, Date) throws -> Void,
         delete: @escaping @MainActor @Sendable (UUID) throws -> Void
     ) {
@@ -36,7 +40,9 @@ public struct ExperimentClient: Sendable {
         self.saveTimer = saveTimer
         self.savePhoto = savePhoto
         self.saveVideo = saveVideo
+        self.saveAudio = saveAudio
         self.cancelVideoSave = cancelVideoSave
+        self.cancelAudioSave = cancelAudioSave
         self.complete = complete
         self.delete = delete
     }
@@ -68,8 +74,18 @@ extension ExperimentClient: DependencyKey {
                 experimentID: $0, id: $1, recordedAt: $2, sourceURL: $3
             )
         },
+        saveAudio: {
+            try ExperimentSessionRepository.shared.saveAudio(
+                experimentID: $0, id: $1, recordedAt: $2, sourceURL: $3, transcript: $4
+            )
+        },
         cancelVideoSave: {
             try ExperimentSessionRepository.shared.cancelVideoSave(
+                experimentID: $0, id: $1, sourceURL: $2
+            )
+        },
+        cancelAudioSave: {
+            try ExperimentSessionRepository.shared.cancelAudioSave(
                 experimentID: $0, id: $1, sourceURL: $2
             )
         },
