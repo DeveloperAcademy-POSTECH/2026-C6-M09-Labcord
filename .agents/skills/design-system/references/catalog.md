@@ -1,6 +1,6 @@
 # 카탈로그
 
-소스: [Navigation.swift](../../../../Packages/ResearchersModules/Sources/LabcordDesignSystemCatalog/DesignSystemCatalog+Navigation.swift), [앱 진입점](../../../../LabcordDesignSystemApp/LabcordDesignSystemApp.swift).
+소스: [Navigation.swift](../../../../LabcordDesignSystemApp/Catalog/DesignSystemCatalog+Navigation.swift), [앱 진입점](../../../../LabcordDesignSystemApp/LabcordDesignSystemApp.swift).
 
 - Xcode의 `LabcordDesignSystemApp` 스킴으로 실행합니다. 실제 메뉴와 섹션별 배경·글자색은 라우팅 소스에서 확인합니다.
 - 새 컴포넌트·상태는 개별 메뉴와 해당 섹션 최상단 All에 함께 연결합니다.

@@ -1,6 +1,6 @@
 # Chip
 
-[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/Input/ChipStyle.swift)
+[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/Chip/ChipStyle.swift)
 
 `isImportant`는 부모의 `Binding<Bool>`, `removeChip`은 제거 액션입니다.
 

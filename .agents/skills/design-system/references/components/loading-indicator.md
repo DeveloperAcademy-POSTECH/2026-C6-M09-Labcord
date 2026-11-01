@@ -1,6 +1,6 @@
 # Loading Indicator
 
-[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/Feedback/LoadingIndicatorStyle.swift)
+[구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/LoadingIndicator/LoadingIndicatorStyle.swift)
 
 불확정 로딩은 native `ProgressView`에 Style을 적용합니다.
 
