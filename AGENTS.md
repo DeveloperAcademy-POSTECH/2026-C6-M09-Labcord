@@ -33,6 +33,7 @@
 | 작업 | Skill |
 | --- | --- |
 | Swift 작성·수정·스타일 리뷰 | [code-style](.agents/skills/code-style/SKILL.md) |
+| 디자인 시스템 컴포넌트 사용·수정 | [design-system](.agents/skills/design-system/SKILL.md) |
 | Feature·모듈 경계, 저장·Watch 통신 설계·수정·리뷰 | [architecture](.agents/skills/architecture/SKILL.md) |
 | 브랜치·커밋·이슈·PR 작성 또는 리뷰 | [git-workflow](.agents/skills/git-workflow/SKILL.md) |
 | 변경 후 검증 선택·실행·결과 보고 | [verify-change](.agents/skills/verify-change/SKILL.md) |

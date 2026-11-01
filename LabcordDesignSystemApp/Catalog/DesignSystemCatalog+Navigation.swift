@@ -10,6 +10,7 @@ enum CatalogSection: String, CaseIterable, Identifiable, Sendable {
     case foundation
     case setup
     case run
+    case review
 
     var id: Self { self }
 
@@ -18,6 +19,7 @@ enum CatalogSection: String, CaseIterable, Identifiable, Sendable {
         case .foundation: "01 Foundation"
         case .setup: "02 Experiment Setup"
         case .run: "03 Experiment Run"
+        case .review: "04 Record Review"
         }
     }
 
@@ -26,6 +28,7 @@ enum CatalogSection: String, CaseIterable, Identifiable, Sendable {
         case .foundation: "토큰, 아이콘, 버튼, 입력, 공통 상태"
         case .setup: "프로토콜, 샘플 선택, 타이머 설정, 실험 목록"
         case .run: "실행 타이머, 제어, 기록 시작, 안내 메시지"
+        case .review: "타임라인, 기록, 음성 플레이어, 기록 시트"
         }
     }
 
@@ -44,6 +47,8 @@ enum CatalogItem: String, CaseIterable, Identifiable, Sendable {
     case protocolTimerItem, toast, timerControlButton, experimentControlButton, recordButton
     case titleSection, timePicker, gestureGuideItem, experimentSidePanel
     case gestureCheckCard
+    case timerRecord, voicePlayer, recordBottomSheet, timelineItem, experimentStatusTimelineItem
+    case photoViewer, videoPlayer
 
     var id: Self { self }
 
@@ -83,6 +88,13 @@ enum CatalogItem: String, CaseIterable, Identifiable, Sendable {
         case .protocolTimerItem: "Protocol Timer Item"
         case .toast: "Toast"
         case .gestureCheckCard: "Gesture Check Card"
+        case .timerRecord: "Timer Record"
+        case .voicePlayer: "Voice Player"
+        case .recordBottomSheet: "Record Bottom Sheet"
+        case .timelineItem: "Timeline Item"
+        case .experimentStatusTimelineItem: "Timeline Experiment State"
+        case .photoViewer: "Photo Viewer"
+        case .videoPlayer: "Video Player"
         case .timerControlButton: "Timer Control Button"
         case .experimentControlButton: "Experiment Control Button"
         case .recordButton: "Record Button"
@@ -106,6 +118,9 @@ enum CatalogItem: String, CaseIterable, Identifiable, Sendable {
              .recordButton, .titleSection, .timePicker, .gestureGuideItem, .experimentSidePanel,
              .gestureCheckCard:
             .run
+        case .timerRecord, .voicePlayer, .recordBottomSheet, .timelineItem,
+             .experimentStatusTimelineItem, .photoViewer, .videoPlayer:
+            .review
         }
     }
 
@@ -139,6 +154,9 @@ enum CatalogItem: String, CaseIterable, Identifiable, Sendable {
         case .titleSection, .timerTabs, .timerTabItem, .pageControl, .timerItem,
              .timerControlButton, .experimentControlButton, .recordButton:
             DesignSystemRunPage(item: self)
+        case .timerRecord, .voicePlayer, .recordBottomSheet, .timelineItem,
+             .experimentStatusTimelineItem, .photoViewer, .videoPlayer:
+            DesignSystemReviewPage(item: self)
         }
     }
 }
