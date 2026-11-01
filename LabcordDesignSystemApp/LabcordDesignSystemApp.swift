@@ -16,6 +16,7 @@ struct LabcordDesignSystemApp: App {
 
 private struct CatalogRootView: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var liveActivityDemo = CatalogLiveActivityDemo()
 
     var body: some View {
@@ -26,6 +27,10 @@ private struct CatalogRootView: View {
             liveActivityDemo.isPresented && liveActivityDemo.placement != nil
                 && verticalSizeClass != .compact ? .hidden : .automatic,
             for: .statusBar
+        )
+        .animation(
+            reduceMotion ? nil : .easeInOut(duration: 0.3),
+            value: liveActivityDemo.isPresented
         )
         .environment(\.catalogLiveActivityDemo, liveActivityDemo)
         .liveActivityOverlay(
