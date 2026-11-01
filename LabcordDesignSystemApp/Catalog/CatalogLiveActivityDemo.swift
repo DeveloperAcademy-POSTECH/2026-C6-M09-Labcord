@@ -20,11 +20,13 @@ final class CatalogLiveActivityDemo {
 
     func savedValues() -> [Double]? {
         let defaults = UserDefaults.standard
-        let migrationKey = storageKey + ".width370"
+        let migrationKey = storageKey + ".restore327"
         var values = defaults.array(forKey: storageKey) as? [Double]
         if !defaults.bool(forKey: migrationKey) {
-            if let stored = values, Self.isValid(stored), stored[4] == 327 {
-                values?[4] = 370
+            if Self.modelIdentifier == "iPhone19,7",
+               defaults.bool(forKey: storageKey + ".width370"),
+               let stored = values, Self.isValid(stored), stored[4] == 370 {
+                values?[4] = 327
                 defaults.set(values, forKey: storageKey)
             }
             defaults.set(true, forKey: migrationKey)
@@ -52,8 +54,7 @@ final class CatalogLiveActivityDemo {
         self.state = state
         placement = LiveActivityPlacement(
             top: values[0], horizontalOffset: values[1],
-            collapsedSize: CGSize(width: values[2], height: values[3]),
-            expandedWidth: values[4], expandedHorizontalInset: values[4] == 370 ? 16 : nil
+            collapsedSize: CGSize(width: values[2], height: values[3]), expandedWidth: values[4]
         )
         isExpanded = false
         isCalibrating = !expanded
