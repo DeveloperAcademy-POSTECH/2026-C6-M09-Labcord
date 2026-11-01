@@ -116,7 +116,9 @@ struct CatalogLiveActivityContentScenario: View {
                         calibrationSlider("가로 오프셋", value: $horizontalOffset, range: -60...60)
                         calibrationSlider("너비", value: $capsuleWidth, range: 80...180)
                         calibrationSlider("높이", value: $capsuleHeight, range: 20...60)
-                        calibrationSlider("펼친 너비", value: $expandedWidth, range: 250...420)
+                        calibrationSlider(
+                            "펼친 너비 (370: 자동)", value: $expandedWidth, range: 250...420
+                        )
                         Button("임시 위치 미리보기") {
                             demo.show(values, state: state, expanded: false)
                         }
