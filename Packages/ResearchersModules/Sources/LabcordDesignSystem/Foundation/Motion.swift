@@ -37,7 +37,9 @@ extension View {
     }
 }
 
-public struct LabcordPlainButtonStyle: ButtonStyle {
+public typealias LabcordPlainButtonStyle = PressFeedbackButtonStyle
+
+public struct PressFeedbackButtonStyle: ButtonStyle {
     public init() {}
 
     public func makeBody(configuration: Configuration) -> some View {

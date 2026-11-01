@@ -33,7 +33,7 @@ public struct RadioButton<Value: Hashable, Label: View>: View {
             }
             .contentShape(Rectangle())
         }
-        .buttonStyle(LabcordPlainButtonStyle())
+        .buttonStyle(PressFeedbackButtonStyle())
         .accessibilityRepresentation {
             Button(action: select) { label }
                 .accessibilityValue(Text(isSelected ? "선택됨" : "선택 안 됨"))

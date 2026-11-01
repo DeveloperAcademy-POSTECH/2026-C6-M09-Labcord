@@ -67,7 +67,7 @@ public struct ProtocolPhotoItem<Content: View>: View {
                 }
                 .contentShape(RoundedRectangle(cornerRadius: LayoutTokens.radiusSm))
         }
-        .buttonStyle(LabcordPlainButtonStyle())
+        .buttonStyle(PressFeedbackButtonStyle())
         .disabled(isAddDisabled)
         .accessibilityLabel(Text("사진 추가"))
     }
