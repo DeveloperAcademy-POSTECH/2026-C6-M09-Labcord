@@ -2,6 +2,11 @@ import Foundation
 import Vision
 
 nonisolated enum HandPoseClassifier {
+    struct Analysis {
+        let pose: HandPose?
+        let extendedTips: [CGPoint]
+    }
+
     private enum FingerBend {
         case curled
         case extended
@@ -23,32 +28,47 @@ nonisolated enum HandPoseClassifier {
         .init(tip: .littleTip, middle: .littlePIP, base: .littleMCP)
     ]
 
-    static func classify(_ hand: VNHumanHandPoseObservation) -> HandPose? {
+    static func analyze(_ hand: VNHumanHandPoseObservation) -> Analysis? {
         guard let points = try? hand.recognizedPoints(.all),
               let wrist = points[.wrist], wrist.confidence >= confidenceThreshold,
               let indexMCP = points[.indexMCP], indexMCP.confidence >= confidenceThreshold,
-              let littleMCP = points[.littleMCP], littleMCP.confidence >= confidenceThreshold,
-              let thumbTip = points[.thumbTip],
-              let thumbIP = points[.thumbIP],
-              let thumbMP = points[.thumbMP],
-              let thumbBend = bend(
-                  tip: thumbTip,
-                  middle: thumbIP,
-                  base: thumbMP,
-                  anchor: littleMCP.location,
-                  extensionMargin: distance(indexMCP.location, littleMCP.location)
-                      * thumbExtensionMarginRatio
-              ) else {
+              let littleMCP = points[.littleMCP],
+              littleMCP.confidence >= confidenceThreshold else {
             return nil
+        }
+
+        let thumbTip = points[.thumbTip]
+        let thumbBend: FingerBend?
+        if let thumbTip,
+           let thumbIP = points[.thumbIP],
+           let thumbMP = points[.thumbMP] {
+            thumbBend = bend(
+                tip: thumbTip,
+                middle: thumbIP,
+                base: thumbMP,
+                anchor: littleMCP.location,
+                extensionMargin: distance(indexMCP.location, littleMCP.location)
+                    * thumbExtensionMarginRatio
+            )
+        } else {
+            thumbBend = nil
         }
 
         var curled = thumbBend == .curled ? 1 : 0
         var extended = thumbBend == .extended ? 1 : 0
+        var isComplete = thumbBend != nil
+        var extendedTips: [CGPoint] = []
+        if thumbBend == .extended, let thumbTip {
+            extendedTips.append(thumbTip.location)
+        }
         for finger in fingers {
             guard let tip = points[finger.tip],
                   let pip = points[finger.middle],
-                  let mcp = points[finger.base],
-                  let fingerBend = bend(
+                  let mcp = points[finger.base] else {
+                isComplete = false
+                continue
+            }
+            guard let fingerBend = bend(
                       tip: tip,
                       middle: pip,
                       base: mcp,
@@ -56,20 +76,32 @@ nonisolated enum HandPoseClassifier {
                       extensionMargin: distance(wrist.location, mcp.location)
                           * extensionMarginRatio
                   ) else {
-                return nil
+                isComplete = false
+                continue
             }
             if fingerBend == .extended {
                 extended += 1
+                extendedTips.append(tip.location)
             } else {
                 curled += 1
             }
         }
 
-        if extended == 5 { return .openHand }
-        if curled == 5 { return .fist }
-        if extended == 1, curled == 4 { return .oneFinger }
-        if extended == 3, curled == 2 { return .threeFingers }
-        return nil
+        let pose: HandPose?
+        if !isComplete {
+            pose = nil
+        } else if extended == 5 {
+            pose = .openHand
+        } else if curled == 5 {
+            pose = .fist
+        } else if extended == 1, curled == 4 {
+            pose = .oneFinger
+        } else if extended == 3, curled == 2 {
+            pose = .threeFingers
+        } else {
+            pose = nil
+        }
+        return Analysis(pose: pose, extendedTips: extendedTips)
     }
 
     private static func bend(
