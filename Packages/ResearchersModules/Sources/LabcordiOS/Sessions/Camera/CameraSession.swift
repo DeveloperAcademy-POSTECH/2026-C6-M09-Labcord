@@ -32,14 +32,20 @@ public actor CameraSession {
     private var microphoneInput: AVCaptureDeviceInput?
     private var videoDelegate: VideoRecordingDelegate?
     private let handEventHub: CameraHandEventHub
+    private let handOverlayHub: CameraHandOverlayHub
     private let handDetector: CameraHandDetector
     private var activeOwners: Set<UUID> = []
     private var pendingStop: Task<Void, Never>?
 
     public init() {
         let hub = CameraHandEventHub()
+        let overlayHub = CameraHandOverlayHub()
         handEventHub = hub
-        handDetector = CameraHandDetector { hub.emit($0) }
+        handOverlayHub = overlayHub
+        handDetector = CameraHandDetector(
+            onHold: { hub.emit($0) },
+            onTips: { overlayHub.emit($0) }
+        )
     }
 
     public func configureCamera() throws {
@@ -172,6 +178,12 @@ public actor CameraSession {
     }
 
     private func resetHandTracking() {
+        handOverlayHub.emit(.init(
+            tips: [],
+            imageSize: .zero,
+            videoRotationAngle: 0,
+            isVideoMirrored: false
+        ))
         handTrackingQueue.async { [handDetector] in handDetector.reset() }
     }
 
@@ -283,7 +295,11 @@ public actor CameraSession {
             return cachedPreviewConnector
         }
 
-        let connector = CameraPreviewConnector(session: session, device: activeCamera)
+        let connector = CameraPreviewConnector(
+            session: session,
+            device: activeCamera,
+            handOverlayHub: handOverlayHub
+        )
         cachedPreviewConnector = connector
         return connector
     }
