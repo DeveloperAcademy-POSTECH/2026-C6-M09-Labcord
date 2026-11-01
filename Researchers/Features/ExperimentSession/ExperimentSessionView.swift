@@ -120,6 +120,7 @@ struct ExperimentSessionView: View {
             UIApplication.shared.isIdleTimerDisabled = false
             if store.isReturningHome {
                 captureStore.send(.video(.cancelRequested))
+                voiceStore.send(.closeRequested)
             } else {
                 captureStore.send(.cameraViewDisappeared)
             }
