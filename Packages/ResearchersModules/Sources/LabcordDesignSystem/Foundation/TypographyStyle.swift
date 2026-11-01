@@ -1,13 +1,8 @@
-//
-//  TypographyStyle.swift
-//  labcord-package-swift
-//
-//  Created by 정홍섭 on 10/23/26.
-//
-
 import SwiftUI
 
 public struct TypographyStyle: ViewModifier {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     private let font: Font
     private let lineHeight: AttributedString.LineHeight
     private let letterSpacing: CGFloat
@@ -25,8 +20,12 @@ public struct TypographyStyle: ViewModifier {
     public func body(content: Content) -> some View {
         content
             .font(font)
-            .lineHeight(lineHeight)
+            .lineHeight(resolvedLineHeight)
             .tracking(letterSpacing)
+    }
+
+    private var resolvedLineHeight: AttributedString.LineHeight {
+        dynamicTypeSize == .large ? lineHeight : .variable
     }
 
     public func weight(_ weight: Font.Weight) -> Self {

@@ -1,10 +1,3 @@
-//
-//  FontRegistration.swift
-//  labcord-package-swift
-//
-//  Created by 정홍섭 on 10/23/26.
-//
-
 import CoreText
 import Foundation
 
@@ -14,6 +7,9 @@ public enum FontRegistration {
 
     @discardableResult
     public static func register() -> Bool {
+#if os(watchOS)
+        return true
+#else
         if isRegistered { return true }
 
         guard let url = Bundle.module.url(
@@ -23,9 +19,27 @@ public enum FontRegistration {
             return false
         }
 
-        isRegistered = CTFontManagerRegisterFontsForURL(
-            url as CFURL, .process, nil
+        var registrationError: Unmanaged<CFError>?
+        let didRegister = CTFontManagerRegisterFontsForURL(
+            url as CFURL,
+            .process,
+            &registrationError
         )
-        return isRegistered
+
+        if didRegister {
+            isRegistered = true
+            return true
+        }
+
+        guard let registrationError else { return false }
+        let error = registrationError.takeUnretainedValue()
+        let isAlreadyRegistered = CFEqual(
+            CFErrorGetDomain(error),
+            kCTFontManagerErrorDomain
+        ) && CFErrorGetCode(error) == CTFontManagerError.alreadyRegistered.rawValue
+
+        isRegistered = isAlreadyRegistered
+        return isAlreadyRegistered
+#endif
     }
 }
