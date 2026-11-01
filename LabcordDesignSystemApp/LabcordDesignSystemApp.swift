@@ -36,7 +36,8 @@ private struct CatalogRootView: View {
         .liveActivityOverlay(
             placement: liveActivityDemo.placement,
             isPresented: liveActivityDemo.isPresented,
-            isExpanded: liveActivityDemo.isExpanded
+            isExpanded: liveActivityDemo.isExpanded,
+            onDismiss: liveActivityDemo.dismiss
         ) {
             LiveActivityContent(
                 state: liveActivityDemo.state,
