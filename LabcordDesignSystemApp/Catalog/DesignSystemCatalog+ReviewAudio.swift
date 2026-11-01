@@ -110,6 +110,10 @@ private final class CatalogAudioPlayback {
     private(set) var isPlaying = false
     private(set) var progress = 0.25
     private var resumesAfterEditing = false
+    private let clock = ContinuousClock()
+    private let duration: Double = 8
+    private var anchorTime: ContinuousClock.Instant?
+    private var anchorProgress = 0.25
 
     var isPlayingBinding: Binding<Bool> {
         Binding(get: { self.isPlaying }, set: { $0 ? self.play() : self.pause() })
@@ -122,10 +126,10 @@ private final class CatalogAudioPlayback {
     func updateProgress() async {
         while isPlaying, !Task.isCancelled {
             do {
-                try await Task.sleep(for: .milliseconds(100))
+                try await Task.sleep(for: .milliseconds(16))
             } catch { return }
             guard isPlaying else { return }
-            progress = min(progress + 0.0125, 1)
+            updatePosition()
             if progress >= 1 { pause() }
         }
     }
@@ -150,15 +154,31 @@ private final class CatalogAudioPlayback {
     private func seek(_ value: Double) {
         guard value.isFinite else { return }
         progress = min(max(value, 0), 1)
+        if isPlaying {
+            anchorProgress = progress
+            anchorTime = clock.now
+        }
     }
 
     private func play() {
+        guard !isPlaying else { return }
         if progress >= 1 { progress = 0 }
+        anchorProgress = progress
+        anchorTime = clock.now
         isPlaying = true
     }
 
     private func pause() {
+        updatePosition()
         isPlaying = false
+        anchorTime = nil
+    }
+
+    private func updatePosition() {
+        guard isPlaying, let anchorTime else { return }
+        let elapsed = anchorTime.duration(to: clock.now).components
+        let seconds = Double(elapsed.seconds) + Double(elapsed.attoseconds) / 1e18
+        progress = min(anchorProgress + max(seconds, 0) / duration, 1)
     }
 }
 

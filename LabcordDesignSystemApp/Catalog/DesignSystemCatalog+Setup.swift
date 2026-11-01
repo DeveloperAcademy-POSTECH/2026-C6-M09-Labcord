@@ -7,6 +7,7 @@ struct DesignSystemSetupPage: View {
     @State private var showTimerSetting = false
     @State private var duration: Duration = .seconds(600)
     @State private var draftDuration: Duration = .seconds(600)
+    @State private var timerRows = ProtocolTimerRow.Rows.one
 
     var body: some View {
         DesignSystemCatalogPage(title: item.title, context: item.context) {
@@ -58,8 +59,13 @@ struct DesignSystemSetupPage: View {
 
     private var timerRowCard: some View {
         DesignSystemCatalogCard("Protocol Timer Row", description: "프로토콜의 설정 시간") {
-            ProtocolTimerRow(duration, onEdit: openTimer)
+            ProtocolTimerRow(duration, rows: timerRows, onEdit: openTimer)
                 .accessibilityIdentifier("catalog.functional.timerRow")
+            Picker("표시 줄 수", selection: $timerRows) {
+                Text("한 줄").tag(ProtocolTimerRow.Rows.one)
+                Text("두 줄").tag(ProtocolTimerRow.Rows.two)
+            }
+            .accessibilityIdentifier("catalog.scenario.timerRow.rows")
         }
     }
 
