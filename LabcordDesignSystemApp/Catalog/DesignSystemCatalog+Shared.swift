@@ -1,8 +1,5 @@
 import LabcordDesignSystem
 import SwiftUI
-#if os(iOS)
-import UIKit
-#endif
 
 let catalogBundle = LabcordDesignSystemResources.bundle
 
@@ -65,84 +62,10 @@ extension View {
     func catalogNavigationBar(context: CatalogContext) -> some View {
         self
             #if os(iOS)
-            .background {
-                CatalogNavigationAppearance(context: context)
-                    .frame(width: 0, height: 0)
-                    .allowsHitTesting(false)
-            }
+            .toolbarColorScheme(context == .experiment ? .dark : .light, for: .navigationBar)
             #endif
     }
 }
-
-#if os(iOS)
-private struct CatalogNavigationAppearance: UIViewControllerRepresentable {
-    let context: CatalogContext
-
-    func makeUIViewController(context: Context) -> Controller {
-        Controller()
-    }
-
-    func updateUIViewController(_ controller: Controller, context: Context) {
-        controller.catalogContext = self.context
-    }
-
-    final class Controller: UIViewController {
-        var catalogContext: CatalogContext = .general
-        private var originalStyle: UIUserInterfaceStyle?
-        private var originalStandard: UINavigationBarAppearance?
-        private var originalScrollEdge: UINavigationBarAppearance?
-        private var hadScrollEdge = false
-
-        override func viewWillAppear(_ animated: Bool) {
-            super.viewWillAppear(animated)
-            applyAppearance()
-        }
-
-        override func viewDidAppear(_ animated: Bool) {
-            super.viewDidAppear(animated)
-            applyAppearance()
-        }
-
-        override func viewWillDisappear(_ animated: Bool) {
-            super.viewWillDisappear(animated)
-            guard let navigationController, let originalStyle, let originalStandard else { return }
-            navigationController.navigationBar.overrideUserInterfaceStyle = originalStyle
-            navigationController.navigationBar.standardAppearance = originalStandard
-            navigationController.navigationBar.scrollEdgeAppearance = hadScrollEdge
-                ? originalScrollEdge : nil
-            self.originalStyle = nil
-            self.originalStandard = nil
-            originalScrollEdge = nil
-        }
-
-        func applyAppearance() {
-            guard let navigationController else { return }
-            let bar = navigationController.navigationBar
-            if originalStyle == nil {
-                originalStyle = bar.overrideUserInterfaceStyle
-                originalStandard = bar.standardAppearance.copy() as? UINavigationBarAppearance
-                originalScrollEdge = bar.scrollEdgeAppearance?.copy() as? UINavigationBarAppearance
-                hadScrollEdge = bar.scrollEdgeAppearance != nil
-            }
-            let isExperiment = catalogContext == .experiment
-            bar.overrideUserInterfaceStyle = isExperiment ? .dark : .light
-            let name = isExperiment ? "Experiment/Label/Primary" : "General/Label/Primary"
-            let titleColor = UIColor(named: name, in: catalogBundle, compatibleWith: nil) ?? .label
-            guard let standard = bar.standardAppearance.copy() as? UINavigationBarAppearance else {
-                return
-            }
-            standard.titleTextAttributes[.foregroundColor] = titleColor
-            standard.largeTitleTextAttributes[.foregroundColor] = titleColor
-            bar.standardAppearance = standard
-            guard let scrollEdge = (bar.scrollEdgeAppearance ?? standard).copy()
-                as? UINavigationBarAppearance else { return }
-            scrollEdge.titleTextAttributes[.foregroundColor] = titleColor
-            scrollEdge.largeTitleTextAttributes[.foregroundColor] = titleColor
-            bar.scrollEdgeAppearance = scrollEdge
-        }
-    }
-}
-#endif
 
 struct DesignSystemCatalogCard<Content: View>: View {
     private let title: String

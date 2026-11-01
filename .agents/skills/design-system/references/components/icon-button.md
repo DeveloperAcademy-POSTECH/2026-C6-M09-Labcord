@@ -1,4 +1,4 @@
-# iOS Icon Button Style
+# Icon Button
 
 [구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/IconButton/IOSIconButtonStyle.swift)
 
@@ -16,4 +16,3 @@ Button(role: .destructive, action: remove) {
 - 아이콘 전용 레이블의 접근성 이름은 호출부에서 지정합니다.
 - `isLoading`만으로 액션을 막지 않습니다. `.disabled`를 함께 연결합니다.
 - `size:`를 생략하면 `.controlSize`를 사용하며 원형 컨테이너와 아이콘은 Dynamic Type에 맞춰집니다.
-- `size: .extraLarge`로 Figma의 XLarge 크기를 사용합니다.
