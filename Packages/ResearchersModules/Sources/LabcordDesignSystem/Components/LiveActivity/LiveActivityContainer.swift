@@ -16,9 +16,9 @@ public struct LiveActivityContainer<Content: View>: View {
             .padding(.trailing, 24)
             .background(
                 Color(.General.Fill.liveActivity),
-                in: RoundedRectangle(cornerRadius: 44, style: .circular)
+                in: RoundedRectangle(cornerRadius: 44, style: .continuous)
             )
-            .clipShape(RoundedRectangle(cornerRadius: 44, style: .circular))
+            .clipShape(RoundedRectangle(cornerRadius: 44, style: .continuous))
     }
 }
 
