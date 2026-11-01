@@ -6,60 +6,21 @@ import SwiftUI
 final class CatalogLiveActivityDemo {
     var isPresented = false
     var isExpanded = false
-    var isCalibrating = false
     var state: LiveActivityContent.State = .audioRecording(transcript: "실험 내용을 기록하고 있어요.")
     var placement: LiveActivityPlacement?
 
     private var transitionTask: Task<Void, Never>?
-    private let storageKey =
-        "catalog.liveActivityPlacement." + CatalogLiveActivityDemo.modelIdentifier
-
-    var hasSavedPlacement: Bool {
-        savedValues() != nil
+    var devicePlacement: LiveActivityPlacement? {
+        LiveActivityPlacement.forDevice(identifier: Self.modelIdentifier)
     }
 
-    func savedValues() -> [Double]? {
-        let defaults = UserDefaults.standard
-        let migrationKey = storageKey + ".restore327"
-        var values = defaults.array(forKey: storageKey) as? [Double]
-        if !defaults.bool(forKey: migrationKey) {
-            if Self.modelIdentifier == "iPhone19,7",
-               defaults.bool(forKey: storageKey + ".width370"),
-               let stored = values, Self.isValid(stored), stored[4] == 370 {
-                values?[4] = 327
-                defaults.set(values, forKey: storageKey)
-            }
-            defaults.set(true, forKey: migrationKey)
-        }
-        if let values, Self.isValid(values) {
-            return values
-        }
-        guard let preset = LiveActivityPlacement.forDevice(identifier: Self.modelIdentifier) else {
-            return nil
-        }
-        return [
-            preset.top, preset.horizontalOffset,
-            preset.collapsedSize.width, preset.collapsedSize.height, preset.expandedWidth
-        ]
-    }
-
-    func save(_ values: [Double]) {
-        guard Self.isValid(values) else { return }
-        UserDefaults.standard.set(values, forKey: storageKey)
-    }
-
-    func show(_ values: [Double], state: LiveActivityContent.State, expanded: Bool = true) {
-        guard Self.isValid(values) else { return }
+    func show(state: LiveActivityContent.State) {
+        guard let devicePlacement else { return }
         transitionTask?.cancel()
         self.state = state
-        placement = LiveActivityPlacement(
-            top: values[0], horizontalOffset: values[1],
-            collapsedSize: CGSize(width: values[2], height: values[3]), expandedWidth: values[4]
-        )
+        placement = devicePlacement
         isExpanded = false
-        isCalibrating = !expanded
         isPresented = true
-        guard expanded else { return }
         transitionTask = Task {
             try? await Task.sleep(for: .milliseconds(180))
             guard !Task.isCancelled else { return }
@@ -69,20 +30,12 @@ final class CatalogLiveActivityDemo {
 
     func dismiss() {
         transitionTask?.cancel()
-        isCalibrating = false
         isExpanded = false
         transitionTask = Task {
             try? await Task.sleep(for: .milliseconds(500))
             guard !Task.isCancelled else { return }
             isPresented = false
         }
-    }
-
-    private static func isValid(_ values: [Double]) -> Bool {
-        guard values.count == 5, values.allSatisfy(\.isFinite) else { return false }
-        return (0...100).contains(values[0]) && (-60...60).contains(values[1])
-            && (80...180).contains(values[2]) && (20...60).contains(values[3])
-            && (250...420).contains(values[4])
     }
 
     private static var modelIdentifier: String {
