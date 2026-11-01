@@ -9,9 +9,7 @@ struct LabcordDesignSystemApp: App {
 
     var body: some Scene {
         WindowGroup {
-            NavigationStack {
-                DesignSystemCatalog()
-            }
+            CatalogRootView()
         }
     }
 }

@@ -10,14 +10,14 @@ struct CatalogControlDropdownScenario: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            DropdownTrigger(value: value, size: size, state: state) {
-                Button("준비") { value = "준비" }
-                Button("진행 중") { value = "진행 중" }
-                Button("완료") { value = "완료" }
-            }
+            DropdownTrigger(value: value, size: size, state: state, options: [
+                DropdownOption(title: "준비") { value = "준비" },
+                DropdownOption(title: "진행 중") { value = "진행 중" },
+                DropdownOption(title: "완료") { value = "완료" }
+            ])
             .accessibilityIdentifier("catalog.scenario.dropdown.preview")
             if state == .open {
-                Text("Open은 트리거의 표현 미리보기입니다. 탭하면 기본 메뉴가 실제로 열립니다.")
+                Text("Open은 트리거의 표현 미리보기입니다. 탭하면 선택 메뉴가 열립니다.")
                     .typography(Typography.caption1)
                     .foregroundStyle(Color("General/Label/Secondary", bundle: catalogBundle))
             }

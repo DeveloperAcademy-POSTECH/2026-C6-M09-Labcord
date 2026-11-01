@@ -11,6 +11,7 @@ enum CatalogSection: String, CaseIterable, Identifiable, Sendable {
     case setup
     case run
     case review
+    case liveActivity
 
     var id: Self { self }
 
@@ -20,6 +21,7 @@ enum CatalogSection: String, CaseIterable, Identifiable, Sendable {
         case .setup: "02 Experiment Setup"
         case .run: "03 Experiment Run"
         case .review: "04 Record Review"
+        case .liveActivity: "05 Live Activity"
         }
     }
 
@@ -29,10 +31,11 @@ enum CatalogSection: String, CaseIterable, Identifiable, Sendable {
         case .setup: "프로토콜, 샘플 선택, 타이머 설정, 실험 목록"
         case .run: "실행 타이머, 제어, 기록 시작, 안내 메시지"
         case .review: "타임라인, 기록, 음성 플레이어, 기록 시트"
+        case .liveActivity: "다이내믹 아일랜드 상태와 제어"
         }
     }
 
-    var context: CatalogContext { self == .run ? .experiment : .general }
+    var context: CatalogContext { self == .run || self == .liveActivity ? .experiment : .general }
 
     var items: [CatalogItem] { CatalogItem.allCases.filter { $0.section == self } }
 }
@@ -49,6 +52,10 @@ enum CatalogItem: String, CaseIterable, Identifiable, Sendable {
     case gestureCheckCard
     case timerRecord, voicePlayer, recordBottomSheet, timelineItem, experimentStatusTimelineItem
     case photoViewer, videoPlayer
+    case fileTypeIcon, protocolFileUpload, protocolFileMetadata, protocolPhotoItem
+    case navigationPageTitle, tooltipGestureGuide, progressRing, slideToEndButton
+    case liveActivityContainer, liveActivityContent, liveActivityControlButton
+    case liveActivityStatusIndicator
 
     var id: Self { self }
 
@@ -101,6 +108,18 @@ enum CatalogItem: String, CaseIterable, Identifiable, Sendable {
         case .titleSection: "Experiment Title Section"
         case .gestureGuideItem: "Gesture Guide Item"
         case .experimentSidePanel: "Experiment Side Panel"
+        case .fileTypeIcon: "File Type Icon"
+        case .protocolFileUpload: "Protocol File Upload Progress"
+        case .protocolFileMetadata: "Protocol File Metadata"
+        case .protocolPhotoItem: "Protocol Photo Item"
+        case .navigationPageTitle: "Navigation Page Title"
+        case .tooltipGestureGuide: "Tooltip Gesture Guide"
+        case .progressRing: "Progress Ring"
+        case .slideToEndButton: "Slide To End Button"
+        case .liveActivityContainer: "Dynamic Island Container"
+        case .liveActivityContent: "Dynamic Island Content"
+        case .liveActivityControlButton: "Dynamic Island Control Button"
+        case .liveActivityStatusIndicator: "Dynamic Island Status Indicator"
         }
     }
 
@@ -108,19 +127,24 @@ enum CatalogItem: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .typography, .colors, .spacing, .radius, .sizes, .effects, .icons,
              .button, .iconButton, .dropdownTrigger, .chip, .textField, .textArea,
-             .statusBadge, .separator, .overlay, .loadingIndicator, .checkbox, .radioButton:
+             .statusBadge, .separator, .overlay, .loadingIndicator, .checkbox, .radioButton,
+             .navigationPageTitle, .tooltipGestureGuide, .progressRing:
             .foundation
         case .protocolUploadButton, .protocolTimerRow, .accordion, .chipGroup,
-             .timerSettingSheet, .experimentListItem:
+             .timerSettingSheet, .experimentListItem, .fileTypeIcon, .protocolFileUpload,
+             .protocolFileMetadata, .protocolPhotoItem:
             .setup
         case .pageControl, .timerItem, .statusPill, .timerTabItem, .timerTabs,
              .protocolTimerItem, .toast, .timerControlButton, .experimentControlButton,
              .recordButton, .titleSection, .timePicker, .gestureGuideItem, .experimentSidePanel,
-             .gestureCheckCard:
+             .gestureCheckCard, .slideToEndButton:
             .run
         case .timerRecord, .voicePlayer, .recordBottomSheet, .timelineItem,
              .experimentStatusTimelineItem, .photoViewer, .videoPlayer:
             .review
+        case .liveActivityContainer, .liveActivityContent,
+             .liveActivityControlButton, .liveActivityStatusIndicator:
+            .liveActivity
         }
     }
 
@@ -157,6 +181,16 @@ enum CatalogItem: String, CaseIterable, Identifiable, Sendable {
         case .timerRecord, .voicePlayer, .recordBottomSheet, .timelineItem,
              .experimentStatusTimelineItem, .photoViewer, .videoPlayer:
             DesignSystemReviewPage(item: self)
+        case .fileTypeIcon: DesignSystemFileTypeIconPage()
+        case .protocolFileUpload: DesignSystemProtocolFileUploadPage()
+        case .protocolFileMetadata: DesignSystemProtocolFileMetadataPage()
+        case .protocolPhotoItem: DesignSystemProtocolPhotoItemPage()
+        case .navigationPageTitle: DesignSystemNavigationPageTitlePage()
+        case .tooltipGestureGuide: DesignSystemTooltipGestureGuidePage()
+        case .progressRing: DesignSystemProgressRingPage()
+        case .slideToEndButton, .liveActivityContainer, .liveActivityContent,
+             .liveActivityControlButton, .liveActivityStatusIndicator:
+            DesignSystemNewDynamicIslandPage(item: self)
         }
     }
 }

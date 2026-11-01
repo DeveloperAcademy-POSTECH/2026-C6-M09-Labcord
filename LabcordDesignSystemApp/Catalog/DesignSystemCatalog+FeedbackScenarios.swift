@@ -3,6 +3,7 @@ import SwiftUI
 
 struct CatalogFeedbackToastScenario: View {
     @State private var tone = ToastType.success
+    @State private var appearance = ToastAppearance.default
     @State private var message = "프로토콜을 저장했어요."
     @State private var actionTitle = "다시시도"
     @State private var showsIcon = true
@@ -15,7 +16,7 @@ struct CatalogFeedbackToastScenario: View {
         VStack(alignment: .leading, spacing: 12) {
             if isVisible {
                 Toast(
-                    message, type: tone,
+                    message, type: tone, appearance: appearance,
                     showLeadingIcon: showsIcon, actionTitle: actionTitle,
                     onAction: showsAction ? {
                         actionCount += 1
@@ -36,6 +37,11 @@ struct CatalogFeedbackToastScenario: View {
                 }
             }
             .accessibilityIdentifier("catalog.scenario.toast.tone")
+            Picker("스타일", selection: $appearance) {
+                Text("Default").tag(ToastAppearance.default)
+                Text("Accent").tag(ToastAppearance.accent)
+            }
+            .accessibilityIdentifier("catalog.scenario.toast.appearance")
             CatalogDisclosureGroup("콘텐츠 옵션") {
                 Toggle("아이콘 표시", isOn: $showsIcon)
                 Toggle("닫기 버튼 표시", isOn: $showsDismiss)
@@ -111,11 +117,14 @@ struct CatalogSetupUploadScenario: View {
     @State private var state = ProtocolUploadButtonState.selected
     @State private var title = "연구 프로토콜"
     @State private var detail = "PDF와 XLSX 파일을 선택해 주세요"
+    @State private var showsDescription = true
     @State private var actionCount = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            ProtocolUploadButton(title, description: detail, state: state) {
+            ProtocolUploadButton(
+                title, description: detail, state: state, showDescription: showsDescription
+            ) {
                 actionCount += 1
                 state = state == .selected ? .default : .selected
             }
@@ -127,6 +136,8 @@ struct CatalogSetupUploadScenario: View {
             }
             .accessibilityIdentifier("catalog.scenario.upload.state")
             CatalogDisclosureGroup("콘텐츠 옵션") {
+                Toggle("설명 표시", isOn: $showsDescription)
+                    .accessibilityIdentifier("catalog.scenario.upload.showDescription")
                 CatalogControlTextProperty(title: "프로토콜 제목", value: $title)
                 CatalogControlTextProperty(title: "설명", value: $detail)
             }
