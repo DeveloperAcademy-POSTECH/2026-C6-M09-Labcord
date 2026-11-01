@@ -47,7 +47,8 @@ public struct AnimatedLiveActivityContainer<Content: View>: View {
         )
         .clipShape(
             RoundedRectangle(
-                cornerRadius: isExpanded ? 44 : collapsedSize.height / 2, style: .circular
+                cornerRadius: isExpanded ? 44 : collapsedSize.height / 2,
+                style: isExpanded ? .continuous : .circular
             )
         )
         .animation(reduceMotion ? nil : .spring(duration: 0.45, bounce: 0.08), value: isExpanded)

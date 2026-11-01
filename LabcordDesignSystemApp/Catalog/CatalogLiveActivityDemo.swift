@@ -23,11 +23,12 @@ final class CatalogLiveActivityDemo {
            Self.isValid(values) {
             return values
         }
-        guard Self.modelIdentifier == "iPhone19,7" else { return nil }
-        let confirmed = LiveActivityPlacement.iPhone18ProMax
+        guard let preset = LiveActivityPlacement.forDevice(identifier: Self.modelIdentifier) else {
+            return nil
+        }
         return [
-            confirmed.top, confirmed.horizontalOffset,
-            confirmed.collapsedSize.width, confirmed.collapsedSize.height, confirmed.expandedWidth
+            preset.top, preset.horizontalOffset,
+            preset.collapsedSize.width, preset.collapsedSize.height, preset.expandedWidth
         ]
     }
 
