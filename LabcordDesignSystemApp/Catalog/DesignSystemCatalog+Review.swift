@@ -87,7 +87,7 @@ struct DesignSystemReviewPage: View {
             Button { openMediaRecord(.photo, contentState: .filled) } label: {
                 CatalogSampleMedia()
             }
-            .buttonStyle(LabcordPlainButtonStyle())
+            .buttonStyle(PressFeedbackButtonStyle())
             .accessibilityLabel(Text("사진 기록 열기"))
             .accessibilityIdentifier("catalog.motion.timelinePhoto")
         case .video:
@@ -108,7 +108,7 @@ struct DesignSystemReviewPage: View {
                             )
                     }
             }
-            .buttonStyle(LabcordPlainButtonStyle())
+            .buttonStyle(PressFeedbackButtonStyle())
             .accessibilityLabel(Text("영상 기록 열기"))
         case .timer:
             TimerRecord(
@@ -283,7 +283,7 @@ private extension DesignSystemReviewPage {
                         }
                     }
             }
-            .buttonStyle(LabcordPlainButtonStyle())
+            .buttonStyle(PressFeedbackButtonStyle())
             .accessibilityLabel(Text(isVideo ? "비디오 플레이어 열기" : "사진 뷰어 열기"))
             .accessibilityIdentifier(
                 isVideo ? "catalog.review.videoPlayer.open" : "catalog.review.photoViewer.open"

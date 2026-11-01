@@ -97,7 +97,7 @@ private struct RecordButtonIcon: View {
                 .frame(width: captureCanvasSize, height: captureCanvasSize)
                 .accessibilityHidden(true)
         } else {
-            LabcordIconArtwork(icon: icon, size: artworkCanvasSize, relativeTo: .body)
+            IconArtwork(icon: icon, size: artworkCanvasSize, relativeTo: .body)
         }
     }
 }

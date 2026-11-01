@@ -84,7 +84,7 @@ public struct ExperimentSidePanel<Content: View>: View {
                 .background(Color(.Experiment.Fill.dark), in: panelShape)
                 .contentShape(panelShape)
         }
-        .buttonStyle(LabcordPlainButtonStyle())
+        .buttonStyle(PressFeedbackButtonStyle())
         .padding(layout == .portrait ? .vertical : .horizontal, handleHitInset)
         .contentShape(Rectangle())
         .padding(layout == .portrait ? .vertical : .horizontal, -handleHitInset)
@@ -109,7 +109,7 @@ public struct ExperimentSidePanel<Content: View>: View {
     }
 
     private var handleIcon: some View {
-        LabcordIconArtwork(
+        IconArtwork(
             icon: layout == .portrait ? .caretDown : .caretRight,
             size: 28,
             relativeTo: .body

@@ -29,7 +29,7 @@ public struct ChipStyle: ToggleStyle {
     }
 
     public func makeBody(configuration: Configuration) -> some View {
-        LabcordChipToggleBody(
+        ChipToggleBody(
             configuration: configuration,
             size: size,
             visualStyle: visualStyle,
@@ -58,7 +58,7 @@ public struct ChipButtonStyle: ButtonStyle {
     }
 
     public func makeBody(configuration: Configuration) -> some View {
-        LabcordChipButtonBody(
+        ChipButtonBody(
             configuration: configuration,
             size: size,
             visualStyle: visualStyle,
@@ -100,7 +100,7 @@ public struct Chip: View {
     }
 
     public var body: some View {
-        LabcordChipSurface(
+        ChipSurface(
             size: size,
             visualStyle: visualStyle,
             emphasis: emphasis,
@@ -108,11 +108,11 @@ public struct Chip: View {
             isDisabled: !isEnabled
         ) {
             Toggle(isOn: $isSelected) {
-                HStack(spacing: LabcordChipMetrics.iconGap(for: resolvedSize)) {
+                HStack(spacing: ChipMetrics.iconGap(for: resolvedSize)) {
                     if let leadingIcon {
-                        LabcordIconArtwork(
+                        IconArtwork(
                             icon: leadingIcon,
-                            size: usesLargeMetrics ? 24 : LabcordChipMetrics.leadingIconSize,
+                            size: usesLargeMetrics ? 24 : ChipMetrics.leadingIconSize,
                             relativeTo: resolvedTextStyle
                         )
                     }
@@ -120,17 +120,17 @@ public struct Chip: View {
                     Text(label)
                 }
             }
-            .toggleStyle(LabcordChipInlineToggleStyle())
+            .toggleStyle(ChipInlineToggleStyle())
 
             if let onDismiss {
                 Button(action: onDismiss) {
-                    LabcordIconArtwork(
+                    IconArtwork(
                         icon: .x,
-                        size: usesLargeMetrics ? 24 : LabcordChipMetrics.dismissIconSize,
+                        size: usesLargeMetrics ? 24 : ChipMetrics.dismissIconSize,
                         relativeTo: resolvedTextStyle
                     )
                 }
-                .buttonStyle(LabcordPlainButtonStyle())
+                .buttonStyle(PressFeedbackButtonStyle())
                 .accessibilityLabel(Text("\(label) 제거"))
             }
         }
@@ -186,7 +186,7 @@ public extension ButtonStyle where Self == ChipButtonStyle {
     }
 }
 
-private struct LabcordChipToggleBody: View {
+private struct ChipToggleBody: View {
     nonisolated(unsafe) let configuration: ToggleStyleConfiguration
     let size: ComponentSize?
     let visualStyle: ChipVisualStyle
@@ -210,19 +210,19 @@ private struct LabcordChipToggleBody: View {
     }
 
     var body: some View {
-        LabcordChipSurface(
+        ChipSurface(
             size: size,
             visualStyle: visualStyle,
             emphasis: emphasis,
             isSelected: configuration.isOn,
             isDisabled: isDisabled || !isEnabled
         ) {
-            LabcordChipInlineToggleStyle().makeBody(configuration: configuration)
+            ChipInlineToggleStyle().makeBody(configuration: configuration)
         }
     }
 }
 
-private struct LabcordChipButtonBody: View {
+private struct ChipButtonBody: View {
     nonisolated(unsafe) let configuration: ButtonStyleConfiguration
     let size: ComponentSize?
     let visualStyle: ChipVisualStyle
@@ -246,7 +246,7 @@ private struct LabcordChipButtonBody: View {
     }
 
     var body: some View {
-        LabcordChipSurface(
+        ChipSurface(
             size: size,
             visualStyle: visualStyle,
             emphasis: emphasis,
@@ -259,14 +259,14 @@ private struct LabcordChipButtonBody: View {
     }
 }
 
-private struct LabcordChipInlineToggleStyle: ToggleStyle {
+private struct ChipInlineToggleStyle: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {
         Button {
             configuration.isOn.toggle()
         } label: {
             configuration.label
         }
-        .buttonStyle(LabcordPlainButtonStyle())
+        .buttonStyle(PressFeedbackButtonStyle())
         .accessibilityValue(configuration.isOn ? "선택됨" : "선택 안 됨")
     }
 }

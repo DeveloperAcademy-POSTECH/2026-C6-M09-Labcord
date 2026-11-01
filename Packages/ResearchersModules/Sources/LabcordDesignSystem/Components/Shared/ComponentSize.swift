@@ -21,5 +21,3 @@ public enum ComponentSize: String, CaseIterable, Sendable {
         }
     }
 }
-
-public typealias LabcordControlSize = ComponentSize

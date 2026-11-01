@@ -40,9 +40,9 @@ public struct ChipGroup<Item: Identifiable>: View where Item.ID: Hashable {
     }
 
     public var body: some View {
-        LabcordChipFlowLayout(spacing: LayoutTokens.spacing12) {
+        ChipFlowLayout(spacing: LayoutTokens.spacing12) {
             ForEach(items) { item in
-                LabcordSetupSmallChip(label: label(item)) {
+                SetupSmallChip(label: label(item)) {
                     withAnimation(layoutAnimation) {
                         selection.remove(item.id)
                         onRemove(item)
@@ -56,7 +56,7 @@ public struct ChipGroup<Item: Identifiable>: View where Item.ID: Hashable {
                     withAnimation(layoutAnimation, onAdd)
                 } label: {
                     HStack(spacing: LayoutTokens.spacing4) {
-                        LabcordIconArtwork(icon: .plus, size: 16, relativeTo: .subheadline)
+                        IconArtwork(icon: .plus, size: 16, relativeTo: .subheadline)
                         Text("추가")
                             .foregroundStyle(Color(.General.Label.secondary))
                     }
@@ -83,7 +83,7 @@ public struct ChipGroup<Item: Identifiable>: View where Item.ID: Hashable {
     }
 }
 
-private struct LabcordSetupSmallChip: View {
+private struct SetupSmallChip: View {
     let label: String
     let onDismiss: () -> Void
 
@@ -94,9 +94,9 @@ private struct LabcordSetupSmallChip: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             Button(action: onDismiss) {
-                LabcordIconArtwork(icon: .x, size: 14, relativeTo: .subheadline)
+                IconArtwork(icon: .x, size: 14, relativeTo: .subheadline)
             }
-            .buttonStyle(LabcordPlainButtonStyle())
+            .buttonStyle(PressFeedbackButtonStyle())
             .accessibilityLabel(Text("\(label) 제거"))
         }
         .foregroundStyle(Color(.General.Label.brand))
@@ -108,7 +108,7 @@ private struct LabcordSetupSmallChip: View {
     }
 }
 
-private struct LabcordChipFlowLayout: Layout {
+private struct ChipFlowLayout: Layout {
     let spacing: CGFloat
 
     func sizeThatFits(
