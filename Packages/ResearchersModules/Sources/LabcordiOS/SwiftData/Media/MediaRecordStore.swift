@@ -4,6 +4,19 @@ import LabcordShared
 import SwiftData
 import UniformTypeIdentifiers
 
+private struct MediaRecordDetails {
+    let experimentID: UUID
+    let id: UUID
+    let recordedAt: Date
+    let transcript: String?
+}
+
+private struct MediaFileDetails {
+    let type: RecordType
+    let directory: String
+    let fileExtension: String
+}
+
 @MainActor
 final class MediaRecordStore {
     private enum MediaError: Error {
@@ -20,12 +33,12 @@ final class MediaRecordStore {
     func savePhoto(experimentID: UUID, id: UUID, recordedAt: Date, data: Data) throws {
         let fileExtension = try photoFileExtension(for: data)
         try saveMedia(
-            experimentID: experimentID,
-            id: id,
-            recordedAt: recordedAt,
-            type: .photo,
-            directory: "Photos",
-            fileExtension: fileExtension,
+            record: MediaRecordDetails(
+                experimentID: experimentID, id: id, recordedAt: recordedAt, transcript: nil
+            ),
+            file: MediaFileDetails(
+                type: .photo, directory: "Photos", fileExtension: fileExtension
+            ),
             installFile: { fileURL in
                 try data.write(to: fileURL, options: [.atomic, .completeFileProtection])
             },
@@ -38,13 +51,11 @@ final class MediaRecordStore {
     func saveVideo(experimentID: UUID, id: UUID, recordedAt: Date, sourceURL: URL) throws {
         try Task.checkCancellation()
         try saveRecordingFile(
-            experimentID: experimentID,
-            id: id,
-            recordedAt: recordedAt,
+            record: MediaRecordDetails(
+                experimentID: experimentID, id: id, recordedAt: recordedAt, transcript: nil
+            ),
             sourceURL: sourceURL,
-            type: .video,
-            directory: "Videos",
-            fileExtension: "mov"
+            file: MediaFileDetails(type: .video, directory: "Videos", fileExtension: "mov")
         )
     }
 
@@ -57,39 +68,26 @@ final class MediaRecordStore {
     ) throws {
         try Task.checkCancellation()
         try saveRecordingFile(
-            experimentID: experimentID,
-            id: id,
-            recordedAt: recordedAt,
+            record: MediaRecordDetails(
+                experimentID: experimentID, id: id, recordedAt: recordedAt, transcript: transcript
+            ),
             sourceURL: sourceURL,
-            type: .audio,
-            directory: "Audio",
-            fileExtension: "caf",
-            transcript: transcript
+            file: MediaFileDetails(type: .audio, directory: "Audio", fileExtension: "caf")
         )
     }
 
     private func saveRecordingFile(
-        experimentID: UUID,
-        id: UUID,
-        recordedAt: Date,
+        record: MediaRecordDetails,
         sourceURL: URL,
-        type: RecordType,
-        directory: String,
-        fileExtension: String,
-        transcript: String? = nil
+        file: MediaFileDetails
     ) throws {
         guard sourceURL.isFileURL,
-              sourceURL.pathExtension.lowercased() == fileExtension else {
+              sourceURL.pathExtension.lowercased() == file.fileExtension else {
             throw MediaError.invalidRecordingFile
         }
         try saveMedia(
-            experimentID: experimentID,
-            id: id,
-            recordedAt: recordedAt,
-            type: type,
-            directory: directory,
-            fileExtension: fileExtension,
-            transcript: transcript,
+            record: record,
+            file: file,
             installFile: { fileURL in
                 try Task.checkCancellation()
                 try FileManager.default.moveItem(at: sourceURL, to: fileURL)
@@ -106,24 +104,19 @@ final class MediaRecordStore {
     }
 
     private func saveMedia(
-        experimentID: UUID,
-        id: UUID,
-        recordedAt: Date,
-        type: RecordType,
-        directory: String,
-        fileExtension: String,
-        transcript: String? = nil,
+        record: MediaRecordDetails,
+        file: MediaFileDetails,
         installFile: (URL) throws -> Void,
         rollbackFile: (URL) -> Void
     ) throws {
         let context = try store.makeContext()
-        guard let experiment = try store.find(id: experimentID, in: context) else {
+        guard let experiment = try store.find(id: record.experimentID, in: context) else {
             throw ExperimentStore.StoreError.experimentNotFound
         }
-        guard !experiment.records.contains(where: { $0.id == id }) else { return }
+        guard !experiment.records.contains(where: { $0.id == record.id }) else { return }
 
-        let relativePath = "\(directory)/\(experimentID.uuidString)/"
-            + "\(id.uuidString).\(fileExtension)"
+        let relativePath = "\(file.directory)/\(record.experimentID.uuidString)/"
+            + "\(record.id.uuidString).\(file.fileExtension)"
         let fileURL = URL.applicationSupportDirectory.appending(path: relativePath)
         try FileManager.default.createDirectory(
             at: fileURL.deletingLastPathComponent(),
@@ -135,12 +128,12 @@ final class MediaRecordStore {
             try installFile(fileURL)
             experiment.records.append(
                 ExperimentRecord(
-                    id: id,
-                    type: type,
-                    recordedAt: recordedAt,
+                    id: record.id,
+                    type: file.type,
+                    recordedAt: record.recordedAt,
                     note: "",
                     filePath: relativePath,
-                    transcript: transcript
+                    transcript: record.transcript
                 )
             )
             try context.save()
@@ -155,9 +148,7 @@ final class MediaRecordStore {
             experimentID: experimentID,
             id: id,
             sourceURL: sourceURL,
-            type: .video,
-            directory: "Videos",
-            fileExtension: "mov"
+            file: MediaFileDetails(type: .video, directory: "Videos", fileExtension: "mov")
         )
     }
 
@@ -166,9 +157,7 @@ final class MediaRecordStore {
             experimentID: experimentID,
             id: id,
             sourceURL: sourceURL,
-            type: .audio,
-            directory: "Audio",
-            fileExtension: "caf"
+            file: MediaFileDetails(type: .audio, directory: "Audio", fileExtension: "caf")
         )
     }
 
@@ -176,22 +165,23 @@ final class MediaRecordStore {
         experimentID: UUID,
         id: UUID,
         sourceURL: URL,
-        type: RecordType,
-        directory: String,
-        fileExtension: String
+        file: MediaFileDetails
     ) throws {
         var cleanupError: Error?
         do {
             let context = try store.makeContext()
             if let experiment = try store.find(id: experimentID, in: context),
-               let record = experiment.records.first(where: { $0.id == id && $0.type == type }) {
+               let record = experiment.records.first(where: {
+                   $0.id == id && $0.type == file.type
+               }) {
                 experiment.records.removeAll { $0.id == record.id }
                 context.delete(record)
                 try context.save()
             }
 
             let savedURL = URL.applicationSupportDirectory.appending(
-                path: "\(directory)/\(experimentID.uuidString)/\(id.uuidString).\(fileExtension)"
+                path: "\(file.directory)/\(experimentID.uuidString)/"
+                    + "\(id.uuidString).\(file.fileExtension)"
             )
             try removeExistingFile(at: savedURL)
         } catch {

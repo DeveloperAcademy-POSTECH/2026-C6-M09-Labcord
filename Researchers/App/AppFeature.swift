@@ -41,7 +41,9 @@ struct AppFeature {
                       state.home.list.entries.contains(where: { $0.id == identifier }) else {
                     return .none
                 }
-                state.path.append(.session(ExperimentSessionFeature.State(experimentID: identifier)))
+                state.path.append(
+                    .session(ExperimentSessionFeature.State(experimentID: identifier))
+                )
                 return .send(.home(.list(.cancelLoad)))
 
             case let .path(.element(id: id, action: .registration(.backTapped))):

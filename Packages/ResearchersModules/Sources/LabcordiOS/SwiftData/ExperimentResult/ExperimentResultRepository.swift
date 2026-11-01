@@ -43,25 +43,7 @@ final class ExperimentResultRepository {
                     resumedAt: $0.resumedAt
                 )
             },
-            records: experiment.records.map { record in
-                ExperimentResultDetail.Record(
-                    id: record.id,
-                    type: record.type,
-                    recordedAt: record.recordedAt,
-                    note: record.note,
-                    filePath: record.filePath,
-                    transcript: record.transcript,
-                    timerDurationSeconds: record.timerDurationSeconds,
-                    timerEndedAt: record.timerEndedAt,
-                    timerPauses: record.timerPauses.map {
-                        ExperimentResultDetail.PauseEntry(
-                            id: $0.id,
-                            pausedAt: $0.pausedAt,
-                            resumedAt: $0.resumedAt
-                        )
-                    }
-                )
-            },
+            records: experiment.records.map(recordDetail),
             statusHistory: experiment.statusHistory.sorted { $0.date < $1.date }.map {
                 ExperimentResultDetail.StatusEntry(
                     id: $0.id,
@@ -72,4 +54,23 @@ final class ExperimentResultRepository {
         )
     }
 
+    private static func recordDetail(_ record: ExperimentRecord) -> ExperimentResultDetail.Record {
+        ExperimentResultDetail.Record(
+            id: record.id,
+            type: record.type,
+            recordedAt: record.recordedAt,
+            note: record.note,
+            filePath: record.filePath,
+            transcript: record.transcript,
+            timerDurationSeconds: record.timerDurationSeconds,
+            timerEndedAt: record.timerEndedAt,
+            timerPauses: record.timerPauses.map {
+                ExperimentResultDetail.PauseEntry(
+                    id: $0.id,
+                    pausedAt: $0.pausedAt,
+                    resumedAt: $0.resumedAt
+                )
+            }
+        )
+    }
 }

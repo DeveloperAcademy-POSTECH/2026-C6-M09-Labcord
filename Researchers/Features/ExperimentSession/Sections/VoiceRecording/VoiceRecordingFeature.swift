@@ -236,8 +236,10 @@ struct VoiceRecordingFeature {
             }
         }
     }
+}
 
-    private func finishRecording(
+private extension VoiceRecordingFeature {
+    func finishRecording(
         _ recording: SpeechRecording,
         state: inout State
     ) -> Effect<Action> {
@@ -256,7 +258,7 @@ struct VoiceRecordingFeature {
         .cancellable(id: CancelID.autoSave, cancelInFlight: true)
     }
 
-    private func saveAudio(state: inout State) -> Effect<Action> {
+    func saveAudio(state: inout State) -> Effect<Action> {
         guard state.phase == .finished,
               let id = state.recordID,
               let recordedAt = state.recordedAt,
@@ -290,7 +292,7 @@ struct VoiceRecordingFeature {
         )
     }
 
-    private func resetReview(state: inout State) {
+    func resetReview(state: inout State) {
         state.transcript = ""
         state.recording = nil
         state.recordID = nil
