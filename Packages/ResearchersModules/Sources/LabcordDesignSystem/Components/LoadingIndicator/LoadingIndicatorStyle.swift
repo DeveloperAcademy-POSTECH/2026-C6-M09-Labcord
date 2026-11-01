@@ -40,7 +40,7 @@ private struct LabcordProgressContent: View {
     let configuration: ProgressViewStyleConfiguration
 
     private var resolvedForeground: Color {
-        foreground ?? Color(.General.Label.primary)
+        foreground ?? Color(.General.Action.Primary.foreground)
     }
 
     @ViewBuilder
@@ -48,7 +48,7 @@ private struct LabcordProgressContent: View {
         if configuration.fractionCompleted != nil {
             ProgressView(configuration)
                 .progressViewStyle(.linear)
-                .tint(resolvedForeground)
+                .tint(foreground ?? Color(.General.Label.primary))
         } else if let label = configuration.label {
             HStack(spacing: LayoutTokens.spacing8) {
                 LabcordLoadingIndicator(size: size, foreground: resolvedForeground)
@@ -63,11 +63,13 @@ private struct LabcordProgressContent: View {
 }
 
 private struct LabcordLoadingIndicator: View {
+    private let size: LoadingIndicatorStyle.Size
     private let foreground: Color
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ScaledMetric private var scaledSize: CGFloat
 
     init(size: LoadingIndicatorStyle.Size, foreground: Color) {
+        self.size = size
         self.foreground = foreground
         _scaledSize = ScaledMetric(wrappedValue: size.points, relativeTo: .body)
     }
@@ -75,18 +77,11 @@ private struct LabcordLoadingIndicator: View {
     var body: some View {
         Group {
             if reduceMotion {
-                phaseImage(1)
+                dots(activeDot: 0)
+                    .accessibilityHidden(true)
             } else {
                 PhaseAnimator([0, 1, 2]) { activeDot in
-                    HStack(spacing: 0) {
-                        ForEach(0..<3) { dot in
-                            Circle()
-                                .fill(foreground)
-                                .frame(width: scaledSize * 3 / 16, height: scaledSize * 3 / 16)
-                                .scaleEffect(activeDot == dot ? 5.0 / 3 : 1)
-                                .frame(width: scaledSize * 5 / 16, height: scaledSize * 5 / 16)
-                        }
-                    }
+                    dots(activeDot: activeDot)
                 } animation: { _ in
                     .linear(duration: 0.45)
                 }
@@ -96,15 +91,36 @@ private struct LabcordLoadingIndicator: View {
         .frame(width: scaledSize, height: scaledSize)
     }
 
-    private func phaseImage(_ phase: Int) -> some View {
-        Image("labcord-loading-phase\(phase)", bundle: .module)
-            .renderingMode(.template)
-            .resizable()
-            .interpolation(.high)
-            .scaledToFit()
-            .foregroundStyle(foreground)
-            .frame(width: scaledSize, height: scaledSize)
-            .accessibilityHidden(true)
+    private var activeDotSize: CGFloat {
+        let points: CGFloat
+        switch size {
+        case .small: points = 5
+        case .medium: points = 6
+        case .large: points = 7
+        }
+        return points * scaledSize / size.points
+    }
+
+    private var inactiveDotSize: CGFloat {
+        let points: CGFloat
+        switch size {
+        case .small: points = 3
+        case .medium: points = 4
+        case .large: points = 5
+        }
+        return points * scaledSize / size.points
+    }
+
+    private func dots(activeDot: Int) -> some View {
+        HStack(spacing: 0) {
+            ForEach(0..<3) { dot in
+                Circle()
+                    .fill(foreground)
+                    .frame(width: inactiveDotSize, height: inactiveDotSize)
+                    .scaleEffect(activeDot == dot ? activeDotSize / inactiveDotSize : 1)
+                    .frame(width: activeDotSize, height: activeDotSize)
+            }
+        }
     }
 }
 
@@ -118,4 +134,6 @@ private struct LabcordLoadingIndicator: View {
             .progressViewStyle(.labcord(size: .large))
     }
     .padding()
+    .foregroundStyle(.white)
+    .background(Color(.Experiment.Background.primary))
 }

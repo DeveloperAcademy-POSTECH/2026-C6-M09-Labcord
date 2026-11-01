@@ -53,7 +53,7 @@ public struct TimerTabs: View {
     }
 
     public var body: some View {
-        HStack(alignment: .center, spacing: LayoutTokens.spacing12) {
+        HStack(alignment: .center, spacing: LayoutTokens.spacing8) {
             TimerTabItem(
                 title: leftTitle,
                 isSelected: selection == .set,
@@ -88,7 +88,8 @@ public struct TimerTabs: View {
             }
         }
         .padding(style == .pill ? LayoutTokens.spacing4 : 0)
-        .frame(minHeight: style == .plain ? 54 : nil)
+        .padding(.horizontal, style == .plain ? LayoutTokens.spacing4 : 0)
+        .frame(minHeight: style == .plain ? 46 : nil)
         .labcordMotion(.layout, value: style)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("타이머 탭"))

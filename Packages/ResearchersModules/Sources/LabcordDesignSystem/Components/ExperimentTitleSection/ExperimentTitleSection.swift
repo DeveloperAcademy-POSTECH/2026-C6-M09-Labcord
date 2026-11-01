@@ -45,7 +45,7 @@ public struct ExperimentTitleSection<Leading: View, Trailing: View>: View {
             trailing
         }
         .padding(.leading, 62)
-        .padding(.trailing, 70)
+        .padding(.trailing, 62)
         .frame(maxWidth: .infinity, minHeight: 52)
     }
 

@@ -39,9 +39,9 @@ public struct TimerTabItem: View {
                 .padding(.horizontal, horizontalPadding)
                 .padding(
                     .vertical,
-                    style == .pill ? LayoutTokens.spacing8 : LayoutTokens.spacing16
+                    style == .pill ? LayoutTokens.spacing8 : LayoutTokens.spacing12
                 )
-                .frame(minHeight: style == .plain ? 54 : nil)
+                .frame(minHeight: style == .plain ? 46 : nil)
                 .background {
                     if style == .pill && isSelected {
                         Capsule().fill(Color(.Experiment.Fill.selected))
@@ -56,7 +56,8 @@ public struct TimerTabItem: View {
     }
 
     private var foregroundColor: Color {
-        style == .pill ? Color(.Experiment.Label.brand)
+        style == .pill ? (isSelected
+            ? Color(.Experiment.Label.brand) : Color(.Experiment.Label.quaternary))
             : (isSelected ? Color(.Experiment.Label.primary)
                 : Color(.Experiment.Label.tertiary))
     }
@@ -64,7 +65,7 @@ public struct TimerTabItem: View {
     private var horizontalPadding: CGFloat {
         style == .pill
             ? (isSelected ? LayoutTokens.spacing16 : LayoutTokens.spacing12)
-            : LayoutTokens.spacing8
+            : LayoutTokens.spacing4
     }
 }
 

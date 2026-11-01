@@ -83,7 +83,7 @@ public struct ExperimentListItem: View {
     }
 
     private var horizontalContent: some View {
-        HStack(alignment: .center, spacing: LayoutTokens.spacing8) {
+        HStack(alignment: .center, spacing: LayoutTokens.spacing12) {
             if showRadioButton { selectionButton }
             titleContent
                 .frame(maxWidth: .infinity, alignment: .leading)

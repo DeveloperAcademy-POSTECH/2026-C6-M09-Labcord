@@ -61,7 +61,7 @@ struct LabcordChipSurface<Content: View>: View {
         switch size ?? ComponentSize(controlSize) {
         case .small, .medium:
             return .small
-        case .large:
+        case .large, .extraLarge:
             return .large
         }
     }
@@ -86,7 +86,7 @@ struct LabcordChipSurface<Content: View>: View {
         if isSelected {
             return emphasis == .strong
                 ? Color(.General.Fill.white)
-                : Color(.General.Brand.onSubtle)
+                : Color(.General.Label.brand)
         }
 
         return Color(.General.Label.primary)
@@ -101,24 +101,27 @@ struct LabcordChipSurface<Content: View>: View {
             if emphasis == .strong {
                 return Color(.General.Brand.primary)
             }
-            return visualStyle == .solid ? Color(.General.Brand.subtle) : nil
+            return Color(.General.Fill.selected)
         }
 
         return visualStyle == .solid ? Color(.General.Fill.primary) : nil
     }
 
     private var borderColor: Color? {
+        if isSelected && !isDisabled && emphasis == .weak {
+            return Color(.General.Border.focused)
+        }
         guard visualStyle == .outline else { return nil }
         if isDisabled || !isSelected {
             return Color(.General.Border.`default`)
         }
-        return emphasis == .weak ? Color(.General.Brand.border) : nil
+        return nil
     }
 }
 
 enum LabcordChipMetrics {
     static func iconGap(for size: ComponentSize) -> CGFloat {
-        size == .large ? 8 : 4
+        size == .large || size == .extraLarge ? 8 : 4
     }
     static let leadingIconSize: CGFloat = 16
     static let dismissIconSize: CGFloat = 14

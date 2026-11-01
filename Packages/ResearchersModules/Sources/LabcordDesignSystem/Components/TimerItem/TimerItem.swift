@@ -65,14 +65,14 @@ public struct TimerItem<ID: Hashable>: View {
         ViewThatFits(in: .horizontal) {
             HStack(alignment: .center, spacing: LayoutTokens.spacing8) {
                 timerText
-                actionButton
+                actionButtons
             }
 
             VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
                 timerText
                 HStack {
                     Spacer(minLength: 0)
-                    actionButton
+                    actionButtons
                 }
             }
         }
@@ -125,14 +125,28 @@ public struct TimerItem<ID: Hashable>: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var actionButton: some View {
-        TimerItemActionButton(
-            icon: actionIcon,
-            background: Color(.Experiment.Timer.background),
-            foreground: Color(.Experiment.Timer.foreground),
-            role: state == .completed ? .destructive : nil,
-            action: action
-        )
+    private var actionButtons: some View {
+        HStack(spacing: LayoutTokens.spacing12) {
+            if state == .paused {
+                TimerItemActionButton(
+                    icon: .x,
+                    background: Color(.Experiment.Fill.primary),
+                    foreground: Color(.Experiment.Label.secondary),
+                    role: .destructive,
+                    action: onRemove
+                )
+            }
+
+            TimerItemActionButton(
+                icon: actionIcon,
+                background: Color(.Experiment.Timer.background),
+                foreground: state == .completed
+                    ? Color(.Experiment.Label.secondary)
+                    : Color(.Experiment.Timer.foreground),
+                role: state == .completed ? .destructive : nil,
+                action: action
+            )
+        }
     }
 
     private var setDurationTypography: TypographyStyle {

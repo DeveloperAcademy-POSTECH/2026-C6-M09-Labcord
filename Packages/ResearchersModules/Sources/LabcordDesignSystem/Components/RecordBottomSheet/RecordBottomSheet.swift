@@ -170,10 +170,10 @@ public struct RecordBottomSheet: View {
     private var header: some View {
         HStack(alignment: .center) {
             Button(action: close) {
-                LabcordIconArtwork(icon: .x, size: 16, relativeTo: .body)
-                    .foregroundStyle(Color(.General.Label.primary))
+                LabcordIconArtwork(icon: .x, size: 24, relativeTo: .body)
+                    .foregroundStyle(Color(.General.Label.secondary))
             }
-            .buttonStyle(.labcordIcon(.tertiary, size: .medium))
+            .buttonStyle(.labcordIcon(.plain, size: .large))
             .accessibilityLabel(Text("닫기"))
 
             Text("기록")
@@ -181,10 +181,9 @@ public struct RecordBottomSheet: View {
                 .foregroundStyle(Color(.General.Label.primary))
                 .frame(maxWidth: .infinity)
 
-            Color.clear.frame(width: 34 * headerControlScale, height: 34 * headerControlScale)
+            Color.clear.frame(width: 50 * headerControlScale, height: 50 * headerControlScale)
                 .accessibilityHidden(true)
         }
-        .padding(.vertical, LayoutTokens.spacing4)
         .frame(maxWidth: .infinity)
     }
 
@@ -227,8 +226,9 @@ public struct RecordBottomSheet: View {
                     Color.clear
                 }
             }
-                .aspectRatio(type == .video ? 370.0 / 201.0 : 16.0 / 9.0, contentMode: .fit)
+                .aspectRatio(type == .video ? 358.0 / 201.0 : 16.0 / 9.0, contentMode: .fit)
                 .frame(maxWidth: .infinity)
+                .padding(.horizontal, type == .video ? 6 : 0)
                 .clipped()
         }
     }
@@ -268,7 +268,6 @@ public struct RecordBottomSheet: View {
             .frame(maxWidth: .infinity)
             .disabled(!canSave)
         }
-        .padding(.horizontal, -6)
         .frame(maxWidth: .infinity)
     }
 

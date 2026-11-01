@@ -9,6 +9,7 @@ public enum ProtocolUploadButtonState: String, CaseIterable, Sendable {
 public struct ProtocolUploadButton: View {
     private let title: String
     private let description: String
+    private let showDescription: Bool
     private let state: ProtocolUploadButtonState
     private let action: () -> Void
 
@@ -16,19 +17,25 @@ public struct ProtocolUploadButton: View {
         _ title: String,
         description: String,
         state: ProtocolUploadButtonState,
+        showDescription: Bool = true,
         action: @escaping () -> Void
     ) {
-        self.init(title: title, description: description, state: state, action: action)
+        self.init(
+            title: title, description: description, state: state,
+            showDescription: showDescription, action: action
+        )
     }
 
     public init(
         title: String = "파일",
         description: String = "pdf, xlsx, docx 파일을 업로드해 주세요\n용량 제한: 최대 1GB",
-        state: ProtocolUploadButtonState = .selected,
+        state: ProtocolUploadButtonState = .default,
+        showDescription: Bool = true,
         action: @escaping () -> Void = {}
     ) {
         self.title = title
         self.description = description
+        self.showDescription = showDescription
         self.state = state
         self.action = action
     }
@@ -37,27 +44,29 @@ public struct ProtocolUploadButton: View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: LayoutTokens.spacing4) {
                 Text(title)
-                    .typography(Typography.bodySemiBold)
+                    .typography(Typography.calloutSemiBold)
                     .fixedSize(horizontal: false, vertical: true)
 
-                Text(description.isEmpty ? Self.defaultDescription : description)
-                    .typography(Typography.subheadline)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .multilineTextAlignment(.leading)
+                if showDescription {
+                    Text(description)
+                        .typography(Typography.subheadline)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .multilineTextAlignment(.leading)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(LayoutTokens.spacing16)
         }
-        .buttonStyle(ProtocolUploadButtonStyle(state: state))
+        .buttonStyle(ProtocolUploadButtonStyle(state: state, showDescription: showDescription))
         .disabled(state == .disabled)
         .accessibilityHint(Text("프로토콜 파일을 선택합니다"))
     }
 
-    private static let defaultDescription = "pdf, xlsx, docx 파일을 업로드해 주세요\n용량 제한: 최대 1GB"
 }
 
 private struct ProtocolUploadButtonStyle: ButtonStyle {
     let state: ProtocolUploadButtonState
+    let showDescription: Bool
 
     @Environment(\.isEnabled) private var isEnabled
 
@@ -66,7 +75,7 @@ private struct ProtocolUploadButtonStyle: ButtonStyle {
             .foregroundStyle(foregroundColor)
             .frame(
                 maxWidth: .infinity,
-                minHeight: 100,
+                minHeight: showDescription ? (effectiveState == .disabled ? 97 : 99) : nil,
                 alignment: .topLeading
             )
             .background {
@@ -77,8 +86,7 @@ private struct ProtocolUploadButtonStyle: ButtonStyle {
             .clipShape(RoundedRectangle(cornerRadius: LayoutTokens.radiusSm))
             .overlay {
                 RoundedRectangle(cornerRadius: LayoutTokens.radiusSm)
-                    .strokeBorder(Color(.General.Border.focused), lineWidth: 1)
-                    .opacity(state == .selected && isEnabled ? 1 : 0)
+                    .strokeBorder(borderColor ?? .clear, lineWidth: 1)
                     .labcordMotion(.state, value: effectiveState.rawValue)
                     .allowsHitTesting(false)
             }
@@ -101,9 +109,20 @@ private struct ProtocolUploadButtonStyle: ButtonStyle {
         case .selected:
             Color(.General.Fill.selected)
         case .default:
-            Color(.General.Fill.secondary)
+            .clear
         case .disabled:
             Color(.General.Fill.disabled)
+        }
+    }
+
+    private var borderColor: Color? {
+        switch effectiveState {
+        case .selected:
+            Color(.General.Border.focused)
+        case .default:
+            Color(.General.Border.`default`)
+        case .disabled:
+            nil
         }
     }
 }
@@ -129,6 +148,7 @@ private struct ProtocolUploadButtonStyle: ButtonStyle {
         ProtocolUploadButton(state: .selected)
         ProtocolUploadButton(state: .default)
         ProtocolUploadButton(state: .disabled)
+        ProtocolUploadButton(showDescription: false)
     }
     .frame(width: 370)
     .padding()

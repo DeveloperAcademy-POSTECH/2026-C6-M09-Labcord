@@ -19,7 +19,7 @@ public struct GestureToast: View {
 
     public var body: some View {
         HStack(alignment: .center, spacing: LayoutTokens.spacing4) {
-            VStack(alignment: .leading, spacing: LayoutTokens.spacing4) {
+            VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
                 Text(title)
                     .typography(Typography.bodySemiBold)
                 Text(subtitle)

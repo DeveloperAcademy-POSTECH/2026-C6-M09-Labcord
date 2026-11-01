@@ -122,7 +122,7 @@ public struct ExperimentSidePanel<Content: View>: View {
         ZStack(alignment: .bottom) {
             Color.clear
                 .frame(maxWidth: .infinity)
-                .frame(height: isExpanded ? nil : 51)
+                .frame(height: isExpanded ? nil : 62)
 
             if isExpanded {
                 content()

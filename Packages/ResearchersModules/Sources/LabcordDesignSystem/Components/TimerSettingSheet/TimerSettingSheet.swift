@@ -70,7 +70,6 @@ public struct TimerSettingSheet: View {
                 }
                 .buttonStyle(.labcord(.primary, size: .large))
             }
-            .padding(.horizontal, -6)
         }
         .padding(.top, LayoutTokens.spacing16)
         .padding(.horizontal, LayoutTokens.spacing16)
@@ -96,9 +95,10 @@ public struct TimerSettingSheet: View {
     private var header: some View {
         HStack {
             Button(action: cancel) {
-                LabcordIconArtwork(icon: .x, size: 16)
+                LabcordIconArtwork(icon: .x, size: 24, relativeTo: .body)
+                    .foregroundStyle(Color(.General.Label.secondary))
             }
-            .buttonStyle(.labcordIcon(.tertiary, size: .medium))
+            .buttonStyle(.labcordIcon(.plain, size: .large))
             .accessibilityLabel(Text("닫기"))
 
             Text("타이머")
@@ -107,7 +107,7 @@ public struct TimerSettingSheet: View {
                 .frame(maxWidth: .infinity)
 
             Color.clear
-                .frame(width: 34 * headerControlScale, height: 34 * headerControlScale)
+                .frame(width: 50 * headerControlScale, height: 50 * headerControlScale)
                 .accessibilityHidden(true)
         }
     }

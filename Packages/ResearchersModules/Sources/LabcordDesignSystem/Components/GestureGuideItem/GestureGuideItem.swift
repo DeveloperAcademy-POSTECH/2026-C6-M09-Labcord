@@ -28,7 +28,7 @@ public struct GestureGuideItem<Media: View>: View {
             .padding(LayoutTokens.spacing12)
             .frame(idealWidth: width, maxWidth: width)
             .background(
-                Color(.Experiment.Fill.inverse),
+                Color(.Experiment.Background.Grouped.primary),
                 in: RoundedRectangle(cornerRadius: LayoutTokens.radiusMd)
             )
             .accessibilityElement(children: .contain)
@@ -38,7 +38,7 @@ public struct GestureGuideItem<Media: View>: View {
     private var arrangedContent: some View {
         switch layout {
         case .portrait:
-            VStack(spacing: LayoutTokens.spacing10) {
+            VStack(spacing: LayoutTokens.spacing8) {
                 gestureMedia
                 textContent
             }
@@ -52,7 +52,7 @@ public struct GestureGuideItem<Media: View>: View {
 
     private var gestureMedia: some View {
         media
-            .frame(width: 90, height: 100)
+            .frame(width: 90, height: 90)
             .clipped()
     }
 
@@ -69,14 +69,14 @@ public struct GestureGuideItem<Media: View>: View {
                 .typography(Typography.subheadline)
                 .frame(maxWidth: .infinity, alignment: textAlignment)
         }
-        .foregroundStyle(Color(.Experiment.Label.inverse))
+        .foregroundStyle(Color(.Experiment.Label.primary))
         .multilineTextAlignment(layout == .portrait ? .center : .leading)
         .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: .infinity, alignment: textAlignment)
     }
 
     private var width: CGFloat {
-        layout == .portrait ? 380 / 3 : 321
+        layout == .portrait ? 130 : 321
     }
 
     private var textAlignment: Alignment {
