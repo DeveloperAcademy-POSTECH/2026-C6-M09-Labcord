@@ -12,7 +12,7 @@ struct ExperimentSessionFeature {
         var timer: SessionTimerFeature.State
         
         var permissions = SessionPermissionsFeature.State()
-        var voice = VoiceRecordingFeature.State()
+        var voice: VoiceRecordingFeature.State
         var capture: CameraCaptureFeature.State
         var permissionRequestGeneration = 0
         var isReturningHome = false
@@ -24,6 +24,7 @@ struct ExperimentSessionFeature {
         init(experimentID: UUID) {
             self.experimentID = experimentID
             self.timer = SessionTimerFeature.State(experimentID: experimentID)
+            self.voice = VoiceRecordingFeature.State(experimentID: experimentID)
             self.capture = CameraCaptureFeature.State(experimentID: experimentID)
         }
 
@@ -36,7 +37,7 @@ struct ExperimentSessionFeature {
         }
 
         var canCloseSession: Bool {
-            timer.isConfigured && timer.pendingSave == nil
+            timer.isConfigured && timer.pendingSave == nil && !voice.isSaving
                 && !isCompleting && !isReturningHome
         }
     }
@@ -160,6 +161,7 @@ struct ExperimentSessionFeature {
                         await send(.homeExitFailed)
                         return
                     }
+                    await send(.voice(.closeRequested))
                     await cameraSessionClient.cancelVideoRecording()
                     await speechRecordingClient.cancel()
                     await cameraSessionClient.deactivate(ownerID)
