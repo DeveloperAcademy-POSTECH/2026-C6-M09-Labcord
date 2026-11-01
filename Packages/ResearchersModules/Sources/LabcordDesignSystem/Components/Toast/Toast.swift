@@ -26,17 +26,36 @@ public enum ToastType: CaseIterable, Sendable {
         case .warning:
             .warning
         case .error:
-            .prohibitInsert
+            .warning
         case .info:
             .warningCircle
         }
     }
+
+    fileprivate var subtleColor: Color {
+        switch self {
+        case .success:
+            Color(.Experiment.Feedback.Success.subtle)
+        case .warning:
+            Color(.Experiment.Feedback.Warning.subtle)
+        case .error:
+            Color(.Experiment.Feedback.Error.subtle)
+        case .info:
+            Color(.Experiment.Feedback.Info.subtle)
+        }
+    }
+}
+
+public enum ToastAppearance: Sendable {
+    case `default`
+    case accent
 }
 
 public struct Toast: View {
 
     private let message: String
     private let type: ToastType
+    private let appearance: ToastAppearance
     private let showLeadingIcon: Bool
     private let showDismissButton: Bool
     private let showActionButton: Bool
@@ -44,9 +63,13 @@ public struct Toast: View {
     private let onAction: () -> Void
     private let onDismiss: () -> Void
 
+    @Environment(\.isEnabled) private var isEnabled
+    @ScaledMetric(relativeTo: .body) private var dismissSize: CGFloat = 28
+
     public init(
         _ message: String,
         type: ToastType = .success,
+        appearance: ToastAppearance = .default,
         showLeadingIcon: Bool = true,
         actionTitle: String = "다시시도",
         onAction: (() -> Void)? = nil,
@@ -55,6 +78,7 @@ public struct Toast: View {
         self.init(
             message: message,
             type: type,
+            appearance: appearance,
             showLeadingIcon: showLeadingIcon,
             showDismissButton: onDismiss != nil,
             showActionButton: onAction != nil,
@@ -67,6 +91,7 @@ public struct Toast: View {
     public init(
         message: String,
         type: ToastType = .success,
+        appearance: ToastAppearance = .default,
         showLeadingIcon: Bool = true,
         showDismissButton: Bool = true,
         showActionButton: Bool = true,
@@ -76,6 +101,7 @@ public struct Toast: View {
     ) {
         self.message = message
         self.type = type
+        self.appearance = appearance
         self.showLeadingIcon = showLeadingIcon
         self.showDismissButton = showDismissButton
         self.showActionButton = showActionButton
@@ -88,14 +114,21 @@ public struct Toast: View {
         toastContent
         .labcordMotion(.layout, value: [showLeadingIcon, showActionButton, showDismissButton])
         .padding(.horizontal, LayoutTokens.spacing16)
-        .padding(.vertical, LayoutTokens.spacing12)
-        .frame(minHeight: showActionButton ? 60 : nil)
+        .padding(.vertical, LayoutTokens.spacing16)
+        .frame(minHeight: 68)
         .background {
-            Rectangle()
-                .fill(.ultraThinMaterial)
-                .environment(\.colorScheme, .dark)
+            if appearance == .accent {
+                Rectangle()
+                    .fill(type.subtleColor)
+                    .background(.ultraThinMaterial)
+                    .environment(\.colorScheme, .dark)
+            } else {
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .environment(\.colorScheme, .dark)
+            }
         }
-        .background(Color(.Experiment.Fill.primary))
+        .background(appearance == .default ? Color(.Experiment.Fill.primary) : .clear)
         .clipShape(RoundedRectangle(cornerRadius: LayoutTokens.radiusSm))
         .accessibilityElement(children: .contain)
     }
@@ -110,7 +143,7 @@ public struct Toast: View {
     }
 
     private var horizontalContent: some View {
-        HStack(alignment: .center, spacing: LayoutTokens.spacing16) {
+        HStack(alignment: .center, spacing: LayoutTokens.spacing12) {
             leadingContent
             if showActionButton || showDismissButton {
                 actionsContent
@@ -134,10 +167,10 @@ public struct Toast: View {
 
     @ViewBuilder
     private var leadingContent: some View {
-        HStack(alignment: .center, spacing: LayoutTokens.spacing16) {
+        HStack(alignment: .center, spacing: LayoutTokens.spacing12) {
             if showLeadingIcon {
                 ZStack {
-                    LabcordIconArtwork(icon: type.icon, size: 20)
+                    IconArtwork(icon: type.icon, size: 28)
                         .foregroundStyle(type.foregroundColor)
                         .id(type.icon.rawValue)
                         .transition(.opacity)
@@ -148,14 +181,18 @@ public struct Toast: View {
             }
 
             Text(message)
-                .typography(Typography.headline)
-                .foregroundStyle(Color(.Experiment.Label.primary))
+                .typography(Typography.body)
+                .foregroundStyle(messageColor)
                 .contentTransition(.opacity)
                 .labcordMotion(.state, value: message)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
                 .layoutPriority(1)
         }
+    }
+
+    private var messageColor: Color {
+        appearance == .accent ? type.foregroundColor : Color(.Experiment.Label.primary)
     }
 
     @ViewBuilder
@@ -179,6 +216,11 @@ public struct Toast: View {
         if showActionButton {
             Button(action: onAction) {
                 Text(actionTitle)
+                    .foregroundStyle(
+                        isEnabled
+                            ? Color(.Experiment.Label.secondary)
+                            : Color(.General.Action.Disabled.foreground)
+                    )
                     .contentTransition(.opacity)
                     .labcordMotion(.state, value: actionTitle)
                     .multilineTextAlignment(.center)
@@ -193,10 +235,21 @@ public struct Toast: View {
     private var dismissButton: some View {
         if showDismissButton {
             Button(action: onDismiss) {
-                LabcordIconArtwork(icon: .x, size: 12)
-                    .foregroundStyle(Color(.Experiment.Label.secondary))
+                IconArtwork(icon: .x, size: 12)
+                    .foregroundStyle(
+                        isEnabled
+                            ? Color(.Experiment.Label.primary)
+                            : Color(.General.Action.Disabled.foreground)
+                    )
+                    .frame(width: dismissSize, height: dismissSize)
+                    .background(
+                        isEnabled
+                            ? Color(.Experiment.Fill.secondary)
+                            : Color(.General.Action.Disabled.background),
+                        in: Circle()
+                    )
             }
-            .buttonStyle(.labcordIcon(.tertiary, size: .small))
+            .buttonStyle(.labcordIcon(.quaternary, size: .small))
             .accessibilityLabel(Text("닫기"))
             .transition(.opacity)
         }
@@ -205,7 +258,10 @@ public struct Toast: View {
 
 #Preview("토스트") {
     _ = FontRegistration.register()
-    return Toast("저장했어요.", type: .success)
+    return VStack {
+        Toast("저장했어요.", type: .success)
+        Toast("저장했어요.", type: .success, appearance: .accent)
+    }
         .padding()
         .background(Color(.Experiment.Background.primary))
 }

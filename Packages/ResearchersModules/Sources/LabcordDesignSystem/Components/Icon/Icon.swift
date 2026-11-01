@@ -71,7 +71,7 @@ public extension Image {
     }
 }
 
-struct LabcordIconArtwork: View {
+struct IconArtwork: View {
     private let icon: Icon
     @ScaledMetric private var scaledSize: CGFloat
 
@@ -100,7 +100,7 @@ struct LabcordIconArtwork: View {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 16) {
             ForEach(Icon.allCases) { icon in
                 VStack(spacing: 4) {
-                    LabcordIconArtwork(icon: icon, size: 24)
+                    IconArtwork(icon: icon, size: 24)
                     Text(icon.rawValue)
                         .font(.caption2)
                         .multilineTextAlignment(.center)
@@ -110,5 +110,3 @@ struct LabcordIconArtwork: View {
         .padding()
     }
 }
-
-public typealias LabcordIcon = Icon
