@@ -226,8 +226,9 @@ public struct RecordBottomSheet: View {
                     Color.clear
                 }
             }
-                .aspectRatio(type == .video ? 370.0 / 201.0 : 16.0 / 9.0, contentMode: .fit)
+                .aspectRatio(type == .video ? 358.0 / 201.0 : 16.0 / 9.0, contentMode: .fit)
                 .frame(maxWidth: .infinity)
+                .padding(.horizontal, type == .video ? 6 : 0)
                 .clipped()
         }
     }
