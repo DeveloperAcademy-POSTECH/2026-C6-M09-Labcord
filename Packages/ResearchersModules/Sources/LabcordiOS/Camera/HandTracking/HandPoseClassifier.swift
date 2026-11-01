@@ -12,6 +12,32 @@ nonisolated enum HandPoseClassifier {
         case extended
     }
 
+    private struct FingerDetection {
+        let bend: FingerBend
+        let tip: CGPoint
+    }
+
+    private struct FingerSummary {
+        var curled = 0
+        var extended = 0
+        var isComplete = true
+        var extendedTips: [CGPoint] = []
+
+        mutating func add(_ detection: FingerDetection?) {
+            guard let detection else {
+                isComplete = false
+                return
+            }
+            switch detection.bend {
+            case .curled:
+                curled += 1
+            case .extended:
+                extended += 1
+                extendedTips.append(detection.tip)
+            }
+        }
+    }
+
     private struct FingerJoints {
         let tip: VNHumanHandPoseObservation.JointName
         let middle: VNHumanHandPoseObservation.JointName
@@ -37,71 +63,62 @@ nonisolated enum HandPoseClassifier {
             return nil
         }
 
-        let thumbTip = points[.thumbTip]
-        let thumbBend: FingerBend?
-        if let thumbTip,
-           let thumbIP = points[.thumbIP],
-           let thumbMP = points[.thumbMP] {
-            thumbBend = bend(
-                tip: thumbTip,
-                middle: thumbIP,
-                base: thumbMP,
-                anchor: littleMCP.location,
-                extensionMargin: distance(indexMCP.location, littleMCP.location)
-                    * thumbExtensionMarginRatio
-            )
-        } else {
-            thumbBend = nil
-        }
-
-        var curled = thumbBend == .curled ? 1 : 0
-        var extended = thumbBend == .extended ? 1 : 0
-        var isComplete = thumbBend != nil
-        var extendedTips: [CGPoint] = []
-        if thumbBend == .extended, let thumbTip {
-            extendedTips.append(thumbTip.location)
-        }
+        var summary = FingerSummary()
+        summary.add(thumbDetection(
+            in: points,
+            indexMCP: indexMCP.location,
+            littleMCP: littleMCP.location
+        ))
         for finger in fingers {
-            guard let tip = points[finger.tip],
-                  let pip = points[finger.middle],
-                  let mcp = points[finger.base] else {
-                isComplete = false
-                continue
-            }
-            guard let fingerBend = bend(
-                      tip: tip,
-                      middle: pip,
-                      base: mcp,
-                      anchor: wrist.location,
-                      extensionMargin: distance(wrist.location, mcp.location)
-                          * extensionMarginRatio
-                  ) else {
-                isComplete = false
-                continue
-            }
-            if fingerBend == .extended {
-                extended += 1
-                extendedTips.append(tip.location)
-            } else {
-                curled += 1
-            }
+            summary.add(fingerDetection(finger, in: points, wrist: wrist.location))
         }
 
-        let pose: HandPose?
-        if !isComplete {
-            pose = nil
-        } else if extended == 5 {
-            pose = .openHand
-        } else if curled == 5 {
-            pose = .fist
-        } else if extended == 1, curled == 4 {
-            pose = .oneFinger
-        } else if extended == 3, curled == 2 {
-            pose = .threeFingers
-        } else {
-            pose = nil
-        }
-        return Analysis(pose: pose, extendedTips: extendedTips)
+        return Analysis(pose: pose(for: summary), extendedTips: summary.extendedTips)
+    }
+
+    private static func thumbDetection(
+        in points: [VNHumanHandPoseObservation.JointName: VNRecognizedPoint],
+        indexMCP: CGPoint,
+        littleMCP: CGPoint
+    ) -> FingerDetection? {
+        guard let tip = points[.thumbTip],
+              let middle = points[.thumbIP],
+              let base = points[.thumbMP],
+              let fingerBend = bend(
+                  tip: tip,
+                  middle: middle,
+                  base: base,
+                  anchor: littleMCP,
+                  extensionMargin: distance(indexMCP, littleMCP) * thumbExtensionMarginRatio
+              ) else { return nil }
+        return FingerDetection(bend: fingerBend, tip: tip.location)
+    }
+
+    private static func fingerDetection(
+        _ finger: FingerJoints,
+        in points: [VNHumanHandPoseObservation.JointName: VNRecognizedPoint],
+        wrist: CGPoint
+    ) -> FingerDetection? {
+        guard let tip = points[finger.tip],
+              let middle = points[finger.middle],
+              let base = points[finger.base],
+              let fingerBend = bend(
+                  tip: tip,
+                  middle: middle,
+                  base: base,
+                  anchor: wrist,
+                  extensionMargin: distance(wrist, base.location) * extensionMarginRatio
+              ) else { return nil }
+        return FingerDetection(bend: fingerBend, tip: tip.location)
+    }
+
+    private static func pose(for summary: FingerSummary) -> HandPose? {
+        guard summary.isComplete else { return nil }
+        if summary.extended == 5 { return .openHand }
+        if summary.curled == 5 { return .fist }
+        if summary.extended == 1, summary.curled == 4 { return .oneFinger }
+        if summary.extended == 3, summary.curled == 2 { return .threeFingers }
+        return nil
     }
 
     private static func bend(

@@ -289,7 +289,9 @@ public actor CameraSession {
         guard connection.isVideoRotationAngleSupported(angle) else { return }
         connection.videoRotationAngle = angle
     }
+}
 
+extension CameraSession {
     public func previewConnector() -> CameraPreviewConnector {
         if let cachedPreviewConnector {
             return cachedPreviewConnector
