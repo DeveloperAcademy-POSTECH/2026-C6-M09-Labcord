@@ -51,6 +51,14 @@ struct CatalogLiveActivityContainerScenario: View {
 }
 
 struct CatalogLiveActivityContentScenario: View {
+    @Environment(\.catalogLiveActivityDemo) private var demo
+    @State private var top = 12.0
+    @State private var horizontalOffset = 0.0
+    @State private var capsuleWidth = 126.0
+    @State private var capsuleHeight = 37.0
+    @State private var expandedWidth = 350.0
+    @State private var savedPlacementAvailable = false
+
     private enum Example: String, CaseIterable {
         case audioRecording = "음성 녹음"
         case videoRecording = "영상 녹화"
@@ -92,6 +100,63 @@ struct CatalogLiveActivityContentScenario: View {
                 Text("예시 동작: \(lastAction)")
                     .typography(Typography.footnote)
             }
+            if let demo {
+                Button("Dynamic Island 위치에 표시") {
+                    if let values = demo.savedValues() {
+                        demo.show(values, state: state)
+                    }
+                }
+                .disabled(!savedPlacementAvailable)
+                Button("표시 닫기") { demo.dismiss() }
+                DisclosureGroup("이 기기 위치 보정") {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("빨간 테두리를 실제 위치에 맞춘 뒤 저장해 주세요.")
+                            .typography(Typography.footnote)
+                        calibrationSlider("상단", value: $top, range: 0...100)
+                        calibrationSlider("가로 오프셋", value: $horizontalOffset, range: -60...60)
+                        calibrationSlider("너비", value: $capsuleWidth, range: 80...180)
+                        calibrationSlider("높이", value: $capsuleHeight, range: 20...60)
+                        calibrationSlider("펼친 너비", value: $expandedWidth, range: 250...420)
+                        Button("임시 위치 미리보기") {
+                            demo.show(values, state: state, expanded: false)
+                        }
+                        Button("이 기기 위치 저장") {
+                            demo.save(values)
+                            savedPlacementAvailable = true
+                        }
+                    }
+                }
+            }
+        }
+        .onAppear {
+            if let values = demo?.savedValues() {
+                top = values[0]
+                horizontalOffset = values[1]
+                capsuleWidth = values[2]
+                capsuleHeight = values[3]
+                expandedWidth = values[4]
+                savedPlacementAvailable = true
+            }
+        }
+        .onChange(of: values) {
+            if demo?.isCalibrating == true {
+                demo?.show(values, state: state, expanded: false)
+            }
+        }
+        .onDisappear { demo?.dismiss() }
+    }
+
+    private var values: [Double] {
+        [top, horizontalOffset, capsuleWidth, capsuleHeight, expandedWidth]
+    }
+
+    private func calibrationSlider(
+        _ label: String, value: Binding<Double>, range: ClosedRange<Double>
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("\(label): \(Int(value.wrappedValue)) pt")
+                .typography(Typography.footnote)
+            Slider(value: value, in: range, step: 1)
         }
     }
 
