@@ -20,6 +20,6 @@ LiveActivityContainer {
 
 ## 앱 안에서 표시
 
-`AnimatedLiveActivityContainer`는 접힌 캡슐과 펼친 콘텐츠 사이의 전환을 표현합니다. 전체 창을 채우는 뷰에 `liveActivityOverlay`를 적용하고, 확인된 기기의 창 상단 기준 좌표를 `LiveActivityPlacement`로 전달합니다. 위치가 없거나 가로 화면이면 표시하지 않습니다. 표시 여부, 펼침 상태와 콘텐츠 동작은 호출부에서 관리합니다.
+`AnimatedLiveActivityContainer`는 접힌 캡슐과 펼친 콘텐츠 사이의 전환을 표현합니다. 전체 창을 채우는 뷰에 `liveActivityOverlay`를 적용하고, 창 상단 기준 좌표를 `LiveActivityPlacement`로 전달합니다. `forDevice(identifier:)`는 [safearea.info](https://safearea.info/)의 세로 화면 수치를 사용하며, 실기기에서 조정한 값이 있으면 그 값을 우선할 수 있습니다. 위치가 없거나 가로 화면이면 표시하지 않습니다. 표시 여부, 펼침 상태와 콘텐츠 동작은 호출부에서 관리합니다.
 
 카탈로그의 **05 Live Activity**에서 상단 표시를 확인하고 기기별 위치를 보정할 수 있습니다. 확인된 iPhone 18 Pro Max 위치는 `LiveActivityPlacement.iPhone18ProMax`로 제공하며, 나머지 모델은 직접 보정해 저장한 뒤 표시할 수 있습니다. 이 위치는 시스템 Dynamic Island를 제어하는 값이 아닙니다.
