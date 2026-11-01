@@ -50,7 +50,7 @@ extension InputState {
     var borderColor: Color {
         switch self {
         case .focused: return Color(.General.Border.focused)
-        case .error: return Color(.General.Feedback.Error.foreground)
+        case .error: return Color(.General.Feedback.Error.border)
         case .empty, .filled, .disabled: return Color(.General.Border.`default`)
         }
     }
@@ -118,7 +118,7 @@ public struct FormTextFieldStyle: TextFieldStyle {
         switch resolvedSize {
         case .small, .medium:
             return 44
-        case .large:
+        case .large, .extraLarge:
             return 52
         }
     }
@@ -174,7 +174,7 @@ private struct LabcordTextFieldBody<Label: View>: View {
         switch size {
         case .small, .medium:
             return Typography.subheadline
-        case .large:
+        case .large, .extraLarge:
             return Typography.body
         }
     }

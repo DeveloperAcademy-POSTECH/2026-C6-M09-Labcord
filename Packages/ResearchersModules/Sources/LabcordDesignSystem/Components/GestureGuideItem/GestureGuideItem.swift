@@ -38,7 +38,7 @@ public struct GestureGuideItem<Media: View>: View {
     private var arrangedContent: some View {
         switch layout {
         case .portrait:
-            VStack(spacing: LayoutTokens.spacing10) {
+            VStack(spacing: LayoutTokens.spacing8) {
                 gestureMedia
                 textContent
             }

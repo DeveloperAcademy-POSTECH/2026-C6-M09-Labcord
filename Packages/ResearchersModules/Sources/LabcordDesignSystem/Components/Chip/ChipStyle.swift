@@ -112,7 +112,7 @@ public struct Chip: View {
                     if let leadingIcon {
                         LabcordIconArtwork(
                             icon: leadingIcon,
-                            size: resolvedSize == .large ? 24 : LabcordChipMetrics.leadingIconSize,
+                            size: usesLargeMetrics ? 24 : LabcordChipMetrics.leadingIconSize,
                             relativeTo: resolvedTextStyle
                         )
                     }
@@ -126,7 +126,7 @@ public struct Chip: View {
                 Button(action: onDismiss) {
                     LabcordIconArtwork(
                         icon: .x,
-                        size: resolvedSize == .large ? 24 : LabcordChipMetrics.dismissIconSize,
+                        size: usesLargeMetrics ? 24 : LabcordChipMetrics.dismissIconSize,
                         relativeTo: resolvedTextStyle
                     )
                 }
@@ -138,7 +138,7 @@ public struct Chip: View {
 
     private var resolvedTextStyle: Font.TextStyle {
         switch resolvedSize {
-        case .large:
+        case .large, .extraLarge:
             return .body
         case .small, .medium:
             return .subheadline
@@ -147,6 +147,10 @@ public struct Chip: View {
 
     private var resolvedSize: ComponentSize {
         size ?? ComponentSize(controlSize)
+    }
+
+    private var usesLargeMetrics: Bool {
+        resolvedSize == .large || resolvedSize == .extraLarge
     }
 }
 
@@ -273,6 +277,10 @@ private struct LabcordChipInlineToggleStyle: ToggleStyle {
     return VStack(alignment: .leading, spacing: 12) {
         Chip(isSelected: $isSelected, label: "실험 기록")
         Toggle("선택 칩", isOn: $isSelected).toggleStyle(.labcordChip(style: .outline))
+        Toggle("약한 솔리드", isOn: $isSelected)
+            .toggleStyle(.labcordChip(style: .solid, emphasis: .weak))
+        Toggle("약한 외곽선", isOn: $isSelected)
+            .toggleStyle(.labcordChip(style: .outline, emphasis: .weak))
         Button("버튼 칩") {}.buttonStyle(.labcordChip())
     }
 }

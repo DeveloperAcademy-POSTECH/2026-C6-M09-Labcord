@@ -81,7 +81,7 @@ public struct Accordion<Content: View>: View {
                         size: 20,
                         relativeTo: .callout
                     )
-                    .foregroundStyle(countColor)
+                    .foregroundStyle(iconColor)
                     .rotationEffect(.degrees(isOpen ? 180 : 0))
                 }
                 .contentShape(Rectangle())
@@ -129,6 +129,12 @@ public struct Accordion<Content: View>: View {
     }
 
     private var countColor: Color {
+        state == .disabled
+            ? Color(.General.Label.disabled)
+            : Color(.General.Label.tertiary)
+    }
+
+    private var iconColor: Color {
         state == .disabled
             ? Color(.General.Label.disabled)
             : Color(.General.Label.secondary)

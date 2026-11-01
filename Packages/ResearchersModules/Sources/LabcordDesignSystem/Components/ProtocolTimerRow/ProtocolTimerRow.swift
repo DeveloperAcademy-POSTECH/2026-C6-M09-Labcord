@@ -1,25 +1,32 @@
 import SwiftUI
 
 public struct ProtocolTimerRow: View {
+    public enum Rows: Sendable {
+        case one
+        case two
+    }
+
     private let duration: Duration
+    private let rows: Rows
     private let onEdit: () -> Void
 
-    public init(_ duration: Duration, onEdit: @escaping () -> Void) {
-        self.init(duration: duration, onEdit: onEdit)
+    public init(_ duration: Duration, rows: Rows = .one, onEdit: @escaping () -> Void) {
+        self.init(duration: duration, rows: rows, onEdit: onEdit)
     }
 
     public init(
         duration: Duration = .seconds(600),
+        rows: Rows = .one,
         onEdit: @escaping () -> Void = {}
     ) {
         self.duration = duration
+        self.rows = rows
         self.onEdit = onEdit
     }
 
     public var body: some View {
         HStack(spacing: 0) {
-            Text(duration, format: .labcordDuration)
-                .typography(Typography.body)
+            durationContent
                 .foregroundStyle(Color(.General.Label.primary))
                 .contentTransition(.numericText())
                 .labcordMotion(.state, value: duration)
@@ -32,21 +39,37 @@ public struct ProtocolTimerRow: View {
             .buttonStyle(.labcordIcon(.quaternary, size: .medium))
             .accessibilityLabel(Text("타이머 수정"))
         }
-        .padding(.leading, LayoutTokens.spacing12)
-        .padding(.trailing, LayoutTokens.spacing8)
-        .padding(.vertical, LayoutTokens.spacing12)
-        .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
+        .padding(LayoutTokens.spacing8)
+        .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
         .background(
             Color(.General.Fill.primary),
             in: RoundedRectangle(cornerRadius: LayoutTokens.radiusSm)
         )
+    }
+
+    @ViewBuilder
+    private var durationContent: some View {
+        switch rows {
+        case .one:
+            Text(duration, format: .labcordDuration)
+                .typography(Typography.body)
+        case .two:
+            let parts = TimerDurationFormatStyle().formattedParts(for: duration)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(parts.value)
+                Text(parts.unit)
+            }
+            .typography(Typography.subheadline)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(parts.text))
+        }
     }
 }
 
 #Preview("프로토콜 타이머 · 기본") {
     _ = FontRegistration.register()
     return ProtocolTimerRow()
-        .frame(width: 179)
+        .frame(width: 120)
         .padding()
 }
 
@@ -62,6 +85,7 @@ public struct ProtocolTimerRow: View {
     _ = FontRegistration.register()
     return VStack {
         ProtocolTimerRow(duration: .seconds(600))
+        ProtocolTimerRow(duration: .seconds(600), rows: .two)
         ProtocolTimerRow(duration: .seconds(86_399))
     }
     .frame(width: 179)

@@ -61,21 +61,21 @@ struct LabcordSelectionIndicator: View {
         switch resolvedSize {
         case .small: 16
         case .medium: 24
-        case .large: 32
+        case .large, .extraLarge: 32
         }
     }
     private var checkSize: CGFloat {
         switch resolvedSize {
         case .small: 12
         case .medium: 14
-        case .large: 18
+        case .large, .extraLarge: 18
         }
     }
     private var dotSize: CGFloat {
         switch resolvedSize {
         case .small: 6
         case .medium: 10
-        case .large: 12
+        case .large, .extraLarge: 12
         }
     }
     private var radioStroke: CGFloat { isSelected ? 1 : (resolvedSize == .small ? 1.5 : 2) }
@@ -95,7 +95,8 @@ struct LabcordSelectionIndicator: View {
 
     private var checkbox: some View {
         let shape = RoundedRectangle(
-            cornerRadius: (resolvedSize == .large ? 8 : 4) * scale, style: .circular
+            cornerRadius: (resolvedSize == .large || resolvedSize == .extraLarge ? 8 : 4) * scale,
+            style: .circular
         )
         return shape
             .fill(Color(.General.Fill.primaryBrand))

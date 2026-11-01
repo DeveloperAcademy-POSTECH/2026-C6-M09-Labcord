@@ -37,7 +37,7 @@ public struct DropdownTriggerLabel: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             LabcordIconArtwork(
-                icon: .caretDown,
+                icon: effectiveState == .open ? .caretUp : .caretDown,
                 size: 16,
                 relativeTo: fontTextStyle
             )
@@ -82,7 +82,7 @@ public struct DropdownTriggerLabel: View {
             return 132
         case .medium:
             return 220
-        case .large:
+        case .large, .extraLarge:
             return 370
         }
     }
@@ -93,7 +93,7 @@ public struct DropdownTriggerLabel: View {
             return 34
         case .medium:
             return 44
-        case .large:
+        case .large, .extraLarge:
             return 52
         }
     }
@@ -108,7 +108,7 @@ public struct DropdownTriggerLabel: View {
             return 7
         case .medium:
             return 11.5
-        case .large:
+        case .large, .extraLarge:
             return 15
         }
     }
@@ -119,7 +119,7 @@ public struct DropdownTriggerLabel: View {
             return Typography.subheadline
         case .medium:
             return Typography.callout
-        case .large:
+        case .large, .extraLarge:
             return Typography.body
         }
     }
@@ -130,7 +130,7 @@ public struct DropdownTriggerLabel: View {
             return .subheadline
         case .medium:
             return .callout
-        case .large:
+        case .large, .extraLarge:
             return .body
         }
     }
@@ -146,7 +146,7 @@ public struct DropdownTriggerLabel: View {
 
     private var fillColor: Color? {
         switch effectiveState {
-        case .disabled: return Color(.General.Fill.secondary)
+        case .disabled: return Color(.General.Fill.disabled)
         case .error: return Color(.General.Feedback.Error.subtle)
         case .default, .filled, .open:
             return nil
@@ -223,4 +223,9 @@ private struct DropdownMenuPressStyle: ButtonStyle {
     return DropdownTrigger(value: "옵션 선택") {
         Button("옵션 1") {}
     }
+}
+
+#Preview("드롭다운 · 열림") {
+    _ = FontRegistration.register()
+    return DropdownTriggerLabel(value: "옵션 선택", state: .open)
 }

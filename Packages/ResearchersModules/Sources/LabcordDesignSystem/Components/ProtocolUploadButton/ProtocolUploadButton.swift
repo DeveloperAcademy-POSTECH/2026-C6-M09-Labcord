@@ -77,8 +77,7 @@ private struct ProtocolUploadButtonStyle: ButtonStyle {
             .clipShape(RoundedRectangle(cornerRadius: LayoutTokens.radiusSm))
             .overlay {
                 RoundedRectangle(cornerRadius: LayoutTokens.radiusSm)
-                    .strokeBorder(Color(.General.Border.focused), lineWidth: 1)
-                    .opacity(state == .selected && isEnabled ? 1 : 0)
+                    .strokeBorder(borderColor ?? .clear, lineWidth: 1)
                     .labcordMotion(.state, value: effectiveState.rawValue)
                     .allowsHitTesting(false)
             }
@@ -101,9 +100,20 @@ private struct ProtocolUploadButtonStyle: ButtonStyle {
         case .selected:
             Color(.General.Fill.selected)
         case .default:
-            Color(.General.Fill.secondary)
+            .clear
         case .disabled:
             Color(.General.Fill.disabled)
+        }
+    }
+
+    private var borderColor: Color? {
+        switch effectiveState {
+        case .selected:
+            Color(.General.Border.focused)
+        case .default:
+            Color(.General.Border.`default`)
+        case .disabled:
+            nil
         }
     }
 }

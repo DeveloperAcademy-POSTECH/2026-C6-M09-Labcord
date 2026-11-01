@@ -42,6 +42,7 @@ public struct IOSButtonStyle: ButtonStyle {
         @Environment(\.controlSize) private var controlSize
         @Environment(\.isEnabled) private var isEnabled
         @ScaledMetric(relativeTo: .body) private var cornerRadiusScale: CGFloat = 1
+        @ScaledMetric(relativeTo: .body) private var extraLargeLoadingSize: CGFloat = 32
 
         let configuration: ButtonStyleConfiguration
         let variant: Variant
@@ -139,7 +140,19 @@ public struct IOSButtonStyle: ButtonStyle {
             }
         }
 
+        @ViewBuilder
         private var loadingIndicator: some View {
+            if resolvedSize == .extraLarge
+                && (variant == .secondary || variant == .tertiary || variant == .accent) {
+                progressIndicator
+                    .scaleEffect(32 / metrics.loadingIndicatorSize.points)
+                    .frame(width: extraLargeLoadingSize, height: extraLargeLoadingSize)
+            } else {
+                progressIndicator
+            }
+        }
+
+        private var progressIndicator: some View {
             ProgressView()
                 .progressViewStyle(
                     .labcord(
@@ -206,6 +219,15 @@ struct LabcordButtonMetrics {
             iconSize = variant == .quaternary || variant == .accent ? 16 : 24
             loadingIndicatorSize = .large
             typography = Typography.body
+        case .extraLarge:
+            height = 66
+            horizontalPadding = LayoutTokens.spacing32
+            verticalPadding = 21
+            spacing = LayoutTokens.spacing10
+            cornerRadius = LayoutTokens.radiusFull
+            iconSize = variant == .primary ? 24 : 32
+            loadingIndicatorSize = .large
+            typography = Typography.title3
         }
     }
 }
@@ -311,6 +333,8 @@ func labcordButtonAppearance(
             .buttonStyle(.labcord(.primary))
         Button("불러오는 중") { }
             .buttonStyle(.labcord(.primary, isLoading: true))
+        Button("아주 큰 버튼", systemImage: "plus") { }
+            .buttonStyle(.labcord(.primary, size: .extraLarge))
     }
     .padding()
 }

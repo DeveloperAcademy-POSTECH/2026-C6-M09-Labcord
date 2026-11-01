@@ -89,7 +89,7 @@ public struct TimelineItem: View {
     }
 
     public var body: some View {
-        HStack(alignment: .top, spacing: LayoutTokens.spacing12) {
+        HStack(alignment: .top, spacing: LayoutTokens.spacing20) {
             Text(timestamp)
                 .typography(Typography.body)
                 .foregroundStyle(Color(.General.Label.secondary))
