@@ -38,6 +38,7 @@ struct ExperimentListFeature {
     }
 
     @Dependency(\.experimentClient) var experimentClient
+    @Dependency(\.timerCompletionNotificationClient) var timerCompletionNotificationClient
 
     private nonisolated enum CancelID {
         case load
@@ -131,7 +132,9 @@ struct ExperimentListFeature {
                 }
                 state.isDeleting = false
                 state.deletionID = nil
-                return .none
+                return .run { _ in
+                    await timerCompletionNotificationClient.cancelForExperiment(identifier)
+                }
 
             case let .deleteFailed(identifier):
                 guard state.isDeleting, state.deletionID == identifier else { return .none }
