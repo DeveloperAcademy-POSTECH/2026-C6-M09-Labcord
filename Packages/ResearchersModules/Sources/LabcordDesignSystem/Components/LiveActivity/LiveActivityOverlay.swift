@@ -58,11 +58,18 @@ public extension View {
         placement: LiveActivityPlacement?,
         isPresented: Bool,
         isExpanded: Bool,
+        onDismiss: (() -> Void)? = nil,
         @ViewBuilder content: @escaping () -> Content
     ) -> some View {
         overlay(alignment: .top) {
             GeometryReader { geometry in
                 if let placement, isPresented, geometry.size.height > geometry.size.width {
+                    if let onDismiss {
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .onTapGesture(perform: onDismiss)
+                            .accessibilityHidden(true)
+                    }
                     AnimatedLiveActivityContainer(
                         isExpanded: isExpanded,
                         collapsedSize: placement.collapsedSize,
@@ -75,6 +82,7 @@ public extension View {
                     .frame(maxWidth: .infinity, alignment: .top)
                     .offset(x: placement.horizontalOffset)
                     .padding(.top, placement.top)
+                    .accessibilityAction(.escape) { onDismiss?() }
                 }
             }
             .ignoresSafeArea(.container, edges: .top)
