@@ -13,38 +13,3 @@ struct LabcordDesignSystemApp: App {
         }
     }
 }
-
-private struct CatalogRootView: View {
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var liveActivityDemo = CatalogLiveActivityDemo()
-
-    var body: some View {
-        NavigationStack {
-            DesignSystemCatalog()
-        }
-        .toolbarVisibility(
-            liveActivityDemo.isPresented && liveActivityDemo.placement != nil
-                && verticalSizeClass != .compact ? .hidden : .automatic,
-            for: .statusBar
-        )
-        .animation(
-            reduceMotion ? nil : .easeInOut(duration: 0.3),
-            value: liveActivityDemo.isPresented
-        )
-        .environment(\.catalogLiveActivityDemo, liveActivityDemo)
-        .liveActivityOverlay(
-            placement: liveActivityDemo.placement,
-            isPresented: liveActivityDemo.isPresented,
-            isExpanded: liveActivityDemo.isExpanded,
-            onDismiss: liveActivityDemo.dismiss
-        ) {
-            LiveActivityContent(
-                state: liveActivityDemo.state,
-                isVideoStopComplete: liveActivityDemo.isVideoStopComplete,
-                onStop: { liveActivityDemo.dismiss() },
-                onRetry: { liveActivityDemo.dismiss() }
-            )
-        }
-    }
-}
