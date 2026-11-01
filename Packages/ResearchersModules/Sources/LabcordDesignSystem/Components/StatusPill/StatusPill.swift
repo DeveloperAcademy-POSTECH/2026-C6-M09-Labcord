@@ -12,7 +12,7 @@ public struct StatusPill: View {
             messageContent.frame(minWidth: 195)
             messageContent
         }
-            .frame(minHeight: 46)
+            .frame(minHeight: 45)
             .background {
                 pillShape
                     .fill(.ultraThinMaterial)
@@ -25,15 +25,20 @@ public struct StatusPill: View {
     }
 
     private var messageContent: some View {
-        Text(message)
-            .typography(Typography.bodySemiBold)
-            .foregroundStyle(Color(.Experiment.Label.primary))
-            .contentTransition(.opacity)
-            .labcordMotion(.state, value: message)
-            .multilineTextAlignment(.leading)
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, LayoutTokens.spacing20)
-            .padding(.vertical, LayoutTokens.spacing12)
+        HStack(spacing: LayoutTokens.spacing12) {
+            Text(message)
+                .typography(Typography.calloutSemiBold)
+                .foregroundStyle(Color(.Experiment.Label.primary))
+                .contentTransition(.opacity)
+                .labcordMotion(.state, value: message)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+            IconArtwork(icon: .checkBold, size: 20)
+                .foregroundStyle(Color(.Experiment.Label.primary))
+                .accessibilityHidden(true)
+        }
+        .padding(.horizontal, LayoutTokens.spacing20)
+        .padding(.vertical, LayoutTokens.spacing12)
     }
 
     private var pillShape: RoundedRectangle {
