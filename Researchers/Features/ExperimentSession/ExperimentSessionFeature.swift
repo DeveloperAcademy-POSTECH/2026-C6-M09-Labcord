@@ -13,7 +13,7 @@ struct ExperimentSessionFeature {
         
         var permissions = SessionPermissionsFeature.State()
         var voice = VoiceRecordingFeature.State()
-        var capture = CameraCaptureFeature.State()
+        var capture: CameraCaptureFeature.State
         var permissionRequestGeneration = 0
         var isReturningHome = false
         var exitID: UUID?
@@ -24,6 +24,7 @@ struct ExperimentSessionFeature {
         init(experimentID: UUID) {
             self.experimentID = experimentID
             self.timer = SessionTimerFeature.State(experimentID: experimentID)
+            self.capture = CameraCaptureFeature.State(experimentID: experimentID)
         }
 
         var isReady: Bool {
