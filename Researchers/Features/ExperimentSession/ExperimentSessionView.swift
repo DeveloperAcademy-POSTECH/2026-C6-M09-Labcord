@@ -49,7 +49,7 @@ struct ExperimentSessionView: View {
                     let frame = verticalSizeClass == .compact
                         ? anchor.map { geometry[$0] } ?? CGRect(origin: .zero, size: geometry.size)
                         : CGRect(origin: .zero, size: geometry.size)
-                    CameraPreviewView(connector: connector)
+                    CameraPreviewView(connector: connector, showsHandOverlay: false)
                         .frame(width: frame.width, height: frame.height)
                         .clipShape(
                             RoundedRectangle(

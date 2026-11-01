@@ -10,15 +10,17 @@ import UIKit
 
 public struct CameraPreviewView: UIViewRepresentable {
     public let connector: CameraPreviewConnector
+    public let showsHandOverlay: Bool
 
-    public init(connector: CameraPreviewConnector) {
+    public init(connector: CameraPreviewConnector, showsHandOverlay: Bool = true) {
         self.connector = connector
+        self.showsHandOverlay = showsHandOverlay
     }
 
     public func makeUIView(context: Context) -> some UIView {
         let view = PreviewUIView()
         view.connector = connector
-        connector.attach(to: view)
+        connector.attach(to: view, showsHandOverlay: showsHandOverlay)
         return view
     }
 
@@ -28,7 +30,7 @@ public struct CameraPreviewView: UIViewRepresentable {
             view.connector?.detach(from: view)
         }
         view.connector = connector
-        connector.attach(to: view)
+        connector.attach(to: view, showsHandOverlay: showsHandOverlay)
     }
 
     public static func dismantleUIView(_ uiView: UIViewType, coordinator: ()) {
