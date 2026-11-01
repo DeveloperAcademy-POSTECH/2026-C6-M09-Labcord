@@ -267,7 +267,6 @@ public struct RecordBottomSheet: View {
             .frame(maxWidth: .infinity)
             .disabled(!canSave)
         }
-        .padding(.horizontal, -6)
         .frame(maxWidth: .infinity)
     }
 

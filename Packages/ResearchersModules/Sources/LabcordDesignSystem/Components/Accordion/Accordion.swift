@@ -147,7 +147,7 @@ public struct Accordion<Content: View>: View {
 
     private var backgroundColor: Color {
         isDisabled
-            ? Color(.General.Fill.secondary)
+            ? Color(.General.Fill.disabled)
             : Color(.General.Background.Grouped.secondary)
     }
 

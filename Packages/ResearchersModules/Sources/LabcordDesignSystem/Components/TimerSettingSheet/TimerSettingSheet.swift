@@ -70,7 +70,6 @@ public struct TimerSettingSheet: View {
                 }
                 .buttonStyle(.labcord(.primary, size: .large))
             }
-            .padding(.horizontal, -6)
         }
         .padding(.top, LayoutTokens.spacing16)
         .padding(.horizontal, LayoutTokens.spacing16)

@@ -28,7 +28,7 @@ public struct GestureGuideItem<Media: View>: View {
             .padding(LayoutTokens.spacing12)
             .frame(idealWidth: width, maxWidth: width)
             .background(
-                Color(.Experiment.Fill.inverse),
+                Color(.Experiment.Background.Grouped.primary),
                 in: RoundedRectangle(cornerRadius: LayoutTokens.radiusMd)
             )
             .accessibilityElement(children: .contain)
@@ -69,7 +69,7 @@ public struct GestureGuideItem<Media: View>: View {
                 .typography(Typography.subheadline)
                 .frame(maxWidth: .infinity, alignment: textAlignment)
         }
-        .foregroundStyle(Color(.Experiment.Label.inverse))
+        .foregroundStyle(Color(.Experiment.Label.primary))
         .multilineTextAlignment(layout == .portrait ? .center : .leading)
         .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: .infinity, alignment: textAlignment)
