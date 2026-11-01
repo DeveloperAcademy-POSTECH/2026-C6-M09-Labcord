@@ -41,19 +41,35 @@ struct VoiceRecordingView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                     if store.phase == .finished {
-                        HStack {
-                            Spacer()
+                        HStack(spacing: 12) {
                             Button {
                                 store.send(.retakeRequested)
                             } label: {
-                                Label("다시하기", systemImage: "arrow.uturn.backward")
-                                    .font(.headline)
-                                    .padding(.horizontal, 24)
+                                Label("다시 녹음", systemImage: "arrow.uturn.backward")
+                                    .font(.subheadline.weight(.semibold))
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.8)
+                                    .frame(maxWidth: .infinity)
                                     .frame(height: 52)
                                     .background(.white, in: Capsule())
                                     .foregroundStyle(.black)
                             }
-                            .accessibilityLabel("음성 다시 녹음")
+                            .disabled(store.isSaving)
+
+                            Button(store.isSaving ? "저장 중..." : "지금 저장") {
+                                store.send(.saveRequested)
+                            }
+                            .font(.subheadline.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(.blue, in: Capsule())
+                            .foregroundStyle(.white)
+                            .disabled(store.isSaving)
+                        }
+                        if store.isAutoSavePending {
+                            Text("3초 후 자동 저장돼요.")
+                                .font(.subheadline)
+                                .frame(maxWidth: .infinity)
                         }
                     } else {
                         HStack {
@@ -85,6 +101,22 @@ struct VoiceRecordingView: View {
         }
         .onAppear {
             store.send(.overlayAppeared)
+        }
+        .alert(
+            "음성 저장 실패",
+            isPresented: Binding(
+                get: { store.saveError != nil },
+                set: { if !$0 { store.send(.saveErrorDismissed) } }
+            )
+        ) {
+            Button("다시 시도") {
+                store.send(.saveRequested)
+            }
+            Button("닫기", role: .cancel) {
+                store.send(.saveErrorDismissed)
+            }
+        } message: {
+            Text(store.saveError ?? "음성을 저장하지 못했습니다.")
         }
     }
 

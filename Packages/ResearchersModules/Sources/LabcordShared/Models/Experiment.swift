@@ -52,4 +52,20 @@ public final class Experiment {
         self.records = records
         self.statusHistory = [ExperimentStatusEntry(status: status, date: createdAt)]
     }
+
+    public func recordExit(status: ExperimentStatus, at date: Date, entryID: UUID) {
+        guard status == .inProgress || status == .paused else { return }
+        guard !statusHistory.contains(where: { $0.id == entryID }) else { return }
+        self.status = status
+        statusHistory.append(
+            ExperimentStatusEntry(id: entryID, status: status, date: date)
+        )
+    }
+
+    public func complete(at date: Date) {
+        guard status != .completed else { return }
+        endedAt.append(date)
+        status = .completed
+        statusHistory.append(ExperimentStatusEntry(status: .completed, date: date))
+    }
 }

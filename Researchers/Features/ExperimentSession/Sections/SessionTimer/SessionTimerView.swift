@@ -32,7 +32,7 @@ struct SessionTimerView: View {
         let timerItems = timerSeconds.enumerated().map {
             TimerTileItem(id: $0.offset, seconds: $0.element)
         }
-        let canStartTimer = timerCollection.canStartTimer
+        let canStartTimer = timerCollection.canStartTimer && store.canModifyTimers
         let isFreeMode = store.mode == .free
 
         return VStack(alignment: .leading, spacing: 16) {
@@ -356,6 +356,7 @@ private extension SessionTimerView {
                     }
                 }
                 .padding(.horizontal, 12)
+                .disabled(!store.canModifyTimers)
             }
     }
 }

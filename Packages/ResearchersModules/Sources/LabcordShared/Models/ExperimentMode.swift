@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum ExperimentMode: String, Codable {
+public enum ExperimentMode: String, Codable, Sendable {
     case free
     case procedure
 }

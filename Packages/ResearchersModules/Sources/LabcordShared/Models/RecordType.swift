@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum RecordType: String, Codable {
+public enum RecordType: String, Codable, Sendable {
     case photo
     case audio
     case video

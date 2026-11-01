@@ -39,13 +39,15 @@ struct LandscapeSessionView: View {
 
 #Preview {
     LandscapeSessionView(
-        store: Store(initialState: CameraCaptureFeature.State()) {
+        store: Store(initialState: CameraCaptureFeature.State(experimentID: UUID())) {
             CameraCaptureFeature()
         },
         timerStore: Store(initialState: SessionTimerFeature.State()) {
             SessionTimerFeature()
         },
-        sessionStore: Store(initialState: ExperimentSessionFeature.State()) {
+        sessionStore: Store(
+            initialState: ExperimentSessionFeature.State(experimentID: UUID())
+        ) {
             ExperimentSessionFeature()
         }
     )

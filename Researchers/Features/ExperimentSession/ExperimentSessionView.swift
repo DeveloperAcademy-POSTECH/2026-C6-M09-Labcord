@@ -14,8 +14,9 @@ struct ExperimentSessionView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     let store: StoreOf<ExperimentSessionFeature>
-    @State private var timerStore = Store(initialState: SessionTimerFeature.State()) {
-        SessionTimerFeature()
+
+    private var timerStore: StoreOf<SessionTimerFeature> {
+        store.scope(state: \.timer, action: \.timer)
     }
 
     private var captureStore: StoreOf<CameraCaptureFeature> {
@@ -71,16 +72,25 @@ struct ExperimentSessionView: View {
         .navigationBarBackButtonHidden()
         .overlay {
             if let data = captureStore.capturedPhotoData {
-                CapturedPhotoView(photoData: data) {
-                    captureStore.send(.retakeRequested)
-                }
+                CapturedPhotoView(
+                    photoData: data,
+                    isSaving: captureStore.photo.isSaving,
+                    onRetake: { captureStore.send(.photo(.retakeRequested)) },
+                    onSave: { captureStore.send(.photo(.saveRequested)) }
+                )
             }
         }
         .overlay {
-            if case let .preview(url) = captureStore.videoPhase {
-                CapturedVideoView(videoURL: url) {
-                    captureStore.send(.videoRetakeRequested)
-                }
+            if case let .preview(url) = captureStore.videoPhase,
+               let recordID = captureStore.video.recordID {
+                CapturedVideoView(
+                    videoURL: url,
+                    isSaving: captureStore.video.isSaving,
+                    showAutoSaveMessage: captureStore.video.isAutoSavePending,
+                    onRetake: { captureStore.send(.video(.retakeRequested)) },
+                    onSave: { captureStore.send(.video(.saveRequested)) },
+                    onPlaybackFinished: { captureStore.send(.video(.playbackFinished(recordID))) }
+                )
                 .id(url)
             }
         }
@@ -99,13 +109,19 @@ struct ExperimentSessionView: View {
                     }
             }
         }
+        .task {
+            await store.send(.loadDetail).finish()
+        }
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
             captureStore.send(.cameraViewAppeared)
         }
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
-            if !store.isReturningHome {
+            if store.isReturningHome {
+                captureStore.send(.video(.cancelRequested))
+                voiceStore.send(.closeRequested)
+            } else {
                 captureStore.send(.cameraViewDisappeared)
             }
         }
@@ -159,11 +175,78 @@ struct ExperimentSessionView: View {
         } message: {
             Text(voiceStore.errorMessage ?? "")
         }
+        .alert(
+            "사진 저장 실패",
+            isPresented: Binding(
+                get: { captureStore.photo.saveError != nil },
+                set: { if !$0 { captureStore.send(.photo(.saveErrorDismissed)) } }
+            )
+        ) {
+            Button("다시 시도") {
+                captureStore.send(.photo(.saveRequested))
+            }
+            Button("닫기", role: .cancel) {
+                captureStore.send(.photo(.saveErrorDismissed))
+            }
+        } message: {
+            Text(captureStore.photo.saveError ?? "사진을 저장하지 못했습니다.")
+        }
+        .alert(
+            "영상 저장 실패",
+            isPresented: Binding(
+                get: { captureStore.video.saveError != nil },
+                set: { if !$0 { captureStore.send(.video(.saveErrorDismissed)) } }
+            )
+        ) {
+            Button("다시 시도") {
+                captureStore.send(.video(.saveRequested))
+            }
+            Button("닫기", role: .cancel) {
+                captureStore.send(.video(.saveErrorDismissed))
+            }
+        } message: {
+            Text(captureStore.video.saveError ?? "영상을 저장하지 못했습니다.")
+        }
+        .alert(
+            "타이머 저장 실패",
+            isPresented: Binding(
+                get: { timerStore.saveFailed },
+                set: { _ in }
+            )
+        ) {
+            Button("다시 시도") {
+                timerStore.send(.retrySaveTapped)
+            }
+        } message: {
+            Text("타이머 기록을 저장하지 못했습니다.")
+        }
+        .alert(
+            "실험 일시정지 저장 실패",
+            isPresented: Binding(
+                get: { store.exitFailed },
+                set: { if !$0 { store.send(.dismissHomeExitFailure) } }
+            )
+        ) {
+            Button("다시 시도") {
+                store.send(.returnHomeTapped)
+            }
+            Button("닫기", role: .cancel) {
+                store.send(.dismissHomeExitFailure)
+            }
+        } message: {
+            Text("실험 상태를 저장하지 못했습니다.")
+        }
     }
 }
 
 #Preview {
-    ExperimentSessionView(store: Store(initialState: ExperimentSessionFeature.State()) {
-        ExperimentSessionFeature()
-    })
+    ExperimentSessionView(
+        store: Store(
+            initialState: ExperimentSessionFeature.State(
+                experimentID: UUID()
+            )
+        ) {
+            ExperimentSessionFeature()
+        }
+    )
 }
