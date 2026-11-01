@@ -52,7 +52,8 @@ final class CatalogLiveActivityDemo {
         self.state = state
         placement = LiveActivityPlacement(
             top: values[0], horizontalOffset: values[1],
-            collapsedSize: CGSize(width: values[2], height: values[3]), expandedWidth: values[4]
+            collapsedSize: CGSize(width: values[2], height: values[3]),
+            expandedWidth: values[4], expandedHorizontalInset: values[4] == 370 ? 16 : nil
         )
         isExpanded = false
         isCalibrating = !expanded
