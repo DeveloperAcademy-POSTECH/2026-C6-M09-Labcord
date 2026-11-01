@@ -44,7 +44,7 @@ public struct LiveActivityControlButton: View {
                     .foregroundStyle(
                         kind == .retry || kind == .audioStop
                             ? Color(.General.Brand.primary)
-                            : Color("General/Recording/Active", bundle: .module)
+                            : Color(.General.Recording.Active.color)
                     )
             }
             .frame(width: 48, height: 48)

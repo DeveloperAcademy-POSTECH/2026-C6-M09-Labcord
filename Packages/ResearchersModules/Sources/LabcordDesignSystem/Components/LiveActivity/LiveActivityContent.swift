@@ -47,7 +47,7 @@ public struct LiveActivityContent: View {
                     LabcordIconArtwork(icon: .dot, size: 22)
                     Text(elapsed).typography(Typography.body)
                 }
-                .foregroundStyle(Color("General/Recording/Active", bundle: .module))
+                .foregroundStyle(Color(.General.Recording.Active.color))
                 Text("영상 녹화 중")
                     .typography(Typography.title3)
                     .foregroundStyle(Color(.General.Label.light))
