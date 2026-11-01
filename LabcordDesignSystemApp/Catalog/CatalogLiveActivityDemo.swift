@@ -10,6 +10,7 @@ final class CatalogLiveActivityDemo {
     var placement: LiveActivityPlacement?
 
     private var transitionTask: Task<Void, Never>?
+    private var isDismissing = false
     var devicePlacement: LiveActivityPlacement? {
         LiveActivityPlacement.forDevice(identifier: Self.modelIdentifier)
     }
@@ -17,6 +18,7 @@ final class CatalogLiveActivityDemo {
     func show(state: LiveActivityContent.State) {
         guard let devicePlacement else { return }
         transitionTask?.cancel()
+        isDismissing = false
         self.state = state
         placement = devicePlacement
         isExpanded = false
@@ -29,12 +31,15 @@ final class CatalogLiveActivityDemo {
     }
 
     func dismiss() {
+        guard isPresented, !isDismissing else { return }
+        isDismissing = true
         transitionTask?.cancel()
         isExpanded = false
         transitionTask = Task {
             try? await Task.sleep(for: .milliseconds(500))
             guard !Task.isCancelled else { return }
             isPresented = false
+            isDismissing = false
         }
     }
 
