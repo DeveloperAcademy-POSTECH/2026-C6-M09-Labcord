@@ -10,4 +10,4 @@
 - 변경 시 독립 앱 Debug·Release 빌드를 확인합니다.
 - 빌드·동작 검증은 [verify-change](../../verify-change/SKILL.md)를 따릅니다. 전수 시연표·과거 검증 일지를 추가하지 않습니다.
 
-- Dynamic Island 관련 예시는 05 Live Activity에 있습니다. 상단 표시는 기기별 위치를 보정한 뒤 사용할 수 있습니다.
+- Dynamic Island 관련 예시는 05 Live Activity에 있습니다. 상단 표시는 공개된 기기별 위치를 사용합니다.
