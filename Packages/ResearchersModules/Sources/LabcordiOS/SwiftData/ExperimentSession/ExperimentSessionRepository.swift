@@ -92,8 +92,28 @@ final class ExperimentSessionRepository {
         )
     }
 
+    func saveAudio(
+        experimentID: UUID,
+        id: UUID,
+        recordedAt: Date,
+        sourceURL: URL,
+        transcript: String
+    ) throws {
+        try mediaStore.saveAudio(
+            experimentID: experimentID,
+            id: id,
+            recordedAt: recordedAt,
+            sourceURL: sourceURL,
+            transcript: transcript
+        )
+    }
+
     func cancelVideoSave(experimentID: UUID, id: UUID, sourceURL: URL) throws {
         try mediaStore.cancelVideoSave(experimentID: experimentID, id: id, sourceURL: sourceURL)
+    }
+
+    func cancelAudioSave(experimentID: UUID, id: UUID, sourceURL: URL) throws {
+        try mediaStore.cancelAudioSave(experimentID: experimentID, id: id, sourceURL: sourceURL)
     }
 
     func complete(id: UUID, at date: Date) throws {
