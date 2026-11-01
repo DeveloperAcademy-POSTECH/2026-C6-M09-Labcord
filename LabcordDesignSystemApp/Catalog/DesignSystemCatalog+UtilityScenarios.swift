@@ -55,7 +55,12 @@ struct CatalogControlLoadingScenario: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             ProgressView()
-                .progressViewStyle(.labcord(size: size))
+                .progressViewStyle(
+                    .labcord(
+                        size: size,
+                        foreground: Color(.generalLabelPrimary)
+                    )
+                )
                 .accessibilityLabel(Text("로딩 중"))
                 .accessibilityIdentifier("catalog.scenario.loading.preview")
             Picker("크기", selection: $size) {
