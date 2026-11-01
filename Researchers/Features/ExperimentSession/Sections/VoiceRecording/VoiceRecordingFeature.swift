@@ -26,6 +26,12 @@ struct VoiceRecordingFeature {
         var transcript = ""
         var recording: SpeechRecording?
         var errorMessage: String?
+        let experimentID: UUID
+        var recordID: UUID?
+        var recordedAt: Date?
+        var isSaving = false
+        var saveError: String?
+        var isAutoSavePending = false
     }
 
     enum Action: Equatable {
@@ -39,6 +45,12 @@ struct VoiceRecordingFeature {
         case stopRequested
         case stopped(UUID, SpeechRecording?)
         case retakeRequested
+        case saveRequested
+        case autoSaveElapsed(UUID)
+        case saved(UUID)
+        case saveFailed(UUID, String)
+        case saveErrorDismissed
+        case cancelCleanupFailed(String)
         case closeRequested
         case errorDismissed
     }
@@ -46,9 +58,14 @@ struct VoiceRecordingFeature {
     private nonisolated enum CancelID: Hashable, Sendable {
         case voiceStream
         case voiceStop
+        case autoSave
+        case save
     }
 
     @Dependency(\.speechRecordingClient) var speechRecordingClient
+    @Dependency(\.experimentClient) var experimentClient
+    @Dependency(\.date.now) var now
+    @Dependency(\.uuid) var uuid
 
     var body: some Reducer<State, Action> {
         Reduce { state, action in
@@ -56,9 +73,9 @@ struct VoiceRecordingFeature {
             case .prepareRequested:
                 guard state.phase == .hidden else { return .none }
                 state.transcript = ""
-                state.recording = nil
+                resetReview(state: &state)
                 state.errorMessage = nil
-                state.sessionID = UUID()
+                state.sessionID = uuid()
                 state.phase = .starting
                 return .none
 
@@ -89,6 +106,7 @@ struct VoiceRecordingFeature {
             case let .started(id):
                 guard id == state.sessionID, state.phase == .starting else { return .none }
                 state.phase = .recording
+                state.recordedAt = now
                 return .none
 
             case let .startPermissionFailed(id, _):
@@ -110,12 +128,15 @@ struct VoiceRecordingFeature {
                         state.transcript = text
                     }
                 case let .finished(recording):
-                    state.transcript = recording.transcript
-                    state.recording = recording
-                    state.phase = .finished
+                    guard state.phase == .recording || state.phase == .stopping else {
+                        return .none
+                    }
+                    return finishRecording(recording, state: &state)
                 case let .failed(message):
                     state.phase = .hidden
                     state.errorMessage = message
+                    resetReview(state: &state)
+                    return .none
                 }
                 return .none
 
@@ -132,34 +153,81 @@ struct VoiceRecordingFeature {
             case let .stopped(id, recording):
                 guard id == state.sessionID, state.phase == .stopping else { return .none }
                 if let recording {
-                    state.recording = recording
-                    state.transcript = recording.transcript
-                    state.phase = .finished
-                } else {
-                    state.phase = .hidden
-                    state.errorMessage = "음성 기록을 완료하지 못했습니다. 다시 시도해 주세요."
+                    return .merge(
+                        finishRecording(recording, state: &state),
+                        .cancel(id: CancelID.voiceStream)
+                    )
                 }
+                state.phase = .hidden
+                state.errorMessage = "녹음하지 못했어요. 하단 마이크 버튼을 눌러 다시 녹음해 주세요."
+                resetReview(state: &state)
                 return .cancel(id: CancelID.voiceStream)
 
             case .retakeRequested:
-                guard state.phase == .finished else { return .none }
-                state.recording = nil
-                state.transcript = ""
+                guard state.phase == .finished, !state.isSaving else { return .none }
+                resetReview(state: &state)
                 state.errorMessage = nil
-                state.sessionID = UUID()
+                state.sessionID = uuid()
                 state.phase = .starting
-                return .send(.startRequested)
+                return .concatenate(
+                    .cancel(id: CancelID.autoSave),
+                    .run { send in
+                        await speechRecordingClient.cancel()
+                        await send(.startRequested)
+                    }
+                )
+
+            case .saveRequested:
+                return saveAudio(state: &state)
+
+            case let .autoSaveElapsed(id):
+                guard state.recordID == id, state.isAutoSavePending else { return .none }
+                return saveAudio(state: &state)
+
+            case let .saved(id):
+                guard state.recordID == id else { return .none }
+                state.phase = .hidden
+                resetReview(state: &state)
+                return .none
+
+            case let .saveFailed(id, message):
+                guard state.recordID == id else { return .none }
+                state.isSaving = false
+                state.saveError = message
+                return .none
+
+            case .saveErrorDismissed:
+                state.saveError = nil
+                return .none
+
+            case let .cancelCleanupFailed(message):
+                state.errorMessage = message
+                return .none
 
             case .closeRequested:
                 guard state.phase != .hidden else { return .none }
+                let savingRecordID = state.isSaving ? state.recordID : nil
+                let sourceURL = state.recording?.audioURL
+                let experimentID = state.experimentID
                 state.phase = .hidden
-                state.sessionID = UUID()
-                state.transcript = ""
-                state.recording = nil
-                return .merge(
+                state.sessionID = uuid()
+                resetReview(state: &state)
+                return .concatenate(
                     .cancel(id: CancelID.voiceStream),
                     .cancel(id: CancelID.voiceStop),
-                    .run { _ in await speechRecordingClient.cancel() }
+                    .cancel(id: CancelID.autoSave),
+                    .cancel(id: CancelID.save),
+                    .run { send in
+                        await speechRecordingClient.cancel()
+                        guard let savingRecordID, let sourceURL else { return }
+                        do {
+                            try await experimentClient.cancelAudioSave(
+                                experimentID, savingRecordID, sourceURL
+                            )
+                        } catch {
+                            await send(.cancelCleanupFailed(error.localizedDescription))
+                        }
+                    }
                 )
 
             case .errorDismissed:
@@ -167,5 +235,68 @@ struct VoiceRecordingFeature {
                 return .none
             }
         }
+    }
+
+    private func finishRecording(
+        _ recording: SpeechRecording,
+        state: inout State
+    ) -> Effect<Action> {
+        let id = uuid()
+        state.recording = recording
+        state.transcript = recording.transcript
+        state.recordID = id
+        state.recordedAt = state.recordedAt ?? now
+        state.phase = .finished
+        state.saveError = nil
+        state.isAutoSavePending = true
+        return .run { send in
+            try await Task.sleep(for: .seconds(3))
+            await send(.autoSaveElapsed(id))
+        }
+        .cancellable(id: CancelID.autoSave, cancelInFlight: true)
+    }
+
+    private func saveAudio(state: inout State) -> Effect<Action> {
+        guard state.phase == .finished,
+              let id = state.recordID,
+              let recordedAt = state.recordedAt,
+              let recording = state.recording,
+              !state.isSaving else { return .none }
+        state.isSaving = true
+        state.isAutoSavePending = false
+        state.saveError = nil
+        let experimentID = state.experimentID
+        return .concatenate(
+            .cancel(id: CancelID.autoSave),
+            .run { send in
+                do {
+                    try Task.checkCancellation()
+                    try await experimentClient.saveAudio(
+                        experimentID,
+                        id,
+                        recordedAt,
+                        recording.audioURL,
+                        recording.transcript
+                    )
+                    try Task.checkCancellation()
+                    await send(.saved(id))
+                } catch is CancellationError {
+                    return
+                } catch {
+                    await send(.saveFailed(id, error.localizedDescription))
+                }
+            }
+            .cancellable(id: CancelID.save)
+        )
+    }
+
+    private func resetReview(state: inout State) {
+        state.transcript = ""
+        state.recording = nil
+        state.recordID = nil
+        state.recordedAt = nil
+        state.isSaving = false
+        state.saveError = nil
+        state.isAutoSavePending = false
     }
 }
