@@ -8,6 +8,9 @@ let experimentBackground = Color("Experiment/Background/Primary", bundle: Labcor
 Text("실험")
     .foregroundStyle(Color("General/Label/Primary", bundle: LabcordDesignSystemResources.bundle))
     .background(background)
+Text("실험 진행")
+    .foregroundStyle(Color("Experiment/Label/Primary", bundle: LabcordDesignSystemResources.bundle))
+    .background(experimentBackground)
 ```
 
 - 색상은 해당 화면에 필요한 General 또는 Experiment 자산을 명시적으로 선택합니다. 배경과 글자색도 각각 지정합니다.
