@@ -50,7 +50,7 @@ public struct TimerTabItem: View {
                 .labcordMotion(.state, value: isSelected)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(LabcordPlainButtonStyle())
+        .buttonStyle(PressFeedbackButtonStyle())
         .accessibilityLabel(Text(title))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
