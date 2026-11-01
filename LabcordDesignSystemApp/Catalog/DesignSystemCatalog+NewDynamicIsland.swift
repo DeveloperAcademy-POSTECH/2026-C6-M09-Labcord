@@ -56,7 +56,7 @@ struct CatalogLiveActivityContentScenario: View {
     @State private var horizontalOffset = 0.0
     @State private var capsuleWidth = 126.0
     @State private var capsuleHeight = 37.0
-    @State private var expandedWidth = 350.0
+    @State private var expandedWidth = 370.0
     @State private var savedPlacementAvailable = false
 
     private enum Example: String, CaseIterable {
