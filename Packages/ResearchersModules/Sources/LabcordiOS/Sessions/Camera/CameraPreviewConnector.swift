@@ -25,8 +25,8 @@ nonisolated public struct CameraPreviewConnector: @unchecked Sendable {
     }
 
     @MainActor
-    public func attach(to view: UIView) {
-        storage.attach(to: view)
+    public func attach(to view: UIView, showsHandOverlay: Bool = true) {
+        storage.attach(to: view, showsHandOverlay: showsHandOverlay)
     }
 
     @MainActor
@@ -59,6 +59,7 @@ nonisolated private final class CameraPreviewStorage: @unchecked Sendable {
     @MainActor private var previewLayer: AVCaptureVideoPreviewLayer?
     @MainActor private var tipLayer: CAShapeLayer?
     @MainActor private var overlayTask: Task<Void, Never>?
+    @MainActor private var showsHandOverlay = true
     @MainActor private var latestFrame = CameraHandOverlayHub.Frame(
         tips: [],
         imageSize: .zero,
@@ -79,7 +80,7 @@ nonisolated private final class CameraPreviewStorage: @unchecked Sendable {
     }
 
     @MainActor
-    func attach(to view: UIView) {
+    func attach(to view: UIView, showsHandOverlay: Bool) {
         let layer: AVCaptureVideoPreviewLayer
         if let previewLayer {
             layer = previewLayer
@@ -104,17 +105,10 @@ nonisolated private final class CameraPreviewStorage: @unchecked Sendable {
             view.layer.addSublayer(dots)
         }
         view.clipsToBounds = true
+        updateHandOverlayVisibility(showsHandOverlay)
         updateLayout(in: view)
 
         configureRotationIfNeeded(for: layer)
-        if overlayTask == nil {
-            overlayTask = Task { @MainActor [weak self, handOverlayHub] in
-                for await frame in handOverlayHub.stream() {
-                    self?.latestFrame = frame
-                    self?.drawTips()
-                }
-            }
-        }
     }
 
     @MainActor
@@ -159,6 +153,10 @@ nonisolated private final class CameraPreviewStorage: @unchecked Sendable {
     @MainActor
     private func drawTips() {
         guard let previewLayer, let tipLayer else { return }
+        guard showsHandOverlay else {
+            tipLayer.path = nil
+            return
+        }
         let path = UIBezierPath()
         for tip in latestFrame.tips {
             guard let point = previewPoint(for: tip, in: previewLayer) else { continue }
@@ -170,6 +168,29 @@ nonisolated private final class CameraPreviewStorage: @unchecked Sendable {
             )))
         }
         tipLayer.path = path.cgPath
+    }
+
+    @MainActor
+    private func updateHandOverlayVisibility(_ isVisible: Bool) {
+        showsHandOverlay = isVisible
+        tipLayer?.isHidden = !isVisible
+        guard isVisible else {
+            overlayTask?.cancel()
+            overlayTask = nil
+            latestFrame = .init(
+                tips: [], imageSize: .zero, videoRotationAngle: 0, isVideoMirrored: false
+            )
+            tipLayer?.path = nil
+            return
+        }
+        guard overlayTask == nil else { return }
+        overlayTask = Task { @MainActor [weak self, handOverlayHub] in
+            for await frame in handOverlayHub.stream() {
+                guard !Task.isCancelled, let self, self.showsHandOverlay else { continue }
+                self.latestFrame = frame
+                self.drawTips()
+            }
+        }
     }
 
     @MainActor
