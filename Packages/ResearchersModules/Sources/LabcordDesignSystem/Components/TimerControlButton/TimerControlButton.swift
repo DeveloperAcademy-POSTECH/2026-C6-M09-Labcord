@@ -20,7 +20,7 @@ public struct TimerControlButton: View {
 
     public var body: some View {
         Button(action: action) {
-            IconArtwork(icon: .timer, size: 20, relativeTo: .body)
+            LabcordIconArtwork(icon: .timer, size: 20, relativeTo: .body)
         }
         .buttonStyle(
             RunIconButtonStyle(

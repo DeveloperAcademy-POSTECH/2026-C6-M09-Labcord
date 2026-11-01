@@ -77,7 +77,7 @@ public struct Accordion<Content: View>: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .labcordMotion(.state, value: hasCount)
 
-                    IconArtwork(
+                    LabcordIconArtwork(
                         icon: .caretDown,
                         size: 20,
                         relativeTo: .callout

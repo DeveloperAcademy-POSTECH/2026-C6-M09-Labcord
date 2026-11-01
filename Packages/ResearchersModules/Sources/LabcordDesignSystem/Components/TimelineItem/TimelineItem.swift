@@ -178,6 +178,8 @@ public struct TimelineItem: View {
     }
 }
 
+public typealias LabcordTimelineItem = TimelineItem
+
 #Preview("타임라인 · 미디어") {
     _ = FontRegistration.register()
     return ScrollView {

@@ -40,9 +40,9 @@ public struct ChipGroup<Item: Identifiable>: View where Item.ID: Hashable {
     }
 
     public var body: some View {
-        ChipFlowLayout(spacing: LayoutTokens.spacing12) {
+        LabcordChipFlowLayout(spacing: LayoutTokens.spacing12) {
             ForEach(items) { item in
-                SetupSmallChip(label: label(item)) {
+                LabcordSetupSmallChip(label: label(item)) {
                     withAnimation(layoutAnimation) {
                         selection.remove(item.id)
                         onRemove(item)
@@ -56,7 +56,7 @@ public struct ChipGroup<Item: Identifiable>: View where Item.ID: Hashable {
                     withAnimation(layoutAnimation, onAdd)
                 } label: {
                     HStack(spacing: LayoutTokens.spacing4) {
-                        IconArtwork(icon: .plus, size: 16, relativeTo: .subheadline)
+                        LabcordIconArtwork(icon: .plus, size: 16, relativeTo: .subheadline)
                         Text("추가")
                             .foregroundStyle(Color(.General.Label.secondary))
                     }
@@ -83,7 +83,7 @@ public struct ChipGroup<Item: Identifiable>: View where Item.ID: Hashable {
     }
 }
 
-private struct SetupSmallChip: View {
+private struct LabcordSetupSmallChip: View {
     let label: String
     let onDismiss: () -> Void
 
@@ -94,7 +94,7 @@ private struct SetupSmallChip: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             Button(action: onDismiss) {
-                IconArtwork(icon: .x, size: 14, relativeTo: .subheadline)
+                LabcordIconArtwork(icon: .x, size: 14, relativeTo: .subheadline)
             }
             .buttonStyle(LabcordPlainButtonStyle())
             .accessibilityLabel(Text("\(label) 제거"))
@@ -108,7 +108,7 @@ private struct SetupSmallChip: View {
     }
 }
 
-private struct ChipFlowLayout: Layout {
+private struct LabcordChipFlowLayout: Layout {
     let spacing: CGFloat
 
     func sizeThatFits(

@@ -170,7 +170,7 @@ public struct Toast: View {
         HStack(alignment: .center, spacing: LayoutTokens.spacing12) {
             if showLeadingIcon {
                 ZStack {
-                    IconArtwork(icon: type.icon, size: 28)
+                    LabcordIconArtwork(icon: type.icon, size: 28)
                         .foregroundStyle(type.foregroundColor)
                         .id(type.icon.rawValue)
                         .transition(.opacity)
@@ -235,7 +235,7 @@ public struct Toast: View {
     private var dismissButton: some View {
         if showDismissButton {
             Button(action: onDismiss) {
-                IconArtwork(icon: .x, size: 12)
+                LabcordIconArtwork(icon: .x, size: 12)
                     .foregroundStyle(
                         isEnabled
                             ? Color(.Experiment.Label.primary)

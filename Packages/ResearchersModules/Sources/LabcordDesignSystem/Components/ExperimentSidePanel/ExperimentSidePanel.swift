@@ -109,7 +109,7 @@ public struct ExperimentSidePanel<Content: View>: View {
     }
 
     private var handleIcon: some View {
-        IconArtwork(
+        LabcordIconArtwork(
             icon: layout == .portrait ? .caretDown : .caretRight,
             size: 28,
             relativeTo: .body

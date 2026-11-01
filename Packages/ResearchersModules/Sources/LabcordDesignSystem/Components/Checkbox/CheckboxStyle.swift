@@ -9,7 +9,7 @@ public struct CheckboxStyle: ToggleStyle {
     }
 
     public func makeBody(configuration: Configuration) -> some View {
-        CheckboxToggleBody(configuration: configuration, size: size)
+        LabcordCheckboxToggleBody(configuration: configuration, size: size)
     }
 }
 
@@ -20,7 +20,7 @@ public extension ToggleStyle where Self == CheckboxStyle {
 }
 
 @MainActor
-private struct CheckboxToggleBody: View {
+private struct LabcordCheckboxToggleBody: View {
     let configuration: ToggleStyleConfiguration
     let size: ComponentSize?
     @Environment(\.labelsVisibility) private var labelsVisibility
@@ -28,7 +28,7 @@ private struct CheckboxToggleBody: View {
     var body: some View {
         Button { configuration.isOn.toggle() } label: {
             HStack(spacing: 8) {
-                SelectionIndicator(
+                LabcordSelectionIndicator(
                     kind: .checkbox, isSelected: configuration.isOn, size: size
                 )
                 if labelsVisibility != .hidden {
@@ -46,7 +46,7 @@ private struct CheckboxToggleBody: View {
     }
 }
 
-struct SelectionIndicator: View {
+struct LabcordSelectionIndicator: View {
     enum Kind { case checkbox, radio }
 
     let kind: Kind
@@ -111,7 +111,7 @@ struct SelectionIndicator: View {
             }
             .overlay {
                 if isSelected {
-                    IconArtwork(icon: .checkBold, size: checkSize)
+                    LabcordIconArtwork(icon: .checkBold, size: checkSize)
                         .foregroundStyle(Color(.General.Label.inverse))
                         .transition(.opacity)
                 }

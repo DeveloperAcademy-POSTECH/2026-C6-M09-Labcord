@@ -33,7 +33,7 @@ public struct StatusPill: View {
                 .labcordMotion(.state, value: message)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
-            IconArtwork(icon: .checkBold, size: 20)
+            LabcordIconArtwork(icon: .checkBold, size: 20)
                 .foregroundStyle(Color(.Experiment.Label.primary))
                 .accessibilityHidden(true)
         }

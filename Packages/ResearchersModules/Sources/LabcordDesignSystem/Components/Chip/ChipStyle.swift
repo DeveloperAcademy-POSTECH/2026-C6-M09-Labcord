@@ -29,7 +29,7 @@ public struct ChipStyle: ToggleStyle {
     }
 
     public func makeBody(configuration: Configuration) -> some View {
-        ChipToggleBody(
+        LabcordChipToggleBody(
             configuration: configuration,
             size: size,
             visualStyle: visualStyle,
@@ -58,7 +58,7 @@ public struct ChipButtonStyle: ButtonStyle {
     }
 
     public func makeBody(configuration: Configuration) -> some View {
-        ChipButtonBody(
+        LabcordChipButtonBody(
             configuration: configuration,
             size: size,
             visualStyle: visualStyle,
@@ -100,7 +100,7 @@ public struct Chip: View {
     }
 
     public var body: some View {
-        ChipSurface(
+        LabcordChipSurface(
             size: size,
             visualStyle: visualStyle,
             emphasis: emphasis,
@@ -108,11 +108,11 @@ public struct Chip: View {
             isDisabled: !isEnabled
         ) {
             Toggle(isOn: $isSelected) {
-                HStack(spacing: ChipMetrics.iconGap(for: resolvedSize)) {
+                HStack(spacing: LabcordChipMetrics.iconGap(for: resolvedSize)) {
                     if let leadingIcon {
-                        IconArtwork(
+                        LabcordIconArtwork(
                             icon: leadingIcon,
-                            size: usesLargeMetrics ? 24 : ChipMetrics.leadingIconSize,
+                            size: usesLargeMetrics ? 24 : LabcordChipMetrics.leadingIconSize,
                             relativeTo: resolvedTextStyle
                         )
                     }
@@ -120,13 +120,13 @@ public struct Chip: View {
                     Text(label)
                 }
             }
-            .toggleStyle(ChipInlineToggleStyle())
+            .toggleStyle(LabcordChipInlineToggleStyle())
 
             if let onDismiss {
                 Button(action: onDismiss) {
-                    IconArtwork(
+                    LabcordIconArtwork(
                         icon: .x,
-                        size: usesLargeMetrics ? 24 : ChipMetrics.dismissIconSize,
+                        size: usesLargeMetrics ? 24 : LabcordChipMetrics.dismissIconSize,
                         relativeTo: resolvedTextStyle
                     )
                 }
@@ -186,7 +186,7 @@ public extension ButtonStyle where Self == ChipButtonStyle {
     }
 }
 
-private struct ChipToggleBody: View {
+private struct LabcordChipToggleBody: View {
     nonisolated(unsafe) let configuration: ToggleStyleConfiguration
     let size: ComponentSize?
     let visualStyle: ChipVisualStyle
@@ -210,19 +210,19 @@ private struct ChipToggleBody: View {
     }
 
     var body: some View {
-        ChipSurface(
+        LabcordChipSurface(
             size: size,
             visualStyle: visualStyle,
             emphasis: emphasis,
             isSelected: configuration.isOn,
             isDisabled: isDisabled || !isEnabled
         ) {
-            ChipInlineToggleStyle().makeBody(configuration: configuration)
+            LabcordChipInlineToggleStyle().makeBody(configuration: configuration)
         }
     }
 }
 
-private struct ChipButtonBody: View {
+private struct LabcordChipButtonBody: View {
     nonisolated(unsafe) let configuration: ButtonStyleConfiguration
     let size: ComponentSize?
     let visualStyle: ChipVisualStyle
@@ -246,7 +246,7 @@ private struct ChipButtonBody: View {
     }
 
     var body: some View {
-        ChipSurface(
+        LabcordChipSurface(
             size: size,
             visualStyle: visualStyle,
             emphasis: emphasis,
@@ -259,7 +259,7 @@ private struct ChipButtonBody: View {
     }
 }
 
-private struct ChipInlineToggleStyle: ToggleStyle {
+private struct LabcordChipInlineToggleStyle: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {
         Button {
             configuration.isOn.toggle()

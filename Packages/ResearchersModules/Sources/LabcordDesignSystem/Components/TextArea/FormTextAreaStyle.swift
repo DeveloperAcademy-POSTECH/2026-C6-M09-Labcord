@@ -143,9 +143,9 @@ public struct FormTextAreaStyle: ViewModifier {
             .background {
                 GeometryReader { geometry in
                     let frame = geometry.frame(in: .global)
-                    let input = FocusedInput(id: inputID, frame: frame)
+                    let input = LabcordFocusedInput(id: inputID, frame: frame)
                     Color.clear.preference(
-                        key: FocusedInputPreferenceKey.self,
+                        key: LabcordFocusedInputPreferenceKey.self,
                         value: isFocused && isEnabled && !isDisabled ? [input] : []
                     )
                 }

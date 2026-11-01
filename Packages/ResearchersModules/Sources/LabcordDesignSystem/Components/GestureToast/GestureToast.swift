@@ -32,7 +32,7 @@ public struct GestureToast: View {
             .layoutPriority(1)
 
             if showsFollowingIcon {
-                IconArtwork(icon: .checkBold, size: 34)
+                LabcordIconArtwork(icon: .checkBold, size: 34)
                     .foregroundStyle(Color(.Experiment.Brand.primary))
                     .accessibilityHidden(true)
                     .transition(.opacity)

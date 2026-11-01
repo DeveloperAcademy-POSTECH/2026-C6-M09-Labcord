@@ -6,7 +6,7 @@ import UIKit
 public extension View {
     func labcordInputFocus(_ focus: FocusState<Bool>.Binding) -> some View {
         modifier(
-            InputFocusModifier(
+            LabcordInputFocusModifier(
                 focus: focus,
                 focusedValue: true,
                 unfocusedValue: false
@@ -19,7 +19,7 @@ public extension View {
         equals value: Value
     ) -> some View {
         modifier(
-            InputFocusModifier(
+            LabcordInputFocusModifier(
                 focus: focus,
                 focusedValue: value,
                 unfocusedValue: nil
@@ -28,15 +28,15 @@ public extension View {
     }
 
     func labcordDismissKeyboardOnTapOutside() -> some View {
-        modifier(InputDismissalModifier())
+        modifier(LabcordInputDismissalModifier())
     }
 
     func labcordKeyboardDismissalDisabled(_ disabled: Bool = true) -> some View {
-        modifier(InputDismissExclusionModifier(isExcluded: disabled))
+        modifier(LabcordInputDismissExclusionModifier(isExcluded: disabled))
     }
 }
 
-private struct InputFocusModifier<Value: Hashable>: ViewModifier {
+private struct LabcordInputFocusModifier<Value: Hashable>: ViewModifier {
     let focus: FocusState<Value>.Binding
     let focusedValue: Value
     let unfocusedValue: Value
@@ -63,7 +63,7 @@ private struct InputFocusModifier<Value: Hashable>: ViewModifier {
                 GeometryReader { geometry in
                     Color.clear
                         .preference(
-                            key: InputBoundsPreferenceKey.self,
+                            key: LabcordInputBoundsPreferenceKey.self,
                             value: isEnabled ? [geometry.frame(in: .global)] : []
                         )
                 }
@@ -72,10 +72,10 @@ private struct InputFocusModifier<Value: Hashable>: ViewModifier {
     }
 }
 
-private struct InputDismissalModifier: ViewModifier {
+private struct LabcordInputDismissalModifier: ViewModifier {
     @State private var inputBounds: [CGRect] = []
     @State private var dismissRequest = 0
-    @State private var focusedInput: FocusedInput?
+    @State private var focusedInput: LabcordFocusedInput?
     @State private var viewportBounds = CGRect.zero
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -84,10 +84,10 @@ private struct InputDismissalModifier: ViewModifier {
         ScrollViewReader { scroll in
             content
                 .environment(\.labcordInputDismissRequest, dismissRequest)
-                .onPreferenceChange(InputBoundsPreferenceKey.self) { bounds in
+                .onPreferenceChange(LabcordInputBoundsPreferenceKey.self) { bounds in
                     inputBounds = bounds
                 }
-                .onPreferenceChange(FocusedInputPreferenceKey.self) { inputs in
+                .onPreferenceChange(LabcordFocusedInputPreferenceKey.self) { inputs in
                     let nextInput = inputs.last
                     guard focusedInput != nextInput else { return }
                     let needsReveal = focusedInput?.id != nextInput?.id
@@ -131,24 +131,24 @@ private struct InputDismissalModifier: ViewModifier {
     }
 }
 
-struct FocusedInput: Equatable, Sendable {
+struct LabcordFocusedInput: Equatable, Sendable {
     let id: UUID
     let frame: CGRect
 
     var height: CGFloat { frame.height }
 }
 
-struct FocusedInputPreferenceKey: PreferenceKey {
-    static let defaultValue: [FocusedInput] = []
+struct LabcordFocusedInputPreferenceKey: PreferenceKey {
+    static let defaultValue: [LabcordFocusedInput] = []
 
     static func reduce(
-        value: inout [FocusedInput], nextValue: () -> [FocusedInput]
+        value: inout [LabcordFocusedInput], nextValue: () -> [LabcordFocusedInput]
     ) {
         value.append(contentsOf: nextValue())
     }
 }
 
-private struct InputDismissExclusionModifier: ViewModifier {
+private struct LabcordInputDismissExclusionModifier: ViewModifier {
     let isExcluded: Bool
 
     func body(content: Content) -> some View {
@@ -156,7 +156,7 @@ private struct InputDismissExclusionModifier: ViewModifier {
             GeometryReader { geometry in
                 Color.clear
                     .preference(
-                        key: InputBoundsPreferenceKey.self,
+                        key: LabcordInputBoundsPreferenceKey.self,
                         value: isExcluded ? [geometry.frame(in: .global)] : []
                     )
             }
@@ -165,7 +165,7 @@ private struct InputDismissExclusionModifier: ViewModifier {
     }
 }
 
-private struct InputBoundsPreferenceKey: PreferenceKey {
+private struct LabcordInputBoundsPreferenceKey: PreferenceKey {
     static let defaultValue: [CGRect] = []
 
     static func reduce(value: inout [CGRect], nextValue: () -> [CGRect]) {

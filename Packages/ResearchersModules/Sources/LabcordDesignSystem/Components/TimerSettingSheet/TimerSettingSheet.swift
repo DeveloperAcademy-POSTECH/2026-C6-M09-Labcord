@@ -95,7 +95,7 @@ public struct TimerSettingSheet: View {
     private var header: some View {
         HStack {
             Button(action: cancel) {
-                IconArtwork(icon: .x, size: 24, relativeTo: .body)
+                LabcordIconArtwork(icon: .x, size: 24, relativeTo: .body)
                     .foregroundStyle(Color(.General.Label.secondary))
             }
             .buttonStyle(.labcordIcon(.plain, size: .large))

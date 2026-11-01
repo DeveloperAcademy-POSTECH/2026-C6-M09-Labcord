@@ -42,11 +42,11 @@ public struct IOSIconButtonStyle: ButtonStyle {
             size ?? ComponentSize(controlSize)
         }
 
-        private var metrics: IconButtonMetrics {
-            IconButtonMetrics(size: resolvedSize)
+        private var metrics: LabcordIconButtonMetrics {
+            LabcordIconButtonMetrics(size: resolvedSize)
         }
 
-        private var appearance: ButtonAppearance {
+        private var appearance: LabcordButtonAppearance {
             labcordButtonAppearance(
                 variant: variant,
                 isDestructive: configuration.role == .destructive,
@@ -63,7 +63,7 @@ public struct IOSIconButtonStyle: ButtonStyle {
         }
 
         private var symbolFontPointSize: CGFloat {
-            scaledIconSize * ButtonMetrics.symbolFontPointSizeFactor
+            scaledIconSize * LabcordButtonMetrics.symbolFontPointSizeFactor
         }
 
         private var isPressed: Bool {
@@ -85,7 +85,7 @@ public struct IOSIconButtonStyle: ButtonStyle {
         private var styledContent: some View {
             ZStack {
                 if isLoading {
-                    IconArtwork(icon: .dotsThreeOutline, size: metrics.iconSize)
+                    LabcordIconArtwork(icon: .dotsThreeOutline, size: metrics.iconSize)
                 } else {
                     configuration.label
                         .font(.system(size: symbolFontPointSize))
@@ -135,7 +135,7 @@ public extension ButtonStyle where Self == IOSIconButtonStyle {
     }
 }
 
-struct IconButtonMetrics {
+struct LabcordIconButtonMetrics {
     let containerSize: CGFloat
     let iconSize: CGFloat
 
@@ -160,20 +160,20 @@ struct IconButtonMetrics {
 #Preview("아이콘 버튼") {
     HStack(spacing: 12) {
         Button { } label: {
-            IconArtwork(icon: .plus, size: 20)
+            LabcordIconArtwork(icon: .plus, size: 20)
         }
         .buttonStyle(.labcordIcon(.primary))
         Button { } label: {
-            IconArtwork(icon: .trash, size: 20)
+            LabcordIconArtwork(icon: .trash, size: 20)
         }
         .buttonStyle(.labcordIcon(.secondary))
         .disabled(true)
         Button { } label: {
-            IconArtwork(icon: .plus, size: 20)
+            LabcordIconArtwork(icon: .plus, size: 20)
         }
         .buttonStyle(.labcordIcon(.primary, isLoading: true))
         Button { } label: {
-            IconArtwork(icon: .plus, size: 34)
+            LabcordIconArtwork(icon: .plus, size: 34)
         }
         .buttonStyle(.labcordIcon(.primary, size: .extraLarge))
     }

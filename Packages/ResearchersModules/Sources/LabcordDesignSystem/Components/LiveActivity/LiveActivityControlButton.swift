@@ -37,7 +37,7 @@ public struct LiveActivityControlButton: View {
                         .rotationEffect(.degrees(-90))
                 }
 
-                IconArtwork(
+                LabcordIconArtwork(
                     icon: kind == .retry ? .arrowCounterClockwiseBold : .stop,
                     size: 24
                 )

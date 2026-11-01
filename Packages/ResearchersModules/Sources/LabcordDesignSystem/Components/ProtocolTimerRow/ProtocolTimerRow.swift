@@ -34,7 +34,7 @@ public struct ProtocolTimerRow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             Button(action: onEdit) {
-                IconArtwork(icon: .pencilSimple, size: 16)
+                LabcordIconArtwork(icon: .pencilSimple, size: 16)
             }
             .buttonStyle(.labcordIcon(.quaternary, size: .medium))
             .accessibilityLabel(Text("타이머 수정"))

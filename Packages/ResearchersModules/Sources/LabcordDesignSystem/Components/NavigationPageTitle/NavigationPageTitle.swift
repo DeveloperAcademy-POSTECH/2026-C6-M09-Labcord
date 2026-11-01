@@ -13,7 +13,7 @@ public struct NavigationPageTitle: View {
         HStack(spacing: 0) {
             if let onBack {
                 Button(action: onBack) {
-                    IconArtwork(icon: .caretLeft, size: 24)
+                    LabcordIconArtwork(icon: .caretLeft, size: 24)
                         .foregroundStyle(Color(.General.Label.secondary))
                         .frame(width: 50, height: 50)
                         .contentShape(Rectangle())

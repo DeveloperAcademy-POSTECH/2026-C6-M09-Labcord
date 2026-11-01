@@ -13,7 +13,7 @@ public struct ProtocolFileItemMetadata: View {
 
     public var body: some View {
         HStack(spacing: LayoutTokens.spacing16) {
-            IconArtwork(icon: .folderOpen, size: 24)
+            LabcordIconArtwork(icon: .folderOpen, size: 24)
                 .foregroundStyle(Color(.General.Label.secondary))
             VStack(alignment: .leading, spacing: LayoutTokens.spacing2) {
                 Text(title)
@@ -25,7 +25,7 @@ public struct ProtocolFileItemMetadata: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             Button(action: onRemove) {
-                IconArtwork(icon: .xCircle, size: 16)
+                LabcordIconArtwork(icon: .xCircle, size: 16)
             }
             .buttonStyle(.labcordIcon(.quaternary, size: .medium))
             .accessibilityLabel(Text("프로토콜 삭제"))

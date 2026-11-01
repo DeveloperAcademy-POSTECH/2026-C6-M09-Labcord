@@ -34,7 +34,7 @@ public struct ProtocolFileItemUploadProgress: View {
                 .frame(width: progressSize, height: progressSize)
                 .accessibilityLabel(Text("업로드 중"))
             Button(action: onCancel) {
-                IconArtwork(icon: .xCircle, size: 16)
+                LabcordIconArtwork(icon: .xCircle, size: 16)
             }
             .buttonStyle(.labcordIcon(.quaternary, size: .medium))
             .accessibilityLabel(Text("업로드 취소"))
