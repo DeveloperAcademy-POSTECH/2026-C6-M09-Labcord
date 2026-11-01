@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct LabcordChipSurface<Content: View>: View {
+struct ChipSurface<Content: View>: View {
     let size: ComponentSize?
     let visualStyle: ChipVisualStyle
     let emphasis: ChipEmphasis
@@ -27,7 +27,7 @@ struct LabcordChipSurface<Content: View>: View {
     }
 
     var body: some View {
-        HStack(spacing: LabcordChipMetrics.iconGap(for: resolvedSize)) {
+        HStack(spacing: ChipMetrics.iconGap(for: resolvedSize)) {
             content
         }
             .typography(typography)
@@ -119,7 +119,7 @@ struct LabcordChipSurface<Content: View>: View {
     }
 }
 
-enum LabcordChipMetrics {
+enum ChipMetrics {
     static func iconGap(for size: ComponentSize) -> CGFloat {
         size == .large || size == .extraLarge ? 8 : 4
     }

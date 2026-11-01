@@ -82,7 +82,7 @@ public struct FormTextFieldStyle: TextFieldStyle {
 
     // swiftlint:disable:next identifier_name
     public func _body(configuration: TextField<Self._Label>) -> some View {
-        LabcordTextFieldBody(
+        TextFieldBody(
             configuration: configuration,
             size: resolvedSize,
             foregroundColor: state.foregroundColor,
@@ -124,7 +124,7 @@ public struct FormTextFieldStyle: TextFieldStyle {
     }
 }
 
-private struct LabcordTextFieldBody<Label: View>: View {
+private struct TextFieldBody<Label: View>: View {
     nonisolated(unsafe) let configuration: TextField<Label>
     let size: ComponentSize
     let foregroundColor: Color

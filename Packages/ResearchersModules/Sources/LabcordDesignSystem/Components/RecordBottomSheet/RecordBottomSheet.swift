@@ -170,7 +170,7 @@ public struct RecordBottomSheet: View {
     private var header: some View {
         HStack(alignment: .center) {
             Button(action: close) {
-                LabcordIconArtwork(icon: .x, size: 24, relativeTo: .body)
+                IconArtwork(icon: .x, size: 24, relativeTo: .body)
                     .foregroundStyle(Color(.General.Label.secondary))
             }
             .buttonStyle(.labcordIcon(.plain, size: .large))
@@ -303,5 +303,3 @@ private extension RecordBottomSheet {
     }
 
 }
-
-public typealias LabcordRecordBottomSheet = RecordBottomSheet

@@ -24,7 +24,7 @@ public struct RadioButton<Value: Hashable, Label: View>: View {
     public var body: some View {
         Button(action: select) {
             HStack(spacing: 8) {
-                LabcordSelectionIndicator(kind: .radio, isSelected: isSelected, size: size)
+                SelectionIndicator(kind: .radio, isSelected: isSelected, size: size)
                 if labelsVisibility != .hidden {
                     label
                         .typography(Typography.body)
