@@ -135,7 +135,7 @@ public struct VoicePlayer: View {
     private var playButton: some View {
         Button(action: toggle) {
             ZStack {
-                LabcordIconArtwork(
+                IconArtwork(
                     icon: isPlaying ? .pause : .play,
                     size: 12,
                     relativeTo: .body

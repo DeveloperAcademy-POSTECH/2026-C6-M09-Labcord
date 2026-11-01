@@ -64,12 +64,12 @@ private extension ExperimentControlButton.State {
     return HStack(spacing: 16) {
         ExperimentControlButton(
             action: noExperimentControlAction,
-            icon: LabcordIconArtwork(icon: .arrowsCounterClockwise, size: 20)
+            icon: IconArtwork(icon: .arrowsCounterClockwise, size: 20)
         )
         ExperimentControlButton(
             state: .disabled,
             action: noExperimentControlAction,
-            icon: LabcordIconArtwork(icon: .arrowsCounterClockwise, size: 20)
+            icon: IconArtwork(icon: .arrowsCounterClockwise, size: 20)
         )
     }
     .padding()

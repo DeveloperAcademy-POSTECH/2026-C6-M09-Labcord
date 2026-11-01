@@ -31,7 +31,7 @@ public struct LiveActivityStatusIndicator: View {
                 Circle().strokeBorder(Color(.General.Brand.primary), lineWidth: 4)
             }
 
-            LabcordIconArtwork(icon: status == .watchConnected ? .watchCheck : .checkBold,
+            IconArtwork(icon: status == .watchConnected ? .watchCheck : .checkBold,
                                size: status == .watchConnected ? 48 : 24)
                 .foregroundStyle(Color(.General.Brand.primary))
         }

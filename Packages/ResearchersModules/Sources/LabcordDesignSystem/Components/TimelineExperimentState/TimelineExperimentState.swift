@@ -39,8 +39,6 @@ public struct TimelineExperimentState: View {
     }
 }
 
-public typealias LabcordExperimentStatusTimelineItem = TimelineExperimentState
-
 #Preview("실험 상태 타임라인") {
     _ = FontRegistration.register()
     return VStack(alignment: .leading, spacing: 0) {
