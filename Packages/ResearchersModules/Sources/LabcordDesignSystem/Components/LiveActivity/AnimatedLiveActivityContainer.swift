@@ -70,7 +70,7 @@ private struct ExpandedHeightKey: PreferenceKey {
 
 #Preview("Animated Live Activity") {
     AnimatedLiveActivityContainer(
-        isExpanded: true, collapsedSize: CGSize(width: 126, height: 37), expandedWidth: 350
+        isExpanded: true, collapsedSize: CGSize(width: 126, height: 37), expandedWidth: 370
     ) {
         Text("기록 중").foregroundStyle(.white)
     }
