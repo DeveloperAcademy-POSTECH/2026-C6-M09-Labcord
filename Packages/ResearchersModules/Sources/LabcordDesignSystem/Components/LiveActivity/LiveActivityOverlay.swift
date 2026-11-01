@@ -1,7 +1,12 @@
 import SwiftUI
 
 /// Measured capsule geometry in points, relative to the top of the app window.
-public struct LiveActivityPlacement {
+public struct LiveActivityPlacement: Sendable {
+    /// Placement confirmed on iPhone 18 Pro Max (iPhone19,7), in portrait.
+    public static let iPhone18ProMax = LiveActivityPlacement(
+        top: 12, collapsedSize: CGSize(width: 113, height: 40), expandedWidth: 327
+    )
+
     public let top: CGFloat
     public let horizontalOffset: CGFloat
     public let collapsedSize: CGSize

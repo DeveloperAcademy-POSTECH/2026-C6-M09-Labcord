@@ -24,7 +24,11 @@ final class CatalogLiveActivityDemo {
             return values
         }
         guard Self.modelIdentifier == "iPhone19,7" else { return nil }
-        return [12, 0, 113, 40, 327]
+        let confirmed = LiveActivityPlacement.iPhone18ProMax
+        return [
+            confirmed.top, confirmed.horizontalOffset,
+            confirmed.collapsedSize.width, confirmed.collapsedSize.height, confirmed.expandedWidth
+        ]
     }
 
     func save(_ values: [Double]) {
