@@ -19,8 +19,17 @@ final class CatalogLiveActivityDemo {
     }
 
     func savedValues() -> [Double]? {
-        if let values = UserDefaults.standard.array(forKey: storageKey) as? [Double],
-           Self.isValid(values) {
+        let defaults = UserDefaults.standard
+        let migrationKey = storageKey + ".width370"
+        var values = defaults.array(forKey: storageKey) as? [Double]
+        if !defaults.bool(forKey: migrationKey) {
+            if let stored = values, Self.isValid(stored), stored[4] == 327 {
+                values?[4] = 370
+                defaults.set(values, forKey: storageKey)
+            }
+            defaults.set(true, forKey: migrationKey)
+        }
+        if let values, Self.isValid(values) {
             return values
         }
         guard let preset = LiveActivityPlacement.forDevice(identifier: Self.modelIdentifier) else {
