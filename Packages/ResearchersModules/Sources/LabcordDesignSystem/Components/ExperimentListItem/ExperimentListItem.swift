@@ -144,7 +144,7 @@ public struct ExperimentListItem: View {
 
     private var openButton: some View {
         Button(action: onSelect) {
-            LabcordIconArtwork(icon: .caretRight, size: 16)
+            IconArtwork(icon: .caretRight, size: 16)
                 .foregroundStyle(openIconForeground)
         }
         .buttonStyle(.labcordIcon(.quaternary, size: .medium))

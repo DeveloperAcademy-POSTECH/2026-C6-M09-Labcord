@@ -24,7 +24,7 @@ public struct SlideToEndButton: View {
             let progress = isTriggered ? 1 : (travel > 0 ? min(dragDistance / travel, 1) : 0)
 
             HStack(spacing: 8) {
-                LabcordIconArtwork(icon: .stop, size: 24)
+                IconArtwork(icon: .stop, size: 24)
                     .foregroundStyle(Color(.General.Action.Destructive.foreground))
                     .frame(width: thumbWidth, height: height)
                     .background(Color(.General.Action.Destructive.background), in: Circle())

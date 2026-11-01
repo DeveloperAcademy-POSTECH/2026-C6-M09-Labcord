@@ -38,7 +38,7 @@ public struct ProtocolPhotoItem<Content: View>: View {
             .clipped()
             .overlay(alignment: .topTrailing) {
                 Button(action: action) {
-                    LabcordIconArtwork(icon: .xCircle, size: 16)
+                    IconArtwork(icon: .xCircle, size: 16)
                 }
                 .buttonStyle(.labcordIcon(.quaternary, size: .medium))
                 .accessibilityLabel(Text("사진 삭제"))
@@ -51,7 +51,7 @@ public struct ProtocolPhotoItem<Content: View>: View {
 
     private var add: some View {
         Button(action: action) {
-            LabcordIconArtwork(icon: .plus, size: 20)
+            IconArtwork(icon: .plus, size: 20)
                 .foregroundStyle(
                     isAddDisabled || !isEnabled ? Color(.General.Label.disabled)
                         : Color(.General.Label.secondary)

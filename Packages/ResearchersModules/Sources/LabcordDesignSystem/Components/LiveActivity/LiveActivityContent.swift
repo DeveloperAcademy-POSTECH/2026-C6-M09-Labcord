@@ -44,7 +44,7 @@ public struct LiveActivityContent: View {
         case let .videoRecording(elapsed, _):
             VStack(alignment: .leading, spacing: LayoutTokens.spacing2) {
                 HStack(spacing: 0) {
-                    LabcordIconArtwork(icon: .dot, size: 22)
+                    IconArtwork(icon: .dot, size: 22)
                     Text(elapsed).typography(Typography.body)
                 }
                 .foregroundStyle(Color(.General.Recording.Active.color))

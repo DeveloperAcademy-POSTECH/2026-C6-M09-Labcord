@@ -53,11 +53,11 @@ public struct IOSButtonStyle: ButtonStyle {
             size ?? ComponentSize(controlSize)
         }
 
-        private var metrics: LabcordButtonMetrics {
-            LabcordButtonMetrics(size: resolvedSize, variant: variant)
+        private var metrics: ButtonMetrics {
+            ButtonMetrics(size: resolvedSize, variant: variant)
         }
 
-        private var appearance: LabcordButtonAppearance {
+        private var appearance: ButtonAppearance {
             labcordButtonAppearance(
                 variant: variant,
                 isDestructive: configuration.role == .destructive,
@@ -120,7 +120,7 @@ public struct IOSButtonStyle: ButtonStyle {
             } else {
                 configuration.label
                     .labelStyle(
-                        LabcordButtonLabelStyle(
+                        ButtonLabelStyle(
                             spacing: metrics.spacing,
                             iconSize: metrics.iconSize
                         )
@@ -176,7 +176,7 @@ public extension ButtonStyle where Self == IOSButtonStyle {
     }
 }
 
-struct LabcordButtonMetrics {
+struct ButtonMetrics {
     static let symbolFontPointSizeFactor: CGFloat = 1.1
 
     let height: CGFloat
@@ -232,7 +232,7 @@ struct LabcordButtonMetrics {
     }
 }
 
-private struct LabcordButtonLabelStyle: LabelStyle {
+private struct ButtonLabelStyle: LabelStyle {
     let spacing: CGFloat
     let iconSize: CGFloat
 
@@ -243,7 +243,7 @@ private struct LabcordButtonLabelStyle: LabelStyle {
     }
 
     private var symbolFontPointSize: CGFloat {
-        scaledIconSize * LabcordButtonMetrics.symbolFontPointSizeFactor
+        scaledIconSize * ButtonMetrics.symbolFontPointSizeFactor
     }
 
     func makeBody(configuration: Configuration) -> some View {
@@ -257,7 +257,7 @@ private struct LabcordButtonLabelStyle: LabelStyle {
     }
 }
 
-struct LabcordButtonAppearance {
+struct ButtonAppearance {
     let background: Color?
     let foreground: Color
     let border: Color?
@@ -267,9 +267,9 @@ func labcordButtonAppearance(
     variant: IOSButtonStyle.Variant,
     isDestructive: Bool,
     isDisabled: Bool
-) -> LabcordButtonAppearance {
+) -> ButtonAppearance {
     if isDisabled {
-        return LabcordButtonAppearance(
+        return ButtonAppearance(
             background: variant == .quaternary || variant == .accent
                 ? nil : Color(.General.Action.Disabled.background),
             foreground: Color(.General.Action.Disabled.foreground),
@@ -282,7 +282,7 @@ func labcordButtonAppearance(
     let secondaryLabel = Color(.General.Label.secondary)
     switch variant {
     case .primary:
-        return LabcordButtonAppearance(
+        return ButtonAppearance(
             background: isDestructive
                 ? Color(.General.Action.Destructive.background)
                 : Color(.General.Action.Primary.background),
@@ -294,7 +294,7 @@ func labcordButtonAppearance(
                 : nil
         )
     case .secondary:
-        return LabcordButtonAppearance(
+        return ButtonAppearance(
             background: isDestructive
                 ? subtleBackground : Color(.General.Action.Secondary.background),
             foreground: isDestructive
@@ -302,7 +302,7 @@ func labcordButtonAppearance(
             border: nil
         )
     case .tertiary:
-        return LabcordButtonAppearance(
+        return ButtonAppearance(
             background: isDestructive
                 ? subtleBackground : Color(.General.Fill.secondary),
             foreground: isDestructive ? subtleForeground : secondaryLabel,
@@ -311,7 +311,7 @@ func labcordButtonAppearance(
     case .quaternary, .accent:
         let normal = variant == .accent
             ? Color(.General.Label.brand) : secondaryLabel
-        return LabcordButtonAppearance(
+        return ButtonAppearance(
             background: nil,
             foreground: isDestructive ? subtleForeground : normal,
             border: nil
@@ -338,5 +338,3 @@ func labcordButtonAppearance(
     }
     .padding()
 }
-
-public typealias LabcordButtonStyle = IOSButtonStyle

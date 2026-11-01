@@ -36,7 +36,7 @@ public struct DropdownTriggerLabel: View {
                 .truncationMode(.tail)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            LabcordIconArtwork(
+            IconArtwork(
                 icon: effectiveState == .open ? .caretUp : .caretDown,
                 size: iconSize,
                 relativeTo: fontTextStyle

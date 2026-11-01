@@ -208,7 +208,7 @@ private struct TimerItemActionButton: View {
     var body: some View {
         Button(role: role, action: action) {
             ZStack {
-                LabcordIconArtwork(icon: icon, size: 24, relativeTo: .body)
+                IconArtwork(icon: icon, size: 24, relativeTo: .body)
                     .id(icon.rawValue)
                     .transition(.opacity)
             }

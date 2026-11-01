@@ -21,7 +21,7 @@ public struct LoadingIndicatorStyle: ProgressViewStyle {
     }
 
     public func makeBody(configuration: Configuration) -> some View {
-        LabcordProgressContent(size: size, foreground: foreground, configuration: configuration)
+        ProgressContent(size: size, foreground: foreground, configuration: configuration)
     }
 }
 
@@ -34,7 +34,7 @@ public extension ProgressViewStyle where Self == LoadingIndicatorStyle {
     }
 }
 
-private struct LabcordProgressContent: View {
+private struct ProgressContent: View {
     let size: LoadingIndicatorStyle.Size
     let foreground: Color?
     let configuration: ProgressViewStyleConfiguration
@@ -51,18 +51,18 @@ private struct LabcordProgressContent: View {
                 .tint(foreground ?? Color(.General.Label.primary))
         } else if let label = configuration.label {
             HStack(spacing: LayoutTokens.spacing8) {
-                LabcordLoadingIndicator(size: size, foreground: resolvedForeground)
+                LoadingIndicator(size: size, foreground: resolvedForeground)
                 label
             }
             .accessibilityElement(children: .combine)
         } else {
-            LabcordLoadingIndicator(size: size, foreground: resolvedForeground)
+            LoadingIndicator(size: size, foreground: resolvedForeground)
                 .accessibilityElement(children: .ignore)
         }
     }
 }
 
-private struct LabcordLoadingIndicator: View {
+private struct LoadingIndicator: View {
     private let size: LoadingIndicatorStyle.Size
     private let foreground: Color
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
