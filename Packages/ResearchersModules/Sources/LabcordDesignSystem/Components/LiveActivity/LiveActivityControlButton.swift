@@ -50,7 +50,7 @@ public struct LiveActivityControlButton: View {
             .frame(width: 48, height: 48)
             .contentShape(Circle())
         }
-        .buttonStyle(PressFeedbackButtonStyle())
+        .buttonStyle(LabcordPlainButtonStyle())
         .accessibilityLabel(Text(kind == .retry ? "다시 시도" : "기록 중지"))
     }
 

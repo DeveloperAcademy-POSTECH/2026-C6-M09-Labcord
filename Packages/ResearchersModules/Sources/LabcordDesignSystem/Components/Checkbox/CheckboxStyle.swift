@@ -39,7 +39,7 @@ private struct CheckboxToggleBody: View {
             }
             .contentShape(Rectangle())
         }
-        .buttonStyle(PressFeedbackButtonStyle())
+        .buttonStyle(LabcordPlainButtonStyle())
         .accessibilityRepresentation {
             Toggle(configuration).toggleStyle(.switch)
         }

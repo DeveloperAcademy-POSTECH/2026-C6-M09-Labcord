@@ -130,7 +130,7 @@ public struct Chip: View {
                         relativeTo: resolvedTextStyle
                     )
                 }
-                .buttonStyle(PressFeedbackButtonStyle())
+                .buttonStyle(LabcordPlainButtonStyle())
                 .accessibilityLabel(Text("\(label) 제거"))
             }
         }
@@ -266,7 +266,7 @@ private struct ChipInlineToggleStyle: ToggleStyle {
         } label: {
             configuration.label
         }
-        .buttonStyle(PressFeedbackButtonStyle())
+        .buttonStyle(LabcordPlainButtonStyle())
         .accessibilityValue(configuration.isOn ? "선택됨" : "선택 안 됨")
     }
 }

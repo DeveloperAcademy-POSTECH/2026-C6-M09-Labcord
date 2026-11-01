@@ -84,7 +84,7 @@ public struct ExperimentSidePanel<Content: View>: View {
                 .background(Color(.Experiment.Fill.dark), in: panelShape)
                 .contentShape(panelShape)
         }
-        .buttonStyle(PressFeedbackButtonStyle())
+        .buttonStyle(LabcordPlainButtonStyle())
         .padding(layout == .portrait ? .vertical : .horizontal, handleHitInset)
         .contentShape(Rectangle())
         .padding(layout == .portrait ? .vertical : .horizontal, -handleHitInset)

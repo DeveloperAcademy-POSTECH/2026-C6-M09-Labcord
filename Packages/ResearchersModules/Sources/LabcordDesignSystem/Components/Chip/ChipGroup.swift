@@ -96,7 +96,7 @@ private struct SetupSmallChip: View {
             Button(action: onDismiss) {
                 IconArtwork(icon: .x, size: 14, relativeTo: .subheadline)
             }
-            .buttonStyle(PressFeedbackButtonStyle())
+            .buttonStyle(LabcordPlainButtonStyle())
             .accessibilityLabel(Text("\(label) 제거"))
         }
         .foregroundStyle(Color(.General.Label.brand))
