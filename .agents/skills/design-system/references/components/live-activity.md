@@ -20,7 +20,7 @@ LiveActivityContainer {
 
 ## 앱 안에서 표시
 
-`AnimatedLiveActivityContainer`는 접힌 캡슐과 펼친 콘텐츠 사이의 전환을 표현합니다. 전체 창을 채우는 뷰에 `liveActivityOverlay`를 적용하고, 창 상단 기준 좌표를 `LiveActivityPlacement`로 전달합니다. `forDevice(identifier:)`는 [safearea.info](https://safearea.info/)의 기기별 세로 화면 수치를 사용합니다. 위치가 없거나 가로 화면이면 표시하지 않습니다. 표시 여부, 펼침 상태와 콘텐츠 동작은 호출부에서 관리합니다.
+`AnimatedLiveActivityContainer`는 접힌 캡슐과 펼친 콘텐츠 사이의 전환을 표현합니다. 전체 창을 채우는 뷰에 `liveActivityOverlay`를 적용하고, 창 상단 기준 좌표를 `LiveActivityPlacement`로 전달합니다. `forDevice(identifier:)`는 [safearea.info](https://safearea.info/)의 기기별 세로 화면 수치를 사용합니다. 위치가 없거나 가로 화면이면 표시하지 않습니다. 표시 여부, 펼침 상태와 콘텐츠 동작은 호출부에서 관리합니다. `onDismiss`를 전달하면 바깥 터치 또는 접근성 닫기 동작으로 호출부가 닫을 수 있습니다.
 
 카탈로그의 **05 Live Activity**에서 지원 모델의 상단 표시를 확인할 수 있습니다. 펼친 상태는 화면 양옆에 16pt 여백을 둡니다. 이 위치는 시스템 Dynamic Island를 제어하는 값이 아닙니다.
 
