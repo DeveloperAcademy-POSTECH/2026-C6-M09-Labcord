@@ -27,13 +27,13 @@ public struct LiveActivityPlacement: Sendable {
             return nil
         }
         return LiveActivityPlacement(
-            top: top, collapsedSize: CGSize(width: width, height: 36.67), expandedWidth: 370
+            top: top, collapsedSize: CGSize(width: width, height: 36.67), expandedWidth: 327
         )
     }
 
     /// Placement confirmed on iPhone 18 Pro Max (iPhone19,7), in portrait.
     public static let iPhone18ProMax = LiveActivityPlacement(
-        top: 12, collapsedSize: CGSize(width: 113, height: 40), expandedWidth: 370
+        top: 12, collapsedSize: CGSize(width: 113, height: 40), expandedWidth: 327
     )
 
     public let top: CGFloat
