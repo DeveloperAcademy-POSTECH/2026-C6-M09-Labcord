@@ -9,6 +9,9 @@ public struct ExperimentClient: Sendable {
     public var create: @MainActor @Sendable (UUID, Date) throws -> ExperimentListEntry
     public var leaveSession: @MainActor @Sendable (UUID, UUID, Date) throws -> Void
     public var saveTimer: @MainActor @Sendable (UUID, ExperimentTimer, Date?) throws -> Void
+    public var savePhoto: @MainActor @Sendable (UUID, UUID, Date, Data) throws -> Void
+    public var saveVideo: @MainActor @Sendable (UUID, UUID, Date, URL) throws -> Void
+    public var cancelVideoSave: @MainActor @Sendable (UUID, UUID, URL) throws -> Void
     public var complete: @MainActor @Sendable (UUID, Date) throws -> Void
     public var delete: @MainActor @Sendable (UUID) throws -> Void
 
@@ -19,6 +22,9 @@ public struct ExperimentClient: Sendable {
         create: @escaping @MainActor @Sendable (UUID, Date) throws -> ExperimentListEntry,
         leaveSession: @escaping @MainActor @Sendable (UUID, UUID, Date) throws -> Void,
         saveTimer: @escaping @MainActor @Sendable (UUID, ExperimentTimer, Date?) throws -> Void,
+        savePhoto: @escaping @MainActor @Sendable (UUID, UUID, Date, Data) throws -> Void,
+        saveVideo: @escaping @MainActor @Sendable (UUID, UUID, Date, URL) throws -> Void,
+        cancelVideoSave: @escaping @MainActor @Sendable (UUID, UUID, URL) throws -> Void,
         complete: @escaping @MainActor @Sendable (UUID, Date) throws -> Void,
         delete: @escaping @MainActor @Sendable (UUID) throws -> Void
     ) {
@@ -28,6 +34,9 @@ public struct ExperimentClient: Sendable {
         self.create = create
         self.leaveSession = leaveSession
         self.saveTimer = saveTimer
+        self.savePhoto = savePhoto
+        self.saveVideo = saveVideo
+        self.cancelVideoSave = cancelVideoSave
         self.complete = complete
         self.delete = delete
     }
@@ -35,18 +44,37 @@ public struct ExperimentClient: Sendable {
 
 extension ExperimentClient: DependencyKey {
     public static let liveValue = ExperimentClient(
-        load: { try ExperimentRepository.shared.load() },
-        loadDetail: { try ExperimentRepository.shared.loadDetail(id: $0) },
-        loadResultDetail: { try ExperimentRepository.shared.loadResultDetail(id: $0) },
-        create: { try ExperimentRepository.shared.create(id: $0, at: $1) },
+        load: { try ExperimentListRepository.shared.load() },
+        loadDetail: {
+            try ExperimentSessionRepository.shared.loadDetail(id: $0)
+        },
+        loadResultDetail: { try ExperimentResultRepository.shared.loadResultDetail(id: $0) },
+        create: { try ExperimentListRepository.shared.create(id: $0, at: $1) },
         leaveSession: {
-            try ExperimentRepository.shared.leaveSession(id: $0, entryID: $1, at: $2)
+            try ExperimentSessionRepository.shared.leaveSession(id: $0, entryID: $1, at: $2)
         },
         saveTimer: {
-            try ExperimentRepository.shared.saveTimer(experimentID: $0, timer: $1, endedAt: $2)
+            try ExperimentSessionRepository.shared.saveTimer(
+                experimentID: $0, timer: $1, endedAt: $2
+            )
         },
-        complete: { try ExperimentRepository.shared.complete(id: $0, at: $1) },
-        delete: { try ExperimentRepository.shared.delete(id: $0) }
+        savePhoto: {
+            try ExperimentSessionRepository.shared.savePhoto(
+                experimentID: $0, id: $1, recordedAt: $2, data: $3
+            )
+        },
+        saveVideo: {
+            try ExperimentSessionRepository.shared.saveVideo(
+                experimentID: $0, id: $1, recordedAt: $2, sourceURL: $3
+            )
+        },
+        cancelVideoSave: {
+            try ExperimentSessionRepository.shared.cancelVideoSave(
+                experimentID: $0, id: $1, sourceURL: $2
+            )
+        },
+        complete: { try ExperimentSessionRepository.shared.complete(id: $0, at: $1) },
+        delete: { try ExperimentListRepository.shared.delete(id: $0) }
     )
 }
 
