@@ -16,7 +16,7 @@ public struct DesignSystemCatalog: View {
                         Text(section.description)
                             .typography(Typography.subheadline)
                             .foregroundStyle(
-                                Color(.generalLabelSecondary)
+                                Color("General/Label/Secondary", bundle: catalogBundle)
                             )
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -89,7 +89,7 @@ private struct DesignSystemCatalogSectionPage: View {
 
     private func sectionHeading(_ title: String) -> some View {
         Text(title)
-            .foregroundStyle(Color(.generalLabelSecondary))
+            .foregroundStyle(Color("General/Label/Secondary", bundle: catalogBundle))
     }
 }
 
@@ -117,7 +117,9 @@ private extension View {
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(
                     Color(
-                        context == .general ? .generalLabelSecondary : .experimentLabelSecondary
+                        context == .general
+                            ? "General/Label/Secondary" : "Experiment/Label/Secondary",
+                        bundle: catalogBundle
                     )
                 )
                 .accessibilityHidden(true)
@@ -131,12 +133,17 @@ private extension View {
             .listRowBackground(
                 Color(
                     context == .general
-                        ? .generalBackgroundGroupedSecondary
-                        : .experimentBackgroundGroupedSecondary
+                        ? "General/Background/Grouped/Secondary"
+                        : "Experiment/Background/Grouped/Secondary",
+                    bundle: catalogBundle
                 )
             )
             .listRowSeparatorTint(
-                Color(context == .general ? .generalSeparatorDefault : .experimentSeparatorDefault)
+                Color(
+                    context == .general
+                        ? "General/Separator/Default" : "Experiment/Separator/Default",
+                    bundle: catalogBundle
+                )
             )
     }
 
@@ -145,8 +152,8 @@ private extension View {
             .scrollContentBackground(.hidden)
             .foregroundStyle(
                 context == .general
-                    ? Color(.generalLabelPrimary)
-                    : Color(.experimentLabelPrimary)
+                    ? Color("General/Label/Primary", bundle: catalogBundle)
+                    : Color("Experiment/Label/Primary", bundle: catalogBundle)
             )
             .labcordEntrance()
             .background {

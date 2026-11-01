@@ -39,8 +39,8 @@ struct DesignSystemCatalogPage<Content: View>: View {
             .navigationTitle(title)
             .foregroundStyle(
                 context == .general
-                    ? Color(.generalLabelPrimary)
-                    : Color(.experimentLabelPrimary)
+                    ? Color("General/Label/Primary", bundle: catalogBundle)
+                    : Color("Experiment/Label/Primary", bundle: catalogBundle)
             )
             .background {
                 Rectangle()
@@ -127,7 +127,10 @@ private struct CatalogNavigationAppearance: UIViewControllerRepresentable {
             let isExperiment = catalogContext == .experiment
             bar.overrideUserInterfaceStyle = isExperiment ? .dark : .light
             let titleColor = UIColor(
-                resource: isExperiment ? .experimentLabelPrimary : .generalLabelPrimary
+                Color(
+                    isExperiment ? "Experiment/Label/Primary" : "General/Label/Primary",
+                    bundle: catalogBundle
+                )
             )
             guard let standard = bar.standardAppearance.copy() as? UINavigationBarAppearance else {
                 return

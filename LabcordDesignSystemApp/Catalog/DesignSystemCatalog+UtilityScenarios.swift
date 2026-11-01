@@ -58,7 +58,7 @@ struct CatalogControlLoadingScenario: View {
                 .progressViewStyle(
                     .labcord(
                         size: size,
-                        foreground: Color(.generalLabelPrimary)
+                        foreground: Color("General/Label/Primary", bundle: catalogBundle)
                     )
                 )
                 .accessibilityLabel(Text("로딩 중"))
