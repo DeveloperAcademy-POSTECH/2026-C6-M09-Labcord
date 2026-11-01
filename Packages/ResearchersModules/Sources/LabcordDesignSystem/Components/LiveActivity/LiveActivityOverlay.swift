@@ -26,7 +26,8 @@ public struct LiveActivityPlacement: Sendable {
             return nil
         }
         return LiveActivityPlacement(
-            top: top, collapsedSize: CGSize(width: width, height: 36.67), expandedWidth: 327
+            top: top, collapsedSize: CGSize(width: width, height: 36.67),
+            expandedWidth: 370, expandedHorizontalInset: 16
         )
     }
 
@@ -34,17 +35,20 @@ public struct LiveActivityPlacement: Sendable {
     public let horizontalOffset: CGFloat
     public let collapsedSize: CGSize
     public let expandedWidth: CGFloat
+    public let expandedHorizontalInset: CGFloat?
 
     public init(
         top: CGFloat,
         horizontalOffset: CGFloat = 0,
         collapsedSize: CGSize,
-        expandedWidth: CGFloat
+        expandedWidth: CGFloat,
+        expandedHorizontalInset: CGFloat? = nil
     ) {
         self.top = top
         self.horizontalOffset = horizontalOffset
         self.collapsedSize = collapsedSize
         self.expandedWidth = expandedWidth
+        self.expandedHorizontalInset = expandedHorizontalInset
     }
 }
 
@@ -62,7 +66,9 @@ public extension View {
                     AnimatedLiveActivityContainer(
                         isExpanded: isExpanded,
                         collapsedSize: placement.collapsedSize,
-                        expandedWidth: min(placement.expandedWidth, geometry.size.width)
+                        expandedWidth: placement.expandedHorizontalInset.map {
+                            max(0, geometry.size.width - 2 * $0)
+                        } ?? min(placement.expandedWidth, geometry.size.width)
                     ) {
                         content()
                     }
