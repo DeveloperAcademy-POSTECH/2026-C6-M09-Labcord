@@ -72,16 +72,25 @@ struct ExperimentSessionView: View {
         .navigationBarBackButtonHidden()
         .overlay {
             if let data = captureStore.capturedPhotoData {
-                CapturedPhotoView(photoData: data) {
-                    captureStore.send(.retakeRequested)
-                }
+                CapturedPhotoView(
+                    photoData: data,
+                    isSaving: captureStore.photo.isSaving,
+                    onRetake: { captureStore.send(.photo(.retakeRequested)) },
+                    onSave: { captureStore.send(.photo(.saveRequested)) }
+                )
             }
         }
         .overlay {
-            if case let .preview(url) = captureStore.videoPhase {
-                CapturedVideoView(videoURL: url) {
-                    captureStore.send(.videoRetakeRequested)
-                }
+            if case let .preview(url) = captureStore.videoPhase,
+               let recordID = captureStore.video.recordID {
+                CapturedVideoView(
+                    videoURL: url,
+                    isSaving: captureStore.video.isSaving,
+                    showAutoSaveMessage: captureStore.video.isAutoSavePending,
+                    onRetake: { captureStore.send(.video(.retakeRequested)) },
+                    onSave: { captureStore.send(.video(.saveRequested)) },
+                    onPlaybackFinished: { captureStore.send(.video(.playbackFinished(recordID))) }
+                )
                 .id(url)
             }
         }
@@ -109,7 +118,9 @@ struct ExperimentSessionView: View {
         }
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
-            if !store.isReturningHome {
+            if store.isReturningHome {
+                captureStore.send(.video(.cancelRequested))
+            } else {
                 captureStore.send(.cameraViewDisappeared)
             }
         }
@@ -162,6 +173,38 @@ struct ExperimentSessionView: View {
             }
         } message: {
             Text(voiceStore.errorMessage ?? "")
+        }
+        .alert(
+            "사진 저장 실패",
+            isPresented: Binding(
+                get: { captureStore.photo.saveError != nil },
+                set: { if !$0 { captureStore.send(.photo(.saveErrorDismissed)) } }
+            )
+        ) {
+            Button("다시 시도") {
+                captureStore.send(.photo(.saveRequested))
+            }
+            Button("닫기", role: .cancel) {
+                captureStore.send(.photo(.saveErrorDismissed))
+            }
+        } message: {
+            Text(captureStore.photo.saveError ?? "사진을 저장하지 못했습니다.")
+        }
+        .alert(
+            "영상 저장 실패",
+            isPresented: Binding(
+                get: { captureStore.video.saveError != nil },
+                set: { if !$0 { captureStore.send(.video(.saveErrorDismissed)) } }
+            )
+        ) {
+            Button("다시 시도") {
+                captureStore.send(.video(.saveRequested))
+            }
+            Button("닫기", role: .cancel) {
+                captureStore.send(.video(.saveErrorDismissed))
+            }
+        } message: {
+            Text(captureStore.video.saveError ?? "영상을 저장하지 못했습니다.")
         }
         .alert(
             "타이머 저장 실패",
