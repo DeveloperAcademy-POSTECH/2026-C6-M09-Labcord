@@ -13,7 +13,7 @@ struct SplashView: View {
         ZStack {
             Color("General/Brand/Primary")
                 .ignoresSafeArea()
-            
+
             Image("splash")
                 .resizable()
                 .aspectRatio(1.0205, contentMode: .fit)
