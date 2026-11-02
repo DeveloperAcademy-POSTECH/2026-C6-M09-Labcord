@@ -1,25 +1,34 @@
 import ComposableArchitecture
 import SwiftUI
+import LabcordDesignSystem
 
 struct HomeView: View {
     let store: StoreOf<HomeFeature>
-
+    
     var body: some View {
         ExperimentList(store: store.scope(state: \.list, action: \.list))
-            .navigationTitle("실험")
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("설정", systemImage: "gearshape") {
-                        store.send(.settingsTapped)
-                    }
-                    .accessibilityIdentifier("entry-settings")
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("새 실험 추가", systemImage: "plus") {
+            .overlay(alignment: .bottomTrailing) {
+                VStack(spacing: LayoutTokens.spacing12) {
+                    Button {
                         store.send(.addTapped)
+                    } label: {
+                        Image(labcordIcon: .questionmark)
                     }
-                    .accessibilityIdentifier("entry-add")
+                    .buttonStyle(
+                        .labcordIcon(.neutral, size: .large, isLoading: false)
+                    )
+
+                    Button {
+                        store.send(.addTapped)
+                    } label: {
+                        Image(labcordIcon: .plus)
+                    }
+                    .buttonStyle(
+                        .labcordIcon(.primary, size: .large, isLoading: false)
+                    )
                 }
+                .padding(.trailing, 20)
+                .padding(.bottom, 17)
             }
     }
 }
