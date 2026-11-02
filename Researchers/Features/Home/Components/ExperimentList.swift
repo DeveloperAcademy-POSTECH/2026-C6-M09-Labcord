@@ -11,6 +11,7 @@ struct ExperimentList: View {
             section("진행 중인 실험", icon: .flask, entries: store.entries.filter(\.isActive))
             section("최근 실험", icon: .folderOpen, entries: store.entries.filter { !$0.isActive })
         }
+        .listRowSpacing(0)
         .listSectionSpacing(.custom(LayoutTokens.spacing32))
         .scrollBounceBehavior(.basedOnSize)
         .scrollIndicators(.hidden)
@@ -58,7 +59,9 @@ private extension ExperimentList {
                     .tint(.red)
                     .accessibilityIdentifier("entry-delete-\(entry.id.uuidString)")
                 }
+                .listRowInsets(.all, 0)
                 .disabled(store.isDeleting)
+                .listRowSeparator(.hidden)
             }
         } header: {
             HStack(spacing: LayoutTokens.spacing8) {
