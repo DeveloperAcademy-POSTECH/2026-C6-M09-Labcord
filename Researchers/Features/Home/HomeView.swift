@@ -12,7 +12,7 @@ struct HomeView: View {
             .overlay(alignment: .bottomTrailing) {
                 VStack(spacing: LayoutTokens.spacing12) {
                     Button {
-                        store.send(.addTapped)
+                        // 가이드 화면 이동 구현
                     } label: {
                         Image(labcordIcon: .questionmark)
                     }
