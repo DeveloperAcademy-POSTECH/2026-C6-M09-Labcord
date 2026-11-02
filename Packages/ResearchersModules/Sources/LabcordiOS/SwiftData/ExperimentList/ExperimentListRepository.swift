@@ -59,15 +59,15 @@ final class ExperimentListRepository {
             title: experiment.title,
             createdAt: experiment.createdAt,
             status: .init(experiment.status),
-            hasRunningTimer: hasRunningTimer(in: experiment, at: date)
+            lastRunningTimerEndsAt: lastRunningTimerEndsAt(in: experiment, at: date)
         )
     }
 
-    private static func hasRunningTimer(in experiment: Experiment, at date: Date) -> Bool {
-        experiment.records.contains { record in
+    private static func lastRunningTimerEndsAt(in experiment: Experiment, at date: Date) -> Date? {
+        experiment.records.compactMap { record -> Date? in
             guard record.type == .timer,
                   record.timerEndedAt == nil,
-                  let duration = record.timerDurationSeconds else { return false }
+                  let duration = record.timerDurationSeconds else { return nil }
             let pauses = record.timerPauses
                 .sorted { $0.pausedAt < $1.pausedAt }
                 .map {
@@ -83,7 +83,13 @@ final class ExperimentListRepository {
                 startedAt: record.recordedAt,
                 pauseIntervals: pauses
             )
-            return timer.status == .running && timer.remainingSeconds(at: date) > 0
-        }
+            guard timer.status == .running, timer.remainingSeconds(at: date) > 0 else {
+                return nil
+            }
+            let pausedDuration = pauses.reduce(0.0) { total, pause in
+                total + (pause.resumedAt ?? pause.pausedAt).timeIntervalSince(pause.pausedAt)
+            }
+            return timer.startedAt.addingTimeInterval(TimeInterval(duration) + pausedDuration)
+        }.max()
     }
 }

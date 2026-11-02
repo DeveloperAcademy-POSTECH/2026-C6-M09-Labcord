@@ -15,27 +15,35 @@ struct ExperimentListItem: View {
                         .foregroundStyle(Color("General/Label/Primary"))
                         .lineLimit(1)
 
-                    Text(Self.dateFormatter.string(from: entry.createdAt))
-                        .typography(Typography.subheadline)
-                        .foregroundStyle(Color("General/Label/Tertiary"))
+                    HStack(spacing: LayoutTokens.spacing10) {
+                        Text(Self.dateFormatter.string(from: entry.createdAt))
+                            .typography(Typography.subheadline)
+                            .foregroundStyle(Color("General/Label/Tertiary"))
+
+                        if let endsAt = entry.lastRunningTimerEndsAt {
+                            TimelineView(.periodic(from: .now, by: 1)) { context in
+                                if context.date < endsAt {
+                                    HStack(spacing: LayoutTokens.spacing4) {
+                                        Image(labcordIcon: .dot)
+                                            .resizable()
+                                            .frame(width: 16, height: 16)
+
+                                        Text("타이머 진행 중")
+                                            .typography(Typography.subheadline)
+                                    }
+                                    .foregroundStyle(Color("General/Timer/Identity/04"))
+                                }
+                            }
+                        }
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                HStack(spacing: LayoutTokens.spacing12) {
-                    if entry.hasRunningTimer || entry.status != .ready {
-                        if entry.status == .paused {
-                            StatusBadge(status: .paused, label: "일시 정지")
-                        } else if entry.status == .completed {
-                            StatusBadge(status: .completed)
-                        }
-                    }
-
-                    Image(labcordIcon: .caretRight)
-                        .resizable()
-                        .foregroundStyle(Color("General/Label/Tertiary"))
-                        .frame(width: 16, height: 16)
-                        .padding(LayoutTokens.spacing8)
-                }
+                Image(labcordIcon: .caretRight)
+                    .resizable()
+                    .foregroundStyle(Color("General/Label/Tertiary"))
+                    .frame(width: 16, height: 16)
+                    .padding(LayoutTokens.spacing8)
             }
             .padding(LayoutTokens.spacing8)
             .contentShape(Rectangle())

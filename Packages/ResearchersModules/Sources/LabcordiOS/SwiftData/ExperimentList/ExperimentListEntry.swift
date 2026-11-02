@@ -6,20 +6,20 @@ nonisolated public struct ExperimentListEntry: Equatable, Identifiable, Sendable
     public let title: String
     public let createdAt: Date
     public let status: Status
-    public let hasRunningTimer: Bool
+    public let lastRunningTimerEndsAt: Date?
 
     public init(
         id: UUID,
         title: String,
         createdAt: Date,
         status: Status,
-        hasRunningTimer: Bool
+        lastRunningTimerEndsAt: Date?
     ) {
         self.id = id
         self.title = title
         self.createdAt = createdAt
         self.status = status
-        self.hasRunningTimer = hasRunningTimer
+        self.lastRunningTimerEndsAt = lastRunningTimerEndsAt
     }
 
     public enum Status: String, Equatable, Sendable {
