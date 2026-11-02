@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import LabcordDesignSystem
 import LabcordiOS
 import SwiftUI
 
@@ -7,9 +8,25 @@ struct ExperimentList: View {
 
     var body: some View {
         List {
-            section("진행 중인 실험", entries: store.entries.filter(\.isActive))
-            section("최근 실험", entries: store.entries.filter { !$0.isActive })
+            section(
+                "진행 중인 실험",
+                icon: .flask,
+                emptyMessage: "진행 중인 실험이 없습니다",
+                entries: store.entries.filter(\.isActive)
+            )
+            section(
+                "최근 실험",
+                icon: .folderOpen,
+                emptyMessage: "최근 실험이 없습니다",
+                entries: store.entries.filter { !$0.isActive }
+            )
         }
+        .listRowSpacing(0)
+        .listSectionSpacing(.custom(LayoutTokens.spacing32))
+        .scrollBounceBehavior(.basedOnSize)
+        .scrollIndicators(.hidden)
+        .scrollContentBackground(.hidden)
+        .background(Color("General/Background/Primary"))
         .alert(
             "실험을 삭제할까요?",
             isPresented: deletionBinding,
@@ -39,26 +56,48 @@ struct ExperimentList: View {
 }
 
 private extension ExperimentList {
-    func section(_ title: String, entries: [ExperimentListEntry]) -> some View {
-        Section(title) {
-            ForEach(entries) { entry in
-                ExperimentListItem(entry: entry) {
-                    store.send(.experimentTapped(entry.id))
-                }
-                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                    Button("삭제", systemImage: "trash") {
-                        store.send(.deleteRequested(entry.id))
+    func section(
+        _ title: String,
+        icon: Icon,
+        emptyMessage: String,
+        entries: [ExperimentListEntry]
+    ) -> some View {
+        Section {
+            if entries.isEmpty {
+                Text(emptyMessage)
+                    .typography(Typography.subheadline)
+                    .foregroundStyle(Color("General/Label/Secondary"))
+            } else {
+                ForEach(entries) { entry in
+                    ExperimentListItem(entry: entry) {
+                        store.send(.experimentTapped(entry.id))
                     }
-                    .tint(.red)
-                    .accessibilityIdentifier("entry-delete-\(entry.id.uuidString)")
-                    Button("수정", systemImage: "pencil") {
-                        store.send(.editTapped(entry.id))
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button("삭제", systemImage: "trash") {
+                            store.send(.deleteRequested(entry.id))
+                        }
+                        .tint(.red)
                     }
-                    .accessibilityIdentifier("entry-edit-\(entry.id.uuidString)")
+                    .disabled(store.isDeleting)
                 }
-                .disabled(store.isDeleting)
             }
+        } header: {
+            HStack(spacing: LayoutTokens.spacing8) {
+                Image(labcordIcon: icon)
+                    .frame(width: 20, height: 20)
+                    .foregroundStyle(Color("Experiment/Brand/Primary"))
+
+                Text(title)
+                    .typography(Typography.headline)
+                    .foregroundStyle(Color("General/Label/Primary"))
+            }
+            .padding(.bottom, entries.isEmpty ? 0 : LayoutTokens.spacing12)
+            .listRowInsets(.horizontal, 0)
         }
+        .listRowInsets(.all, 0)
+        .listRowSeparator(.hidden)
+        .listSectionMargins(.horizontal, 0)
+        .listSectionMargins(.bottom, entries.isEmpty ? 0 : nil)
     }
 
     var deletionBinding: Binding<Bool> {
