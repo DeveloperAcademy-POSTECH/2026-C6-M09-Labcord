@@ -1,10 +1,10 @@
 import ComposableArchitecture
-import SwiftUI
 import LabcordDesignSystem
+import SwiftUI
 
 struct HomeView: View {
     let store: StoreOf<HomeFeature>
-    
+
     var body: some View {
         ExperimentList(store: store.scope(state: \.list, action: \.list))
             .padding(.top, 54)

@@ -1,6 +1,6 @@
+import LabcordDesignSystem
 import LabcordiOS
 import SwiftUI
-import LabcordDesignSystem
 
 struct ExperimentListItem: View {
     let entry: ExperimentListEntry
@@ -29,7 +29,7 @@ struct ExperimentListItem: View {
                             StatusBadge(status: .completed)
                         }
                     }
-                    
+
                     Image(labcordIcon: .caretRight)
                         .resizable()
                         .foregroundStyle(Color("General/Label/Tertiary"))
