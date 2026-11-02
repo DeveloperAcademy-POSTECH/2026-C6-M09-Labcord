@@ -7,6 +7,7 @@
 
 import ComposableArchitecture
 import LabcordiOS
+import LabcordDesignSystem
 import SwiftUI
 
 struct ExperimentResultView: View {
@@ -79,32 +80,67 @@ struct ExperimentResultView: View {
     }
 
     var body: some View {
-        VStack(spacing: 20) {
-            if store.detail != nil {
-                Text("기록 종료 화면")
+        GeometryReader { geometry in
+            ZStack {
+                Color("General/Background/Primary")
+                    .ignoresSafeArea()
 
-                ScrollView {
-                    Text(detailText)
-                        .font(.system(.body, design: .monospaced))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .textSelection(.enabled)
-                        .padding()
+                VStack(spacing: 0) {
+                    Group {
+                        ScrollView {
+                            NavigationPageTitle("실험 기록")
+
+                            if store.detail != nil {
+                                Text(detailText)
+                                    .font(.system(.body, design: .monospaced))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .textSelection(.enabled)
+                                    .padding()
+                            }
+                        }
+                        .scrollBounceBehavior(.basedOnSize)
+                        .scrollIndicators(.hidden)
+                        .overlay {
+                            if store.detail == nil {
+                                if let loadMessage = store.loadMessage {
+                                    Text(loadMessage)
+                                } else {
+                                    ExperimentProcessingView()
+                                }
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                    HStack(spacing: LayoutTokens.spacing16) {
+                        if store.detail != nil {
+                            Button {
+                                // 실험 재개 코드 구현
+                            } label: {
+                                Text("실험 재개")
+                            }
+                            .buttonStyle(.labcord(.plain, size: .large))
+                        }
+
+                        Button {
+                            store.send(.homeTapped)
+                        } label: {
+                            Text("홈으로 이동")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.labcord(.filled, size: .large))
+                    }
+                    .padding(.horizontal, LayoutTokens.spacing16)
+                    .padding(.top, LayoutTokens.spacing12)
+                    .padding(.bottom, max(34 - geometry.safeAreaInsets.bottom, 0))
                 }
-            } else if let loadMessage = store.loadMessage {
-                Text(loadMessage)
-            } else {
-                ExperimentProcessingView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .navigationBarBackButtonHidden()
+                .toolbar(.hidden, for: .navigationBar)
+                .task {
+                    await store.send(.loadResultDetail).finish()
+                }
             }
-
-            Button {
-                store.send(.homeTapped)
-            } label: {
-                Text("홈으로 이동")
-            }
-        }
-        .navigationBarBackButtonHidden()
-        .task {
-            await store.send(.loadResultDetail).finish()
         }
     }
 }
