@@ -8,8 +8,8 @@
 import Foundation
 
 public enum ExperimentStatus: String, Codable, Sendable {
-    case preparing
-    case inProgress
+    case ready
+    case running
     case paused
     case completed
 }
