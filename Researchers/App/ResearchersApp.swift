@@ -1,4 +1,5 @@
 import LabcordiOS
+import LabcordDesignSystem
 import SwiftUI
 import UserNotifications
 
@@ -8,6 +9,7 @@ struct ResearchersApp: App {
     private let notificationDelegate = ForegroundNotificationDelegate()
 
     init() {
+        FontRegistration.register()
         UNUserNotificationCenter.current().delegate = notificationDelegate
     }
 
