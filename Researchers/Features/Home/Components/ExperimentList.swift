@@ -91,12 +91,13 @@ private extension ExperimentList {
                     .typography(Typography.headline)
                     .foregroundStyle(Color("General/Label/Primary"))
             }
+            .padding(.bottom, entries.isEmpty ? 0 : LayoutTokens.spacing12)
             .listRowInsets(.horizontal, 0)
         }
         .listRowInsets(.all, 0)
         .listRowSeparator(.hidden)
         .listSectionMargins(.horizontal, 0)
-        .listSectionMargins(.bottom, 0)
+        .listSectionMargins(.bottom, entries.isEmpty ? 0 : nil)
     }
 
     var deletionBinding: Binding<Bool> {
