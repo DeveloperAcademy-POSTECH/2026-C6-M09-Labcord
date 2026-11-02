@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import LabcordiOS
+import LabcordDesignSystem
 import SwiftUI
 
 struct ExperimentList: View {
@@ -7,9 +8,14 @@ struct ExperimentList: View {
 
     var body: some View {
         List {
-            section("진행 중인 실험", entries: store.entries.filter(\.isActive))
-            section("최근 실험", entries: store.entries.filter { !$0.isActive })
+            section("진행 중인 실험", icon: .flask, entries: store.entries.filter(\.isActive))
+            section("최근 실험", icon: .folderOpen, entries: store.entries.filter { !$0.isActive })
         }
+        .listSectionSpacing(.custom(LayoutTokens.spacing32))
+        .scrollBounceBehavior(.basedOnSize)
+        .scrollIndicators(.hidden)
+        .scrollContentBackground(.hidden)
+        .background(Color("General/Background/Primary"))
         .alert(
             "실험을 삭제할까요?",
             isPresented: deletionBinding,
@@ -39,8 +45,8 @@ struct ExperimentList: View {
 }
 
 private extension ExperimentList {
-    func section(_ title: String, entries: [ExperimentListEntry]) -> some View {
-        Section(title) {
+    func section(_ title: String, icon: Icon, entries: [ExperimentListEntry]) -> some View {
+        Section {
             ForEach(entries) { entry in
                 ExperimentListItem(entry: entry) {
                     store.send(.experimentTapped(entry.id))
@@ -51,14 +57,22 @@ private extension ExperimentList {
                     }
                     .tint(.red)
                     .accessibilityIdentifier("entry-delete-\(entry.id.uuidString)")
-                    Button("수정", systemImage: "pencil") {
-                        store.send(.editTapped(entry.id))
-                    }
-                    .accessibilityIdentifier("entry-edit-\(entry.id.uuidString)")
                 }
                 .disabled(store.isDeleting)
             }
+        } header: {
+            HStack(spacing: LayoutTokens.spacing8) {
+                Image(labcordIcon: icon)
+                    .frame(width: 20, height: 20)
+                    .foregroundStyle(Color("Experiment/Brand/Primary"))
+
+                Text(title)
+                    .typography(Typography.headline)
+                    .foregroundStyle(Color("General/Label/Primary"))
+            }
+            .listRowInsets(.horizontal, 0)
         }
+        .listSectionMargins(.horizontal, 0)
     }
 
     var deletionBinding: Binding<Bool> {
