@@ -8,8 +8,18 @@ struct ExperimentList: View {
 
     var body: some View {
         List {
-            section("진행 중인 실험", icon: .flask, entries: store.entries.filter(\.isActive))
-            section("최근 실험", icon: .folderOpen, entries: store.entries.filter { !$0.isActive })
+            section(
+                "진행 중인 실험",
+                icon: .flask,
+                emptyMessage: "진행 중인 실험이 없습니다",
+                entries: store.entries.filter(\.isActive)
+            )
+            section(
+                "최근 실험",
+                icon: .folderOpen,
+                emptyMessage: "최근 실험이 없습니다",
+                entries: store.entries.filter { !$0.isActive }
+            )
         }
         .listRowSpacing(0)
         .listSectionSpacing(.custom(LayoutTokens.spacing32))
@@ -46,22 +56,30 @@ struct ExperimentList: View {
 }
 
 private extension ExperimentList {
-    func section(_ title: String, icon: Icon, entries: [ExperimentListEntry]) -> some View {
+    func section(
+        _ title: String,
+        icon: Icon,
+        emptyMessage: String,
+        entries: [ExperimentListEntry]
+    ) -> some View {
         Section {
-            ForEach(entries) { entry in
-                ExperimentListItem(entry: entry) {
-                    store.send(.experimentTapped(entry.id))
-                }
-                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                    Button("삭제", systemImage: "trash") {
-                        store.send(.deleteRequested(entry.id))
+            if entries.isEmpty {
+                Text(emptyMessage)
+                    .typography(Typography.subheadline)
+                    .foregroundStyle(Color("General/Label/Secondary"))
+            } else {
+                ForEach(entries) { entry in
+                    ExperimentListItem(entry: entry) {
+                        store.send(.experimentTapped(entry.id))
                     }
-                    .tint(.red)
-                    .accessibilityIdentifier("entry-delete-\(entry.id.uuidString)")
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button("삭제", systemImage: "trash") {
+                            store.send(.deleteRequested(entry.id))
+                        }
+                        .tint(.red)
+                    }
+                    .disabled(store.isDeleting)
                 }
-                .listRowInsets(.all, 0)
-                .disabled(store.isDeleting)
-                .listRowSeparator(.hidden)
             }
         } header: {
             HStack(spacing: LayoutTokens.spacing8) {
@@ -75,6 +93,8 @@ private extension ExperimentList {
             }
             .listRowInsets(.horizontal, 0)
         }
+        .listRowInsets(.all, 0)
+        .listRowSeparator(.hidden)
         .listSectionMargins(.horizontal, 0)
     }
 
