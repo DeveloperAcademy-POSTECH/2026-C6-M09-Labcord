@@ -96,6 +96,7 @@ private extension ExperimentList {
         .listRowInsets(.all, 0)
         .listRowSeparator(.hidden)
         .listSectionMargins(.horizontal, 0)
+        .listSectionMargins(.bottom, 0)
     }
 
     var deletionBinding: Binding<Bool> {
