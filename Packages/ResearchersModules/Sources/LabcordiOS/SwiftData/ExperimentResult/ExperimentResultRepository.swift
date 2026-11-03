@@ -18,6 +18,16 @@ final class ExperimentResultRepository {
         return Self.resultDetail(experiment)
     }
 
+    func updateTitle(id: UUID, title: String) throws -> ExperimentResultDetail {
+        let context = try store.makeContext()
+        guard let experiment = try store.find(id: id, in: context) else {
+            throw ExperimentStore.StoreError.experimentNotFound
+        }
+        experiment.title = title
+        try context.save()
+        return Self.resultDetail(experiment)
+    }
+
     private static func resultDetail(_ experiment: Experiment) -> ExperimentResultDetail {
         ExperimentResultDetail(
             id: experiment.id,

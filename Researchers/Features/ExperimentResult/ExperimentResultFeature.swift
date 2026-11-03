@@ -116,7 +116,16 @@ struct ExperimentResultFeature {
 
             case .editTapped:
                 guard let title = state.detail?.title else { return .none }
-                state.titleEditOverlay = TitleEditOverlayFeature.State(originalTitle: title)
+                state.titleEditOverlay = TitleEditOverlayFeature.State(
+                    experimentID: state.experimentID,
+                    originalTitle: title
+                )
+                return .none
+
+            case let .titleEditOverlay(.delegate(.saved(detail))):
+                guard detail.id == state.experimentID else { return .none }
+                state.detail = detail
+                state.titleEditOverlay = nil
                 return .none
 
             case .titleEditOverlay(.delegate(.dismiss)):

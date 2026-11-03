@@ -6,6 +6,7 @@
 //
 
 import ComposableArchitecture
+import Foundation
 import LabcordDesignSystem
 import SwiftUI
 
@@ -26,6 +27,7 @@ struct TitleEditOverlayView: View {
                         Image(labcordIcon: .x)
                     }
                     .buttonStyle(.labcordIcon(.plain, size: .large))
+                    .disabled(store.isSaving)
 
                     Spacer()
 
@@ -48,6 +50,7 @@ struct TitleEditOverlayView: View {
                             focus: $isTitleFocused
                         )
                         .submitLabel(.done)
+                        .disabled(store.isSaving)
 
                     Text("\(store.title.count)/60")
                         .typography(Typography.subheadline)
@@ -62,6 +65,7 @@ struct TitleEditOverlayView: View {
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.labcord(.plain, size: .large))
+                    .disabled(store.isSaving)
 
                     Button {
                         store.send(.saveTapped)
@@ -69,8 +73,12 @@ struct TitleEditOverlayView: View {
                         Text("저장")
                             .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.labcord(store.canSave ? .filled : .tertiary, size: .large))
-                    .disabled(!store.canSave)
+                    .buttonStyle(.labcord(
+                        store.canSave ? .filled : .tertiary,
+                        size: .large,
+                        isLoading: store.isSaving
+                    ))
+                    .disabled(!store.canSave || store.isSaving)
                 }
             }
             .padding(.all, LayoutTokens.spacing16)
@@ -86,12 +94,26 @@ struct TitleEditOverlayView: View {
         }, onCancel: {
             store.send(.discardCancelled)
         })
+        .alert("제목을 저장하지 못했어요", isPresented: Binding(
+            get: { store.hasSaveFailed },
+            set: { if !$0 { store.send(.saveFailureDismissed) } }
+        )) {
+            Button("재시도") {
+                store.send(.saveTapped)
+            }
+            Button("취소", role: .cancel) {
+                store.send(.saveFailureDismissed)
+            }
+        } message: {
+            Text("변경한 제목은 유지했어요. 다시 시도해 주세요.")
+        }
     }
 }
 
 #Preview {
     TitleEditOverlayView(
         store: Store(initialState: TitleEditOverlayFeature.State(
+            experimentID: UUID(),
             originalTitle: "촉매 반응 조건 비교 실험"
         )) {
             TitleEditOverlayFeature()
