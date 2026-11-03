@@ -70,6 +70,7 @@ struct ExperimentResultFeature {
         case recordSortSelected(RecordSort)
         case editTapped
         case homeTapped
+        case resumeTapped
     }
 
     @Dependency(\.experimentClient) var experimentClient
@@ -106,7 +107,7 @@ struct ExperimentResultFeature {
                 state.selectedSort = sort
                 return .none
 
-            case .editTapped, .homeTapped:
+            case .editTapped, .homeTapped, .resumeTapped:
                 return .none
             }
         }

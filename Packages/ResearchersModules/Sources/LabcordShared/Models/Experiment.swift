@@ -62,7 +62,7 @@ public final class Experiment {
     }
 
     public func recordEntry(at date: Date) {
-        guard status == .ready || status == .paused else { return }
+        guard status != .running else { return }
         status = .running
         statusHistory.append(ExperimentStatusEntry(status: .running, date: date))
     }

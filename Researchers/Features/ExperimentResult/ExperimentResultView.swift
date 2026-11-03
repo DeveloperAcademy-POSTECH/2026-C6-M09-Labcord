@@ -22,7 +22,7 @@ struct ExperimentResultView: View {
                 VStack(spacing: 0) {
                     Group {
                         ScrollView {
-                            NavigationPageTitle("실험 기록")
+                            NavigationPageTitle("실험 기록") { store.send(.homeTapped) }
 
                             if let detail = store.detail {
                                 VStack(spacing: LayoutTokens.spacing24) {
@@ -35,17 +35,17 @@ struct ExperimentResultView: View {
                                         selectedType: store.selectedType,
                                         selectedSort: store.selectedSort,
                                         onSelectType: { store.send(.recordFilterSelected($0)) },
-                                        onSelectSort: { store.send(.recordSortSelected($0)) },
-                                        onEdit: { store.send(.editTapped) }
+                                        onSelectSort: { store.send(.recordSortSelected($0)) }
                                     )
 
                                     Separator(orientation: .horizontal)
 
-                                    VStack(alignment: .leading) {
-                                        Text(ExperimentResultDateFormatter.date(detail.createdAt))
-                                    }
-                                    .padding(.horizontal, LayoutTokens.spacing16)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    ExperimentHistoryTimeline(
+                                        detail: detail,
+                                        records: store.displayedRecords,
+                                        includesStatus: store.selectedType == .all,
+                                        newestFirst: store.selectedSort == .newest
+                                    )
                                 }
                             }
                         }
@@ -66,7 +66,7 @@ struct ExperimentResultView: View {
                     HStack(spacing: LayoutTokens.spacing16) {
                         if store.detail != nil {
                             Button {
-                                // 실험 재개 코드 구현
+                                store.send(.resumeTapped)
                             } label: {
                                 Text("실험 재개")
                             }

@@ -61,12 +61,19 @@ struct AppFeature {
 
             case let .home(.list(.experimentTapped(identifier))):
                 guard state.path.isEmpty, !state.home.list.isDeleting,
-                      state.home.list.entries.contains(where: { $0.id == identifier }) else {
+                      let entry = state.home.list.entries.first(where: { $0.id == identifier })
+                else {
                     return .none
                 }
-                state.path.append(
-                    .session(ExperimentSessionFeature.State(experimentID: identifier))
-                )
+                if entry.isActive {
+                    state.path.append(
+                        .session(ExperimentSessionFeature.State(experimentID: identifier))
+                    )
+                } else {
+                    state.path.append(
+                        .result(ExperimentResultFeature.State(experimentID: identifier))
+                    )
+                }
                 return .send(.home(.list(.cancelLoad)))
 
             case let .path(.element(id: id, action: .registration(.backTapped))):
@@ -235,6 +242,16 @@ struct AppFeature {
                     .result(ExperimentResultFeature.State(experimentID: experimentID))
                 )
                 return .none
+
+            case let .path(.element(id: id, action: .result(.resumeTapped))):
+                guard state.path.ids.last == id,
+                      let result = state.path[id: id, case: \.result],
+                      result.detail != nil else { return .none }
+                state.path.removeAll()
+                state.path.append(
+                    .session(ExperimentSessionFeature.State(experimentID: result.experimentID))
+                )
+                return .send(.home(.list(.cancelLoad)))
 
             case let .path(.element(id: id, action: .result(.homeTapped))):
                 return .send(.returnHome(id))

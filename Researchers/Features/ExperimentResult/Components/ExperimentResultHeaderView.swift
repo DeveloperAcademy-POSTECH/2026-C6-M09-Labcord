@@ -8,15 +8,19 @@ struct ExperimentResultHeaderView: View {
     let selectedSort: ExperimentResultFeature.RecordSort
     let onSelectType: (ExperimentResultFeature.RecordFilter) -> Void
     let onSelectSort: (ExperimentResultFeature.RecordSort) -> Void
-    let onEdit: () -> Void
+    var onEdit: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: LayoutTokens.spacing24) {
             VStack(alignment: .leading) {
                 let titleText = Text(title)
                     .typography(Typography.title2Bold)
-                let editButton = Button("편집", action: onEdit)
-                    .buttonStyle(.labcord(.plain, size: .small))
+                let editButton = Group {
+                    if let onEdit {
+                        Button("편집", action: onEdit)
+                            .buttonStyle(.labcord(.plain, size: .small))
+                    }
+                }
 
                 ViewThatFits(in: .horizontal) {
                     HStack(
