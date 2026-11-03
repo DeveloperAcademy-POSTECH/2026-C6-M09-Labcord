@@ -21,7 +21,11 @@ struct TitleEditOverlayView: View {
         self.onDismiss = onDismiss
         _title = State(initialValue: originalTitle)
     }
-    
+
+    private var canSave: Bool {
+        !title.isEmpty && title != originalTitle
+    }
+
     private func requestDismiss() {
         if title == originalTitle {
             onDismiss()
@@ -80,7 +84,8 @@ struct TitleEditOverlayView: View {
                         Text("저장")
                             .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.labcord(.filled, size: .large))
+                    .buttonStyle(.labcord(canSave ? .filled : .tertiary, size: .large))
+                    .disabled(!canSave)
                 }
             }
             .padding(.all, LayoutTokens.spacing16)
