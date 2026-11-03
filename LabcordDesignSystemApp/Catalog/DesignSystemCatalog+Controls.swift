@@ -90,6 +90,12 @@ struct DesignSystemControlsPage: View {
                         }
                     )
                 }
+                DesignSystemCatalogCard(
+                    "Chip Group · 한국어 줄바꿈",
+                    description: "짧은 용어는 다음 행으로, 전체 너비보다 긴 용어는 여러 줄로 표시"
+                ) {
+                    CatalogChipGroupWrappingScenario()
+                }
             case .textField:
                 DesignSystemCatalogCard(
                     "Text Field", description: "이름을 입력하고 안내 문구를 확인하는 필드"

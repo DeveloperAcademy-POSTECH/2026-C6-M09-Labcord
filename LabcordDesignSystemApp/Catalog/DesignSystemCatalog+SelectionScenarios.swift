@@ -103,6 +103,37 @@ struct CatalogControlChipScenario: View {
         }
     }
 }
+struct CatalogChipGroupWrappingScenario: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @State private var usesLargeText = false
+    @State private var usesNarrowWidth = false
+
+    private let items = [
+        CatalogChipItem(id: 0, title: "검정"),
+        CatalogChipItem(id: 1, title: "풍속계"),
+        CatalogChipItem(id: 2, title: "금속제(시스형)온도계"),
+        CatalogChipItem(id: 3, title: "완충용액(Tris-HCl)"),
+        CatalogChipItem(id: 4, title: "상대습도(%RH)"),
+        CatalogChipItem(id: 5, title: "수은기압계용 부착 온도계"),
+        CatalogChipItem(
+            id: 6, title: "실험실에서 사용하는 한영 혼합 전문 용어(Laboratory terminology)의 긴 표기"
+        )
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            ChipGroup(items: items, label: \.title)
+                .environment(\.dynamicTypeSize, usesLargeText ? .accessibility3 : dynamicTypeSize)
+                .frame(maxWidth: usesNarrowWidth ? 240 : .infinity, alignment: .leading)
+                .accessibilityIdentifier("catalog.scenario.chipGroup.wrapping")
+            Toggle("큰 글자", isOn: $usesLargeText)
+                .accessibilityIdentifier("catalog.scenario.chipGroup.largeText")
+            Toggle("좁은 너비", isOn: $usesNarrowWidth)
+                .accessibilityIdentifier("catalog.scenario.chipGroup.narrowWidth")
+        }
+    }
+}
+
 private enum CatalogControlChipState: String, CaseIterable {
     case normal = "Default"
     case selected = "Selected"

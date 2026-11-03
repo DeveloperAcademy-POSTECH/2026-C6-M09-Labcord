@@ -62,7 +62,7 @@ struct CatalogExperimentListItemScenario: View {
     @State private var showRadioButton = true
     @State private var title = "실험 제목"
     @State private var date = "2026.10.13"
-    @State private var status = ExperimentStatus.preparing
+    @State private var status = StatusBadge.Status.ready
     @State private var openCount = 0
 
     var body: some View {
@@ -78,9 +78,9 @@ struct CatalogExperimentListItemScenario: View {
             }
             .accessibilityIdentifier("catalog.review.experimentList.state")
             Picker("배지 상태", selection: $status) {
-                catalogPickerOptions(
-                    [ExperimentStatus.preparing, .inProgress, .paused, .completed]
-                )
+                Text("준비").tag(StatusBadge.Status.ready)
+                Text("일시정지").tag(StatusBadge.Status.paused)
+                Text("완료").tag(StatusBadge.Status.completed)
             }
             .accessibilityIdentifier("catalog.review.experimentStatus")
             CatalogDisclosureGroup("콘텐츠 옵션") {

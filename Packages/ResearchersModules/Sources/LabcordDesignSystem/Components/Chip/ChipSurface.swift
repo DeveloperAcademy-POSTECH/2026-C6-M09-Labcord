@@ -9,6 +9,8 @@ struct ChipSurface<Content: View>: View {
     let content: Content
 
     @Environment(\.controlSize) private var controlSize
+    @ScaledMetric(relativeTo: .subheadline) private var smallVerticalPadding = 6
+    @ScaledMetric(relativeTo: .body) private var largeVerticalPadding = 13
 
     init(
         size: ComponentSize?,
@@ -34,17 +36,17 @@ struct ChipSurface<Content: View>: View {
             .foregroundStyle((foregroundColor))
             .labcordMotion(.state, value: foregroundColor)
             .padding(.horizontal, horizontalPadding + (borderColor == nil ? 0 : 1))
+            .padding(.vertical, verticalPadding)
             .frame(minHeight: height)
             .background {
-                Rectangle()
+                shape
                     .fill((fillColor ?? Color(.General.Fill.primary)))
                     .opacity(fillColor == nil ? 0 : 1)
                     .labcordMotion(.state, value: fillColor)
                     .allowsHitTesting(false)
             }
-            .clipShape(Capsule())
             .overlay {
-                Capsule()
+                shape
                     .strokeBorder(
                         borderColor ?? Color(.General.Border.`default`),
                         lineWidth: 1
@@ -53,7 +55,7 @@ struct ChipSurface<Content: View>: View {
                     .labcordMotion(.state, value: borderColor)
                     .allowsHitTesting(false)
             }
-            .contentShape(Capsule())
+            .contentShape(shape)
             .disabled(isDisabled)
     }
 
@@ -72,6 +74,14 @@ struct ChipSurface<Content: View>: View {
 
     private var horizontalPadding: CGFloat {
         resolvedSize == .large ? LayoutTokens.spacing16 : LayoutTokens.spacing12
+    }
+
+    private var verticalPadding: CGFloat {
+        resolvedSize == .large ? largeVerticalPadding : smallVerticalPadding
+    }
+
+    private var shape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: height / 2)
     }
 
     private var typography: TypographyStyle {

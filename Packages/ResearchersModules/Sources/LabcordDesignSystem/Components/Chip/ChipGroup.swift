@@ -4,7 +4,7 @@ public struct ChipGroup<Item: Identifiable>: View where Item.ID: Hashable {
     private let items: [Item]
     @Binding private var selection: Set<Item.ID>
     private let label: (Item) -> String
-    private let onRemove: (Item) -> Void
+    private let onRemove: ((Item) -> Void)?
     private let onAdd: (() -> Void)?
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -29,7 +29,7 @@ public struct ChipGroup<Item: Identifiable>: View where Item.ID: Hashable {
         items: [Item],
         selection: Binding<Set<Item.ID>> = .constant([]),
         label: @escaping (Item) -> String,
-        onRemove: @escaping (Item) -> Void = { _ in },
+        onRemove: ((Item) -> Void)? = nil,
         onAdd: (() -> Void)? = nil
     ) {
         self.items = items
@@ -42,12 +42,14 @@ public struct ChipGroup<Item: Identifiable>: View where Item.ID: Hashable {
     public var body: some View {
         ChipFlowLayout(spacing: LayoutTokens.spacing12) {
             ForEach(items) { item in
-                SetupSmallChip(label: label(item)) {
-                    withAnimation(layoutAnimation) {
-                        selection.remove(item.id)
-                        onRemove(item)
+                SetupSmallChip(label: label(item), onDismiss: onRemove.map { remove in
+                    {
+                        withAnimation(layoutAnimation) {
+                            selection.remove(item.id)
+                            remove(item)
+                        }
                     }
-                }
+                })
                 .transition(chipTransition)
             }
 
@@ -58,10 +60,9 @@ public struct ChipGroup<Item: Identifiable>: View where Item.ID: Hashable {
                     HStack(spacing: LayoutTokens.spacing4) {
                         IconArtwork(icon: .plus, size: 16, relativeTo: .subheadline)
                         Text("추가")
-                            .foregroundStyle(Color(.General.Label.secondary))
                     }
                 }
-                .buttonStyle(.labcord(.secondary, size: .small))
+                .buttonStyle(.labcord(.accent, size: .small))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -85,26 +86,33 @@ public struct ChipGroup<Item: Identifiable>: View where Item.ID: Hashable {
 
 private struct SetupSmallChip: View {
     let label: String
-    let onDismiss: () -> Void
+    let onDismiss: (() -> Void)?
+    @Environment(\.isEnabled) private var isEnabled
 
     var body: some View {
-        HStack(spacing: LayoutTokens.spacing4) {
+        ViewThatFits(in: .horizontal) {
+            chip.fixedSize()
+            chip
+        }
+    }
+
+    private var chip: some View {
+        ChipSurface(
+            size: .small, visualStyle: .solid, emphasis: .weak,
+            isSelected: true, isDisabled: !isEnabled
+        ) {
             Text(label)
                 .typography(Typography.subheadline)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Button(action: onDismiss) {
-                IconArtwork(icon: .x, size: 14, relativeTo: .subheadline)
+            if let onDismiss {
+                Button(action: onDismiss) {
+                    IconArtwork(icon: .x, size: 14, relativeTo: .subheadline)
+                }
+                .buttonStyle(PressFeedbackButtonStyle())
+                .accessibilityLabel(Text("\(label) 제거"))
             }
-            .buttonStyle(PressFeedbackButtonStyle())
-            .accessibilityLabel(Text("\(label) 제거"))
         }
-        .foregroundStyle(Color(.General.Label.brand))
-        .padding(.horizontal, LayoutTokens.spacing12)
-        .padding(.vertical, 7)
-        .frame(minHeight: 34)
-        .background(Color(.General.Fill.selected), in: Capsule())
-        .contentShape(Capsule())
     }
 }
 
@@ -156,7 +164,7 @@ private struct ChipFlowLayout: Layout {
                 subviews[index].place(
                     at: CGPoint(x: currentX, y: currentY + (rowHeight - size.height) / 2),
                     anchor: .topLeading,
-                    proposal: ProposedViewSize(size)
+                    proposal: ProposedViewSize(width: size.width, height: nil)
                 )
                 currentX += size.width + spacing
             }
@@ -185,12 +193,11 @@ private struct ChipFlowLayout: Layout {
     private func measuredSize(for subview: LayoutSubview, maxWidth: CGFloat) -> CGSize {
         let intrinsicSize = subview.sizeThatFits(.unspecified)
         guard maxWidth.isFinite, maxWidth > 0, intrinsicSize.width > maxWidth else {
-            return intrinsicSize
+            return CGSize(width: ceil(intrinsicSize.width), height: ceil(intrinsicSize.height))
         }
 
-        return subview.sizeThatFits(
-            ProposedViewSize(width: maxWidth, height: nil)
-        )
+        let wrappedSize = subview.sizeThatFits(ProposedViewSize(width: maxWidth, height: nil))
+        return CGSize(width: maxWidth, height: ceil(wrappedSize.height))
     }
 }
 
