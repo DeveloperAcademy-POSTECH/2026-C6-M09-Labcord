@@ -97,10 +97,11 @@ struct ExperimentResultView: View {
                 }
             }
             .overlay {
-                if store.isTitleEditPresented, let title = store.detail?.title {
-                    TitleEditOverlayView(originalTitle: title) {
-                        store.send(.titleEditDismissed)
-                    }
+                if let overlayStore = store.scope(
+                    state: \.titleEditOverlay,
+                    action: \.titleEditOverlay
+                ) {
+                    TitleEditOverlayView(store: overlayStore)
                 }
             }
         }

@@ -43,7 +43,7 @@ struct ExperimentResultFeature {
         var loadMessage: String?
         var selectedType: RecordFilter = .all
         var selectedSort: RecordSort = .oldest
-        var isTitleEditPresented = false
+        var titleEditOverlay: TitleEditOverlayFeature.State?
 
         init(experimentID: UUID, isOpenedFromHome: Bool = false) {
             self.experimentID = experimentID
@@ -76,7 +76,7 @@ struct ExperimentResultFeature {
         case recordFilterSelected(RecordFilter)
         case recordSortSelected(RecordSort)
         case editTapped
-        case titleEditDismissed
+        case titleEditOverlay(TitleEditOverlayFeature.Action)
         case homeTapped
     }
 
@@ -115,16 +115,23 @@ struct ExperimentResultFeature {
                 return .none
 
             case .editTapped:
-                state.isTitleEditPresented = true
+                guard let title = state.detail?.title else { return .none }
+                state.titleEditOverlay = TitleEditOverlayFeature.State(originalTitle: title)
                 return .none
 
-            case .titleEditDismissed:
-                state.isTitleEditPresented = false
+            case .titleEditOverlay(.delegate(.dismiss)):
+                state.titleEditOverlay = nil
+                return .none
+
+            case .titleEditOverlay:
                 return .none
 
             case .homeTapped:
                 return .none
             }
+        }
+        .ifLet(\.titleEditOverlay, action: \.titleEditOverlay) {
+            TitleEditOverlayFeature()
         }
     }
 }
