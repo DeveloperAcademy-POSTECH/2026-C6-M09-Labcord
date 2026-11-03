@@ -127,7 +127,6 @@ struct OnboardingView: View {
         }
     }
 
-
     private var titleLines: [String] {
         switch store.page {
         case .first: return ["프로토콜 하나로,", "실험을 간편하게"]
