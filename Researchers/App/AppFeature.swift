@@ -43,7 +43,10 @@ struct AppFeature {
                 }
                 if entry.status == .completed {
                     state.path.append(
-                        .result(ExperimentResultFeature.State(experimentID: identifier))
+                        .result(ExperimentResultFeature.State(
+                            experimentID: identifier,
+                            isOpenedFromHome: true
+                        ))
                     )
                 } else {
                     state.path.append(

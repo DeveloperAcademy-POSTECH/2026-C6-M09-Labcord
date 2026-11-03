@@ -22,7 +22,10 @@ struct ExperimentResultView: View {
                 VStack(spacing: 0) {
                     Group {
                         ScrollView {
-                            NavigationPageTitle("실험 기록")
+                            NavigationPageTitle(
+                                "실험 기록",
+                                onBack: store.isOpenedFromHome ? { store.send(.homeTapped) } : nil
+                            )
 
                             if let detail = store.detail {
                                 VStack(spacing: LayoutTokens.spacing24) {

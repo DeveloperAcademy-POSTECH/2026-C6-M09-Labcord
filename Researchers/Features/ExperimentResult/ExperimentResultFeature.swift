@@ -38,10 +38,16 @@ struct ExperimentResultFeature {
     @ObservableState
     struct State: Equatable {
         let experimentID: UUID
+        let isOpenedFromHome: Bool
         var detail: ExperimentResultDetail?
         var loadMessage: String?
         var selectedType: RecordFilter = .all
         var selectedSort: RecordSort = .oldest
+
+        init(experimentID: UUID, isOpenedFromHome: Bool = false) {
+            self.experimentID = experimentID
+            self.isOpenedFromHome = isOpenedFromHome
+        }
 
         var displayedRecords: [ExperimentResultDetail.Record] {
             guard let detail else { return [] }
