@@ -13,15 +13,29 @@ struct ExperimentResultHeaderView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: LayoutTokens.spacing24) {
             VStack(alignment: .leading) {
-                HStack(
-                    alignment: .firstTextBaseline,
-                    spacing: LayoutTokens.spacing4
-                ) {
-                    Text(title)
-                        .typography(Typography.title2Bold)
+                let titleText = Text(title)
+                    .typography(Typography.title2Bold)
+                let editButton = Button("편집", action: onEdit)
+                    .buttonStyle(.labcord(.plain, size: .small))
 
-                    Button("편집", action: onEdit)
-                        .buttonStyle(.labcord(.plain, size: .small))
+                ViewThatFits(in: .horizontal) {
+                    HStack(
+                        alignment: .firstTextBaseline,
+                        spacing: LayoutTokens.spacing4
+                    ) {
+                        titleText
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
+
+                        editButton
+                    }
+
+                    HStack(alignment: .center, spacing: LayoutTokens.spacing4) {
+                        titleText
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        editButton
+                    }
                 }
 
                 if let dateRange {
