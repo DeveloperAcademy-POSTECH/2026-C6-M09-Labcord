@@ -13,25 +13,26 @@ struct OnboardingView: View {
     let store: StoreOf<OnboardingFeature>
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            skipRow
-            header
-                .padding(.top, 19)
-            
-            if store.page != .second {
-                card
-                    .padding(.top, LayoutTokens.spacing24)
-            } else {
-                Spacer(minLength: 0)
-            }
-            
-            footer
-        }
-        .padding(.horizontal, LayoutTokens.spacing16)
-        .padding(.top, 19)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background {
+        ZStack(alignment: .bottom) {
             background
+
+            VStack(alignment: .leading, spacing: 0) {
+                skipRow
+                header
+                    .padding(.top, 19)
+
+                if store.page != .second {
+                    card
+                        .padding(.top, LayoutTokens.spacing24)
+                } else {
+                    Spacer(minLength: 0)
+                }
+            }
+            .padding(.horizontal, LayoutTokens.spacing16)
+            .padding(.top, 19)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+
+            footer
         }
     }
     
@@ -105,11 +106,11 @@ struct OnboardingView: View {
     
     private var footer: some View {
         VStack(spacing: LayoutTokens.spacing16) {
-            
             HStack(spacing: LayoutTokens.spacing8) {
                 if store.page != .first {
                     Button("이전") { store.send(.previousTapped) }
                         .buttonStyle(IOSButtonStyle(.plain, size: .large))
+                        .frame(width: 100)
                 }
                 Button {
                     store.send(store.page == .third ? .startTapped : .nextTapped)
@@ -120,7 +121,15 @@ struct OnboardingView: View {
                 .buttonStyle(IOSButtonStyle(.filled, size: .large))
             }
         }
-        .background(Color("General/Background/Primary"))
+        .padding(.horizontal, LayoutTokens.spacing16)
+        .padding(.top, LayoutTokens.spacing16)
+        .frame(maxWidth: .infinity)
+        .background {
+            if store.page != .second {
+                Color("General/Background/Primary")
+                    .ignoresSafeArea(edges: .bottom)
+            }
+        }
     }
     
     private var titleLines: [String] {
