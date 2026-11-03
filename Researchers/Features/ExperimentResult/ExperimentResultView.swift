@@ -35,10 +35,9 @@ struct ExperimentResultView: View {
                                         selectedType: store.selectedType,
                                         selectedSort: store.selectedSort,
                                         onSelectType: { store.send(.recordFilterSelected($0)) },
-                                        onSelectSort: { store.send(.recordSortSelected($0)) }
-                                    ) {
-                                        // 제목 편집 모달 열림 구현
-                                    }
+                                        onSelectSort: { store.send(.recordSortSelected($0)) },
+                                        onEdit: { store.send(.editTapped) }
+                                    )
 
                                     Separator(orientation: .horizontal)
 
