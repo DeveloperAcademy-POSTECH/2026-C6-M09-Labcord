@@ -22,7 +22,10 @@ struct ExperimentResultView: View {
                 VStack(spacing: 0) {
                     Group {
                         ScrollView {
-                            NavigationPageTitle("실험 기록")
+                            NavigationPageTitle(
+                                "실험 기록",
+                                onBack: store.isOpenedFromHome ? { store.send(.homeTapped) } : nil
+                            )
 
                             if let detail = store.detail {
                                 VStack(spacing: LayoutTokens.spacing24) {
@@ -86,10 +89,19 @@ struct ExperimentResultView: View {
                     .padding(.bottom, max(34 - geometry.safeAreaInsets.bottom, 0))
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .ignoresSafeArea(.keyboard, edges: .bottom)
                 .navigationBarBackButtonHidden()
                 .toolbar(.hidden, for: .navigationBar)
                 .task {
                     await store.send(.loadResultDetail).finish()
+                }
+            }
+            .overlay {
+                if let overlayStore = store.scope(
+                    state: \.titleEditOverlay,
+                    action: \.titleEditOverlay
+                ) {
+                    TitleEditOverlayView(store: overlayStore)
                 }
             }
         }

@@ -37,13 +37,24 @@ struct AppFeature {
                 return .send(.home(.list(.cancelLoad)))
 
             case let .home(.list(.experimentTapped(identifier))):
-                guard state.path.isEmpty, !state.home.list.isDeleting,
-                      state.home.list.entries.contains(where: { $0.id == identifier }) else {
+                guard state.path.isEmpty,
+                      !state.home.list.isDeleting,
+                      let entry = state.home.list.entries.first(where: { $0.id == identifier })
+                else {
                     return .none
                 }
-                state.path.append(
-                    .session(ExperimentSessionFeature.State(experimentID: identifier))
-                )
+                if entry.status == .completed {
+                    state.path.append(
+                        .result(ExperimentResultFeature.State(
+                            experimentID: identifier,
+                            isOpenedFromHome: true
+                        ))
+                    )
+                } else {
+                    state.path.append(
+                        .session(ExperimentSessionFeature.State(experimentID: identifier))
+                    )
+                }
                 return .send(.home(.list(.cancelLoad)))
 
             case let .path(.element(id: id, action: .registration(.backTapped))):

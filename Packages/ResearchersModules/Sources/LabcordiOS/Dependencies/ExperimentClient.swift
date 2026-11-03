@@ -6,6 +6,7 @@ public struct ExperimentClient: Sendable {
     public var load: @MainActor @Sendable () throws -> [ExperimentListEntry]
     public var loadDetail: @MainActor @Sendable (UUID) throws -> ExperimentSessionDetail?
     public var loadResultDetail: @MainActor @Sendable (UUID) throws -> ExperimentResultDetail?
+    public var updateTitle: @MainActor @Sendable (UUID, String) throws -> ExperimentResultDetail
     public var create: @MainActor @Sendable (UUID, Date) throws -> ExperimentListEntry
     public var leaveSession: @MainActor @Sendable (UUID, UUID, Date) throws -> Void
     public var saveTimer: @MainActor @Sendable (UUID, ExperimentTimer, Date?) throws -> Void
@@ -21,6 +22,9 @@ public struct ExperimentClient: Sendable {
         load: @escaping @MainActor @Sendable () throws -> [ExperimentListEntry],
         loadDetail: @escaping @MainActor @Sendable (UUID) throws -> ExperimentSessionDetail?,
         loadResultDetail: @escaping @MainActor @Sendable (UUID) throws -> ExperimentResultDetail?,
+        updateTitle: @escaping @MainActor @Sendable (
+            UUID, String
+        ) throws -> ExperimentResultDetail,
         create: @escaping @MainActor @Sendable (UUID, Date) throws -> ExperimentListEntry,
         leaveSession: @escaping @MainActor @Sendable (UUID, UUID, Date) throws -> Void,
         saveTimer: @escaping @MainActor @Sendable (UUID, ExperimentTimer, Date?) throws -> Void,
@@ -35,6 +39,7 @@ public struct ExperimentClient: Sendable {
         self.load = load
         self.loadDetail = loadDetail
         self.loadResultDetail = loadResultDetail
+        self.updateTitle = updateTitle
         self.create = create
         self.leaveSession = leaveSession
         self.saveTimer = saveTimer
@@ -55,6 +60,7 @@ extension ExperimentClient: DependencyKey {
             try ExperimentSessionRepository.shared.loadDetail(id: $0)
         },
         loadResultDetail: { try ExperimentResultRepository.shared.loadResultDetail(id: $0) },
+        updateTitle: { try ExperimentResultRepository.shared.updateTitle(id: $0, title: $1) },
         create: { try ExperimentListRepository.shared.create(id: $0, at: $1) },
         leaveSession: {
             try ExperimentSessionRepository.shared.leaveSession(id: $0, entryID: $1, at: $2)

@@ -38,10 +38,17 @@ struct ExperimentResultFeature {
     @ObservableState
     struct State: Equatable {
         let experimentID: UUID
+        let isOpenedFromHome: Bool
         var detail: ExperimentResultDetail?
         var loadMessage: String?
         var selectedType: RecordFilter = .all
         var selectedSort: RecordSort = .oldest
+        var titleEditOverlay: TitleEditOverlayFeature.State?
+
+        init(experimentID: UUID, isOpenedFromHome: Bool = false) {
+            self.experimentID = experimentID
+            self.isOpenedFromHome = isOpenedFromHome
+        }
 
         var displayedRecords: [ExperimentResultDetail.Record] {
             guard let detail else { return [] }
@@ -69,6 +76,7 @@ struct ExperimentResultFeature {
         case recordFilterSelected(RecordFilter)
         case recordSortSelected(RecordSort)
         case editTapped
+        case titleEditOverlay(TitleEditOverlayFeature.Action)
         case homeTapped
     }
 
@@ -106,9 +114,33 @@ struct ExperimentResultFeature {
                 state.selectedSort = sort
                 return .none
 
-            case .editTapped, .homeTapped:
+            case .editTapped:
+                guard let title = state.detail?.title else { return .none }
+                state.titleEditOverlay = TitleEditOverlayFeature.State(
+                    experimentID: state.experimentID,
+                    originalTitle: title
+                )
+                return .none
+
+            case let .titleEditOverlay(.delegate(.saved(detail))):
+                guard detail.id == state.experimentID else { return .none }
+                state.detail = detail
+                state.titleEditOverlay = nil
+                return .none
+
+            case .titleEditOverlay(.delegate(.dismiss)):
+                state.titleEditOverlay = nil
+                return .none
+
+            case .titleEditOverlay:
+                return .none
+
+            case .homeTapped:
                 return .none
             }
+        }
+        .ifLet(\.titleEditOverlay, action: \.titleEditOverlay) {
+            TitleEditOverlayFeature()
         }
     }
 }
