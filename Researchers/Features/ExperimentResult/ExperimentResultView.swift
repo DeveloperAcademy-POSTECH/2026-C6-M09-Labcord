@@ -89,6 +89,7 @@ struct ExperimentResultView: View {
                     .padding(.bottom, max(34 - geometry.safeAreaInsets.bottom, 0))
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .ignoresSafeArea(.keyboard, edges: .bottom)
                 .navigationBarBackButtonHidden()
                 .toolbar(.hidden, for: .navigationBar)
                 .task {
