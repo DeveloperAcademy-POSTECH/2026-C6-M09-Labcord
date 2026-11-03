@@ -61,6 +61,7 @@ struct CameraCaptureView: View {
                 .foregroundStyle(.black)
                 .buttonStyle(.borderedProminent)
                 .tint(.white)
+                    .disabled(store.previewConnector == nil)
 
                 Button {
                     store.send(.videoButtonTapped)
@@ -77,6 +78,7 @@ struct CameraCaptureView: View {
                 .foregroundStyle(.black)
                 .buttonStyle(.borderedProminent)
                 .tint(.white)
+                    .disabled(store.previewConnector == nil)
             }
         }
         .frame(minWidth: 401)

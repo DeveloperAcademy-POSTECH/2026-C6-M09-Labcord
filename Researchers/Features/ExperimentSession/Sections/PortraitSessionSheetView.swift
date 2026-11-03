@@ -91,6 +91,7 @@ struct PortraitSessionSheetView: View {
                     }
                     .foregroundStyle(.white)
                     .buttonStyle(.plain)
+                    .disabled(store.previewConnector == nil)
 
                     Button {
                         store.send(.videoButtonTapped)
@@ -108,6 +109,7 @@ struct PortraitSessionSheetView: View {
                     }
                     .foregroundStyle(.white)
                     .buttonStyle(.plain)
+                    .disabled(store.previewConnector == nil)
                 }
             }
             .padding(.horizontal, 16)

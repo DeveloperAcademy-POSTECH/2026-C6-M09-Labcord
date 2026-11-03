@@ -24,6 +24,7 @@ struct VideoFeature {
         var saveError: String?
         var hasPlaybackFinished = false
         var isAutoSavePending = false
+        var isFinishingSession = false
     }
 
     enum Action: Equatable {
@@ -34,6 +35,7 @@ struct VideoFeature {
         case recordingFailed(UUID, String)
         case retakeRequested
         case saveRequested
+        case finishForSessionEnd
         case playbackFinished(UUID)
         case autoSaveElapsed(UUID)
         case saved(UUID)
@@ -97,7 +99,9 @@ struct VideoFeature {
             case let .started(id, startedAt):
                 guard id == state.sessionID, state.phase == .starting else { return .none }
                 state.phase = .recording(startedAt)
-                return .none
+                state.recordedAt = startedAt
+                guard state.isFinishingSession else { return .none }
+                return .run { _ in await cameraSessionClient.stopVideoRecording() }
 
             case let .recorded(id, url):
                 guard id == state.sessionID else {
@@ -105,11 +109,11 @@ struct VideoFeature {
                 }
                 state.phase = .preview(url)
                 state.recordID = uuid()
-                state.recordedAt = now
+                state.recordedAt = state.recordedAt ?? now
                 state.saveError = nil
                 state.hasPlaybackFinished = false
                 state.isAutoSavePending = false
-                return .none
+                return state.isFinishingSession ? saveVideo(state: &state) : .none
 
             case let .recordingFailed(id, message):
                 guard id == state.sessionID else { return .none }
@@ -118,7 +122,8 @@ struct VideoFeature {
                 return .none
 
             case .retakeRequested:
-                guard case let .preview(url) = state.phase, !state.isSaving else { return .none }
+                guard case let .preview(url) = state.phase, !state.isSaving,
+                      !state.isFinishingSession else { return .none }
                 state.phase = .idle
                 resetReview(state: &state)
                 return .merge(
@@ -128,6 +133,15 @@ struct VideoFeature {
 
             case .saveRequested:
                 return saveVideo(state: &state)
+
+            case .finishForSessionEnd:
+                guard state.isFinishingSession else { return .none }
+                switch state.phase {
+                case .recording:
+                    return .run { _ in await cameraSessionClient.stopVideoRecording() }
+                case .preview: return saveVideo(state: &state)
+                case .idle, .starting: return .none
+                }
 
             case let .playbackFinished(id):
                 guard state.recordID == id,
@@ -166,6 +180,7 @@ struct VideoFeature {
                 return .none
 
             case .cancelRequested:
+                guard !state.isFinishingSession else { return .none }
                 let videoURL: URL?
                 if case let .preview(url) = state.phase {
                     videoURL = url
@@ -242,5 +257,6 @@ struct VideoFeature {
         state.saveError = nil
         state.hasPlaybackFinished = false
         state.isAutoSavePending = false
+        state.isFinishingSession = false
     }
 }

@@ -13,6 +13,9 @@ public struct ExperimentClient: Sendable {
     public var loadDetail: @MainActor @Sendable (UUID) throws -> ExperimentSessionDetail?
     public var loadResultDetail: @MainActor @Sendable (UUID) throws -> ExperimentResultDetail?
     public var create: @MainActor @Sendable (UUID, Date) throws -> ExperimentListEntry
+    public var createWithProtocol: @MainActor @Sendable (
+        UUID, Date, String, ExperimentProtocol
+    ) throws -> ExperimentListEntry
     public var leaveSession: @MainActor @Sendable (UUID, UUID, Date) throws -> Void
     public var saveTimer: @MainActor @Sendable (UUID, ExperimentTimer, Date?) throws -> Void
     public var savePhoto: @MainActor @Sendable (UUID, UUID, Date, Data) throws -> Void
@@ -37,15 +40,21 @@ public struct ExperimentClient: Sendable {
         cancelAudioSave: @escaping @MainActor @Sendable (UUID, UUID, URL) throws -> Void,
         complete: @escaping @MainActor @Sendable (UUID, Date) throws -> Void,
         delete: @escaping @MainActor @Sendable (UUID) throws -> Void,
+        createWithProtocol: @escaping @MainActor @Sendable (
+            UUID, Date, String, ExperimentProtocol
+        ) throws -> ExperimentListEntry = { _, _, _, _ in
+            throw ExperimentCreationError.unavailable
+        },
         loadRecentProtocols: @escaping @MainActor @Sendable () throws -> [RecentProtocolEntry] = {
             throw ExperimentCreationError.unavailable
         }
     ) {
         self.load = load
-        self.loadRecentProtocols = loadRecentProtocols
         self.loadDetail = loadDetail
         self.loadResultDetail = loadResultDetail
         self.create = create
+        self.createWithProtocol = createWithProtocol
+        self.loadRecentProtocols = loadRecentProtocols
         self.leaveSession = leaveSession
         self.saveTimer = saveTimer
         self.savePhoto = savePhoto
@@ -101,6 +110,11 @@ extension ExperimentClient: DependencyKey {
         },
         complete: { try ExperimentSessionRepository.shared.complete(id: $0, at: $1) },
         delete: { try ExperimentListRepository.shared.delete(id: $0) },
+        createWithProtocol: {
+            try ExperimentListRepository.shared.createWithProtocol(
+                id: $0, at: $1, title: $2, procedure: $3
+            )
+        },
         loadRecentProtocols: { try RecentProtocolRepository.load() }
     )
 }

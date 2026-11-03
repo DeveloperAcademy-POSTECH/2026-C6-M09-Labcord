@@ -17,6 +17,7 @@ public struct CameraSessionClient: Sendable {
     public var capturePhoto: @Sendable () async throws -> Data
     public var prepareVideoRecording: @Sendable () async throws -> Void
     public var recordVideo: @Sendable (@escaping @Sendable () -> Void) async throws -> URL
+    public var stopVideoRecording: @Sendable () async -> Void
     public var cancelVideoRecording: @Sendable () async -> Void
     public var discardVideo: @Sendable (URL) async -> Void
 
@@ -29,6 +30,7 @@ public struct CameraSessionClient: Sendable {
         capturePhoto: @escaping @Sendable () async throws -> Data,
         prepareVideoRecording: @escaping @Sendable () async throws -> Void,
         recordVideo: @escaping @Sendable (@escaping @Sendable () -> Void) async throws -> URL,
+        stopVideoRecording: @escaping @Sendable () async -> Void,
         cancelVideoRecording: @escaping @Sendable () async -> Void,
         discardVideo: @escaping @Sendable (URL) async -> Void
     ) {
@@ -40,6 +42,7 @@ public struct CameraSessionClient: Sendable {
         self.capturePhoto = capturePhoto
         self.prepareVideoRecording = prepareVideoRecording
         self.recordVideo = recordVideo
+        self.stopVideoRecording = stopVideoRecording
         self.cancelVideoRecording = cancelVideoRecording
         self.discardVideo = discardVideo
     }
@@ -57,6 +60,7 @@ extension CameraSessionClient: DependencyKey {
             capturePhoto: { try await session.capturePhoto() },
             prepareVideoRecording: { try await session.prepareVideoRecording() },
             recordVideo: { try await session.recordVideo(onStarted: $0) },
+            stopVideoRecording: { await session.stopVideoRecording() },
             cancelVideoRecording: { await session.cancelVideoRecording() },
             discardVideo: { await session.discardVideo(at: $0) }
         )

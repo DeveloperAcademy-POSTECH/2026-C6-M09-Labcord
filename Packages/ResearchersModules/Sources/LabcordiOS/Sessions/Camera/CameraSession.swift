@@ -229,6 +229,11 @@ public actor CameraSession {
         }
     }
 
+    /// 정상 종료 콜백으로 파일을 반환합니다. 취소와 달리 녹화 파일을 삭제하지 않습니다.
+    public func stopVideoRecording() {
+        if movieOutput.isRecording { movieOutput.stopRecording() }
+    }
+
     public func cancelVideoRecording() {
         guard let videoDelegate else { return }
         videoDelegate.cancel()

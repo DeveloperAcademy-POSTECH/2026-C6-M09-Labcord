@@ -32,9 +32,12 @@ struct VoiceRecordingFeature {
         var isSaving = false
         var saveError: String?
         var isAutoSavePending = false
+        var contextualStrings: [String] = []
+        var isFinishingSession = false
     }
 
     enum Action: Equatable {
+        case detailLoadFailed
         case prepareRequested
         case overlayAppeared
         case startRequested
@@ -43,6 +46,7 @@ struct VoiceRecordingFeature {
         case startFailed(UUID, String)
         case event(UUID, SpeechRecordingEvent)
         case stopRequested
+        case finishForSessionEnd
         case stopped(UUID, SpeechRecording?)
         case retakeRequested
         case saveRequested
@@ -70,6 +74,10 @@ struct VoiceRecordingFeature {
     var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
+            case .detailLoadFailed:
+                state.errorMessage = "실험 정보를 불러오지 못했어요. 다시 시도해 주세요."
+                return .none
+
             case .prepareRequested:
                 guard state.phase == .hidden else { return .none }
                 state.transcript = ""
@@ -86,9 +94,10 @@ struct VoiceRecordingFeature {
             case .startRequested:
                 guard state.phase == .starting else { return .none }
                 let id = state.sessionID
+                let contextualStrings = state.contextualStrings
                 return .run { send in
                     do {
-                        let events = try await speechRecordingClient.start()
+                        let events = try await speechRecordingClient.start(contextualStrings)
                         await send(.started(id))
                         for await event in events {
                             await send(.event(id, event))
@@ -107,7 +116,7 @@ struct VoiceRecordingFeature {
                 guard id == state.sessionID, state.phase == .starting else { return .none }
                 state.phase = .recording
                 state.recordedAt = now
-                return .none
+                return state.isFinishingSession ? .send(.stopRequested) : .none
 
             case let .startPermissionFailed(id, _):
                 guard id == state.sessionID, state.phase == .starting else { return .none }
@@ -150,6 +159,14 @@ struct VoiceRecordingFeature {
                 }
                 .cancellable(id: CancelID.voiceStop, cancelInFlight: true)
 
+            case .finishForSessionEnd:
+                guard state.isFinishingSession else { return .none }
+                switch state.phase {
+                case .recording: return .send(.stopRequested)
+                case .finished: return saveAudio(state: &state)
+                case .hidden, .starting, .stopping: return .none
+                }
+
             case let .stopped(id, recording):
                 guard id == state.sessionID, state.phase == .stopping else { return .none }
                 if let recording {
@@ -164,7 +181,8 @@ struct VoiceRecordingFeature {
                 return .cancel(id: CancelID.voiceStream)
 
             case .retakeRequested:
-                guard state.phase == .finished, !state.isSaving else { return .none }
+                guard state.phase == .finished, !state.isSaving,
+                      !state.isFinishingSession else { return .none }
                 resetReview(state: &state)
                 state.errorMessage = nil
                 state.sessionID = uuid()
@@ -205,7 +223,7 @@ struct VoiceRecordingFeature {
                 return .none
 
             case .closeRequested:
-                guard state.phase != .hidden else { return .none }
+                guard state.phase != .hidden, !state.isFinishingSession else { return .none }
                 let savingRecordID = state.isSaving ? state.recordID : nil
                 let sourceURL = state.recording?.audioURL
                 let experimentID = state.experimentID
@@ -250,6 +268,7 @@ private extension VoiceRecordingFeature {
         state.recordedAt = state.recordedAt ?? now
         state.phase = .finished
         state.saveError = nil
+        if state.isFinishingSession { return saveAudio(state: &state) }
         state.isAutoSavePending = true
         return .run { send in
             try await Task.sleep(for: .seconds(3))
@@ -300,5 +319,6 @@ private extension VoiceRecordingFeature {
         state.isSaving = false
         state.saveError = nil
         state.isAutoSavePending = false
+        state.isFinishingSession = false
     }
 }

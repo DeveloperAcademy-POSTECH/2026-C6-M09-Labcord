@@ -28,6 +28,177 @@ struct ExperimentSessionView: View {
     }
 
     var body: some View {
+        recordingContent
+        .overlay {
+            if !store.isReady {
+                ExperimentSetupView(
+                    canContinueWithoutCamera: store.canContinueWithoutCamera,
+                    onRetry: { store.send(.retryCameraRequested) },
+                    onContinueWithoutCamera: { store.send(.continueWithoutCamera) }
+                )
+                    .task(id: store.permissionRequestGeneration) {
+                        try? await Task.sleep(for: .milliseconds(200))
+                        guard !Task.isCancelled else { return }
+                        store.send(.permissions(.request))
+                    }
+            }
+        }
+        .task {
+            await store.send(.loadDetail).finish()
+        }
+        .onAppear {
+            UIApplication.shared.isIdleTimerDisabled = true
+            captureStore.send(.cameraViewAppeared)
+        }
+        .onDisappear {
+            UIApplication.shared.isIdleTimerDisabled = false
+            if store.isReturningHome {
+                captureStore.send(.video(.cancelRequested))
+                voiceStore.send(.closeRequested)
+            } else {
+                captureStore.send(.cameraViewDisappeared)
+            }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                store.send(.appBecameActive)
+            }
+        }
+        .background(.black)
+        .alert(
+            store.permissions.issue == .settingsUnavailable ? "설정 열기 실패" : "권한 안내",
+            isPresented: Binding(
+                get: { store.permissions.issue != nil },
+                set: { if !$0 { store.send(.permissions(.issueDismissed)) } }
+            )
+        ) {
+            if store.permissions.issue?.canOpenSettings == true {
+                Button("설정 열기") {
+                    store.send(.permissions(.openSettingsTapped))
+                }
+            }
+            Button("다시 확인") {
+                store.send(.permissions(.request))
+            }
+            Button("확인", role: .cancel) {
+                store.send(.permissions(.issueDismissed))
+            }
+        } message: {
+            Text(store.permissions.issue?.message ?? "")
+        }
+        .alert(
+            "카메라 오류",
+            isPresented: Binding(
+                get: { captureStore.cameraErrorMessage != nil },
+                set: { if !$0 { captureStore.send(.cameraErrorDismissed) } }
+            )
+        ) {
+            if store.canContinueWithoutCamera {
+                Button("음성·타이머만 사용") {
+                    store.send(.continueWithoutCamera)
+                }
+            }
+            Button("확인", role: .cancel) {
+                captureStore.send(.cameraErrorDismissed)
+            }
+        } message: {
+            Text(captureStore.cameraErrorMessage ?? "")
+        }
+        .alert(
+            "음성 기록 오류",
+            isPresented: Binding(
+                get: { voiceStore.errorMessage != nil },
+                set: { if !$0 { voiceStore.send(.errorDismissed) } }
+            )
+        ) {
+            Button("확인", role: .cancel) {
+                voiceStore.send(.errorDismissed)
+            }
+        } message: {
+            Text(voiceStore.errorMessage ?? "")
+        }
+        .alert(
+            "사진 저장 실패",
+            isPresented: Binding(
+                get: { captureStore.photo.saveError != nil },
+                set: { if !$0 { captureStore.send(.photo(.saveErrorDismissed)) } }
+            )
+        ) {
+            Button("다시 시도") {
+                captureStore.send(.photo(.saveRequested))
+            }
+            Button("닫기", role: .cancel) {
+                captureStore.send(.photo(.saveErrorDismissed))
+            }
+        } message: {
+            Text(captureStore.photo.saveError ?? "사진을 저장하지 못했습니다.")
+        }
+        .alert(
+            "영상 저장 실패",
+            isPresented: Binding(
+                get: { captureStore.video.saveError != nil },
+                set: { if !$0 { captureStore.send(.video(.saveErrorDismissed)) } }
+            )
+        ) {
+            Button("다시 시도") {
+                captureStore.send(.video(.saveRequested))
+            }
+            Button("닫기", role: .cancel) {
+                captureStore.send(.video(.saveErrorDismissed))
+            }
+        } message: {
+            Text(captureStore.video.saveError ?? "영상을 저장하지 못했습니다.")
+        }
+        .alert(
+            "타이머 저장 실패",
+            isPresented: Binding(
+                get: { timerStore.saveFailed },
+                set: { _ in }
+            )
+        ) {
+            Button("다시 시도") {
+                timerStore.send(.retrySaveTapped)
+            }
+        } message: {
+            Text("타이머 기록을 저장하지 못했습니다.")
+        }
+        .alert(
+            "실험 종료 저장 실패",
+            isPresented: Binding(
+                get: { store.completionFailed },
+                set: { if !$0 { store.send(.dismissStopFailure) } }
+            )
+        ) {
+            Button("다시 시도") {
+                store.send(.stopTapped)
+            }
+            Button("닫기", role: .cancel) {
+                store.send(.dismissStopFailure)
+            }
+        } message: {
+            Text("실험 상태를 저장하지 못했습니다. 다시 시도해 주세요.")
+        }
+        .alert(
+            "실험 일시정지 저장 실패",
+            isPresented: Binding(
+                get: { store.exitFailed },
+                set: { if !$0 { store.send(.dismissHomeExitFailure) } }
+            )
+        ) {
+            Button("다시 시도") {
+                store.send(.returnHomeTapped)
+            }
+            Button("닫기", role: .cancel) {
+                store.send(.dismissHomeExitFailure)
+            }
+        } message: {
+            Text("실험 상태를 저장하지 못했습니다.")
+        }
+    }
+}
+
+private extension ExperimentSessionView {
+    var recordingContent: some View {
         Group {
             if verticalSizeClass == .compact {
                 LandscapeSessionView(
@@ -99,144 +270,8 @@ struct ExperimentSessionView: View {
                 VoiceRecordingView(store: voiceStore)
             }
         }
-        .overlay {
-            if !store.isReady {
-                ExperimentSetupView()
-                    .task(id: store.permissionRequestGeneration) {
-                        try? await Task.sleep(for: .milliseconds(200))
-                        guard !Task.isCancelled else { return }
-                        store.send(.permissions(.request))
-                    }
-            }
-        }
-        .task {
-            await store.send(.loadDetail).finish()
-        }
-        .onAppear {
-            UIApplication.shared.isIdleTimerDisabled = true
-            captureStore.send(.cameraViewAppeared)
-        }
-        .onDisappear {
-            UIApplication.shared.isIdleTimerDisabled = false
-            if store.isReturningHome {
-                captureStore.send(.video(.cancelRequested))
-                voiceStore.send(.closeRequested)
-            } else {
-                captureStore.send(.cameraViewDisappeared)
-            }
-        }
-        .onChange(of: scenePhase) { _, phase in
-            if phase == .active {
-                store.send(.appBecameActive)
-            }
-        }
-        .background(.black)
-        .alert(
-            store.permissions.issue == .settingsUnavailable ? "설정 열기 실패" : "권한 안내",
-            isPresented: Binding(
-                get: { store.permissions.issue != nil },
-                set: { if !$0 { store.send(.permissions(.issueDismissed)) } }
-            )
-        ) {
-            if store.permissions.issue?.canOpenSettings == true {
-                Button("설정 열기") {
-                    store.send(.permissions(.openSettingsTapped))
-                }
-            }
-            Button("확인", role: .cancel) {
-                store.send(.permissions(.issueDismissed))
-            }
-        } message: {
-            Text(store.permissions.issue?.message ?? "")
-        }
-        .alert(
-            "카메라 오류",
-            isPresented: Binding(
-                get: { captureStore.cameraErrorMessage != nil },
-                set: { if !$0 { captureStore.send(.cameraErrorDismissed) } }
-            )
-        ) {
-            Button("확인", role: .cancel) {
-                captureStore.send(.cameraErrorDismissed)
-            }
-        } message: {
-            Text(captureStore.cameraErrorMessage ?? "")
-        }
-        .alert(
-            "음성 기록 오류",
-            isPresented: Binding(
-                get: { voiceStore.errorMessage != nil },
-                set: { if !$0 { voiceStore.send(.errorDismissed) } }
-            )
-        ) {
-            Button("확인", role: .cancel) {
-                voiceStore.send(.errorDismissed)
-            }
-        } message: {
-            Text(voiceStore.errorMessage ?? "")
-        }
-        .alert(
-            "사진 저장 실패",
-            isPresented: Binding(
-                get: { captureStore.photo.saveError != nil },
-                set: { if !$0 { captureStore.send(.photo(.saveErrorDismissed)) } }
-            )
-        ) {
-            Button("다시 시도") {
-                captureStore.send(.photo(.saveRequested))
-            }
-            Button("닫기", role: .cancel) {
-                captureStore.send(.photo(.saveErrorDismissed))
-            }
-        } message: {
-            Text(captureStore.photo.saveError ?? "사진을 저장하지 못했습니다.")
-        }
-        .alert(
-            "영상 저장 실패",
-            isPresented: Binding(
-                get: { captureStore.video.saveError != nil },
-                set: { if !$0 { captureStore.send(.video(.saveErrorDismissed)) } }
-            )
-        ) {
-            Button("다시 시도") {
-                captureStore.send(.video(.saveRequested))
-            }
-            Button("닫기", role: .cancel) {
-                captureStore.send(.video(.saveErrorDismissed))
-            }
-        } message: {
-            Text(captureStore.video.saveError ?? "영상을 저장하지 못했습니다.")
-        }
-        .alert(
-            "타이머 저장 실패",
-            isPresented: Binding(
-                get: { timerStore.saveFailed },
-                set: { _ in }
-            )
-        ) {
-            Button("다시 시도") {
-                timerStore.send(.retrySaveTapped)
-            }
-        } message: {
-            Text("타이머 기록을 저장하지 못했습니다.")
-        }
-        .alert(
-            "실험 일시정지 저장 실패",
-            isPresented: Binding(
-                get: { store.exitFailed },
-                set: { if !$0 { store.send(.dismissHomeExitFailure) } }
-            )
-        ) {
-            Button("다시 시도") {
-                store.send(.returnHomeTapped)
-            }
-            Button("닫기", role: .cancel) {
-                store.send(.dismissHomeExitFailure)
-            }
-        } message: {
-            Text("실험 상태를 저장하지 못했습니다.")
-        }
     }
+
 }
 
 #Preview {

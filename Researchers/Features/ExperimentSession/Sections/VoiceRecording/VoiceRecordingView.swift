@@ -1,8 +1,10 @@
 import ComposableArchitecture
+import LabcordDesignSystem
 import SwiftUI
 
 struct VoiceRecordingView: View {
     let store: StoreOf<VoiceRecordingFeature>
+    @State private var showsTerms = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -26,6 +28,9 @@ struct VoiceRecordingView: View {
                             .font(.headline)
 
                         Spacer()
+
+                        Button("용어 보기") { showsTerms = true }
+                            .buttonStyle(.labcord(.accent, size: .small))
                     }
 
                     ScrollView {
@@ -101,6 +106,9 @@ struct VoiceRecordingView: View {
         }
         .onAppear {
             store.send(.overlayAppeared)
+        }
+        .sheet(isPresented: $showsTerms) {
+            SpeechTermsView(terms: store.contextualStrings)
         }
         .alert(
             "음성 저장 실패",
