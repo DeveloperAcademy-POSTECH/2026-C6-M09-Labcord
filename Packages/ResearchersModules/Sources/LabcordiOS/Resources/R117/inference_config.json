@@ -1,0 +1,124 @@
+{
+  "schema": "r117_original_and_F_model_asset_candidate_v1",
+  "research_seeds": [
+    42,
+    43,
+    44
+  ],
+  "deployment_seed": null,
+  "function_names": [
+    "r117_original",
+    "teacher_taskfit",
+    "teacher_last2",
+    "r117_seed42",
+    "r117_seed43",
+    "r117_seed44",
+    "teacher_window",
+    "teacher_scope",
+    "teacher_purpose",
+    "teacher_last2_head"
+  ],
+  "encoder_compression": {
+    "word_embedding_bits": 2,
+    "other_eligible_weight_bits": 4,
+    "compute_precision": "FLOAT32",
+    "method": "post-training per-tensor kmeans; no fitting/training"
+  },
+  "minimum_OS": "iOS18/macOS15",
+  "input_boundary": {
+    "encoders": "ids int32[1,2..512] and attention_mask same shape; output token_embeddings float32",
+    "ranking_heads": "document-relative features float32[N,769], original fixed scaler embedded, output raw logits",
+    "last2_head": "context candidate-token mean float32[N,384], output raw logit",
+    "HGB": "CoreML TreeEnsembleRegressor; handcrafted_features float64[n_features], source-bound exact feature column order",
+    "caller": "source text, allowed ranges, original ordered full candidate pool with exact spans and coordinates"
+  },
+  "score_recipe": {
+    "F": ".25*frozen9+.25*native+.5*mean(zscore(hgb),zscore(window),zscore(scope),zscore(purpose),zscore(last2))",
+    "native": "zscore(-log1p(arange(1,N+1)))",
+    "frozen9": ".7*native+.3*zscore(((handcrafted9-mean)/std)@weights)",
+    "R117": "F+0.1*tanh(raw_head_logits)",
+    "zscore_scope": "original full document candidate pool, float64, std>1e-8 else1",
+    "selection": "original alias/family/overlap selector, final50; not raw top50"
+  },
+  "runtime_status": {
+    "model_loader_in_destination": "NOT_PRESENT",
+    "candidate_generator_and_selector_port": "NOT_VALIDATED",
+    "whole_text_to_final50_parity": "NOT_ESTABLISHED",
+    "quality_87_silver": "NOT_RUN",
+    "iPhone_runtime": "NOT_RUN"
+  },
+  "training": 0,
+  "Colab": 0,
+  "installation": 0,
+  "PR_published": false,
+  "encoder_source_file_pins": [
+    {
+      "path": "work/encoder-pretrained_20261017_v1/microsoft--Multilingual-MiniLM-L12-H384/pytorch_model.bin",
+      "sha256": "cce170910f4d4f3b45be025508f51ef1ad6a1de69f2d46dce7e4603ad31aaaeb",
+      "bytes": 470657952,
+      "mtime_ns": 1792173499031356894,
+      "hash_subject": "source file bytes, not tensor semantic hash"
+    },
+    {
+      "path": "work/ship_model_20261020_001/ko_pos4x_1000.pt",
+      "sha256": "13f91a892a75564ba15370f788cd0a82de97921662cc090693a0842313218d68",
+      "bytes": 471076909,
+      "mtime_ns": 1792438576377776767,
+      "hash_subject": "source file bytes, not tensor semantic hash"
+    },
+    {
+      "path": "work/reach95_20261022_057/verified_model_v2/DELTA_HEAD.pt",
+      "sha256": "35a83e33b6035a3523299a48942f96ab641e9dc8356b91ea0f22b1928d28e4c5",
+      "bytes": 14210493,
+      "mtime_ns": 1792674621685538629,
+      "hash_subject": "source file bytes, not tensor semantic hash"
+    },
+    {
+      "path": "work/encoder-pretrained_20261017_v1/microsoft--Multilingual-MiniLM-L12-H384/config.json",
+      "sha256": "933c5fc9b49cf83934fb2e617cea837985a1b5f10db653ecd958c5736de357de",
+      "bytes": 430,
+      "mtime_ns": 1792173952154264260,
+      "hash_subject": "source file bytes, not tensor semantic hash"
+    }
+  ],
+  "head_source_file_pins": [
+    {
+      "function": "r117_seed42",
+      "source": "work/frozen_encoder_weight_control_20261024_117/training/arms/ORIGINAL_PRETRAINED_FROZEN/final/seed42/model.json",
+      "source_sha256": "96613abc9a15d65869615fc3080c082c468b4b85fa41042d5e929501be775fc4"
+    },
+    {
+      "function": "r117_seed43",
+      "source": "work/frozen_encoder_weight_control_20261024_117/training/arms/ORIGINAL_PRETRAINED_FROZEN/final/seed43/model.json",
+      "source_sha256": "ea9d38a1ea5efa7ae6590c930611e650753be3d703748ef31904b77df68324b9"
+    },
+    {
+      "function": "r117_seed44",
+      "source": "work/frozen_encoder_weight_control_20261024_117/training/arms/ORIGINAL_PRETRAINED_FROZEN/final/seed44/model.json",
+      "source_sha256": "5d906fc23f3c2c63980e11ccb8b46b759a6a97733ecf0fe3c44b1ca408fef023"
+    },
+    {
+      "function": "teacher_window",
+      "source": "work/new_family_feature_preparation_20261024_111/recovered_assets/true_window_joint382/models/canonical_full_true_joint382_relative_mlp64_relative_mlp64_seed42.json",
+      "source_sha256": "f714ad45cb9d61b04217a189f392d87f6919549c561f2613d8c8be033abf5ac7"
+    },
+    {
+      "function": "teacher_scope",
+      "source": "work/new_family_feature_preparation_20261024_111/recovered_assets/true_window_joint382/models/scope_bce_whole_relative_mlp64_r2_relative_mlp64_seed42.json",
+      "source_sha256": "1c62a98315413b68abb3224207ec2ca91582a8e97bd7a8ff6b2d3c97631f39ee"
+    },
+    {
+      "function": "teacher_purpose",
+      "source": "work/new_family_feature_preparation_20261024_111/recovered_assets/true_window_purpose512/models/scope_bce_purpose512_relative_mlp64_r2_relative_mlp64_seed42.json",
+      "source_sha256": "8bc7a23fb9c580f9760f5ee38cea7670fd954b70aee1512f42de4e9d92e48b2b"
+    },
+    {
+      "function": "teacher_last2_head",
+      "source": "work/reach95_20261022_057/verified_model_v2/DELTA_HEAD.pt",
+      "source_sha256": "35a83e33b6035a3523299a48942f96ab641e9dc8356b91ea0f22b1928d28e4c5"
+    }
+  ],
+  "prediction_quality": "UNMEASURED; original72.73percent is not inherited",
+  "candidate_class": "research model asset candidate; end-to-end runtime and quality not established",
+  "numerical_scope": "Finite synthetic encoder outputs, bounded head conversion errors, exact merge parity; no preassigned encoder drift acceptance threshold"
+}

@@ -1,0 +1,94 @@
+{
+  "schema": "labcord_r117_app_assets_v1",
+  "deployment_head": "r117_seed42",
+  "ranking_archive_sha256": "1a1d6bdd58fa354157064b9dbe5883a6959564508f1c99b05cbe213682821e56",
+  "native_model": "Unicode4.mlpackage",
+  "native_origin": "work/unicode_model_20261022_054/Model",
+  "native_reference": "work/overnight_improvement_20261023_073/fresh/native/PROCESS.json",
+  "payload_bytes": 160161456,
+  "files": {
+    "HGBTeacher.mlmodel": {
+      "bytes": 97450,
+      "sha256": "e69dfd260480adc204b060811564a2802a947a26fa8416c832238c1a508235b8"
+    },
+    "LICENSE.MiniLM.txt": {
+      "bytes": 1104,
+      "sha256": "904dc4d8749877f1dba1cda48200d2462dccbeb7c134d5e4ef6fa75e0198c8fe"
+    },
+    "LICENSE.XLM-R.txt": {
+      "bytes": 1086,
+      "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85"
+    },
+    "R117WithTeacherModels.mlpackage/Data/com.apple.CoreML/model.mlmodel": {
+      "bytes": 517442,
+      "sha256": "7d6901560e4259de79a22a042a336113081635552354ab344106446044bdb7cb"
+    },
+    "R117WithTeacherModels.mlpackage/Data/com.apple.CoreML/weights/weight.bin": {
+      "bytes": 74232256,
+      "sha256": "28147768996f1cb53b0452b23757e069b90a62c99f978bec09f09ea7dcb7b585"
+    },
+    "R117WithTeacherModels.mlpackage/Manifest.json": {
+      "bytes": 617,
+      "sha256": "3fe581a9604ceff1aacdae1fb619b591b244089c942f4428cae834cf67b19bbb"
+    },
+    "Unicode4.mlpackage/Data/com.apple.CoreML/model.mlmodel": {
+      "bytes": 202837,
+      "sha256": "5558f6faa44b1b3dc3662dce7309d4f70bda79a0abec421d53eafc95c1d75ef8"
+    },
+    "Unicode4.mlpackage/Data/com.apple.CoreML/weights/weight.bin": {
+      "bytes": 70072384,
+      "sha256": "03c0df7bf335dbf69eefab4fb8fc35c829438a84a921d0b0fceb22bd3d3a5169"
+    },
+    "Unicode4.mlpackage/Manifest.json": {
+      "bytes": 617,
+      "sha256": "ebd5b113e473d08d76b570b335b463d8f0cd387336fbbc135bc3c4db387fb517"
+    },
+    "encoder_config.json": {
+      "bytes": 430,
+      "sha256": "933c5fc9b49cf83934fb2e617cea837985a1b5f10db653ecd958c5736de357de"
+    },
+    "frozen9.model.json": {
+      "bytes": 1335,
+      "sha256": "8dc1c9b21dbe90ca18101f6b8c5c65b1022f3abfd95183cf05bfd3405e17c73e"
+    },
+    "inference_config.json": {
+      "bytes": 5653,
+      "sha256": "2f7236450612d84a18489b7ff8e945fd3a173e6e2932b6bde52310d4c076a744"
+    },
+    "native-assets/char_vocab.json": {
+      "bytes": 146967,
+      "sha256": "c34d65535f1125210eb2c9b3c0df8c0450f82f4276a2e0404badb6a4addd6f80"
+    },
+    "native-assets/known_terms.json": {
+      "bytes": 713922,
+      "sha256": "807a08a3267d49623a1ca23f97faf64a1345a3ee9b0f7067e6fc847d195b0cc1"
+    },
+    "native-assets/korean_rules.json": {
+      "bytes": 679,
+      "sha256": "adcdf23c053e3519c45913806177a30d492bf961c4c869e4691b66628d3c14de"
+    },
+    "native-assets/section_priority_rules.json": {
+      "bytes": 631,
+      "sha256": "f89a7e305e1e2dda8cc0e8e64a05043becbc86fb11e6a0acb067233633fe9677"
+    },
+    "native-assets/sentencepiece.bpe.model": {
+      "bytes": 5069051,
+      "sha256": "cfc8146abe2a0488e9e2a0c56de7952f7c11ab059eca145a0a727afce0db2865"
+    },
+    "tokenizer/special_tokens_map.json": {
+      "bytes": 150,
+      "sha256": "7638f5bbbe86ef6d604ef28ad3647dc690d6d117c81c0d63e885416be8da1150"
+    },
+    "tokenizer/tokenizer.json": {
+      "bytes": 9096843,
+      "sha256": "8021b6694842b6aca4dc05973d2f7528598efc9d4fbfea6666b27dc9072c43f8"
+    },
+    "tokenizer/tokenizer_config.json": {
+      "bytes": 2,
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    }
+  },
+  "simulator_numeric_parity": "NOT_RUN",
+  "simulator_latency_and_memory": "NOT_RUN",
+  "actual_ASR_effect": "NOT_RUN"
+}

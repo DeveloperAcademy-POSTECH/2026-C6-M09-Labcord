@@ -1,0 +1,6 @@
+{
+  "max_heading_scalars": 120,
+  "max_heading_words": 12,
+  "start": "^(?:general\\s+)?(?:materials(?:\\s+(?:and|&)\\s+methods)?|methods|experimental(?:\\s+(?:section|details|procedures?))?|reagents(?:\\s+and\\s+materials)?|protocols?|procedures?|실험\\s*방법|재료\\s*및\\s*방법|실험\\s*절차|시험\\s*방법|실험\\s*재료|시약(?:\\s*및\\s*기구)?)$",
+  "stop": "^(?:introduction|results(?:\\s+and\\s+discussion)?|discussion|conclusions?|references|acknowledg(?:e)?ments?|supporting\\s+information(?:\\s+available)?|associated\\s+content|서론|결과(?:\\s*및\\s*고찰)?|고찰|결론|참고\\s*문헌)$"
+}
