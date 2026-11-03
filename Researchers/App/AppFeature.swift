@@ -37,8 +37,10 @@ struct AppFeature {
                 return .send(.home(.list(.cancelLoad)))
 
             case let .home(.list(.experimentTapped(identifier))):
-                guard state.path.isEmpty, !state.home.list.isDeleting,
-                      let entry = state.home.list.entries.first(where: { $0.id == identifier }) else {
+                guard state.path.isEmpty,
+                      !state.home.list.isDeleting,
+                      let entry = state.home.list.entries.first(where: { $0.id == identifier })
+                else {
                     return .none
                 }
                 if entry.status == .completed {

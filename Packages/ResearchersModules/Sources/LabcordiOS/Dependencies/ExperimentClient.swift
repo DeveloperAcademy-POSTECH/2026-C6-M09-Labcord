@@ -22,7 +22,9 @@ public struct ExperimentClient: Sendable {
         load: @escaping @MainActor @Sendable () throws -> [ExperimentListEntry],
         loadDetail: @escaping @MainActor @Sendable (UUID) throws -> ExperimentSessionDetail?,
         loadResultDetail: @escaping @MainActor @Sendable (UUID) throws -> ExperimentResultDetail?,
-        updateTitle: @escaping @MainActor @Sendable (UUID, String) throws -> ExperimentResultDetail,
+        updateTitle: @escaping @MainActor @Sendable (
+            UUID, String
+        ) throws -> ExperimentResultDetail,
         create: @escaping @MainActor @Sendable (UUID, Date) throws -> ExperimentListEntry,
         leaveSession: @escaping @MainActor @Sendable (UUID, UUID, Date) throws -> Void,
         saveTimer: @escaping @MainActor @Sendable (UUID, ExperimentTimer, Date?) throws -> Void,
