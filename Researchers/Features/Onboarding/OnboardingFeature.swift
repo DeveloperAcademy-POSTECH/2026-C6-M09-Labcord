@@ -36,7 +36,7 @@ struct OnboardingFeature {
                 }
                 state.page = next
                 return .none
-                
+
             case .previousTapped:
                 guard let previous = Page(rawValue: state.page.rawValue - 1)
                         else {
@@ -44,10 +44,10 @@ struct OnboardingFeature {
                 }
                 state.page = previous
                 return .none
-                
+
             case .skipTapped, .startTapped:
                 return .none
-                
+
             }
         }
     }

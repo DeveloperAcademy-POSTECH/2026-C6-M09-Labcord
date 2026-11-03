@@ -11,7 +11,7 @@ import SwiftUI
 
 struct OnboardingView: View {
     let store: StoreOf<OnboardingFeature>
-    
+
     var body: some View {
         ZStack(alignment: .bottom) {
             background
@@ -35,8 +35,7 @@ struct OnboardingView: View {
             footer
         }
     }
-    
-    
+
     private var background: some View {
         Color("General/Background/Primary")
             .overlay(alignment: .bottom) {
@@ -51,7 +50,7 @@ struct OnboardingView: View {
             }
             .ignoresSafeArea()
     }
-    
+
     private var skipRow: some View {
         HStack {
             Spacer()
@@ -61,7 +60,7 @@ struct OnboardingView: View {
                 .disabled(store.page == .third)
         }
     }
-    
+
     private var header: some View {
         VStack(alignment: .leading, spacing: LayoutTokens.spacing16) {
             VStack(alignment: .leading, spacing: 0) {
@@ -69,7 +68,7 @@ struct OnboardingView: View {
             }
             .typography(Typography.title1Bold)
             .foregroundStyle(Color("General/Label/Primary"))
-            
+
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(bodyLines, id: \.self) { Text($0) }
             }
@@ -77,12 +76,11 @@ struct OnboardingView: View {
             .foregroundStyle(Color("General/Label/Secondary"))
         }
     }
-    
-    
+
     private var card: some View {
         Color.clear
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .overlay (alignment: .top) {
+            .overlay(alignment: .top) {
                 Image(cardImageName)
                     .resizable()
                     .aspectRatio(402.0 / 597.0, contentMode: .fit)
@@ -102,8 +100,7 @@ struct OnboardingView: View {
                 y: EffectTokens().shadowMediumOffsetY
             )
     }
-    
-    
+
     private var footer: some View {
         VStack(spacing: LayoutTokens.spacing16) {
             HStack(spacing: LayoutTokens.spacing8) {
@@ -131,7 +128,7 @@ struct OnboardingView: View {
             }
         }
     }
-    
+
     private var titleLines: [String] {
         switch store.page {
         case .first: return ["프로토콜 하나로,", "실험을 간편하게"]
@@ -139,7 +136,7 @@ struct OnboardingView: View {
         case .third: return ["실험이 끝나면,", "하나의 기록으로"]
         }
     }
-    
+
     private var bodyLines: [String] {
         switch store.page {
         case .first: return ["프로토콜에 있는 타이머와 실험 용어", "그리고 약어까지 자동으로 찾아줘요."]
@@ -147,7 +144,7 @@ struct OnboardingView: View {
         case .third: return ["실험 중 남긴 기록을 모아서", "시간 순으로 확인하고 수정할 수 있어요."]
         }
     }
-    
+
     private var cardImageName: String {
         store.page == .first ? "onboarding_protocol2" : "onboarding_result2"
     }
