@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import LabcordiOS
 import SwiftUI
 
 struct AppView: View {
@@ -15,10 +16,15 @@ struct AppView: View {
             switch store.case {
             case .registration(let store):
                 ProtocolRegistrationView(store: store)
+                    .navigationSwipeBackEnabled(!store.isSaving)
+
             case .session(let store):
                 ExperimentSessionView(store: store)
+                    .navigationSwipeBackEnabled(false)
+
             case .result(let store):
                 ExperimentResultView(store: store)
+                    .navigationSwipeBackEnabled(store.isOpenedFromHome)
             }
         }
     }
