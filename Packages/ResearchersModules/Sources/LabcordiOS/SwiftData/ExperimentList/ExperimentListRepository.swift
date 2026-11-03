@@ -13,9 +13,9 @@ final class ExperimentListRepository {
 
     func load() throws -> [ExperimentListEntry] {
         let context = try store.makeContext()
-        var request = FetchDescriptor<Experiment>()
-        request.propertiesToFetch = [\.id, \.title, \.createdAt, \.status]
-        return try context.fetch(request).map(Self.entry)
+        let request = FetchDescriptor<Experiment>()
+        let now = Date.now
+        return try context.fetch(request).map { Self.entry($0, at: now) }
     }
 
     func create(id: UUID, at date: Date) throws -> ExperimentListEntry {
@@ -50,12 +50,46 @@ final class ExperimentListRepository {
         try mediaStore.removeFiles(experimentID: id)
     }
 
-    private static func entry(_ experiment: Experiment) -> ExperimentListEntry {
+    private static func entry(
+        _ experiment: Experiment,
+        at date: Date = .now
+    ) -> ExperimentListEntry {
         ExperimentListEntry(
             id: experiment.id,
             title: experiment.title,
             createdAt: experiment.createdAt,
-            status: .init(experiment.status)
+            status: .init(experiment.status),
+            lastRunningTimerEndsAt: lastRunningTimerEndsAt(in: experiment, at: date)
         )
+    }
+
+    private static func lastRunningTimerEndsAt(in experiment: Experiment, at date: Date) -> Date? {
+        experiment.records.compactMap { record -> Date? in
+            guard record.type == .timer,
+                  record.timerEndedAt == nil,
+                  let duration = record.timerDurationSeconds else { return nil }
+            let pauses = record.timerPauses
+                .sorted { $0.pausedAt < $1.pausedAt }
+                .map {
+                    ExperimentTimer.PauseInterval(
+                        id: $0.id,
+                        pausedAt: $0.pausedAt,
+                        resumedAt: $0.resumedAt
+                    )
+                }
+            let timer = ExperimentTimer(
+                id: record.id,
+                durationSeconds: duration,
+                startedAt: record.recordedAt,
+                pauseIntervals: pauses
+            )
+            guard timer.status == .running, timer.remainingSeconds(at: date) > 0 else {
+                return nil
+            }
+            let pausedDuration = pauses.reduce(0.0) { total, pause in
+                total + (pause.resumedAt ?? pause.pausedAt).timeIntervalSince(pause.pausedAt)
+            }
+            return timer.startedAt.addingTimeInterval(TimeInterval(duration) + pausedDuration)
+        }.max()
     }
 }

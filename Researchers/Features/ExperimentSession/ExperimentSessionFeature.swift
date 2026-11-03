@@ -68,6 +68,8 @@ struct ExperimentSessionFeature {
     @Dependency(\.uuid) var uuid
     @Dependency(\.cameraSessionClient) var cameraSessionClient
     @Dependency(\.speechRecordingClient) var speechRecordingClient
+    @Dependency(\.notificationPermissionClient) var notificationPermissionClient
+    @Dependency(\.timerCompletionNotificationClient) var timerCompletionNotificationClient
 
     var body: some Reducer<State, Action> {
         Scope(state: \.permissions, action: \.permissions) {
@@ -91,6 +93,7 @@ struct ExperimentSessionFeature {
             case .loadDetail:
                 let experimentID = state.experimentID
                 return .run { send in
+                    await timerCompletionNotificationClient.cancelForExperiment(experimentID)
                     guard let detail = try? await experimentClient.loadDetail(experimentID) else {
                         return
                     }
@@ -154,12 +157,29 @@ struct ExperimentSessionFeature {
                 state.exitID = exitID
                 let exitedAt = now
                 let ownerID = state.capture.camera.ownerID
+                let title = state.detail?.title ?? "실험"
+                let runningTimers = state.timer.timerCollection.timers.filter {
+                    $0.status == .running && $0.remainingSeconds(at: exitedAt) > 0
+                }
                 return .run { send in
                     do {
                         try await experimentClient.leaveSession(experimentID, exitID, exitedAt)
                     } catch {
                         await send(.homeExitFailed)
                         return
+                    }
+                    if !runningTimers.isEmpty,
+                       let status = try? await notificationPermissionClient.requestAccess() {
+                        switch status {
+                        case .authorized, .provisional, .ephemeral:
+                            for timer in runningTimers {
+                                try? await timerCompletionNotificationClient.schedule(
+                                    experimentID, title, timer
+                                )
+                            }
+                        case .notDetermined, .denied, .unknown:
+                            break
+                        }
                     }
                     await send(.voice(.closeRequested))
                     await cameraSessionClient.cancelVideoRecording()

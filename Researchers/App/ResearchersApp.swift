@@ -1,8 +1,15 @@
+import LabcordiOS
 import SwiftUI
+import UserNotifications
 
 @main
 struct ResearchersApp: App {
     @State private var isSplashActive = true
+    private let notificationDelegate = ForegroundNotificationDelegate()
+
+    init() {
+        UNUserNotificationCenter.current().delegate = notificationDelegate
+    }
 
     var body: some Scene {
         WindowGroup {

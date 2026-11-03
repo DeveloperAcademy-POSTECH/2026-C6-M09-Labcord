@@ -15,10 +15,12 @@ final class ExperimentSessionRepository {
         let context = try store.makeContext()
         guard let experiment = try store.find(id: id, in: context) else { return nil }
 
+        let enteredAt = Date.now
         let timerSeconds = experiment.mode == .procedure
             ? experiment.procedure?.timerSeconds ?? []
             : []
-        let timers = activeTimers(in: experiment, at: .now)
+        let timers = activeTimers(in: experiment, at: enteredAt)
+        experiment.recordEntry(at: enteredAt)
         try context.save()
         return ExperimentSessionDetail(
             title: experiment.title,
@@ -33,13 +35,8 @@ final class ExperimentSessionRepository {
         guard let experiment = try store.find(id: id, in: context) else {
             throw ExperimentStore.StoreError.experimentNotFound
         }
-        let hasRunningTimers = activeTimers(in: experiment, at: date)
-            .contains { $0.status == .running }
-        experiment.recordExit(
-            status: hasRunningTimers ? .inProgress : .paused,
-            at: date,
-            entryID: entryID
-        )
+        _ = activeTimers(in: experiment, at: date)
+        experiment.recordExit(at: date, entryID: entryID)
         try context.save()
     }
 
