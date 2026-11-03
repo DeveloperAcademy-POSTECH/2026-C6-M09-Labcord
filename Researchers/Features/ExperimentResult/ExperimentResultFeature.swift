@@ -43,6 +43,7 @@ struct ExperimentResultFeature {
         var loadMessage: String?
         var selectedType: RecordFilter = .all
         var selectedSort: RecordSort = .oldest
+        var isTitleEditPresented = false
 
         init(experimentID: UUID, isOpenedFromHome: Bool = false) {
             self.experimentID = experimentID
@@ -75,6 +76,7 @@ struct ExperimentResultFeature {
         case recordFilterSelected(RecordFilter)
         case recordSortSelected(RecordSort)
         case editTapped
+        case titleEditDismissed
         case homeTapped
     }
 
@@ -112,7 +114,15 @@ struct ExperimentResultFeature {
                 state.selectedSort = sort
                 return .none
 
-            case .editTapped, .homeTapped:
+            case .editTapped:
+                state.isTitleEditPresented = true
+                return .none
+
+            case .titleEditDismissed:
+                state.isTitleEditPresented = false
+                return .none
+
+            case .homeTapped:
                 return .none
             }
         }

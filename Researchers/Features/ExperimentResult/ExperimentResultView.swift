@@ -95,6 +95,13 @@ struct ExperimentResultView: View {
                     await store.send(.loadResultDetail).finish()
                 }
             }
+            .overlay {
+                if store.isTitleEditPresented, let title = store.detail?.title {
+                    TitleEditOverlayView(originalTitle: title) {
+                        store.send(.titleEditDismissed)
+                    }
+                }
+            }
         }
     }
 }
