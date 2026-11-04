@@ -54,11 +54,18 @@ struct WatchExperimentView: View {
         case .permission:
             permission
         case let .countdown(seconds):
-            Text("준비")
-                .font(.headline)
-            Text(seconds.formatted())
-                .font(.system(size: 48, weight: .medium, design: .rounded))
-                .monospacedDigit()
+            Image("WatchPreparationRing")
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: 149)
+                .overlay {
+                    VStack {
+                        Text("준비").font(.caption)
+                        Text(seconds.formatted())
+                            .font(.system(size: 36, weight: .medium, design: .rounded))
+                            .monospacedDigit()
+                    }
+                }
                 .accessibilityLabel("실험 시작까지 \(seconds)초")
             Button("취소", role: .cancel) { store.send(.cancelCountdown) }
         case .confirmPause:

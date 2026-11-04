@@ -203,9 +203,12 @@ struct WatchExperimentFeature {
                 state.screen = .gestures
                 return .none
             case .closeTapped:
+                state.startToken = nil
                 state.screen = state.selectedID == nil ? .selection : .experiment
                 state.message = nil
-                return .cancel(id: CancelID.permission)
+                return .merge(
+                    .cancel(id: CancelID.permission), .cancel(id: CancelID.countdown)
+                )
             case .checkRequest:
                 return checkStatus(state: &state)
             default:

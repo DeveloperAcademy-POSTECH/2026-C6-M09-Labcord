@@ -7,6 +7,7 @@ extension WatchExperimentFeature {
     func activate(state: inout State) -> Effect<Action> {
         guard !state.isVisible else { return .none }
         state.isVisible = true
+        state.isReachable = false
         let streamID = uuid()
         state.streamID = streamID
         return .merge(
@@ -36,6 +37,7 @@ extension WatchExperimentFeature {
         case let .snapshotReceived(id, snapshot):
             guard state.isVisible, state.streamID == id else { return .none }
             accept(snapshot, state: &state)
+            if state.startToken == nil { return .cancel(id: CancelID.countdown) }
             return .none
         case let .streamEnded(id):
             guard state.streamID == id else { return .none }
@@ -64,6 +66,10 @@ extension WatchExperimentFeature {
             revision: snapshot.revision, previous: state.snapshots[id]?.revision
         ) else { return }
         state.snapshots[id] = snapshot
+        if snapshot.experiment.status != .ready, case .countdown = state.screen {
+            state.startToken = nil
+            state.screen = .experiment
+        }
         if let index = state.experiments.firstIndex(where: { $0.id == id }) {
             state.experiments[index] = snapshot.experiment
         }
