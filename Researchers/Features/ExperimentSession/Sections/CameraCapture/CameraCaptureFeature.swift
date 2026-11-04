@@ -10,6 +10,10 @@ struct CameraCaptureFeature {
         var camera = CameraFeature.State()
         var photo: PhotoFeature.State
         var video: VideoFeature.State
+        var watchPhotoRequest: WatchExperimentCommand?
+        var watchVideoRequest: WatchExperimentCommand?
+        var watchReviewRequest: WatchExperimentCommand?
+        var watchStopRequest: WatchExperimentCommand?
 
         init(experimentID: UUID) {
             self.photo = PhotoFeature.State(experimentID: experimentID)
@@ -45,15 +49,17 @@ struct CameraCaptureFeature {
         case photoButtonTapped
         case videoButtonTapped
         case videoRecordRequested
-        case photoCaptureRequested
+        case photoCaptureRequested(UUID?)
+        case watchCommand(WatchExperimentCommand)
     }
 
     enum Delegate: Equatable {
         case permissionAccessFailed(PermissionKind)
         case handEvent(CameraHandEvent)
         case voiceRequested
-        case photoRequested
+        case photoRequested(UUID?)
         case videoRequested
+        case watchResponse(WatchExperimentResponse)
     }
 
     var body: some Reducer<State, Action> {
@@ -70,6 +76,7 @@ struct CameraCaptureFeature {
         }
 
         Reduce { state, action in
+            if let effect = reduceWatch(state: &state, action: action) { return effect }
             switch action {
             case .cameraViewAppeared:
                 return .send(.camera(.viewAppeared))
@@ -119,8 +126,8 @@ struct CameraCaptureFeature {
                 }
                 return .send(.delegate(.handEvent(event)))
 
-            case .photo(.delegate(.captureRequested)):
-                return .send(.delegate(.photoRequested))
+            case let .photo(.delegate(.captureRequested(id))):
+                return .send(.delegate(.photoRequested(id)))
 
             case let .photoGestureEvent(event):
                 guard state.camera.isViewVisible,
@@ -141,7 +148,7 @@ struct CameraCaptureFeature {
                 return .send(.delegate(.voiceRequested))
 
             case .photoButtonTapped:
-                return .send(.delegate(.photoRequested))
+                return .send(.delegate(.photoRequested(nil)))
 
             case .videoButtonTapped:
                 return .send(.delegate(.videoRequested))
@@ -159,18 +166,18 @@ struct CameraCaptureFeature {
                     .send(.video(.recordRequested))
                 )
 
-            case .photoCaptureRequested:
+            case let .photoCaptureRequested(id):
                 guard state.camera.isViewVisible,
                       state.camera.previewConnector != nil,
                       !state.camera.isSwitching,
                       state.video.phase == .idle else { return .none }
-                return .send(.photo(.captureRequested))
+                return .send(.photo(.captureRequested(id)))
 
             case .photo(.captured):
                 guard !state.camera.isViewVisible else { return .none }
                 return .send(.photo(.retakeRequested))
 
-            case .camera, .photo, .video, .delegate:
+            case .camera, .photo, .video, .delegate, .watchCommand:
                 return .none
             }
         }

@@ -59,7 +59,7 @@ struct ExperimentSessionFeature {
         case voice(VoiceRecordingFeature.Action)
         case capture(CameraCaptureFeature.Action)
         case voiceStartRequested
-        case photoStartRequested
+        case photoStartRequested(UUID?)
         case videoStartRequested
         case appBecameActive
         case stopTapped
@@ -235,8 +235,8 @@ struct ExperimentSessionFeature {
             case .capture(.delegate(.voiceRequested)):
                 return .send(.voiceStartRequested)
 
-            case .capture(.delegate(.photoRequested)):
-                return .send(.photoStartRequested)
+            case let .capture(.delegate(.photoRequested(id))):
+                return .send(.photoStartRequested(id))
 
             case .capture(.delegate(.videoRequested)):
                 return .send(.videoStartRequested)
@@ -279,12 +279,12 @@ struct ExperimentSessionFeature {
             case .voiceStartRequested:
                 return prepareVoiceRecording(state: &state)
 
-            case .photoStartRequested:
+            case let .photoStartRequested(id):
                 guard state.watchCommand == nil else { return .none }
                 guard state.voice.phase == .hidden else {
                     return .send(.capture(.cancelPhotoGesture))
                 }
-                return .send(.capture(.photoCaptureRequested))
+                return .send(.capture(.photoCaptureRequested(id)))
 
             case .videoStartRequested:
                 guard state.watchCommand == nil, state.voice.phase == .hidden else { return .none }

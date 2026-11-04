@@ -30,9 +30,11 @@ struct VoiceRecordingFeature {
         var recordID: UUID?
         var recordedAt: Date?
         var isSaving = false
+        var isSessionClosing = false
         var saveError: String?
         var isAutoSavePending = false
         var contextualStrings: [String] = []
+        var shouldSaveOnStop = false
     }
 
     enum Action: Equatable {
@@ -44,6 +46,7 @@ struct VoiceRecordingFeature {
         case startFailed(UUID, String)
         case event(UUID, SpeechRecordingEvent)
         case stopRequested
+        case stopAndSaveRequested
         case stopped(UUID, SpeechRecording?)
         case retakeRequested
         case saveRequested
@@ -70,7 +73,14 @@ struct VoiceRecordingFeature {
 
     var body: some Reducer<State, Action> {
         Reduce { state, action in
+            if state.isSessionClosing, action.isBlockedDuringSessionClose { return .none }
             switch action {
+            case .stopAndSaveRequested:
+                guard state.phase != .hidden else { return .none }
+                state.shouldSaveOnStop = true
+                if state.phase == .finished { return saveAudio(state: &state) }
+                return .send(.stopRequested)
+
             case .prepareRequested:
                 guard state.phase == .hidden else { return .none }
                 state.transcript = ""
@@ -109,6 +119,7 @@ struct VoiceRecordingFeature {
                 guard id == state.sessionID, state.phase == .starting else { return .none }
                 state.phase = .recording
                 state.recordedAt = now
+                if state.shouldSaveOnStop { return .send(.stopRequested) }
                 return .none
 
             case let .startPermissionFailed(id, _):
@@ -253,6 +264,7 @@ private extension VoiceRecordingFeature {
         state.phase = .finished
         state.saveError = nil
         state.isAutoSavePending = true
+        if state.shouldSaveOnStop { return saveAudio(state: &state) }
         return .run { send in
             try await Task.sleep(for: .seconds(3))
             await send(.autoSaveElapsed(id))
@@ -302,5 +314,15 @@ private extension VoiceRecordingFeature {
         state.isSaving = false
         state.saveError = nil
         state.isAutoSavePending = false
+        state.shouldSaveOnStop = false
+    }
+}
+
+private extension VoiceRecordingFeature.Action {
+    var isBlockedDuringSessionClose: Bool {
+        switch self {
+        case .prepareRequested, .retakeRequested, .closeRequested: true
+        default: false
+        }
     }
 }
