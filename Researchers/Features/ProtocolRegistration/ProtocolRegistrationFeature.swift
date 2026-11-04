@@ -3,8 +3,6 @@ import Foundation
 import LabcordiOS
 
 nonisolated enum ProtocolSource: String, Equatable, Sendable {
-    case photos
-    case file
     case recent
 }
 
