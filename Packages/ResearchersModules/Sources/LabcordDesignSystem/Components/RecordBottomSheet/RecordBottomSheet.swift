@@ -157,7 +157,7 @@ public struct RecordBottomSheet: View {
                 RecordBottomSheetHeader(onDismiss: close)
             }
 
-            VStack(alignment: .center, spacing: LayoutTokens.spacing16) {
+            VStack(alignment: .center, spacing: LayoutTokens.spacing24) {
                 if type == .voice {
                     RecordBottomSheetTranscriptField(
                         transcript: $transcript,
@@ -167,15 +167,20 @@ public struct RecordBottomSheet: View {
                         bounds: $transcriptBounds
                     )
                 }
-                recordContent
-                noteField
-                if showsActions {
-                    actions
+
+                VStack(alignment: .center, spacing: LayoutTokens.spacing16) {
+                    recordContent
+
+                    noteField
+
+                    if showsActions {
+                        actions
+                    }
                 }
+                .padding(.horizontal, LayoutTokens.spacing16)
+                .padding(.bottom, bottomPadding)
+                .frame(maxWidth: .infinity)
             }
-            .padding(.horizontal, LayoutTokens.spacing16)
-            .padding(.bottom, bottomPadding)
-            .frame(maxWidth: .infinity)
         }
         .frame(maxWidth: .infinity)
         .background(
@@ -233,7 +238,8 @@ public struct RecordBottomSheet: View {
                 cumulativeTime: timerCumulativeTime,
                 pauseCount: timerPauseCount,
                 state: timerState,
-                identity: timerIdentity
+                identity: timerIdentity,
+                durationFollowsTitle: true
             )
         case .voice:
             Group {
@@ -285,7 +291,7 @@ public struct RecordBottomSheet: View {
     }
 
     private var actions: some View {
-        HStack(spacing: LayoutTokens.spacing16) {
+        HStack(spacing: LayoutTokens.spacing12) {
             Button(role: .destructive, action: onDelete) {
                 Text("삭제")
                     .frame(maxWidth: .infinity)
@@ -303,6 +309,7 @@ public struct RecordBottomSheet: View {
             .disabled(!canSave)
         }
         .frame(maxWidth: .infinity)
+        .padding(.top, 8)
     }
 
     private var canSave: Bool {
@@ -321,12 +328,18 @@ private extension RecordBottomSheet {
 #if os(watchOS)
         recordSheetReadOnlyText(note)
 #else
-        RecordBottomSheetTextEditor(
-            text: $note,
-            focus: $isNoteFocused,
-            bounds: $noteBounds,
-            accessibilityLabel: "메모"
-        )
+        VStack(alignment: .trailing, spacing: LayoutTokens.spacing8) {
+            RecordBottomSheetTextEditor(
+                text: $note,
+                focus: $isNoteFocused,
+                bounds: $noteBounds,
+                accessibilityLabel: "메모"
+            )
+
+            Text("\(note.count)/300")
+                .typography(Typography.subheadline)
+                .foregroundStyle(Color(.General.Label.tertiary))
+        }
 #endif
     }
 
