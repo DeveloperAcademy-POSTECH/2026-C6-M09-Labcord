@@ -28,6 +28,47 @@ final class ExperimentResultRepository {
         return Self.resultDetail(experiment)
     }
 
+    func updateRecordNote(
+        experimentID: UUID,
+        recordID: UUID,
+        note: String
+    ) throws -> ExperimentResultDetail {
+        let context = try store.makeContext()
+        guard let experiment = try store.find(id: experimentID, in: context) else {
+            throw ExperimentStore.StoreError.experimentNotFound
+        }
+        guard let record = experiment.records.first(where: { $0.id == recordID }) else {
+            throw RecordError.notFound
+        }
+        record.note = String(note.prefix(300))
+        try context.save()
+        return Self.resultDetail(experiment)
+    }
+
+    func deleteRecord(experimentID: UUID, recordID: UUID) throws -> ExperimentResultDetail {
+        let context = try store.makeContext()
+        guard let experiment = try store.find(id: experimentID, in: context) else {
+            throw ExperimentStore.StoreError.experimentNotFound
+        }
+        guard let record = experiment.records.first(where: { $0.id == recordID }) else {
+            throw RecordError.notFound
+        }
+        let filePath = record.filePath
+        experiment.records.removeAll { $0.id == recordID }
+        context.delete(record)
+        try context.save()
+
+        if let filePath {
+            let url = URL.applicationSupportDirectory.appending(path: filePath)
+            try? FileManager.default.removeItem(at: url)
+        }
+        return Self.resultDetail(experiment)
+    }
+
+    private enum RecordError: Error {
+        case notFound
+    }
+
     private static func resultDetail(_ experiment: Experiment) -> ExperimentResultDetail {
         ExperimentResultDetail(
             id: experiment.id,
