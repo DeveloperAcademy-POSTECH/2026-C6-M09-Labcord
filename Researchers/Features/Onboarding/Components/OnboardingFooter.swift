@@ -11,7 +11,7 @@ import SwiftUI
 
 struct OnboardingFooter: View {
     let store: StoreOf<OnboardingFeature>
-    
+
     var body: some View {
         VStack(spacing: LayoutTokens.spacing16) {
             HStack(spacing: LayoutTokens.spacing8) {
