@@ -30,6 +30,7 @@ public struct RecordBottomSheet: View {
     private let voiceOnEditingChanged: ((Bool) -> Void)?
     private let voiceOnToggle: (() -> Void)?
     private let voiceOnSeek: ((Double) -> Void)?
+    private let voiceContent: AnyView?
     private let mediaContent: AnyView?
     private let transcriptContent: AnyView?
     private let noteContent: AnyView?
@@ -37,6 +38,7 @@ public struct RecordBottomSheet: View {
     private let onDismiss: (() -> Void)?
     private let onSave: () -> Void
     private let onDelete: () -> Void
+    private let showsActions: Bool
 
     @Binding private var note: String
     @Binding private var transcript: String
@@ -65,6 +67,7 @@ public struct RecordBottomSheet: View {
         voiceOnEditingChanged: ((Bool) -> Void)? = nil,
         voiceOnToggle: (() -> Void)? = nil,
         voiceOnSeek: ((Double) -> Void)? = nil,
+        voiceContent: AnyView? = nil,
         transcript: Binding<String> = .constant(
             "샘플 B, 반응 시작 5분 후 연한 노란색으로 변했고 침전은 없음"
         ),
@@ -75,7 +78,8 @@ public struct RecordBottomSheet: View {
         transcriptHelp: String = "잘못 인식된 용어와 수치를 확인해 주세요.",
         onDismiss: (() -> Void)? = nil,
         onSave: @escaping () -> Void = {},
-        onDelete: @escaping () -> Void = {}
+        onDelete: @escaping () -> Void = {},
+        showsActions: Bool = true
     ) {
         self.type = type
         self.contentState = contentState
@@ -91,6 +95,7 @@ public struct RecordBottomSheet: View {
         self.voiceOnEditingChanged = voiceOnEditingChanged
         self.voiceOnToggle = voiceOnToggle
         self.voiceOnSeek = voiceOnSeek
+        self.voiceContent = voiceContent
         self._transcript = transcript
         self._note = note
         self.mediaContent = mediaContent
@@ -100,6 +105,7 @@ public struct RecordBottomSheet: View {
         self.onDismiss = onDismiss
         self.onSave = onSave
         self.onDelete = onDelete
+        self.showsActions = showsActions
     }
 
     public var body: some View {
@@ -117,7 +123,9 @@ public struct RecordBottomSheet: View {
                 )
             }
             noteField
-            actions
+            if showsActions {
+                actions
+            }
         }
         .padding(.horizontal, LayoutTokens.spacing16)
         .padding(.top, LayoutTokens.spacing16)
@@ -208,14 +216,20 @@ public struct RecordBottomSheet: View {
                 identity: timerIdentity
             )
         case .voice:
-            VoicePlayer(
-                isPlaying: voiceIsPlaying,
-                progress: voiceProgress,
-                duration: voiceDuration,
-                onEditingChanged: voiceOnEditingChanged,
-                onToggle: voiceOnToggle,
-                onSeek: voiceOnSeek
-            )
+            Group {
+                if let voiceContent {
+                    voiceContent
+                } else {
+                    VoicePlayer(
+                        isPlaying: voiceIsPlaying,
+                        progress: voiceProgress,
+                        duration: voiceDuration,
+                        onEditingChanged: voiceOnEditingChanged,
+                        onToggle: voiceOnToggle,
+                        onSeek: voiceOnSeek
+                    )
+                }
+            }
             .frame(maxWidth: .infinity)
             .padding(.vertical, LayoutTokens.spacing8)
         case .photo, .video:
