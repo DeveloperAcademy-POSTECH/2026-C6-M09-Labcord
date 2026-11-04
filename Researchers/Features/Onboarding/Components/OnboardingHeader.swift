@@ -11,7 +11,7 @@ import SwiftUI
 
 struct OnboardingHeader: View {
     let store: StoreOf<OnboardingFeature>
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: LayoutTokens.spacing16) {
             VStack(alignment: .leading, spacing: 0) {
@@ -19,7 +19,7 @@ struct OnboardingHeader: View {
             }
             .typography(Typography.title1Bold)
             .foregroundStyle(Color("General/Label/Primary"))
-            
+
             VStack(alignment: .leading, spacing: 0) {
                 Text(bodyText)
             }
@@ -27,7 +27,7 @@ struct OnboardingHeader: View {
             .foregroundStyle(Color("General/Label/Secondary"))
         }
     }
-    
+
     private var titleText: String {
         switch store.page {
         case .first:
@@ -38,7 +38,7 @@ struct OnboardingHeader: View {
             return "실험이 끝나면,\n하나의 기록으로"
         }
     }
-    
+
     private var bodyText: String {
         switch store.page {
         case .first: return "프로토콜에 있는 타이머와 실험 용어 \n그리고 약어까지 자동으로 찾아줘요."
