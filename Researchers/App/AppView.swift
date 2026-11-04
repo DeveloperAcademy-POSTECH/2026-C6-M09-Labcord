@@ -18,6 +18,9 @@ struct AppView: View {
                 ProtocolRegistrationView(store: store)
                     .navigationSwipeBackEnabled(!store.isSaving)
 
+            case .recent(let store):
+                RecentProtocolView(store: store)
+
             case .session(let store):
                 ExperimentSessionView(store: store)
                     .navigationSwipeBackEnabled(false)

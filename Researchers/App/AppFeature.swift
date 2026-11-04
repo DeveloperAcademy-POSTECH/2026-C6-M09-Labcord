@@ -6,6 +6,7 @@ struct AppFeature {
     @Reducer
     enum Path {
         case registration(ProtocolRegistrationFeature)
+        case recent(RecentProtocolFeature)
         case session(ExperimentSessionFeature)
         case result(ExperimentResultFeature)
     }
@@ -57,13 +58,30 @@ struct AppFeature {
                 }
                 return .send(.home(.list(.cancelLoad)))
 
-            case let .path(.element(id: id, action: .registration(.backTapped))):
+            case let .path(.element(id: id, action: .registration(.backReady))):
                 return .send(.closeRegistration(id))
 
             case let .closeRegistration(id):
-                guard state.path[id: id, case: \.registration]?.isSaving == false else {
+                guard let registration = state.path[id: id, case: \.registration],
+                      !registration.isSaving, !registration.importing,
+                      registration.analysisID == nil, !registration.analysisStarting,
+                      registration.invalidatingJobID == nil else {
                     return .none
                 }
+                state.path.pop(from: id)
+                return .none
+
+            case let .path(.element(id: id, action: .registration(.sourceTapped(.recent)))):
+                guard state.path.ids.last == id,
+                      let registration = state.path[id: id, case: \.registration],
+                      !registration.importing, !registration.isSaving,
+                      registration.analysisID == nil, !registration.analysisStarting,
+                      registration.invalidatingJobID == nil else { return .none }
+                state.path.append(.recent(RecentProtocolFeature.State()))
+                return .none
+
+            case let .path(.element(id: id, action: .recent(.backTapped))):
+                guard state.path.ids.last == id else { return .none }
                 state.path.pop(from: id)
                 return .none
 
