@@ -2,27 +2,27 @@ import Foundation
 import LabcordShared
 
 public struct ExperimentResultDetail: Equatable, Sendable {
+    public enum TimelineTimerEvent: Equatable, Sendable {
+        case start
+        case paused
+        case resumed
+        case ended
+    }
+
+    public enum TimelineKind: Equatable, Sendable {
+        case status(ExperimentStatus)
+        case started
+        case ended
+        case paused
+        case resumed
+        case record(Record)
+        case timer(Record, TimelineTimerEvent)
+    }
+
     public struct TimelineEntry: Equatable, Sendable, Identifiable {
-        public enum TimerEvent: Equatable, Sendable {
-            case start
-            case paused
-            case resumed
-            case ended
-        }
-
-        public enum Kind: Equatable, Sendable {
-            case status(ExperimentStatus)
-            case started
-            case ended
-            case paused
-            case resumed
-            case record(Record)
-            case timer(Record, TimerEvent)
-        }
-
         public let id: String
         public let date: Date
-        public let kind: Kind
+        public let kind: TimelineKind
     }
 
     public struct Procedure: Equatable, Sendable {
@@ -70,53 +70,75 @@ public struct ExperimentResultDetail: Equatable, Sendable {
     public let statusHistory: [StatusEntry]
 
     public var timeline: [TimelineEntry] {
-        let statusEvents: [(id: String, date: Date, kind: TimelineEntry.Kind)] =
+        let statusEvents: [TimelineEntry] =
             statusHistory.enumerated().compactMap { index, entry in
                 switch entry.status {
                 case .ready:
-                    ("status-\(entry.id)", entry.date, .status(.ready))
+                    TimelineEntry(
+                        id: "status-\(entry.id)", date: entry.date, kind: .status(.ready)
+                    )
                 case .paused:
-                    ("status-\(entry.id)", entry.date, .paused)
+                    TimelineEntry(id: "status-\(entry.id)", date: entry.date, kind: .paused)
                 case .running where index > 0 && statusHistory[index - 1].status == .paused:
-                    ("status-\(entry.id)", entry.date, .resumed)
+                    TimelineEntry(id: "status-\(entry.id)", date: entry.date, kind: .resumed)
                 case .running, .completed:
                     nil
                 }
             }
 
-        let pauseEvents: [(id: String, date: Date, kind: TimelineEntry.Kind)] =
+        let pauseEvents: [TimelineEntry] =
             pauses.flatMap { pause in
-                var events: [(id: String, date: Date, kind: TimelineEntry.Kind)] = []
+                var events: [TimelineEntry] = []
                 if !statusHistory.contains(where: {
                     $0.status == .paused && $0.date == pause.pausedAt
                 }) {
-                    events.append(("pause-\(pause.id)", pause.pausedAt, .paused))
+                    events.append(
+                        TimelineEntry(id: "pause-\(pause.id)", date: pause.pausedAt, kind: .paused)
+                    )
                 }
                 if let resumedAt = pause.resumedAt,
                    !statusHistory.contains(where: {
                        $0.status == .running && $0.date == resumedAt
                    }) {
-                    events.append(("resume-\(pause.id)", resumedAt, .resumed))
+                    events.append(
+                        TimelineEntry(id: "resume-\(pause.id)", date: resumedAt, kind: .resumed)
+                    )
                 }
                 return events
             }
 
-        let recordEvents: [(id: String, date: Date, kind: TimelineEntry.Kind)] =
-            records.flatMap { record -> [(id: String, date: Date, kind: TimelineEntry.Kind)] in
+        let recordEvents: [TimelineEntry] =
+            records.flatMap { record -> [TimelineEntry] in
                 guard record.type == .timer else {
-                    return [("record-\(record.id)", record.recordedAt, .record(record))]
+                    return [TimelineEntry(
+                        id: "record-\(record.id)",
+                        date: record.recordedAt,
+                        kind: .record(record)
+                    )]
                 }
 
-                var events: [(id: String, date: Date, kind: TimelineEntry.Kind)] = [
-                    ("timer-start-\(record.id)", record.recordedAt, .timer(record, .start))
+                var events: [TimelineEntry] = [
+                    TimelineEntry(
+                        id: "timer-start-\(record.id)",
+                        date: record.recordedAt,
+                        kind: .timer(record, .start)
+                    )
                 ]
                 for pause in record.timerPauses {
                     events.append(
-                        ("timer-pause-\(pause.id)", pause.pausedAt, .timer(record, .paused))
+                        TimelineEntry(
+                            id: "timer-pause-\(pause.id)",
+                            date: pause.pausedAt,
+                            kind: .timer(record, .paused)
+                        )
                     )
                     if let resumedAt = pause.resumedAt {
                         events.append(
-                            ("timer-resume-\(pause.id)", resumedAt, .timer(record, .resumed))
+                            TimelineEntry(
+                                id: "timer-resume-\(pause.id)",
+                                date: resumedAt,
+                                kind: .timer(record, .resumed)
+                            )
                         )
                     }
                 }
@@ -126,28 +148,25 @@ public struct ExperimentResultDetail: Equatable, Sendable {
                     }
                     if !hasOpenPause || endedAt.contains(timerEndedAt) {
                         events.append(
-                            ("timer-end-\(record.id)", timerEndedAt, .timer(record, .ended))
+                            TimelineEntry(
+                                id: "timer-end-\(record.id)",
+                                date: timerEndedAt,
+                                kind: .timer(record, .ended)
+                            )
                         )
                     }
                 }
                 return events
             }
 
-        let datesAndKinds: [(id: String, date: Date, kind: TimelineEntry.Kind)] =
+        let events: [TimelineEntry] =
             statusEvents
-            + (startedAt.map { [("started", $0, .started)] } ?? [])
-            + (endedAt.last.map { [("ended", $0, .ended)] } ?? [])
+            + (startedAt.map { [TimelineEntry(id: "started", date: $0, kind: .started)] } ?? [])
+            + (endedAt.last.map { [TimelineEntry(id: "ended", date: $0, kind: .ended)] } ?? [])
             + pauseEvents
             + recordEvents
 
-        return datesAndKinds.map { entry in
-            TimelineEntry(
-                id: entry.id,
-                date: entry.date,
-                kind: entry.kind
-            )
-        }
-        .sorted {
+        return events.sorted {
             if $0.date != $1.date { return $0.date < $1.date }
             if $0.kind == .status(.ready) { return true }
             if $1.kind == .status(.ready) { return false }
