@@ -158,7 +158,6 @@ public struct RecordBottomSheet: View {
             }
 
             VStack(alignment: .center, spacing: LayoutTokens.spacing16) {
-                recordContent
                 if type == .voice {
                     RecordBottomSheetTranscriptField(
                         transcript: $transcript,
@@ -168,6 +167,7 @@ public struct RecordBottomSheet: View {
                         bounds: $transcriptBounds
                     )
                 }
+                recordContent
                 noteField
                 if showsActions {
                     actions
@@ -321,30 +321,12 @@ private extension RecordBottomSheet {
 #if os(watchOS)
         recordSheetReadOnlyText(note)
 #else
-        TextEditor(text: Binding(
-            get: { note },
-            set: { updated in
-                if isNoteFocused, updated == note + "\n" {
-                    isNoteFocused = false
-                } else {
-                    note = String(updated.prefix(300))
-                }
-            }
-        ))
-            .submitLabel(.done)
-            .onSubmit { isNoteFocused = false }
-            .labcordTextEditorStyle(
-                text: note,
-                focus: $isNoteFocused,
-                placeholder: Text("내용을 입력해 주세요"),
-                height: 104
-            )
-            .onGeometryChange(for: CGRect.self) { geometry in
-                geometry.frame(in: .global)
-            } action: { bounds in
-                noteBounds = bounds
-            }
-            .accessibilityLabel(Text("메모"))
+        RecordBottomSheetTextEditor(
+            text: $note,
+            focus: $isNoteFocused,
+            bounds: $noteBounds,
+            accessibilityLabel: "메모"
+        )
 #endif
     }
 
