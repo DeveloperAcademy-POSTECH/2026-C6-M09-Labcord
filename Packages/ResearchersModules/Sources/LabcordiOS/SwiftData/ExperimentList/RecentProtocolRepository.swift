@@ -56,7 +56,9 @@ private struct ProtocolContentKey: Hashable {
         materials = Self.normalized(entry.materials)
         samples = Self.normalized(entry.samples)
         glossaryTerms = Self.normalized(entry.glossaryTerms)
-        units = Self.normalized(entry.units)
+        units = entry.units.map { unit in
+            ProtocolDocumentUnitExtractor.key(unit.trimmingCharacters(in: .whitespacesAndNewlines))
+        }.sorted()
     }
 
     private static func normalized(_ terms: [String]) -> [String] {

@@ -204,11 +204,18 @@ private extension ProtocolAnalysisJobManager {
                 await updateSystemProgress(id: id)
             }
             try check(id: id, attempt: attempt)
-            if let value = record { record = try store.complete(value) }
+            let success = record?.failures?.isEmpty != false
+            if success {
+                if let value = record { record = try store.complete(value) }
+            } else {
+                record?.status = .failed
+                record?.message = "일부 파일을 읽지 못했어요. 파일을 확인하고 다시 시도해 주세요."
+                try persist()
+            }
             execution = nil
             runID = nil
             publish()
-            await ProtocolAnalysisBackgroundScheduler.shared.finish(id: id, success: true)
+            await ProtocolAnalysisBackgroundScheduler.shared.finish(id: id, success: success)
         } catch {
             guard runID == attempt else { return }
             let message = error is CancellationError
@@ -230,11 +237,14 @@ private extension ProtocolAnalysisJobManager {
                 await self.progress(.reading(inputID, value), id: id, attempt: attempt)
             }
             try check(id: id, attempt: attempt)
-            guard let item = items.first, case let .success(document) = item.outcome else {
-                throw CocoaError(.fileReadCorruptFile)
+            guard items.count == 1, let item = items.first, item.id == input.id else {
+                throw CocoaError(.coderReadCorrupt)
             }
-            record?.documents[key] = ProtocolAnalysisSavedDocument(document)
+            guard var value = record else { throw CocoaError(.coderReadCorrupt) }
+            let succeeded = try value.recordOutcome(item.outcome, key: key)
+            record = value
             try persist()
+            if !succeeded { return }
         }
         guard let saved = record?.documents[key] else {
             throw CocoaError(.coderReadCorrupt)
@@ -323,13 +333,7 @@ private extension ProtocolAnalysisJobManager {
 
     private func updateSystemProgress(id: UUID) async {
         guard let record, record.id == id else { return }
-        let progress = ProtocolAnalysisProgress.values(
-            record: record, phase: phase
-        )
-        await ProtocolAnalysisBackgroundScheduler.shared.update(
-            id: id, completed: min(progress.total, progress.completed),
-            total: progress.total, subtitle: progress.subtitle
-        )
+        await ProtocolAnalysisSystemProgress.update(record: record, phase: phase)
     }
 
     private func pause(id: UUID, message: String) async {
@@ -389,5 +393,6 @@ private extension ProtocolAnalysisJobManager {
         guard let value = try? snapshot() else { return }
         for listener in listeners.values { listener.yield(value) }
     }
+
     private func removeListener(_ id: UUID) { listeners[id] = nil }
 }

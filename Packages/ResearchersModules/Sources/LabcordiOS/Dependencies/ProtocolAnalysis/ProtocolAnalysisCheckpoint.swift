@@ -168,19 +168,40 @@ nonisolated struct ProtocolAnalysisJobRecord: Codable {
     var message: String?
     var inputs: [Input]
     var documents: [String: ProtocolAnalysisSavedDocument] = [:]
+    var failures: [String: ProtocolAnalysisSavedFailure]?
     var selected: [String: [String]] = [:]
     var classified: [String: ProtocolAnalysisSavedTerms] = [:]
     var finished: Set<String> = []
     var reviewPolicyVersion: Int?
     var reviews: [String: ProtocolTermReviewCheckpoint]?
 
+    mutating func recordOutcome(_ outcome: ProtocolAnalysisOutcome, key: String) throws -> Bool {
+        switch outcome {
+        case let .success(document):
+            documents[key] = ProtocolAnalysisSavedDocument(document)
+            failures?.removeValue(forKey: key)
+            return true
+        case let .failure(error):
+            if error == .cancelled { throw CancellationError() }
+            if failures == nil { failures = [:] }
+            failures?[key] = ProtocolAnalysisSavedFailure(error)
+            return false
+        }
+    }
+
     func snapshot(
         inputs: [ProtocolAnalysisJobInput], phase: ProtocolAnalysisJobPhase,
         backgroundAvailable: Bool
     ) throws -> ProtocolAnalysisJobSnapshot {
         let results = try self.inputs.compactMap { input -> ProtocolAnalysisItem? in
-            guard let value = documents[input.id.uuidString] else { return nil }
-            return try ProtocolAnalysisItem(id: input.id, outcome: .success(value.restored()))
+            let key = input.id.uuidString
+            if let value = documents[key] {
+                return try ProtocolAnalysisItem(id: input.id, outcome: .success(value.restored()))
+            }
+            if let failure = failures?[key] {
+                return ProtocolAnalysisItem(id: input.id, outcome: .failure(failure.restored))
+            }
+            return nil
         }
         var terms: [UUID: ProtocolExtractedTerms] = [:]
         for input in self.inputs where finished.contains(input.id.uuidString) {

@@ -26,6 +26,19 @@ nonisolated public struct ProtocolAnalysisItem: Equatable, Sendable {
         return document.fullText
     }
 
+    public var failureDescription: String? {
+        guard case let .failure(error) = outcome else { return nil }
+        switch error {
+        case .unreadableInput: return "파일을 읽지 못했어요."
+        case .inputTooLarge: return "파일이 너무 커서 읽을 수 없어요."
+        case .encryptedDocument: return "암호로 잠겨 있어 읽을 수 없어요."
+        case .unsupportedFormat: return "지원하지 않는 파일 형식이에요."
+        case .malformedDocument: return "파일이 손상되어 읽을 수 없어요."
+        case .cancelled: return "파일 읽기가 취소됐어요."
+        @unknown default: return "파일을 분석하지 못했어요."
+        }
+    }
+
     public var hasWarnings: Bool {
         guard case let .success(document) = outcome else { return false }
         return !document.warnings.isEmpty

@@ -33,7 +33,7 @@ nonisolated struct ProtocolAnalysisJobStore: Sendable {
                 .filter { $0.isASCII && ($0.isLetter || $0.isNumber) }
             let fileName = input.id.uuidString + (suffix.isEmpty ? "" : "." + suffix)
             let url = target.appendingPathComponent(fileName)
-            try FileManager.default.copyItem(at: input.url, to: url)
+            try copyInput(input.url, to: url)
             try protect(url)
             stored.append(.init(
                 id: input.id, fileName: fileName, name: input.name, isPhoto: input.isPhoto
@@ -46,6 +46,23 @@ nonisolated struct ProtocolAnalysisJobStore: Sendable {
         record.reviewPolicyVersion = ProtocolTermReviewCheckpoint.currentPolicyVersion
         try save(record)
         return record
+    }
+
+    private func copyInput(_ source: URL, to target: URL) throws {
+        let scoped = source.startAccessingSecurityScopedResource()
+        defer { if scoped { source.stopAccessingSecurityScopedResource() } }
+        var coordinationError: NSError?
+        var copyResult: Result<Void, Error>?
+        NSFileCoordinator().coordinate(
+            readingItemAt: source, options: [], error: &coordinationError
+        ) { coordinatedURL in
+            copyResult = Result {
+                try FileManager.default.copyItem(at: coordinatedURL, to: target)
+            }
+        }
+        if let coordinationError { throw coordinationError }
+        guard let copyResult else { throw CocoaError(.fileReadUnknown) }
+        try copyResult.get()
     }
 
     func save(_ record: ProtocolAnalysisJobRecord) throws {
