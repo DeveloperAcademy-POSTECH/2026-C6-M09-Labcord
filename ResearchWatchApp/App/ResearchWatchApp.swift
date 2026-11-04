@@ -21,9 +21,13 @@ struct ResearchWatchApp: App {
         deviceNameClient.start()
     }
 
+    private let store = Store(initialState: WatchExperimentFeature.State()) {
+        WatchExperimentFeature()
+    }
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(store: store)
         }
         .backgroundTask(.watchConnectivity) { [connectivity] in
             await connectivity.waitForPendingUserInfo()
