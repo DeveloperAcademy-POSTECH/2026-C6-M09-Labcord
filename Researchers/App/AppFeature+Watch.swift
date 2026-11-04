@@ -27,21 +27,47 @@ extension AppFeature {
                 return active ? openWatchSession(&state) : .none
 
             case let .watchEvent(.command(command)):
-                guard state.watchRequestID == nil,
-                      let id = state.path.ids.last,
-                      state.path[id: id, case: \.session]?.experimentID == command.experimentID
-                else {
+                guard let id = state.path.ids.last,
+                      let session = state.path[id: id, case: \.session],
+                      session.experimentID == command.experimentID else {
                     PhoneWatchExperimentCoordinator.shared.finish(
                         command.requestID, error: .phoneBusy
                     )
                     return .none
                 }
-                state.watchRequestID = command.requestID
-                return .send(.path(.element(id: id, action: .session(.watchControl(command)))))
+                let cancelsPhoto = command.operation == .cancelRecord
+                    && session.watchMediaCommand?.operation == .takePhoto
+                    && session.watchMediaCommand?.targetID == command.targetID
+                    && command.targetID != nil
+                guard state.watchRequestID == nil || cancelsPhoto else {
+                    PhoneWatchExperimentCoordinator.shared.finish(
+                        command.requestID, error: .phoneBusy
+                    )
+                    return .none
+                }
+                if !cancelsPhoto { state.watchRequestID = command.requestID }
+                let action: ExperimentSessionFeature.Action =
+                    [.pause, .complete].contains(command.operation)
+                    ? .watchControl(command) : .watchRecordControl(command)
+                return .send(.path(.element(id: id, action: .session(action))))
 
             case let .path(.element(_, action: .session(.watchControlFinished(id, error)))):
                 state.watchRequestID = nil
                 PhoneWatchExperimentCoordinator.shared.finish(id, error: error)
+                return .none
+
+            case let .path(.element(id, action: .session(.watchRecordResponse(response)))):
+                guard let experimentID = state.path[id: id, case: \.session]?.experimentID else {
+                    return .none
+                }
+                PhoneWatchExperimentCoordinator.shared.finishRecord(
+                    response, experimentID: experimentID
+                )
+                if state.watchRequestID == response.requestID,
+                   response.phase == .failed || response.phase == .completed
+                    || response.record != nil {
+                    state.watchRequestID = nil
+                }
                 return .none
 
             default:
@@ -74,6 +100,17 @@ extension AppFeature {
     func openWatchSession(_ state: inout State) -> Effect<Action> {
         guard state.watchIsActive, UIApplication.shared.applicationState == .active,
               let experimentID = state.watchPendingStartID else {
+            return .none
+        }
+        do {
+            let status = try experimentClient.watchState(experimentID)?.experiment.status
+            guard status == .running else {
+                state.watchPendingStartID = nil
+                PhoneWatchExperimentCoordinator.shared.didOpen(experimentID)
+                return .none
+            }
+        } catch {
+            // 저장 상태를 읽지 못하면 기존 화면과 대기 요청을 유지한다.
             return .none
         }
         if let id = state.path.ids.last,

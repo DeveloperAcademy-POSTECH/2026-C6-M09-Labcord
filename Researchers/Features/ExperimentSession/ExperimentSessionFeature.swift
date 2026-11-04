@@ -9,6 +9,8 @@ struct ExperimentSessionFeature {
     struct State: Equatable {
         let experimentID: UUID
         var watchCommand: WatchExperimentCommand?
+        var watchMediaCommand: WatchExperimentCommand?
+        var watchClosingResources = false
         var watchCameraWasVisible = false
         var detail: ExperimentSessionDetail?
         var isLoadingDetail = false
@@ -47,6 +49,9 @@ struct ExperimentSessionFeature {
     }
 
     enum Action: Equatable {
+        case watchRecordControl(WatchExperimentCommand)
+        case watchRecordResponse(WatchExperimentResponse)
+        case watchDrainProgress
         case watchControl(WatchExperimentCommand)
         case watchResourcesReleased
         case watchControlFinished(UUID, WatchExperimentError?)
@@ -98,27 +103,19 @@ struct ExperimentSessionFeature {
             SessionTimerFeature()
         }
 
+        watchCompletionReducer
+
         Reduce { state, action in
             switch action {
-            case .watchControl, .watchResourcesReleased, .watchControlFinished:
+            case .watchControl, .watchResourcesReleased, .watchControlFinished,
+                 .watchRecordControl, .watchRecordResponse, .watchDrainProgress:
                 return .none
 
             case .loadDetail:
                 return loadDetail(state: &state)
 
             case let .detailLoaded(detail):
-                state.isLoadingDetail = false
-                state.detail = detail
-                state.voice.contextualStrings = detail.speechContextualStrings
-                return .send(
-                    .timer(
-                        .configure(
-                            mode: detail.mode,
-                            timerSeconds: detail.timerSeconds,
-                            timers: detail.timers
-                        )
-                    )
-                )
+                return configureSessionDetail(detail, state: &state)
 
             case .detailLoadingFailed:
                 state.isLoadingDetail = false
@@ -135,11 +132,15 @@ struct ExperimentSessionFeature {
                 return .none
 
             case .stopTapped:
+                guard state.watchCommand == nil || state.watchClosingResources else {
+                    return .none
+                }
                 return completeSession(state: &state)
 
-            case .stopCompleted:
+            case .stopCompleted, .homeExitCompleted:
                 state.isCompleting = false
                 state.watchCommand = nil
+                state.watchClosingResources = false
                 return .none
 
             case .stopFailed:
@@ -156,7 +157,10 @@ struct ExperimentSessionFeature {
                 return .none
 
             case .returnHomeTapped:
-                guard state.canCloseSession else { return .none }
+                guard state.canCloseSession,
+                      state.watchCommand == nil || state.watchClosingResources else {
+                    return .none
+                }
                 state.isReturningHome = true
                 state.timer.isClosing = true
                 state.exitFailed = false
@@ -195,10 +199,6 @@ struct ExperimentSessionFeature {
                     await cameraSessionClient.deactivate(ownerID)
                     await send(.homeExitCompleted)
                 }
-
-            case .homeExitCompleted:
-                state.watchCommand = nil
-                return .none
 
             case .homeExitFailed:
                 state.isReturningHome = false
@@ -298,6 +298,23 @@ struct ExperimentSessionFeature {
 }
 
 private extension ExperimentSessionFeature {
+    func configureSessionDetail(
+        _ detail: ExperimentSessionDetail, state: inout State
+    ) -> Effect<Action> {
+        state.isLoadingDetail = false
+        state.detail = detail
+        state.voice.contextualStrings = detail.speechContextualStrings
+        return .send(
+            .timer(
+                .configure(
+                    mode: detail.mode,
+                    timerSeconds: detail.timerSeconds,
+                    timers: detail.timers
+                )
+            )
+        )
+    }
+
     func completeSession(state: inout State) -> Effect<Action> {
         guard state.canCloseSession else { return .none }
         state.isCompleting = true

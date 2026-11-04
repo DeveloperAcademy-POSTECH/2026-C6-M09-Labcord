@@ -10,6 +10,8 @@ struct ResearchersApp: App {
 
     init() {
         PhoneWatchExperimentCoordinator.shared.activate()
+        PhoneWatchExperimentCoordinator.shared.configureRecordHandling()
+        PhoneWatchAudioService.shared.activate()
         FontRegistration.register()
         UNUserNotificationCenter.current().delegate = notificationDelegate
     }

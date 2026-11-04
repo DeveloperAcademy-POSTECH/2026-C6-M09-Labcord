@@ -28,6 +28,8 @@ public final class PhoneWatchExperimentCoordinator {
     var tokens: [UUID: (UUID, ContinuousClock.Instant)] = [:]
     var states: [UUID: WatchExperimentState] = [:]
     var revisions: [UUID: UInt64] = [:]
+    var recordResults: [UUID: WatchRecordSnapshot] = [:]
+    var recordSnapshots: [UUID: WatchRecordSnapshot] = [:]
     var executing: UUID?
     var photoCancellationID: UUID?
     var subscriberID: UUID?
@@ -183,7 +185,7 @@ public final class PhoneWatchExperimentCoordinator {
             requestID: command.requestID, phase: interrupted ? .unknown : response.phase,
             experiments: response.experiments, snapshot: response.snapshot,
             error: interrupted ? .resultUnknown : response.error,
-            startToken: response.startToken
+            startToken: response.startToken, record: response.record
         )
     }
 
@@ -202,7 +204,8 @@ public final class PhoneWatchExperimentCoordinator {
             publish(updated)
             response = WatchExperimentResponse(
                 requestID: command.requestID, phase: .completed,
-                snapshot: updated, startToken: token
+                snapshot: updated, startToken: token,
+                record: recordResults.removeValue(forKey: command.requestID)
             )
         } catch {
             response = failure(command, error as? WatchExperimentError ?? .storageFailed)
