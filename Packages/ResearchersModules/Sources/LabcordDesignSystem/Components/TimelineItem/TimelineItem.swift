@@ -20,6 +20,7 @@ public struct TimelineItem: View {
     private let showMemo: Bool
     private let type: TimelineItemType
     private let state: TimelineItemState
+    private let photoAspectRatio: CGFloat
     private let content: AnyView?
 
     @ScaledMetric(relativeTo: .callout) private var memoMinimumHeight = 42
@@ -32,6 +33,7 @@ public struct TimelineItem: View {
         showMemo: Bool = false,
         type: TimelineItemType = .voice,
         state: TimelineItemState = .default,
+        photoAspectRatio: CGFloat = 16.0 / 9.0,
         @ViewBuilder content: () -> Content
     ) {
         self.init(
@@ -42,6 +44,7 @@ public struct TimelineItem: View {
             showMemo: showMemo,
             type: type,
             state: state,
+            photoAspectRatio: photoAspectRatio,
             content: content
         )
     }
@@ -54,6 +57,7 @@ public struct TimelineItem: View {
         showMemo: Bool = true,
         type: TimelineItemType = .voice,
         state: TimelineItemState = .default,
+        photoAspectRatio: CGFloat = 16.0 / 9.0,
         content: AnyView? = nil
     ) {
         self.timestamp = timestamp
@@ -63,6 +67,7 @@ public struct TimelineItem: View {
         self.showMemo = showMemo
         self.type = type
         self.state = state
+        self.photoAspectRatio = photoAspectRatio
         self.content = content
     }
 
@@ -74,6 +79,7 @@ public struct TimelineItem: View {
         showMemo: Bool = true,
         type: TimelineItemType = .voice,
         state: TimelineItemState = .default,
+        photoAspectRatio: CGFloat = 16.0 / 9.0,
         @ViewBuilder content: () -> Content
     ) {
         self.init(
@@ -84,15 +90,16 @@ public struct TimelineItem: View {
             showMemo: showMemo,
             type: type,
             state: state,
+            photoAspectRatio: photoAspectRatio,
             content: AnyView(content())
         )
     }
 
     public var body: some View {
-        HStack(alignment: .top, spacing: LayoutTokens.spacing20) {
+        HStack(alignment: .top, spacing: LayoutTokens.spacing4) {
             Text(timestamp)
                 .typography(Typography.body)
-                .foregroundStyle(Color(.General.Label.secondary))
+                .foregroundStyle(Color(.General.Label.tertiary))
                 .frame(minWidth: 70, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -117,6 +124,9 @@ public struct TimelineItem: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .layoutPriority(1)
             .labcordMotion(.layout, value: showMemo)
+            .padding(12)
+            .background(Color(.General.Background.Grouped.primary))
+            .cornerRadius(LayoutTokens.radiusSm)
         }
         .padding(.horizontal, LayoutTokens.spacing16)
         .padding(.vertical, LayoutTokens.spacing8)
@@ -131,11 +141,35 @@ public struct TimelineItem: View {
         switch type {
         case .voice:
             content ?? AnyView(VoicePlayer())
-        case .photo, .video:
+        case .photo:
+            if let content {
+                GeometryReader { geometry in
+                    content
+                        .frame(
+                            width: geometry.size.width,
+                            height: geometry.size.height,
+                            alignment: .center
+                        )
+                        .clipped()
+                }
+                .aspectRatio(photoAspectRatio, contentMode: .fit)
+                .cornerRadius(LayoutTokens.radiusSm)
+            }
+        case .video:
             if let content {
                 content
-                    .aspectRatio(16.0 / 9.0, contentMode: .fit)
                     .frame(maxWidth: .infinity)
+                    .allowsHitTesting(false)
+                    .overlay {
+                        Button {} label: {
+                            Image(labcordIcon: .play)
+                                .foregroundStyle(Color(.General.Label.light))
+                        }
+                        .background(Color(.General.Fill.secondary))
+                        .cornerRadius(LayoutTokens.radiusFull)
+                        .buttonStyle(.labcordIcon(.neutral, size: .large))
+                    }
+                    .cornerRadius(LayoutTokens.radiusSm)
             }
         case .timer:
             content ?? AnyView(TimerRecord())
@@ -147,26 +181,13 @@ public struct TimelineItem: View {
     }
 
     private var memoContent: some View {
-        VStack(alignment: .leading, spacing: LayoutTokens.spacing12) {
-            Text(memoTitle)
-                .typography(Typography.calloutSemiBold)
-                .foregroundStyle(Color(.General.Label.tertiary))
-                .fixedSize(horizontal: false, vertical: true)
-
-            Text(memo)
-                .typography(Typography.callout)
-                .foregroundStyle(Color(.General.Label.primary))
-                .contentTransition(.opacity)
-                .labcordMotion(.state, value: memo)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, minHeight: memoMinimumHeight, alignment: .topLeading)
-        }
-        .padding(LayoutTokens.spacing12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            Color(.General.Timeline.Memo.background),
-            in: RoundedRectangle(cornerRadius: LayoutTokens.radiusSm)
-        )
+        Text(memo)
+            .typography(Typography.callout)
+            .foregroundStyle(Color(.General.Label.secondary))
+            .contentTransition(.opacity)
+            .labcordMotion(.state, value: memo)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 
     private var selectionBackground: some View {
@@ -187,11 +208,11 @@ public struct TimelineItem: View {
             TimelineItem(
                 title: "사진 기록",
                 type: .photo,
-                state: .default
+                state: .default,
+                photoAspectRatio: 3.0 / 4.0
             ) {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color(.General.Fill.secondary))
-                    .frame(height: 160)
                     .overlay {
                         Text("호출자 미디어 슬롯")
                             .typography(Typography.callout)

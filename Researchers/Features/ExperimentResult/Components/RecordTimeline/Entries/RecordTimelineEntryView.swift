@@ -87,18 +87,23 @@ struct RecordTimelineEntryView: View {
         _ record: ExperimentResultDetail.Record,
         timestamp: String
     ) -> some View {
-        TimelineItem(
+        let image = mediaURL(for: record).flatMap { UIImage(contentsOfFile: $0.path) }
+        let photoAspectRatio = image.map {
+            $0.size.height > $0.size.width ? 3.0 / 4.0 : 16.0 / 9.0
+        } ?? 16.0 / 9.0
+
+        return TimelineItem(
             timestamp: timestamp,
             title: "사진 기록",
             memo: record.note,
             showMemo: !record.note.isEmpty,
-            type: .photo
+            type: .photo,
+            photoAspectRatio: photoAspectRatio
         ) {
-            if let url = mediaURL(for: record),
-               let image = UIImage(contentsOfFile: url.path) {
+            if let image {
                 Image(uiImage: image)
                     .resizable()
-                    .scaledToFit()
+                    .scaledToFill()
             } else {
                 Text("사진 파일을 불러올 수 없습니다.")
             }
