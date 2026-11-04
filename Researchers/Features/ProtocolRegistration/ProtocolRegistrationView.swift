@@ -159,6 +159,7 @@ private extension ProtocolRegistrationView {
                     ) {
                         photoPickerPresented = true
                     }
+                    .accessibilityHint("사진을 선택합니다")
                     .accessibilityIdentifier("entry-source-photos")
 
                     ProtocolUploadButton(
@@ -189,6 +190,7 @@ private extension ProtocolRegistrationView {
                     ) {
                         store.send(.sourceTapped(.recent))
                     }
+                    .accessibilityHint("최근 사용한 프로토콜을 확인합니다")
                     .accessibilityIdentifier("entry-source-recent")
                 }
                 .disabled(store.isSaving || store.importing || store.analysisID != nil

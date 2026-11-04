@@ -108,16 +108,14 @@ struct ProtocolRegistrationFeature {
         case analysisJobFailed(UUID)
         case startAnalysis(UUID)
         case analysisStartFinished(UUID, Bool)
-        case cancelAnalysis
         case showReview
-        case clearImportedInputs
         case invalidationFinished(UUID, Bool, [ImportedProtocolInput])
         case retryInvalidation
         case discardFailedInvalidation
     }
 
     enum AfterInvalidation: Equatable {
-        case back, skip, clear, inputsChanged
+        case back, skip, inputsChanged
     }
 
     nonisolated enum SaveFailure: Error, Equatable, Sendable {
@@ -139,15 +137,6 @@ struct ProtocolRegistrationFeature {
 
             case .backReady:
                 return .none
-
-            case .clearImportedInputs:
-                guard state.invalidatingJobID == nil else { return .none }
-                if state.analysisStarting {
-                    state.afterStart = .clear
-                    state.analysisCancellationRequested = true
-                    return .none
-                }
-                return invalidateAnalysis(into: &state, then: .clear)
 
             case .skipTapped:
                 guard !state.restoringAnalysis, !state.isSaving, !state.hasFailed,
@@ -277,11 +266,6 @@ struct ProtocolRegistrationFeature {
                  .startAnalysis, .analysisStartFinished:
                 return reduceAnalysisJob(into: &state, action: action)
 
-            case .cancelAnalysis:
-                guard state.analysisID != nil else { return .none }
-                state.analysisCancellationRequested = true
-                return .none
-
             case .saveSucceeded:
                 return .none
 
@@ -340,9 +324,6 @@ extension ProtocolRegistrationFeature {
             return .send(.backReady)
         case .skip:
             return .send(.createWithoutProtocol)
-        case .clear:
-            state.clearInputs()
-            return .none
         case .inputsChanged, nil:
             state.analysisFailed = state.selectedInputs.contains { input in
                 guard let item = state.analysisResults[input.id] else { return false }
