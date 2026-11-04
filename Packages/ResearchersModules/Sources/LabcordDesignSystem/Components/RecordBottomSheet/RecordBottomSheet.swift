@@ -15,6 +15,47 @@ public enum RecordContentState: String, CaseIterable, Sendable {
     case filled
 }
 
+public struct RecordBottomSheetHeader: View {
+    private let onDismiss: () -> Void
+    @ScaledMetric(relativeTo: .body) private var controlScale: CGFloat = 1
+
+    public init(onDismiss: @escaping () -> Void) {
+        self.onDismiss = onDismiss
+    }
+
+    public var body: some View {
+        VStack(spacing: LayoutTokens.spacing16) {
+            Capsule()
+                .fill(Color(.General.Fill.quaternary))
+                .frame(width: 36, height: 5)
+                .accessibilityHidden(true)
+
+            HStack(alignment: .center) {
+                Button(action: onDismiss) {
+                    IconArtwork(icon: .x, size: 24, relativeTo: .body)
+                        .foregroundStyle(Color(.General.Label.secondary))
+                }
+                .buttonStyle(.labcordIcon(.plain, size: .large))
+                .accessibilityLabel(Text("닫기"))
+
+                Text("기록")
+                    .typography(Typography.bodySemiBold)
+                    .foregroundStyle(Color(.General.Label.primary))
+                    .frame(maxWidth: .infinity)
+
+                Color.clear.frame(width: 50 * controlScale, height: 50 * controlScale)
+                    .accessibilityHidden(true)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .padding(.horizontal, LayoutTokens.spacing16)
+        .padding(.top, LayoutTokens.spacing16)
+        .padding(.bottom, LayoutTokens.spacing16)
+        .frame(maxWidth: .infinity)
+        .background(Color(.General.Background.Grouped.secondary))
+    }
+}
+
 public struct RecordBottomSheet: View {
     private let type: RecordType
     private let contentState: RecordContentState
@@ -39,6 +80,7 @@ public struct RecordBottomSheet: View {
     private let onSave: () -> Void
     private let onDelete: () -> Void
     private let showsActions: Bool
+    private let showsHeader: Bool
 
     @Binding private var note: String
     @Binding private var transcript: String
@@ -50,7 +92,6 @@ public struct RecordBottomSheet: View {
 
     @Environment(\.isPresented) private var isPresented
     @Environment(\.dismiss) private var dismiss
-    @ScaledMetric(relativeTo: .body) private var headerControlScale: CGFloat = 1
 
     public init(
         type: RecordType = .timer,
@@ -79,7 +120,8 @@ public struct RecordBottomSheet: View {
         onDismiss: (() -> Void)? = nil,
         onSave: @escaping () -> Void = {},
         onDelete: @escaping () -> Void = {},
-        showsActions: Bool = true
+        showsActions: Bool = true,
+        showsHeader: Bool = true
     ) {
         self.type = type
         self.contentState = contentState
@@ -106,30 +148,35 @@ public struct RecordBottomSheet: View {
         self.onSave = onSave
         self.onDelete = onDelete
         self.showsActions = showsActions
+        self.showsHeader = showsHeader
     }
 
     public var body: some View {
-        VStack(alignment: .center, spacing: LayoutTokens.spacing16) {
-            grabber
-            header
-            recordContent
-            if type == .voice {
-                RecordBottomSheetTranscriptField(
-                    transcript: $transcript,
-                    content: transcriptContent,
-                    help: transcriptHelp,
-                    focus: $isTranscriptFocused,
-                    bounds: $transcriptBounds
-                )
+        VStack(spacing: 0) {
+            if showsHeader {
+                RecordBottomSheetHeader(onDismiss: close)
             }
-            noteField
-            if showsActions {
-                actions
+
+            VStack(alignment: .center, spacing: LayoutTokens.spacing16) {
+                recordContent
+                if type == .voice {
+                    RecordBottomSheetTranscriptField(
+                        transcript: $transcript,
+                        content: transcriptContent,
+                        help: transcriptHelp,
+                        focus: $isTranscriptFocused,
+                        bounds: $transcriptBounds
+                    )
+                }
+                noteField
+                if showsActions {
+                    actions
+                }
             }
+            .padding(.horizontal, LayoutTokens.spacing16)
+            .padding(.bottom, bottomPadding)
+            .frame(maxWidth: .infinity)
         }
-        .padding(.horizontal, LayoutTokens.spacing16)
-        .padding(.top, LayoutTokens.spacing16)
-        .padding(.bottom, bottomPadding)
         .frame(maxWidth: .infinity)
         .background(
             Color(.General.Background.Grouped.secondary),
@@ -166,33 +213,6 @@ public struct RecordBottomSheet: View {
             isKeyboardVisible = false
         }
         #endif
-    }
-
-    private var grabber: some View {
-        Capsule()
-            .fill(Color(.General.Fill.quaternary))
-            .frame(width: 36, height: 5)
-            .accessibilityHidden(true)
-    }
-
-    private var header: some View {
-        HStack(alignment: .center) {
-            Button(action: close) {
-                IconArtwork(icon: .x, size: 24, relativeTo: .body)
-                    .foregroundStyle(Color(.General.Label.secondary))
-            }
-            .buttonStyle(.labcordIcon(.plain, size: .large))
-            .accessibilityLabel(Text("닫기"))
-
-            Text("기록")
-                .typography(Typography.bodySemiBold)
-                .foregroundStyle(Color(.General.Label.primary))
-                .frame(maxWidth: .infinity)
-
-            Color.clear.frame(width: 50 * headerControlScale, height: 50 * headerControlScale)
-                .accessibilityHidden(true)
-        }
-        .frame(maxWidth: .infinity)
     }
 
     private func close() {
@@ -301,11 +321,23 @@ private extension RecordBottomSheet {
 #if os(watchOS)
         recordSheetReadOnlyText(note)
 #else
-        TextEditor(text: $note)
+        TextEditor(text: Binding(
+            get: { note },
+            set: { updated in
+                if isNoteFocused, updated == note + "\n" {
+                    isNoteFocused = false
+                } else {
+                    note = String(updated.prefix(300))
+                }
+            }
+        ))
+            .submitLabel(.done)
+            .onSubmit { isNoteFocused = false }
             .labcordTextEditorStyle(
                 text: note,
                 focus: $isNoteFocused,
-                placeholder: Text("내용을 입력해 주세요")
+                placeholder: Text("내용을 입력해 주세요"),
+                height: 104
             )
             .onGeometryChange(for: CGRect.self) { geometry in
                 geometry.frame(in: .global)
