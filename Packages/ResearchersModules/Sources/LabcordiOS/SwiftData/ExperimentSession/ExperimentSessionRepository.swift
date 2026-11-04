@@ -11,7 +11,7 @@ final class ExperimentSessionRepository {
 
     private init() {}
 
-    func loadDetail(id: UUID) throws -> ExperimentSessionDetail? {
+    func loadDetail(id: UUID, recordEntry: Bool = true) throws -> ExperimentSessionDetail? {
         let context = try store.makeContext()
         guard let experiment = try store.find(id: id, in: context) else { return nil }
 
@@ -24,15 +24,32 @@ final class ExperimentSessionRepository {
             + (procedure?.samples ?? [])
             + (procedure?.glossaryTerms ?? [])
             + (procedure?.units ?? [])
-        let timers = activeTimers(in: experiment, at: enteredAt)
-        experiment.recordEntry(at: enteredAt)
-        try context.save()
+        let timers = activeTimers(in: experiment, at: enteredAt, persistExpiry: recordEntry)
+        if recordEntry {
+            if experiment.status != .completed, experiment.startedAt == nil {
+                experiment.startedAt = enteredAt
+            }
+            experiment.recordEntry(at: enteredAt)
+            try context.save()
+        }
         return ExperimentSessionDetail(
             title: experiment.title,
             timerSeconds: timerSeconds,
             mode: experiment.mode,
             timers: timers,
             speechContextualStrings: SpeechContextualTerms.prepare(speechContextualStrings)
+        )
+    }
+
+    func watchState(id: UUID) throws -> WatchExperimentState? {
+        let context = try store.makeContext()
+        guard let experiment = try store.find(id: id, in: context),
+              let detail = try loadDetail(id: id, recordEntry: false) else { return nil }
+        return WatchExperimentState(
+            experiment: WatchExperimentSummary(
+                id: id, title: experiment.title, status: experiment.status
+            ),
+            detail: detail
         )
     }
 
@@ -133,7 +150,9 @@ final class ExperimentSessionRepository {
         try context.save()
     }
 
-    private func activeTimers(in experiment: Experiment, at date: Date) -> [ExperimentTimer] {
+    private func activeTimers(
+        in experiment: Experiment, at date: Date, persistExpiry: Bool = true
+    ) -> [ExperimentTimer] {
         experiment.records
             .filter { $0.type == .timer && $0.timerEndedAt == nil }
             .compactMap { record -> ExperimentTimer? in
@@ -154,7 +173,7 @@ final class ExperimentSessionRepository {
                     finishedAt: record.timerEndedAt
                 )
                 timer.finishIfNeeded(at: date)
-                if record.timerEndedAt == nil, let finishedAt = timer.finishedAt {
+                if persistExpiry, record.timerEndedAt == nil, let finishedAt = timer.finishedAt {
                     record.timerEndedAt = finishedAt
                 }
                 return timer.status == .finished ? nil : timer
