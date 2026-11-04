@@ -20,3 +20,5 @@
 현재 경로·버전·설정 등 확인 가능한 사실은 실제 저장소와 일치하도록 유지합니다.
 기존 팀 규칙과 충돌하는 동작이나 새 정책의 결정이 필요하면 팀에 확인합니다.
 단순한 경로·버전 갱신을 위해 별도 승인을 반복해서 요청하지 않습니다.
+
+| Watch 실험 명령 | `WatchExperimentClient`와 iPhone coordinator의 계약·통합 경계는 [Watch 구현 기록](../watch-implementation.md) 참고 |
