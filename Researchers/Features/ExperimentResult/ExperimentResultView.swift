@@ -125,9 +125,29 @@ struct ExperimentResultView: View {
                 get: { store.selectedEntry },
                 set: { if $0 == nil { store.send(.timelineSheetDismissed) } }
             )) { entry in
-                ExperimentRecordSheetHost(entry: entry) {
-                    store.send(.timelineSheetDismissed)
-                }
+                ExperimentRecordSheetHost(
+                    entry: entry,
+                    note: Binding(
+                        get: { store.draftNote },
+                        set: { store.send(.recordNoteChanged($0)) }
+                    ),
+                    isDeleteConfirmationPresented: Binding(
+                        get: { store.isRecordDeleteConfirmationPresented },
+                        set: {
+                            if !$0 { store.send(.recordDeleteCancelled) }
+                        }
+                    ),
+                    saveMessage: Binding(
+                        get: { store.recordSaveMessage },
+                        set: { if $0 == nil { store.send(.recordSaveMessageDismissed) } }
+                    ),
+                    canSave: store.canSaveRecordNote,
+                    onDismiss: { store.send(.timelineSheetDismissed) },
+                    onSave: { store.send(.recordSaveTapped) },
+                    onDelete: { store.send(.recordDeleteTapped) },
+                    onConfirmDelete: { store.send(.recordDeleteConfirmed) },
+                    onCancelDelete: { store.send(.recordDeleteCancelled) }
+                )
             }
         }
     }
