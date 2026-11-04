@@ -4,7 +4,7 @@ import SwiftUI
 
 struct RecordedTimerTimelineView: View {
     let record: ExperimentResultDetail.Record
-    let event: ExperimentResultDetail.TimelineEntry.TimerEvent
+    let event: ExperimentResultDetail.TimelineTimerEvent
     let timestamp: String
     let date: Date
 
