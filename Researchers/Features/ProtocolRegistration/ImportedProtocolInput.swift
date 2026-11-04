@@ -2,7 +2,6 @@ import CoreTransferable
 import Foundation
 import ImageIO
 import SwiftUI
-import UIKit
 import UniformTypeIdentifiers
 
 nonisolated struct ImportedProtocolInput: Identifiable, Equatable, Sendable, Transferable {
@@ -144,12 +143,13 @@ private nonisolated final class ImportedInputOwnership: @unchecked Sendable {
 
 struct ProtocolPhotoThumbnail: View {
     let url: URL
-    @State private var thumbnail: UIImage?
+    @State private var thumbnail: CGImage?
 
     var body: some View {
         Group {
             if let thumbnail {
-                Image(uiImage: thumbnail).resizable().scaledToFill()
+                Image(thumbnail, scale: 1, label: Text("선택한 사진"))
+                    .resizable().scaledToFill()
             } else {
                 ProgressView()
             }
@@ -160,7 +160,7 @@ struct ProtocolPhotoThumbnail: View {
         }
     }
 
-    private static func loadThumbnail(_ url: URL) async -> UIImage? {
+    private static func loadThumbnail(_ url: URL) async -> CGImage? {
         await withCheckedContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
                 let options: [CFString: Any] = [
@@ -172,7 +172,7 @@ struct ProtocolPhotoThumbnail: View {
                 let image = source.flatMap {
                     CGImageSourceCreateThumbnailAtIndex($0, 0, options as CFDictionary)
                 }
-                continuation.resume(returning: image.map { UIImage(cgImage: $0) })
+                continuation.resume(returning: image)
             }
         }
     }

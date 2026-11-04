@@ -3,7 +3,6 @@ import LabcordDesignSystem
 import LabcordiOS
 import PhotosUI
 import SwiftUI
-import UIKit
 import UniformTypeIdentifiers
 
 struct ProtocolRegistrationView: View {
