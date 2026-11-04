@@ -1,0 +1,39 @@
+{
+  "schema": "labcord_unicode4_bio_app_assets_v1",
+  "reference_commit": "8f2e98696744767654312fd5ae1641579e147d92",
+  "reference_manifest_sha256": "23735434cff728378750946397a6841cc2f3376926e95e651251442bd739c8f3",
+  "native_model": "Unicode4.mlpackage",
+  "native_origin": "work/unicode_model_20261022_054/Model",
+  "decoder": "BIO constrained Viterbi; verified explicit source concentration priority; model entity probability/start order within groups; maximum 50; no term dictionary",
+  "payload_bytes": 75494046,
+  "files": {
+    "LICENSE.MiniLM.txt": {
+      "bytes": 1104,
+      "sha256": "904dc4d8749877f1dba1cda48200d2462dccbeb7c134d5e4ef6fa75e0198c8fe"
+    },
+    "LICENSE.XLM-R.txt": {
+      "bytes": 1086,
+      "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85"
+    },
+    "Unicode4.mlpackage/Data/com.apple.CoreML/model.mlmodel": {
+      "bytes": 202837,
+      "sha256": "5558f6faa44b1b3dc3662dce7309d4f70bda79a0abec421d53eafc95c1d75ef8"
+    },
+    "Unicode4.mlpackage/Data/com.apple.CoreML/weights/weight.bin": {
+      "bytes": 70072384,
+      "sha256": "03c0df7bf335dbf69eefab4fb8fc35c829438a84a921d0b0fceb22bd3d3a5169"
+    },
+    "Unicode4.mlpackage/Manifest.json": {
+      "bytes": 617,
+      "sha256": "ebd5b113e473d08d76b570b335b463d8f0cd387336fbbc135bc3c4db387fb517"
+    },
+    "native-assets/char_vocab.json": {
+      "bytes": 146967,
+      "sha256": "c34d65535f1125210eb2c9b3c0df8c0450f82f4276a2e0404badb6a4addd6f80"
+    },
+    "native-assets/sentencepiece.bpe.model": {
+      "bytes": 5069051,
+      "sha256": "cfc8146abe2a0488e9e2a0c56de7952f7c11ab059eca145a0a727afce0db2865"
+    }
+  }
+}
