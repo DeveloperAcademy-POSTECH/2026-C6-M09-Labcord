@@ -16,6 +16,7 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
     public let observerStore = WatchConnectivityObserverStore()
     public let experiments = WatchExperimentTransport()
     public let records = WatchRecordTransport()
+    public private(set) var lastAudioTransferError: WatchAudioError?
 
     func addStateObserver(_ observer: @escaping () -> Void) -> UUID {
         let id = UUID()
@@ -93,12 +94,48 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
 
     public func session(
         _ session: WCSession,
+        didReceiveMessageData messageData: Data,
+        replyHandler: @escaping (Data) -> Void
+    ) {
+        Task { @MainActor in
+            replyHandler(await PhoneWatchAudioService.shared.reply(to: messageData))
+        }
+    }
+
+    public func session(_ session: WCSession, didReceive file: WCSessionFile) {
+        guard file.metadata?["labcordAudioChunk"] as? Bool == true else { return }
+        do {
+            let retained = try WatchAudioReceiver.retainIncomingFile(file.fileURL)
+            Task { @MainActor in
+                do {
+                    try await PhoneWatchAudioService.shared.receiveRetainedFile(retained)
+                    lastAudioTransferError = nil
+                } catch {
+                    lastAudioTransferError = (error as? WatchAudioError) ?? .storageFailed
+                }
+            }
+        } catch {
+            lastAudioTransferError = (error as? WatchAudioError) ?? .storageFailed
+        }
+    }
+
+    public func session(
+        _ session: WCSession,
         didReceiveUserInfo userInfo: [String: Any]
     ) {
         observerStore.deliverUserInfo(userInfo)
         let record = userInfo[WatchRecordTransport.snapshotKey] as? Data
+        let audio = userInfo[PhoneWatchAudioService.messageKey] as? Data
         Task { @MainActor in
             if let record { records.receive(record) }
+            if let audio {
+                let receipt = await PhoneWatchAudioService.shared.reply(to: audio)
+                if !receipt.isEmpty {
+                    transferUserInfo([PhoneWatchAudioService.receiptKey: receipt])
+                } else {
+                    lastAudioTransferError = .invalidAudio
+                }
+            }
         }
     }
 
