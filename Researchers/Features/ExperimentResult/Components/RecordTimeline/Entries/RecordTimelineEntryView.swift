@@ -58,22 +58,7 @@ struct RecordTimelineEntryView: View {
                 }
             }
         case .photo:
-            TimelineItem(
-                timestamp: timestamp,
-                title: "사진 기록",
-                memo: record.note,
-                showMemo: !record.note.isEmpty,
-                type: .photo
-            ) {
-                if let url = mediaURL(for: record),
-                   let image = UIImage(contentsOfFile: url.path) {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFit()
-                } else {
-                    Text("사진 파일을 불러올 수 없습니다.")
-                }
-            }
+            photoRecord(record, timestamp: timestamp)
         case .video:
             TimelineItem(
                 timestamp: timestamp,
@@ -95,6 +80,28 @@ struct RecordTimelineEntryView: View {
                 timestamp: timestamp,
                 date: record.recordedAt
             )
+        }
+    }
+
+    private func photoRecord(
+        _ record: ExperimentResultDetail.Record,
+        timestamp: String
+    ) -> some View {
+        TimelineItem(
+            timestamp: timestamp,
+            title: "사진 기록",
+            memo: record.note,
+            showMemo: !record.note.isEmpty,
+            type: .photo
+        ) {
+            if let url = mediaURL(for: record),
+               let image = UIImage(contentsOfFile: url.path) {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+            } else {
+                Text("사진 파일을 불러올 수 없습니다.")
+            }
         }
     }
 
