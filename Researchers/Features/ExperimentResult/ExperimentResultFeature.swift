@@ -33,6 +33,7 @@ struct ExperimentResultFeature {
         var loadMessage: String?
         var selectedType: RecordFilter = .all
         var selectedSort: RecordSort = .oldest
+        var selectedEntry: ExperimentResultDetail.TimelineEntry?
         var titleEditOverlay: TitleEditOverlayFeature.State?
 
         var displayedEntries: [ExperimentResultDetail.TimelineEntry] {
@@ -74,6 +75,8 @@ struct ExperimentResultFeature {
         case resultDetailLoadFailed
         case recordFilterSelected(RecordFilter)
         case recordSortSelected(RecordSort)
+        case timelineEntrySelected(ExperimentResultDetail.TimelineEntry)
+        case timelineSheetDismissed
         case recordTimeline(RecordTimelineFeature.Action)
         case editTapped
         case titleEditOverlay(TitleEditOverlayFeature.Action)
@@ -88,6 +91,7 @@ struct ExperimentResultFeature {
             case .loadResultDetail:
                 state.recordTimeline = nil
                 state.loadMessage = nil
+                state.selectedEntry = nil
                 let experimentID = state.experimentID
                 return .run { send in
                     async let minimumDisplay = Task.sleep(for: .seconds(1))
@@ -133,6 +137,19 @@ struct ExperimentResultFeature {
 
             case let .recordSortSelected(sort):
                 state.selectedSort = sort
+                return .none
+
+            case let .timelineEntrySelected(entry):
+                switch entry.kind {
+                case .record, .timer:
+                    state.selectedEntry = entry
+                case .status, .started, .ended, .paused, .resumed:
+                    break
+                }
+                return .none
+
+            case .timelineSheetDismissed:
+                state.selectedEntry = nil
                 return .none
 
             case .editTapped:
