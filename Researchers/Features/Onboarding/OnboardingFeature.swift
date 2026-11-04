@@ -25,10 +25,10 @@ struct OnboardingFeature {
         case skipTapped
         case startTapped
         case delegate(Delegate)
+    }
 
-        enum Delegate: Equatable {
-            case finished
-        }
+    enum Delegate: Equatable {
+        case finished
     }
 
     var body: some Reducer<State, Action> {
