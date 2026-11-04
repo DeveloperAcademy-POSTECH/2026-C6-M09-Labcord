@@ -28,10 +28,11 @@ final class ExperimentResultRepository {
         return Self.resultDetail(experiment)
     }
 
-    func updateRecordNote(
+    func updateRecordContent(
         experimentID: UUID,
         recordID: UUID,
-        note: String
+        note: String,
+        transcript: String?
     ) throws -> ExperimentResultDetail {
         let context = try store.makeContext()
         guard let experiment = try store.find(id: experimentID, in: context) else {
@@ -41,6 +42,9 @@ final class ExperimentResultRepository {
             throw RecordError.notFound
         }
         record.note = String(note.prefix(300))
+        if record.type == .audio, let transcript {
+            record.transcript = String(transcript.prefix(300))
+        }
         try context.save()
         return Self.resultDetail(experiment)
     }
