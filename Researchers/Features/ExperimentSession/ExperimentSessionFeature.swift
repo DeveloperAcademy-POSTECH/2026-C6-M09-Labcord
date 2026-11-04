@@ -102,6 +102,7 @@ struct ExperimentSessionFeature {
 
             case let .detailLoaded(detail):
                 state.detail = detail
+                state.voice.contextualStrings = detail.speechContextualStrings
                 return .send(
                     .timer(
                         .configure(
@@ -264,15 +265,7 @@ struct ExperimentSessionFeature {
                 }
 
             case .voiceStartRequested:
-                guard state.voice.phase == .hidden,
-                      state.capture.isCameraViewVisible,
-                      !state.capture.isCapturingPhoto,
-                      state.capture.capturedPhotoData == nil,
-                      state.capture.videoPhase == .idle else { return .none }
-                return .merge(
-                    .send(.capture(.cancelPhotoGesture)),
-                    .send(.voice(.prepareRequested))
-                )
+                return prepareVoiceRecording(state: &state)
 
             case .photoStartRequested:
                 guard state.voice.phase == .hidden else {
@@ -288,5 +281,23 @@ struct ExperimentSessionFeature {
                 return .none
             }
         }
+    }
+}
+
+private extension ExperimentSessionFeature {
+    func prepareVoiceRecording(state: inout State) -> Effect<Action> {
+        guard state.detail != nil else {
+            state.voice.errorMessage = "실험 정보를 불러온 뒤 다시 녹음해 주세요."
+            return .none
+        }
+        guard state.voice.phase == .hidden,
+              state.capture.isCameraViewVisible,
+              !state.capture.isCapturingPhoto,
+              state.capture.capturedPhotoData == nil,
+              state.capture.videoPhase == .idle else { return .none }
+        return .merge(
+            .send(.capture(.cancelPhotoGesture)),
+            .send(.voice(.prepareRequested))
+        )
     }
 }
