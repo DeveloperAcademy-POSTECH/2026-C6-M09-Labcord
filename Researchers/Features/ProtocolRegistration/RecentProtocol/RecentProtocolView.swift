@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import Foundation
 import LabcordDesignSystem
 import LabcordiOS
 import SwiftUI
