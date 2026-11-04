@@ -1,3 +1,4 @@
+import AVFoundation
 import LabcordDesignSystem
 import LabcordiOS
 import LabcordShared
@@ -10,6 +11,8 @@ struct ExperimentRecordSheetView: View {
     let onDismiss: () -> Void
     let onSave: () -> Void
     let onDelete: () -> Void
+    let isVideoFullScreen: Bool
+    let onOpenVideoFullScreen: (AVPlayer) -> Void
 
     var body: some View {
         if let presentation = ExperimentRecordSheetPresentation(entry: entry) {
@@ -63,7 +66,14 @@ struct ExperimentRecordSheetView: View {
             guard let url = presentation.mediaURL else {
                 return AnyView(Text("영상 파일을 불러올 수 없습니다."))
             }
-            return AnyView(RecordedVideoTimelineView(url: url))
+            return AnyView(
+                ExperimentRecordVideoPlayerView(
+                    url: url,
+                    isFullScreen: isVideoFullScreen,
+                    onOpenFullScreen: onOpenVideoFullScreen
+                )
+                .id(url)
+            )
         case .audio, .timer:
             return nil
         }
