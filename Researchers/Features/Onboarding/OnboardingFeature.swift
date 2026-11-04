@@ -24,6 +24,11 @@ struct OnboardingFeature {
         case previousTapped
         case skipTapped
         case startTapped
+        case delegate(Delegate)
+
+        enum Delegate: Equatable {
+            case finished
+        }
     }
 
     var body: some Reducer<State, Action> {
@@ -46,6 +51,9 @@ struct OnboardingFeature {
                 return .none
 
             case .skipTapped, .startTapped:
+                return .send(.delegate(.finished))
+
+            case .delegate:
                 return .none
 
             }
