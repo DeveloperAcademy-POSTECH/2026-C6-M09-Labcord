@@ -57,7 +57,9 @@ struct ExperimentResultView: View {
 
                                         Separator(orientation: .horizontal)
 
-                                        RecordTimelineView(entries: store.displayedEntries)
+                                        RecordTimelineView(entries: store.displayedEntries) {
+                                            store.send(.timelineEntrySelected($0))
+                                        }
                                     }
                                 }
                             }
@@ -110,6 +112,21 @@ struct ExperimentResultView: View {
                     action: \.titleEditOverlay
                 ) {
                     TitleEditOverlayView(store: overlayStore)
+                }
+            }
+            .overlay {
+                Overlay()
+                    .ignoresSafeArea()
+                    .opacity(store.selectedEntry == nil ? 0 : 1)
+                    .animation(.easeInOut(duration: 0.2), value: store.selectedEntry != nil)
+                    .allowsHitTesting(false)
+            }
+            .fullScreenCover(item: Binding(
+                get: { store.selectedEntry },
+                set: { if $0 == nil { store.send(.timelineSheetDismissed) } }
+            )) { entry in
+                ExperimentRecordSheetHost(entry: entry) {
+                    store.send(.timelineSheetDismissed)
                 }
             }
         }
