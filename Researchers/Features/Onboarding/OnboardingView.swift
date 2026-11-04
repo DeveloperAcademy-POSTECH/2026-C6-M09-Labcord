@@ -39,7 +39,6 @@ struct OnboardingView: View {
         }
     }
 
-
     private var skipRow: some View {
         HStack {
             Spacer()
@@ -68,7 +67,6 @@ struct OnboardingView: View {
             .foregroundStyle(Color("General/Label/Secondary"))
         }
     }
-
 
     private var footer: some View {
         VStack(spacing: LayoutTokens.spacing16) {
@@ -128,5 +126,5 @@ struct OnboardingView: View {
 }
 
 #Preview {
-    OnboardingView(onFinish: {})
+    OnboardingView {}
 }
