@@ -17,6 +17,7 @@ struct ProtocolRegistrationView: View {
     @State private var showReviewConfirmation = false
     @State private var showSkipConfirmation = false
     @State private var showExitConfirmation = false
+    @State private var showDiscardConfirmation = false
     @Dependency(\.protocolAnalysisJobManager) private var jobManager
 
     var body: some View {
@@ -36,7 +37,7 @@ struct ProtocolRegistrationView: View {
                 .background(Color(
                     "General/Background/Primary", bundle: LabcordDesignSystemResources.bundle
                 ))
-            } else if store.showsAnalysisCompletion {
+            } else if store.showsAnalysisCompletion && store.invalidatingJobID == nil {
                 ProtocolAnalysisCompletionView(onReview: requestReview)
                     .background(Color(
                         "General/Background/Primary", bundle: LabcordDesignSystemResources.bundle
@@ -84,6 +85,14 @@ struct ProtocolRegistrationView: View {
             Button("취소", role: .cancel) { }
         } message: {
             Text("이 화면을 나가면 분석 결과가 초기화돼요.")
+        }
+        .alert("입력을 버리고 나갈까요?", isPresented: $showDiscardConfirmation) {
+            Button("버리고 나가기", role: .destructive) {
+                store.send(.discardFailedInvalidation)
+            }
+            Button("취소", role: .cancel) { }
+        } message: {
+            Text("선택한 파일과 분석 결과가 초기화돼요. 원본 파일은 삭제되지 않아요.")
         }
         .photosPicker(
             isPresented: $photoPickerPresented,
@@ -138,7 +147,10 @@ struct ProtocolRegistrationView: View {
         }
     }
 
-    private var setupContent: some View {
+}
+
+private extension ProtocolRegistrationView {
+    var setupContent: some View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(spacing: 8) {
@@ -203,8 +215,14 @@ struct ProtocolRegistrationView: View {
                     .disabled(store.isSaving || store.importing || store.analysisID != nil
                           || store.invalidatingJobID != nil || store.analysisStarting)
                 }
+                if store.invalidatingJobID != nil && !store.invalidationFailed {
+                    ProgressView("이전 분석을 정리하고 있어요")
+                }
                 if store.invalidationFailed {
-                    InvalidationRetryView { store.send(.retryInvalidation) }
+                    InvalidationRetryView(
+                        retry: { store.send(.retryInvalidation) },
+                        discard: { showDiscardConfirmation = true }
+                    )
                 }
                 if let message = store.analysisMessage, store.analysisID == nil {
                     Text(message).typography(Typography.subheadline)
@@ -265,9 +283,6 @@ struct ProtocolRegistrationView: View {
         }
     }
 
-}
-
-private extension ProtocolRegistrationView {
     var protocolFileTypes: [UTType] {
         [.pdf] + ["xlsx", "docx"].compactMap { UTType(filenameExtension: $0) }
     }

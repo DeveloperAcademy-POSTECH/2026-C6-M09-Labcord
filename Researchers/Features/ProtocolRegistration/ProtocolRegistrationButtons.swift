@@ -41,11 +41,13 @@ struct EntryNextButton: View {
 }
 
 struct InvalidationRetryView: View {
-    let action: () -> Void
+    let retry: () -> Void
+    let discard: () -> Void
 
     var body: some View {
         Text("이전 분석을 정리하지 못했어요. 다시 시도해 주세요.")
             .font(.footnote)
-        Button("다시 시도", action: action)
+        Button("다시 시도", action: retry)
+        Button("입력을 버리고 나가기", role: .destructive, action: discard)
     }
 }

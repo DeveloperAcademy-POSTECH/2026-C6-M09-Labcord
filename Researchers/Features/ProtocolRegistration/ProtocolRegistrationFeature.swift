@@ -113,6 +113,7 @@ struct ProtocolRegistrationFeature {
         case clearImportedInputs
         case invalidationFinished(UUID, Bool, [ImportedProtocolInput])
         case retryInvalidation
+        case discardFailedInvalidation
     }
 
     enum AfterInvalidation: Equatable {
@@ -263,6 +264,14 @@ struct ProtocolRegistrationFeature {
                 return invalidateEffect(
                     id: id, inputs: state.selectedInputs, then: state.afterInvalidation
                 )
+
+            case .discardFailedInvalidation:
+                guard let id = state.invalidatingJobID, state.invalidationFailed else {
+                    return .none
+                }
+                state.invalidationFailed = false
+                state.afterInvalidation = .back
+                return invalidateEffect(id: id, inputs: [], then: .back)
 
             case .restoreAnalysisJob, .analysisJobUpdated, .analysisJobFailed,
                  .startAnalysis, .analysisStartFinished:
