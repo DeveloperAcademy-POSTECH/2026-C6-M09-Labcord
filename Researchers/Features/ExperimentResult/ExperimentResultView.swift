@@ -21,72 +21,80 @@ struct ExperimentResultView: View {
 
                 VStack(spacing: 0) {
                     Group {
-                        ScrollView {
-                            NavigationPageTitle(
-                                "실험 기록",
-                                onBack: store.isOpenedFromHome ? { store.send(.homeTapped) } : nil
-                            )
+                        if store.recordTimeline == nil && store.loadMessage == nil {
+                            ExperimentProcessingView()
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        } else {
+                            ScrollView {
+                                NavigationPageTitle(
+                                    "실험 기록",
+                                    onBack: store.isOpenedFromHome
+                                        ? { store.send(.homeTapped) } : nil
+                                )
 
-                            if let detail = store.detail {
-                                VStack(spacing: LayoutTokens.spacing24) {
-                                    ExperimentResultHeaderView(
-                                        title: detail.title,
-                                        dateRange: ExperimentResultDateFormatter.range(
-                                            startedAt: detail.startedAt,
-                                            endedAt: detail.endedAt
-                                        ),
-                                        selectedType: store.selectedType,
-                                        selectedSort: store.selectedSort,
-                                        onSelectType: { store.send(.recordFilterSelected($0)) },
-                                        onSelectSort: { store.send(.recordSortSelected($0)) },
-                                        onEdit: { store.send(.editTapped) }
-                                    )
+                                if let timelineStore = store.scope(
+                                    state: \.recordTimeline,
+                                    action: \.recordTimeline
+                                ) {
+                                    let detail = timelineStore.detail
+                                    VStack(spacing: LayoutTokens.spacing24) {
+                                        ExperimentResultHeaderView(
+                                            title: detail.title,
+                                            dateRange: ExperimentResultDateFormatter.range(
+                                                startedAt: detail.startedAt,
+                                                endedAt: detail.endedAt
+                                            ),
+                                            selectedType: store.selectedType,
+                                            selectedSort: store.selectedSort,
+                                            onSelectType: {
+                                                store.send(.recordFilterSelected($0))
+                                            },
+                                            onSelectSort: {
+                                                store.send(.recordSortSelected($0))
+                                            },
+                                            onEdit: { store.send(.editTapped) }
+                                        )
 
-                                    Separator(orientation: .horizontal)
+                                        Separator(orientation: .horizontal)
 
-                                    VStack(alignment: .leading) {
-                                        Text(ExperimentResultDateFormatter.date(detail.createdAt))
+                                        RecordTimelineView(store: timelineStore)
                                     }
-                                    .padding(.horizontal, LayoutTokens.spacing16)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
                                 }
                             }
-                        }
-                        .scrollBounceBehavior(.basedOnSize)
-                        .scrollIndicators(.hidden)
-                        .overlay {
-                            if store.detail == nil {
+                            .scrollBounceBehavior(.basedOnSize)
+                            .scrollIndicators(.hidden)
+                            .overlay {
                                 if let loadMessage = store.loadMessage {
                                     Text(loadMessage)
-                                } else {
-                                    ExperimentProcessingView()
                                 }
                             }
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                    HStack(spacing: LayoutTokens.spacing16) {
-                        if store.detail != nil {
-                            Button {
-                                // 실험 재개 코드 구현
-                            } label: {
-                                Text("실험 재개")
+                    if store.recordTimeline != nil || store.loadMessage != nil {
+                        HStack(spacing: LayoutTokens.spacing16) {
+                            if store.recordTimeline != nil {
+                                Button {
+                                    // 실험 재개 코드 구현
+                                } label: {
+                                    Text("실험 재개")
+                                }
+                                .buttonStyle(.labcord(.plain, size: .large))
                             }
-                            .buttonStyle(.labcord(.plain, size: .large))
-                        }
 
-                        Button {
-                            store.send(.homeTapped)
-                        } label: {
-                            Text("홈으로 이동")
-                                .frame(maxWidth: .infinity)
+                            Button {
+                                store.send(.homeTapped)
+                            } label: {
+                                Text("홈으로 이동")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.labcord(.filled, size: .large))
                         }
-                        .buttonStyle(.labcord(.filled, size: .large))
+                        .padding(.horizontal, LayoutTokens.spacing16)
+                        .padding(.top, LayoutTokens.spacing12)
+                        .padding(.bottom, max(34 - geometry.safeAreaInsets.bottom, 0))
                     }
-                    .padding(.horizontal, LayoutTokens.spacing16)
-                    .padding(.top, LayoutTokens.spacing12)
-                    .padding(.bottom, max(34 - geometry.safeAreaInsets.bottom, 0))
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .ignoresSafeArea(.keyboard, edges: .bottom)
