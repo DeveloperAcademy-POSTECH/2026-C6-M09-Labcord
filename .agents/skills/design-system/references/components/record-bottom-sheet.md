@@ -14,7 +14,6 @@ RecordBottomSheet(type: .voice, contentState: canSave ? .filled : .empty,
 - 바닥 밀착·투명 배경·상단 라운드가 필요하면 호스트가 배치·clipping·presentation 배경을 구성합니다. [카탈로그 호스트](../../../../../LabcordDesignSystemApp/Catalog/DesignSystemCatalog+Sheet.swift)는 참고용이며 제품 의존성으로 가져오지 않습니다.
 - `contentState`는 실제 편집·검증 결과로 계산합니다. 기본 빈 콜백·상수 Binding을 실제 저장 기능으로 사용하지 않습니다.
 - `onDismiss`를 주면 부모가 presentation을 닫습니다. 저장·삭제 후 저장 처리와 닫힘 순서도 부모가 정합니다.
-- 스크롤 호스트에서 키보드 포커스에 맞춰 이동할 때는 `onScrollTargetChange`의 `.transcript`·`.actions`를 `ScrollViewReader` 대상에 연결합니다.
 - 사진·영상은 `photoContent`·`videoContent` 또는 `mediaContent` 슬롯을 사용합니다. 엔진의 시작·중지·자원 정리는 슬롯 호출자가 맡습니다.
 
 [구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/RecordBottomSheet/RecordBottomSheet.swift) · [콘텐츠 initializer](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/RecordBottomSheet/RecordBottomSheet+Transcript.swift)
