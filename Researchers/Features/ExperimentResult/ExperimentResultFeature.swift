@@ -8,6 +8,7 @@
 import ComposableArchitecture
 import Foundation
 import LabcordiOS
+import LabcordShared
 
 @Reducer
 struct ExperimentResultFeature {
@@ -33,6 +34,33 @@ struct ExperimentResultFeature {
         var selectedType: RecordFilter = .all
         var selectedSort: RecordSort = .oldest
         var titleEditOverlay: TitleEditOverlayFeature.State?
+
+        var displayedEntries: [ExperimentResultDetail.TimelineEntry] {
+            guard let entries = recordTimeline?.entries else { return [] }
+
+            if selectedType == .all {
+                return selectedSort == .oldest ? entries : Array(entries.reversed())
+            }
+
+            let matchesType: (ExperimentResultDetail.TimelineEntry) -> Bool = { entry in
+                switch (selectedType, entry.kind) {
+                case let (.photo, .record(record)):
+                    record.type == .photo
+                case let (.audio, .record(record)):
+                    record.type == .audio
+                case let (.video, .record(record)):
+                    record.type == .video
+                case (.timer, .timer):
+                    true
+                default:
+                    false
+                }
+            }
+
+            return selectedSort == .oldest
+                ? entries.filter(matchesType)
+                : entries.reversed().filter(matchesType)
+        }
 
         init(experimentID: UUID, isOpenedFromHome: Bool = false) {
             self.experimentID = experimentID

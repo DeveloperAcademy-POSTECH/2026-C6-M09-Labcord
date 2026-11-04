@@ -57,7 +57,7 @@ struct ExperimentResultView: View {
 
                                         Separator(orientation: .horizontal)
 
-                                        RecordTimelineView(store: timelineStore)
+                                        RecordTimelineView(entries: store.displayedEntries)
                                     }
                                 }
                             }
