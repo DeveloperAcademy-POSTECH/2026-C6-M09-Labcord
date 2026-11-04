@@ -243,6 +243,10 @@ struct WatchExperimentView: View {
             }
             Button("요청 상태 확인") { store.send(.checkRequest) }
                 .disabled(!store.isReachable)
+            if pending.command.operation == .cancelRecord, store.canRetryPendingCancellation {
+                Button("같은 취소 요청 다시 전송") { store.send(.retryPendingCancellation) }
+                    .disabled(!store.isReachable)
+            }
         }
     }
 

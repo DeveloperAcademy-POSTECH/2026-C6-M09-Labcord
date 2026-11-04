@@ -70,7 +70,7 @@ extension WatchExperimentFeature {
             return .send(.recording(.recoveryFailed))
         case let .recordUpdate(streamID, record):
             guard state.isVisible, state.streamID == streamID else { return .none }
-            return .send(.recording(.update(record)))
+            return receiveRecordUpdate(record, state: &state)
         case let .recording(.delegate(.command(operation, recordID, experimentID))):
             return recordCommand(
                 operation, recordID: recordID, experimentID: experimentID, state: &state
@@ -102,6 +102,7 @@ extension WatchExperimentFeature {
         _ kind: WatchRecordPresentation.Kind, state: inout State
     ) -> Effect<Action> {
         guard state.isVisible, state.pending == nil, !state.isPreparingInterruption,
+              !state.pendingRecoveryFailed,
               state.snapshot?.experiment.status == .running,
               let id = state.selectedID else { return .none }
         guard kind == .voice || state.isReachable else { return .none }
@@ -112,6 +113,10 @@ extension WatchExperimentFeature {
         _ operation: WatchExperimentCommand.Operation, recordID: UUID,
         experimentID: UUID, state: inout State
     ) -> Effect<Action> {
+        if operation == .cancelRecord,
+           let effect = cancelPendingPhoto(recordID, experimentID: experimentID, state: &state) {
+            return effect
+        }
         guard state.selectedID == experimentID, state.canOperate else {
             return .send(.recording(.commandFailed(
                 recordID, "요청할 수 없어요. 연결·실험·처리 중 상태를 확인해주세요. 원본은 유지해요."

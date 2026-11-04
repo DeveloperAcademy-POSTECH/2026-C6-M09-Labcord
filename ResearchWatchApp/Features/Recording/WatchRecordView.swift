@@ -12,6 +12,14 @@ struct WatchRecordView: View {
                 .font(.headline)
             Text(phaseTitle)
                 .font(.body)
+            if record.kind == .photo, record.phase == .starting, record.startedAt != nil {
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    if let seconds = record.photoCountdownRemaining(at: context.date),
+                       seconds > 0 {
+                        Text("촬영까지 \(seconds)초").monospacedDigit()
+                    } else { Text("촬영 결과 확인 중").font(.caption) }
+                }
+            }
             if let startedAt = record.startedAt, record.phase == .capturing {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     let elapsed = max(0, Int(context.date.timeIntervalSince(startedAt)))
@@ -54,6 +62,11 @@ struct WatchRecordView: View {
     @ViewBuilder
     private var controls: some View {
         switch record.phase {
+        case .starting:
+            if record.kind == .photo {
+                Text("iPhone에서 촬영을 준비하고 있어요.").font(.caption)
+                Button("촬영 대기 취소", role: .cancel) { store.send(.cancel(record.id)) }
+            } else { ProgressView() }
         case .capturing:
             Button("기록 중지", systemImage: "stop.fill") { store.send(.stop(record.id)) }
         case .review:
@@ -84,6 +97,9 @@ struct WatchRecordView: View {
             } else {
                 Text("원본과 처리 결과를 먼저 확인해주세요.").font(.caption)
                 Button("상태 확인") { store.send(.delegate(.local(.reconcile))) }
+                if record.kind != .voice {
+                    Button("미확정 기록 취소", role: .destructive) { store.send(.cancel(record.id)) }
+                }
             }
         case .saved:
             Image(systemName: "checkmark.circle")

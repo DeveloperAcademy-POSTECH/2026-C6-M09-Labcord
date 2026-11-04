@@ -20,18 +20,6 @@ struct WatchExperimentFeature {
         case timerEditor
     }
 
-    enum RequestPhase: Equatable {
-        case delivering
-        case processing
-        case uncertain
-    }
-
-    struct PendingRequest: Equatable {
-        let command: WatchExperimentCommand
-        var responseID: UUID
-        var phase: RequestPhase = .delivering
-    }
-
     @ObservableState
     struct State: Equatable {
         var screen: Screen = .selection
@@ -39,6 +27,9 @@ struct WatchExperimentFeature {
         var selectedID: UUID?
         var snapshots: [UUID: WatchExperimentSnapshot] = [:]
         var pending: PendingRequest?
+        var hasRestoredPending = false
+        var pendingRecoveryFailed = false
+        var canRetryPendingCancellation = false
         var startToken: UUID?
         var countdownID: UUID?
         var authorization: Authorization?
@@ -73,7 +64,7 @@ struct WatchExperimentFeature {
 
         var canOperate: Bool {
             isVisible && streamID != nil && pending == nil && isReachable
-                && snapshot != nil && !isPreparingInterruption
+                && snapshot != nil && !isPreparingInterruption && !pendingRecoveryFailed
         }
     }
 
@@ -100,6 +91,7 @@ struct WatchExperimentFeature {
         case gesturesTapped
         case closeTapped
         case checkRequest
+        case retryPendingCancellation
         case response(UUID, WatchExperimentResponse)
         case requestFailed(UUID, WatchExperimentError)
         case deliveryExpired(UUID)
@@ -136,6 +128,7 @@ struct WatchExperimentFeature {
     }
 
     var recordingBridge: WatchRecordingUIBridge?
+    var pendingJournal: WatchPendingRequestJournal = .live
 
     @Dependency(\.watchExperimentClient) var client
     @Dependency(\.watchMicrophonePermission) var microphonePermission
@@ -171,7 +164,7 @@ struct WatchExperimentFeature {
                     .send(.recording(.interrupted))
                 )
             case .refresh:
-                guard state.isVisible else { return .none }
+                guard state.isVisible, restorePending(state: &state) else { return .none }
                 if state.pending != nil { return checkStatus(state: &state) }
                 let operation: WatchExperimentCommand.Operation =
                     state.selectedID == nil ? .list : .snapshot
@@ -261,6 +254,8 @@ struct WatchExperimentFeature {
                 return close(state: &state)
             case .checkRequest:
                 return checkStatus(state: &state)
+            case .retryPendingCancellation:
+                return retryPendingCancellation(state: &state)
             default:
                 return reduceTools(state: &state, action: action)
             }

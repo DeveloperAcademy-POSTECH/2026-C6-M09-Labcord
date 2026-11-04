@@ -31,7 +31,8 @@ extension WatchExperimentFeature {
         token: UUID? = nil,
         state: inout State
     ) -> Effect<Action> {
-        guard state.isVisible, state.streamID != nil, state.pending == nil else { return .none }
+        guard restorePending(state: &state), state.isVisible,
+              state.streamID != nil, state.pending == nil else { return .none }
         guard state.isReachable else {
             state.message = WatchExperimentError.notReachable.watchMessage
             return .none
@@ -50,6 +51,13 @@ extension WatchExperimentFeature {
             expectedRevision: operation == .list ? nil : state.snapshot?.revision,
             targetID: targetID, durationSeconds: seconds, startToken: token
         )
+        guard retainRequest(command, state: &state) else {
+            guard let id = command.targetID else { return .none }
+            let message = state.message ?? WatchExperimentError.storageFailed.watchMessage
+            let action: WatchRecordFeature.Action = [.takePhoto, .startVideo].contains(operation)
+                ? .captureRejected(id, message) : .commandFailed(id, message)
+            return .send(.recording(action))
+        }
         if operation == .complete { state.cleanupRequestID = command.requestID }
         state.pending = PendingRequest(command: command, responseID: command.requestID)
         state.message = nil
@@ -98,12 +106,20 @@ extension WatchExperimentFeature {
         case let .response(id, response):
             return received(id, response: response, state: &state)
         case let .requestFailed(id, error):
-            guard state.pending?.responseID == id else { return .none }
+            guard let pending = state.pending, pending.responseID == id else { return .none }
+            if !WatchRequestPolicy.canAbandon(pending.command.operation) {
+                state.pending?.phase = .uncertain
+                state.canRetryPendingCancellation = pending.command.operation == .cancelRecord
+                    && error == .notReachable
+                state.message = error.watchMessage
+                return .merge(.cancel(id: CancelID.delivery), .cancel(id: CancelID.poll))
+            }
             return fail(error, state: &state)
         case let .deliveryExpired(id):
             guard state.pending?.responseID == id,
                   state.pending?.phase == .delivering else { return .none }
             state.pending?.phase = .uncertain
+            state.canRetryPendingCancellation = false
             state.message = WatchExperimentError.deliveryTimeout.watchMessage
             if let pending = state.pending,
                WatchRequestPolicy.canAbandon(pending.command.operation) {
@@ -125,10 +141,15 @@ extension WatchExperimentFeature {
     ) -> Effect<Action> {
         guard let pending = state.pending, pending.responseID == id,
               response.requestID == id else { return .none }
-        guard response.version == WatchExperimentCommand.schemaVersion else {
-            return fail(.unsupportedVersion, state: &state)
+        if let rejected = rejectUnverifiedResponse(response, pending: pending, state: &state) {
+            return rejected
         }
-        if let error = response.error { return fail(error, state: &state) }
+        if response.phase == .unknown, pending.command.operation == .cancelRecord {
+            state.canRetryPendingCancellation = true
+        }
+        if let error = response.error {
+            return fail(error, state: &state, definitive: response.phase == .failed)
+        }
         switch response.phase {
         case .received, .processing:
             state.pending?.phase = .processing
@@ -139,6 +160,7 @@ extension WatchExperimentFeature {
             state.message = nil
             return .merge(.cancel(id: CancelID.delivery), poll(pending.command.requestID))
         case .unknown:
+            state.canRetryPendingCancellation = pending.command.operation == .cancelRecord
             return fail(.resultUnknown, state: &state)
         case .failed:
             return fail(.resultUnknown, state: &state, definitive: true)
@@ -157,11 +179,15 @@ extension WatchExperimentFeature {
         guard validCompletion(response, operation: pending.command.operation) else {
             return fail(.invalidPayload, state: &state)
         }
+        guard clearRetainedRequest(pending.command, state: &state) else {
+            return .merge(.cancel(id: CancelID.delivery), .cancel(id: CancelID.poll))
+        }
         if let experiments = response.experiments, pending.command.operation == .list {
             state.experiments = experiments
         }
         if let snapshot = response.snapshot { accept(snapshot, state: &state) }
         state.pending = nil
+        state.canRetryPendingCancellation = false
         state.message = nil
         if pending.command.operation == .prepareStart {
             return prepared(response, state: &state)
@@ -178,8 +204,7 @@ extension WatchExperimentFeature {
             .cancel(id: CancelID.delivery), .cancel(id: CancelID.poll),
             recordCommandProcessed(pending.command, state: state)
         )
-        if response.snapshot == nil, pending.command.operation != .list,
-           pending.command.operation != .snapshot {
+        if pending.command.operation != .list, pending.command.operation != .snapshot {
             return .concatenate(cancel, .send(.refresh))
         }
         return cancel
@@ -216,9 +241,24 @@ extension WatchExperimentFeature {
         let uncertain = error == .deliveryTimeout || error == .notReachable
             || error == .resultUnknown || error == .invalidPayload
         let readOnly = command.map { WatchRequestPolicy.canAbandon($0.operation) } ?? false
+        if !uncertain || definitive, let command,
+           [.confirmRecord, .cancelRecord].contains(command.operation), let id = command.targetID {
+            do { try pendingJournal.markDecisionFailed(id) } catch {
+                state.pending?.phase = .uncertain
+                state.message = "저장·취소 의도를 보관하지 못했어요. 기존 요청은 유지해요."
+                return .merge(.cancel(id: CancelID.delivery), .cancel(id: CancelID.poll))
+            }
+        }
+        if !uncertain || definitive, let command, command.operation == .cancelRecord,
+           let effect = recoverCaptureAfterCancellationFailure(command, state: &state) {
+            return effect
+        }
         if uncertain && !definitive && !readOnly {
             state.pending?.phase = .uncertain
         } else {
+            if let command, !clearRetainedRequest(command, state: &state) {
+                return .merge(.cancel(id: CancelID.delivery), .cancel(id: CancelID.poll))
+            }
             state.pending = nil
             state.startToken = nil
         }
