@@ -131,6 +131,10 @@ struct ExperimentResultView: View {
                         get: { store.draftNote },
                         set: { store.send(.recordNoteChanged($0)) }
                     ),
+                    transcript: Binding(
+                        get: { store.draftTranscript },
+                        set: { store.send(.recordTranscriptChanged($0)) }
+                    ),
                     isDeleteConfirmationPresented: Binding(
                         get: { store.isRecordDeleteConfirmationPresented },
                         set: {
@@ -141,7 +145,7 @@ struct ExperimentResultView: View {
                         get: { store.recordSaveMessage },
                         set: { if $0 == nil { store.send(.recordSaveMessageDismissed) } }
                     ),
-                    canSave: store.canSaveRecordNote,
+                    canSave: store.canSaveRecord,
                     onDismiss: { store.send(.timelineSheetDismissed) },
                     onSave: { store.send(.recordSaveTapped) },
                     onDelete: { store.send(.recordDeleteTapped) },
