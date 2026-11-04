@@ -17,10 +17,10 @@ public struct TimelineExperimentState: View {
     }
 
     public var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: LayoutTokens.spacing20) {
+        HStack(alignment: .firstTextBaseline, spacing: LayoutTokens.spacing4) {
             Text(timestamp)
                 .typography(Typography.body)
-                .foregroundStyle(Color(.General.Label.secondary))
+                .foregroundStyle(Color(.General.Label.tertiary))
                 .frame(minWidth: 70, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
 
