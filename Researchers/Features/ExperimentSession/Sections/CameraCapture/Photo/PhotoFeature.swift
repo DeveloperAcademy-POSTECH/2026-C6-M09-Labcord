@@ -16,6 +16,7 @@ struct PhotoFeature {
         var recordedAt: Date?
         var isSaving = false
         var saveError: String?
+        var countdownEndAt: Date?
     }
 
     enum Action: Equatable {
@@ -52,6 +53,7 @@ struct PhotoFeature {
 
     private func cancelScheduledCapture(in state: inout State) -> Effect<Action> {
         state.isScheduled = false
+        state.countdownEndAt = nil
         return .cancel(id: CancelID.captureDelay)
     }
 
@@ -72,6 +74,7 @@ struct PhotoFeature {
                       state.capturedData == nil, wasArmed,
                       detectedAt.timeIntervalSinceNow > -0.5 else { return .none }
                 state.isScheduled = true
+                state.countdownEndAt = now.addingTimeInterval(5)
                 return .run { send in
                     try await Task.sleep(for: .seconds(5))
                     await send(.delayElapsed)
