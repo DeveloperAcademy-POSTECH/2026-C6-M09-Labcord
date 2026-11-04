@@ -1,5 +1,5 @@
 {
-  "originHash" : "21b736a4d902818471982b528ee87211e1614a4d714d660316265ee86271bceb",
+  "originHash" : "6175b656d2e253e073b5a36fd63b381dbc041dae49893f313ba9df5d4f3dbe56",
   "pins" : [
     {
       "identity" : "combine-schedulers",
@@ -141,7 +141,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/hellosunghyun/swift-omni-parser",
       "state" : {
-        "revision" : "af1293b74a990f1b164df8ffa79851de79e35fbc"
+        "revision" : "8403c2fc45dfa6ab946ef31bed1a509e6e35f412"
       }
     },
     {

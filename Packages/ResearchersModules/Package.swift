@@ -30,7 +30,7 @@ let package = Package(
         ),
         .package(
             url: "https://github.com/hellosunghyun/swift-omni-parser",
-            revision: "af1293b74a990f1b164df8ffa79851de79e35fbc"
+            revision: "8403c2fc45dfa6ab946ef31bed1a509e6e35f412"
         )
     ],
     targets: [
