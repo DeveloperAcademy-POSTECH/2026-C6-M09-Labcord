@@ -11,13 +11,11 @@ struct ProtocolRegistrationView: View {
     @State private var filePickerPresented = false
     @State private var photoSelection: [PhotosPickerItem] = []
     @State private var importFailed = false
-    @State private var recoveryFailed = false
     @Environment(\.scenePhase) private var scenePhase
     @State private var showReviewConfirmation = false
     @State private var showSkipConfirmation = false
     @State private var showExitConfirmation = false
     @State private var showDiscardConfirmation = false
-    @Dependency(\.protocolAnalysisJobManager) private var jobManager
 
     private var input: ProtocolInputAnalysisFeature.State { store.inputAnalysis }
 
@@ -57,8 +55,11 @@ struct ProtocolRegistrationView: View {
         } message: {
             Text("실험은 등록되지 않았어요. 다시 시도해 주세요.")
         }
-        .alert("이전 분석을 불러오지 못했어요", isPresented: $recoveryFailed) {
-            Button("확인", role: .cancel) { }
+        .alert("이전 분석을 불러오지 못했어요", isPresented: Binding(
+            get: { input.recoveryFailed },
+            set: { if !$0 { store.send(.inputAnalysis(.dismissRecoveryFailure)) } }
+        )) {
+            Button("확인", role: .cancel) { store.send(.inputAnalysis(.dismissRecoveryFailure)) }
         } message: {
             Text("보관한 파일은 지우지 않았어요. 나중에 다시 시도하거나 파일을 다시 선택해 주세요.")
         }
@@ -113,21 +114,10 @@ struct ProtocolRegistrationView: View {
             }
         }
         .task {
-            do {
-                if let saved = try await jobManager.restore() {
-                    store.send(.inputAnalysis(.restoreAnalysisJob(saved)))
-                }
-            } catch {
-                recoveryFailed = true
-            }
-            store.send(.inputAnalysis(.restoreCheckFinished))
-            for await update in await jobManager.updates() {
-                guard !Task.isCancelled else { break }
-                store.send(.inputAnalysis(.analysisJobUpdated(update)))
-            }
+            await store.send(.inputAnalysis(.observe)).finish()
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .background { Task { await jobManager.enteredBackground() } }
+            if phase == .background { store.send(.inputAnalysis(.enteredBackground)) }
         }
         .navigationBarBackButtonHidden()
         .toolbar(.hidden, for: .navigationBar)

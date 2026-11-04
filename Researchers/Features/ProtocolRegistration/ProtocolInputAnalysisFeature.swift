@@ -9,6 +9,7 @@ struct ProtocolInputAnalysisFeature {
         var isSaving = false
         var importing = false
         var restoringAnalysis = true
+        var recoveryFailed = false
         var importedPhotos: [ImportedProtocolInput] = []
         var importedFile: ImportedProtocolInput?
         var analysisJobID: UUID?
@@ -72,6 +73,10 @@ struct ProtocolInputAnalysisFeature {
     }
 
     enum Action: Equatable {
+        case observe
+        case recoveryFailed
+        case dismissRecoveryFailure
+        case enteredBackground
         case backTapped
         case skipTapped
         case importStarted
@@ -101,12 +106,48 @@ struct ProtocolInputAnalysisFeature {
         case back, skip, inputsChanged
     }
 
+    private nonisolated enum CancelID { case observation }
+
     @Dependency(\.date.now) var now
     @Dependency(\.protocolAnalysisJobManager) var jobManager
 
     var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
+            case .observe:
+                state.restoringAnalysis = true
+                return .run { send in
+                    do {
+                        if let saved = try await jobManager.restore() {
+                            try Task.checkCancellation()
+                            await send(.restoreAnalysisJob(saved))
+                        }
+                    } catch is CancellationError {
+                        return
+                    } catch {
+                        guard !Task.isCancelled else { return }
+                        await send(.recoveryFailed)
+                    }
+                    guard !Task.isCancelled else { return }
+                    await send(.restoreCheckFinished)
+                    for await update in await jobManager.updates() {
+                        guard !Task.isCancelled else { return }
+                        await send(.analysisJobUpdated(update))
+                    }
+                }
+                .cancellable(id: CancelID.observation, cancelInFlight: true)
+
+            case .recoveryFailed:
+                state.recoveryFailed = true
+                return .none
+
+            case .dismissRecoveryFailure:
+                state.recoveryFailed = false
+                return .none
+
+            case .enteredBackground:
+                return .run { _ in await jobManager.enteredBackground() }
+
             case .backTapped:
                 guard !state.restoringAnalysis, !state.isSaving, !state.importing,
                       state.analysisID == nil, state.invalidatingJobID == nil else { return .none }
