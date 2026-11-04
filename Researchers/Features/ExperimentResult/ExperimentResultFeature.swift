@@ -34,7 +34,26 @@ struct ExperimentResultFeature {
         var selectedType: RecordFilter = .all
         var selectedSort: RecordSort = .oldest
         var selectedEntry: ExperimentResultDetail.TimelineEntry?
+        var draftNote = ""
+        var isRecordSaving = false
+        var isRecordDeleteConfirmationPresented = false
+        var recordSaveMessage: String?
         var titleEditOverlay: TitleEditOverlayFeature.State?
+
+        var selectedRecord: ExperimentResultDetail.Record? {
+            guard let selectedEntry else { return nil }
+            switch selectedEntry.kind {
+            case let .record(record), let .timer(record, _): return record
+            default: return nil
+            }
+        }
+
+        var canSaveRecordNote: Bool {
+            guard !isRecordSaving, let selectedRecord else { return false }
+            return draftNote.trimmingCharacters(in: .whitespacesAndNewlines)
+                != selectedRecord.note.trimmingCharacters(in: .whitespacesAndNewlines)
+                && draftNote.count <= 300
+        }
 
         var displayedEntries: [ExperimentResultDetail.TimelineEntry] {
             guard let entries = recordTimeline?.entries else { return [] }
@@ -77,6 +96,14 @@ struct ExperimentResultFeature {
         case recordSortSelected(RecordSort)
         case timelineEntrySelected(ExperimentResultDetail.TimelineEntry)
         case timelineSheetDismissed
+        case recordNoteChanged(String)
+        case recordSaveTapped
+        case recordDeleteTapped
+        case recordDeleteConfirmed
+        case recordDeleteCancelled
+        case recordMutationSucceeded(ExperimentResultDetail, UUID)
+        case recordMutationFailed
+        case recordSaveMessageDismissed
         case recordTimeline(RecordTimelineFeature.Action)
         case editTapped
         case titleEditOverlay(TitleEditOverlayFeature.Action)
@@ -92,6 +119,8 @@ struct ExperimentResultFeature {
                 state.recordTimeline = nil
                 state.loadMessage = nil
                 state.selectedEntry = nil
+                state.draftNote = ""
+                state.isRecordDeleteConfirmationPresented = false
                 let experimentID = state.experimentID
                 return .run { send in
                     async let minimumDisplay = Task.sleep(for: .seconds(1))
@@ -140,9 +169,11 @@ struct ExperimentResultFeature {
                 return .none
 
             case let .timelineEntrySelected(entry):
+                guard !state.isRecordSaving else { return .none }
                 switch entry.kind {
-                case .record, .timer:
+                case let .record(record), let .timer(record, _):
                     state.selectedEntry = entry
+                    state.draftNote = record.note
                 case .status, .started, .ended, .paused, .resumed:
                     break
                 }
@@ -150,6 +181,74 @@ struct ExperimentResultFeature {
 
             case .timelineSheetDismissed:
                 state.selectedEntry = nil
+                state.draftNote = ""
+                state.isRecordDeleteConfirmationPresented = false
+                return .none
+
+            case let .recordNoteChanged(note):
+                guard !state.isRecordSaving else { return .none }
+                state.draftNote = String(note.prefix(300))
+                return .none
+
+            case .recordSaveTapped:
+                guard state.canSaveRecordNote,
+                      let recordID = state.selectedRecord?.id else { return .none }
+                state.isRecordSaving = true
+                let experimentID = state.experimentID
+                let note = state.draftNote.trimmingCharacters(in: .whitespacesAndNewlines)
+                return .run { send in
+                    do {
+                        let detail = try await experimentClient.updateRecordNote(
+                            experimentID, recordID, note
+                        )
+                        await send(.recordMutationSucceeded(detail, recordID))
+                    } catch {
+                        await send(.recordMutationFailed)
+                    }
+                }
+
+            case .recordDeleteTapped:
+                guard !state.isRecordSaving, state.selectedRecord != nil else { return .none }
+                state.isRecordDeleteConfirmationPresented = true
+                return .none
+
+            case .recordDeleteConfirmed:
+                guard !state.isRecordSaving,
+                      let recordID = state.selectedRecord?.id else { return .none }
+                state.isRecordDeleteConfirmationPresented = false
+                state.isRecordSaving = true
+                let experimentID = state.experimentID
+                return .run { send in
+                    do {
+                        let detail = try await experimentClient.deleteRecord(
+                            experimentID, recordID
+                        )
+                        await send(.recordMutationSucceeded(detail, recordID))
+                    } catch {
+                        await send(.recordMutationFailed)
+                    }
+                }
+
+            case .recordDeleteCancelled:
+                state.isRecordDeleteConfirmationPresented = false
+                return .none
+
+            case let .recordMutationSucceeded(detail, recordID):
+                guard detail.id == state.experimentID else { return .none }
+                state.isRecordSaving = false
+                if state.selectedRecord?.id == recordID {
+                    state.selectedEntry = nil
+                    state.draftNote = ""
+                }
+                return .send(.recordTimeline(.detailUpdated(detail)))
+
+            case .recordMutationFailed:
+                state.isRecordSaving = false
+                state.recordSaveMessage = "기록을 변경하지 못했습니다. 다시 시도해 주세요."
+                return .none
+
+            case .recordSaveMessageDismissed:
+                state.recordSaveMessage = nil
                 return .none
 
             case .editTapped:
