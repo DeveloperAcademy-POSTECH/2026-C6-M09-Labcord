@@ -309,7 +309,11 @@ private extension ExperimentSessionFeature {
 
     func prepareVoiceRecording(state: inout State) -> Effect<Action> {
         guard state.detail != nil else {
-            if !state.isLoadingDetail { state.detailLoadFailed = true }
+            if state.isLoadingDetail {
+                state.voice.errorMessage = "실험 정보를 불러오고 있어요. 잠시 후 다시 시도해 주세요."
+            } else {
+                state.detailLoadFailed = true
+            }
             return .none
         }
         guard state.voice.phase == .hidden,
