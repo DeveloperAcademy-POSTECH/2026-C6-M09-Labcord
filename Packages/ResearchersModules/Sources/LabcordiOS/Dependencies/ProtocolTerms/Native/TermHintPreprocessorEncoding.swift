@@ -1,44 +1,48 @@
 import Foundation
 
 nonisolated extension TermPreprocessor {
-  /// window_features → char_ids (unit당 가변), unit_char_offsets 간접형.
-  public static func charIds(
-    text: String, unitOffsets: [(Int, Int)], sel: [Int], charMap: [UInt32: Int]
+
+  public static func characterIDs(
+    text: String, unitOffsets: [(Int, Int)], selectedUnitIndices: [Int],
+    characterIDsByScalar: [UInt32: Int]
   )
-    -> (flat: [Int], unitCharOffsets: [Int]) {
+    -> (flat: [Int], unitCharacterOffsets: [Int]) {
     let scalars = Array(text.unicodeScalars)
-    var ids: [Int] = []
-    var ptr = [0]
-    for localUnit in sel {
-      let (localStart, localEnd) = unitOffsets[localUnit]
-      for localScalarIndex in localStart..<localEnd {
-        ids.append(charMap[scalars[localScalarIndex].value] ?? 1)
+    var tokenIDs: [Int] = []
+    var unitCharacterOffsets = [0]
+    for unitIndex in selectedUnitIndices {
+      let (startScalarIndex, endScalarIndex) = unitOffsets[unitIndex]
+      for scalarIndex in startScalarIndex..<endScalarIndex {
+        tokenIDs.append(characterIDsByScalar[scalars[scalarIndex].value] ?? 1)
       }
-      ptr.append(ids.count)
+      unitCharacterOffsets.append(tokenIDs.count)
     }
-    return (ids, ptr)
+    return (tokenIDs, unitCharacterOffsets)
   }
 
-  /// merge_unit_logits: core 유닛 로짓의 단순 평균(Double).
   public static func mergeUnitLogits(
     windowCount: Int, units: Int,
     windows: [LedgerWindow],
     outputs: [[[Float]]]
   ) -> [[Double]] {
-    var acc = [[Double]](repeating: [0, 0, 0], count: units)
-    var cnt = [Int](repeating: 0, count: units)
-    for localWindowIndex in 0..<windowCount {
-      let localWidth = windows[localWindowIndex]
-      for (localNextIndex, localUnit) in localWidth.unitIndices.enumerated()
-      where localWidth.coreMask[localNextIndex] {
-        let row = outputs[localWindowIndex][localNextIndex]
-        for localLimit in 0..<3 { acc[localUnit][localLimit] += Double(row[localLimit]) }
-        cnt[localUnit] += 1
+    var accumulatedLogits = [[Double]](repeating: [0, 0, 0], count: units)
+    var predictionCounts = [Int](repeating: 0, count: units)
+    for windowIndex in 0..<windowCount {
+      let window = windows[windowIndex]
+      for (windowUnitIndex, unitIndex) in window.unitIndices.enumerated()
+      where window.coreMask[windowUnitIndex] {
+        let row = outputs[windowIndex][windowUnitIndex]
+        for labelIndex in 0..<3 {
+          accumulatedLogits[unitIndex][labelIndex] += Double(row[labelIndex])
+        }
+        predictionCounts[unitIndex] += 1
       }
     }
-    for localUnit in 0..<units where cnt[localUnit] > 0 {
-      for localLimit in 0..<3 { acc[localUnit][localLimit] /= Double(cnt[localUnit]) }
+    for unitIndex in 0..<units where predictionCounts[unitIndex] > 0 {
+      for labelIndex in 0..<3 {
+        accumulatedLogits[unitIndex][labelIndex] /= Double(predictionCounts[unitIndex])
+      }
     }
-    return acc
+    return accumulatedLogits
   }
 }

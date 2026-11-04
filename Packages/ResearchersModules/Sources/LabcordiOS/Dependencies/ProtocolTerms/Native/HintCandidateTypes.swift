@@ -1,18 +1,18 @@
 import Foundation
 
 nonisolated struct ViterbiBuffers {
-  var dynamic: [Double]
-  var back: [(id: Int, from: Int)]
+  var bestScores: [Double]
+  var predecessors: [(id: Int, from: Int)]
 
   init(count: Int) {
-    dynamic = [Double](repeating: -Double.infinity, count: count + 1)
-    back = [(id: Int, from: Int)](repeating: (-1, -1), count: count + 1)
+    bestScores = [Double](repeating: -Double.infinity, count: count + 1)
+    predecessors = [(id: Int, from: Int)](repeating: (-1, -1), count: count + 1)
   }
 }
 
 nonisolated struct NormalizedSource {
-  let norm: [UInt8]
-  let src: [ClosedRange<Int>]
+  let normalizedBytes: [UInt8]
+  let sourceScalarRanges: [ClosedRange<Int>]
 }
 
 nonisolated struct ParsedPiece {
@@ -23,17 +23,17 @@ nonisolated struct ParsedPiece {
 
 nonisolated struct WindowUnitOutput {
   var tokenIndices: [Int] = []
-  var rangeStart: [Double] = []
-  var rangeEnd: [Double] = []
+  var relativeStarts: [Double] = []
+  var relativeEnds: [Double] = []
   var mapped: [Int] = []
 }
 
 nonisolated struct LedgerAnchorState {
   let projected: [(Int, Int)?]
   let reasons: [[String]]
-  let unitToken: [Int]
-  let anchor: [Int]
-  let anchored: [Int: [Int]]
+  let unitTokenIndices: [Int]
+  let anchorTokenIndex: [Int]
+  let unitsByAnchorToken: [Int: [Int]]
 }
 
 nonisolated struct SafeToken {
@@ -45,12 +45,12 @@ nonisolated struct SafeToken {
 nonisolated public struct SafeUnitResult {
   public let offsets: [(Int, Int)]
   public let unsafe: [Bool]
-  public let cp16: [Int]
+  public let scalarUTF16Offsets: [Int]
 
-  public init(offsets: [(Int, Int)], unsafe: [Bool], cp16: [Int]) {
+  public init(offsets: [(Int, Int)], unsafe: [Bool], scalarUTF16Offsets: [Int]) {
     self.offsets = offsets
     self.unsafe = unsafe
-    self.cp16 = cp16
+    self.scalarUTF16Offsets = scalarUTF16Offsets
   }
 }
 

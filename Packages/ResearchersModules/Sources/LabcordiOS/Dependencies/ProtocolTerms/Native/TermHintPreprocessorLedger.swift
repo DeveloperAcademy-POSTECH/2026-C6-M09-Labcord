@@ -2,13 +2,13 @@ import Foundation
 
 nonisolated private struct LedgerWindowContext {
   let unitOffsets: [(Int, Int)]
-  let unitToken: [Int]
+  let unitTokenIndices: [Int]
   let projected: [(Int, Int)?]
-  let anchored: [Int: [Int]]
-  let flatIds: [Int]
-  let localCount: Int
-  let halo: Int
-  let cap: Int
+  let unitsByAnchorToken: [Int: [Int]]
+  let tokenIDs: [Int]
+  let unitCount: Int
+  let contextUnitCount: Int
+  let tokenCapacity: Int
 }
 
 nonisolated extension TermPreprocessor {
@@ -19,18 +19,20 @@ nonisolated extension TermPreprocessor {
     let safe = safeTokens(projected, reasons)
     let starts = safe.map { $0.start }
     let centers = ownerCenters(rawOffsets, scalarCount: text.unicodeScalars.count)
-    var unitToken = [Int](repeating: -1, count: unitOffsets.count)
-    var anchor = [Int](repeating: -1, count: unitOffsets.count)
+    var unitTokenIndices = [Int](repeating: -1, count: unitOffsets.count)
+    var anchorTokenIndex = [Int](repeating: -1, count: unitOffsets.count)
     for (unitIndex, offset) in unitOffsets.enumerated() {
       let matched = anchorUnit(offset, safe: safe, starts: starts, centers: centers)
-      unitToken[unitIndex] = matched.token
-      anchor[unitIndex] = matched.anchor
+      unitTokenIndices[unitIndex] = matched.token
+      anchorTokenIndex[unitIndex] = matched.anchorTokenIndex
     }
-    var anchored: [Int: [Int]] = [:]
-    for (unit, token) in anchor.enumerated() { anchored[token, default: []].append(unit) }
+    var unitsByAnchorToken: [Int: [Int]] = [:]
+    for (unit, token) in anchorTokenIndex.enumerated() {
+      unitsByAnchorToken[token, default: []].append(unit)
+    }
     return LedgerAnchorState(
-      projected: projected, reasons: reasons, unitToken: unitToken,
-      anchor: anchor, anchored: anchored)
+      projected: projected, reasons: reasons, unitTokenIndices: unitTokenIndices,
+      anchorTokenIndex: anchorTokenIndex, unitsByAnchorToken: unitsByAnchorToken)
   }
 
   private static func safeTokens(
@@ -59,7 +61,7 @@ nonisolated extension TermPreprocessor {
   private static func anchorUnit(
     _ offset: (Int, Int), safe: [SafeToken], starts: [Int],
     centers: [(key: Int, value: Int)]
-  ) -> (token: Int, anchor: Int) {
+  ) -> (token: Int, anchorTokenIndex: Int) {
     let (start, end) = offset
     var lower = 0
     var upper = starts.count
@@ -95,83 +97,89 @@ nonisolated extension TermPreprocessor {
     return best.1
   }
 
-  /// build_source_projection: 단위→토큰 앵커 + 윈도우별 선택/halo.
   public static func buildLedger(
     text: String, unitOffsets: [(Int, Int)], unsafe: [Bool],
-    rawOffsets: [(Int, Int)], flatIds: [Int],
-    halo: Int = 1, cap: Int = 510, step: Int = 446
+    rawOffsets: [(Int, Int)], tokenIDs: [Int],
+    contextUnitCount: Int = 1, tokenCapacity: Int = 510, windowStride: Int = 446
   ) -> LedgerBuildResult {
     let state = anchorLedger(
       text: text, unitOffsets: unitOffsets, unsafe: unsafe, rawOffsets: rawOffsets)
     let context = LedgerWindowContext(
-      unitOffsets: unitOffsets, unitToken: state.unitToken, projected: state.projected,
-      anchored: state.anchored, flatIds: flatIds, localCount: unitOffsets.count,
-      halo: halo, cap: cap)
+      unitOffsets: unitOffsets, unitTokenIndices: state.unitTokenIndices,
+      projected: state.projected,
+      unitsByAnchorToken: state.unitsByAnchorToken, tokenIDs: tokenIDs,
+      unitCount: unitOffsets.count,
+      contextUnitCount: contextUnitCount, tokenCapacity: tokenCapacity)
     var windows: [LedgerWindow] = []
     var first = 0
     var index = 0
     while true {
       windows.append(buildWindow(context, first: first, includeNegative: index == 0))
       index += 1
-      if flatIds.isEmpty || first + cap >= flatIds.count { break }
-      first += step
+      if tokenIDs.isEmpty || first + tokenCapacity >= tokenIDs.count { break }
+      first += windowStride
     }
     return LedgerBuildResult(
-      windows: windows, unitToSafeToken: state.unitToken, anchors: state.anchor,
+      windows: windows, unitToSafeToken: state.unitTokenIndices, anchors: state.anchorTokenIndex,
       projected: state.projected, reasons: state.reasons)
   }
 
   private static func buildWindow(
     _ context: LedgerWindowContext, first: Int, includeNegative: Bool
   ) -> LedgerWindow {
-    let threshold = context.flatIds.count
-    let last = min(first + context.cap, threshold) - 1
-    let content: [Int] = threshold == 0
-      ? [] : (first...max(first, last)).filter { $0 < threshold }
-    let flat: [Int] = [-1] + content + [-1]
-    var local: [Int: Int] = [:]
-    for (position, globalIndex) in flat.enumerated() where globalIndex >= 0 {
-      local[globalIndex] = position
+    let sourceTokenCount = context.tokenIDs.count
+    let last = min(first + context.tokenCapacity, sourceTokenCount) - 1
+    let content: [Int] = sourceTokenCount == 0
+      ? [] : (first...max(first, last)).filter { $0 < sourceTokenCount }
+    let windowSourceTokenIndices: [Int] = [-1] + content + [-1]
+    var windowPositionsBySourceToken: [Int: Int] = [:]
+    for (position, globalIndex) in windowSourceTokenIndices.enumerated() where globalIndex >= 0 {
+      windowPositionsBySourceToken[globalIndex] = position
     }
-    var core: [Int] = []
-    for localToken in content { core.append(contentsOf: context.anchored[localToken] ?? []) }
-    if includeNegative { core.append(contentsOf: context.anchored[-1] ?? []) }
-    core.sort()
+    var coreUnitIndices: [Int] = []
+    for tokenIndex in content {
+      coreUnitIndices.append(contentsOf: context.unitsByAnchorToken[tokenIndex] ?? [])
+    }
+    if includeNegative { coreUnitIndices.append(contentsOf: context.unitsByAnchorToken[-1] ?? []) }
+    coreUnitIndices.sort()
     let selected: [Int]
-    if let firstCore = core.first, let lastCore = core.last {
+    if let firstCore = coreUnitIndices.first, let lastCore = coreUnitIndices.last {
       selected = Array(
-        max(0, firstCore - context.halo)..<min(context.localCount, lastCore + context.halo + 1))
+        max(0, firstCore - context.contextUnitCount) ..<
+          min(context.unitCount, lastCore + context.contextUnitCount + 1))
     } else {
       selected = []
     }
-    let coreSet = Set(core)
+    let coreUnitIndexSet = Set(coreUnitIndices)
     var output = WindowUnitOutput()
-    for localUnit in selected {
+    for unitIndex in selected {
       appendWindowUnit(
-        context, localUnit: localUnit, local: local, output: &output)
+        context, unitIndex: unitIndex,
+        windowPositionsBySourceToken: windowPositionsBySourceToken, output: &output)
     }
     return LedgerWindow(
-      flatIndices: flat, unitIndices: selected, coreMask: selected.map { coreSet.contains($0) },
-      tokenIndices: output.tokenIndices, relStart: output.rangeStart,
-      relEnd: output.rangeEnd, mapped: output.mapped)
+      sourceTokenIndices: windowSourceTokenIndices, unitIndices: selected,
+      coreMask: selected.map { coreUnitIndexSet.contains($0) },
+      tokenIndices: output.tokenIndices, relativeStarts: output.relativeStarts,
+      relativeEnds: output.relativeEnds, mapped: output.mapped)
   }
 
   private static func appendWindowUnit(
-    _ context: LedgerWindowContext, localUnit: Int, local: [Int: Int],
+    _ context: LedgerWindowContext, unitIndex: Int, windowPositionsBySourceToken: [Int: Int],
     output: inout WindowUnitOutput
   ) {
-    let localToken = context.unitToken[localUnit]
-    let present = localToken >= 0 && local[localToken] != nil
-    output.tokenIndices.append(present ? local[localToken]! : -1)
+    let tokenIndex = context.unitTokenIndices[unitIndex]
+    let present = tokenIndex >= 0 && windowPositionsBySourceToken[tokenIndex] != nil
+    output.tokenIndices.append(present ? windowPositionsBySourceToken[tokenIndex]! : -1)
     output.mapped.append(present ? 1 : 0)
-    if present, let prefixToken = context.projected[localToken] {
-      let (unitStart, valueStart) = context.unitOffsets[localUnit]
+    if present, let prefixToken = context.projected[tokenIndex] {
+      let (unitStart, unitEnd) = context.unitOffsets[unitIndex]
       let denominator = Double(prefixToken.1 - prefixToken.0)
-      output.rangeStart.append(Double(unitStart - prefixToken.0) / denominator)
-      output.rangeEnd.append(Double(valueStart - prefixToken.0) / denominator)
+      output.relativeStarts.append(Double(unitStart - prefixToken.0) / denominator)
+      output.relativeEnds.append(Double(unitEnd - prefixToken.0) / denominator)
     } else {
-      output.rangeStart.append(0)
-      output.rangeEnd.append(0)
+      output.relativeStarts.append(0)
+      output.relativeEnds.append(0)
     }
   }
 }

@@ -1,7 +1,6 @@
 import CoreML
 import Foundation
 
-/// 모든 인스턴스의 모델 로딩·추론을 공유 worker에서 직렬 실행합니다.
 actor R117NativeCandidateGenerator {
     private let resourceDirectory: URL
 
@@ -29,24 +28,24 @@ private actor R117NativeWorker {
             await progress?(.preparingExtraction)
             try Task.checkCancellation()
         }
-        // 준비 콜백의 await 이후 캐시를 다시 확인해 중복 로딩을 피합니다.
+
         let pipeline: TermHintPipeline
         if let cached = pipelines[resourceDirectory] {
             pipeline = cached
         } else {
-            let assets = resourceDirectory.appendingPathComponent("native-assets")
-            let config = MLModelConfiguration()
-            config.computeUnits = .cpuOnly
+            let tokenizerAssets = resourceDirectory.appendingPathComponent("native-assets")
+            let modelConfiguration = MLModelConfiguration()
+            modelConfiguration.computeUnits = .cpuOnly
             pipeline = try TermHintPipeline(
-                modelURL: assets.appendingPathComponent("sentencepiece.bpe.model"),
+                modelURL: tokenizerAssets.appendingPathComponent("sentencepiece.bpe.model"),
                 modelPackageURL: resourceDirectory.appendingPathComponent("Unicode4.mlpackage"),
-                charVocabURL: assets.appendingPathComponent("char_vocab.json"),
-                configuration: config)
+                charVocabURL: tokenizerAssets.appendingPathComponent("char_vocab.json"),
+                configuration: modelConfiguration)
             pipelines[resourceDirectory] = pipeline
         }
         await progress?(.extractingCandidates)
         try Task.checkCancellation()
-        // 추론과 decoder는 suspension 없이 실행하여 actor 재진입 시에도 겹치지 않습니다.
+
         let hints = try pipeline.hints(for: text)
         try Task.checkCancellation()
         return hints

@@ -4,32 +4,33 @@ nonisolated struct MiniLMTokenizerParts {
   let pieces: [String]
   let scores: [Double]
   let types: [Int]
-  let charsmap: CharsMap
+  let characterNormalizationMap: CharacterNormalizationMap
 }
 
 nonisolated struct MiniLMTokenizerStorage {
   let parts: MiniLMTokenizerParts
   let trie: [UInt8: MiniLMTokenizer.Node]
-  let flatNodes: [MiniLMTokenizer.FlatNode]
-  let flatEdges: [MiniLMTokenizer.FlatEdge]
-  let compactMode: Bool
-  let unkScore: Double
+  let compactTrieNodes: [MiniLMTokenizer.CompactTrieNode]
+  let compactTrieEdges: [MiniLMTokenizer.CompactTrieEdge]
+  let usesCompactTrie: Bool
+  let unknownTokenScore: Double
 }
 
 nonisolated extension MiniLMTokenizer {
   public init?(modelPath: String, compact: Bool? = nil) {
-    let localCompact = compact ?? true
-    guard let storage = Self.loadStorage(modelPath: modelPath, compact: localCompact) else {
+    let shouldUseCompactTrie = compact ?? true
+    guard let storage = Self.loadStorage(
+      modelPath: modelPath, compact: shouldUseCompactTrie) else {
       return nil
     }
     pieces = storage.parts.pieces
     scores = storage.parts.scores
-    charsmap = storage.parts.charsmap
+    characterNormalizationMap = storage.parts.characterNormalizationMap
     trie = storage.trie
-    flatNodes = storage.flatNodes
-    flatEdges = storage.flatEdges
-    compactMode = storage.compactMode
-    unkScore = storage.unkScore
+    compactTrieNodes = storage.compactTrieNodes
+    compactTrieEdges = storage.compactTrieEdges
+    usesCompactTrie = storage.usesCompactTrie
+    unknownTokenScore = storage.unknownTokenScore
   }
 
   private static func loadStorage(
@@ -37,137 +38,144 @@ nonisolated extension MiniLMTokenizer {
   ) -> MiniLMTokenizerStorage? {
     guard let data = FileManager.default.contents(atPath: modelPath),
       let parts = parseModel(data) else { return nil }
-    let idOf = makeID(parts.pieces)
-    let unkScore =
+    let tokenIDsByPiece = makeTokenIDsByPiece(parts.pieces)
+    let unknownTokenScore =
       ((0..<parts.pieces.count).filter { parts.types[$0] == 1 }
         .map { parts.scores[$0] }.min() ?? 0) - 10.0
     if compact {
-      guard let compactTrie = buildCompactTrie(parts, idOf: idOf) else { return nil }
+      guard let compactTrie = buildCompactTrie(parts, tokenIDsByPiece: tokenIDsByPiece) else {
+        return nil
+      }
       return MiniLMTokenizerStorage(
-        parts: parts, trie: [:], flatNodes: compactTrie.nodes,
-        flatEdges: compactTrie.edges, compactMode: true, unkScore: unkScore)
+        parts: parts, trie: [:], compactTrieNodes: compactTrie.nodes,
+        compactTrieEdges: compactTrie.edges, usesCompactTrie: true,
+        unknownTokenScore: unknownTokenScore)
     }
     return MiniLMTokenizerStorage(
-      parts: parts, trie: buildExpandedTrie(parts, idOf: idOf),
-      flatNodes: [], flatEdges: [], compactMode: false, unkScore: unkScore)
+      parts: parts, trie: buildExpandedTrie(parts, tokenIDsByPiece: tokenIDsByPiece),
+      compactTrieNodes: [], compactTrieEdges: [], usesCompactTrie: false,
+      unknownTokenScore: unknownTokenScore)
   }
 
   private static func parseModel(_ data: Data) -> MiniLMTokenizerParts? {
-    var localResult = ProtoReader(data)
+    var modelReader = ProtobufReader(data)
     var pieces: [String] = []
     var scores: [Double] = []
     var types: [Int] = []
-    var cmapBlob: [UInt8]?
-    localResult.eachField { localField, _, localValue in
-      if localField == 1, let piece = parsePiece(localValue) {
+    var normalizationMapData: [UInt8]?
+    modelReader.forEachField { fieldNumber, _, fieldValue in
+      if fieldNumber == 1, let piece = parsePiece(fieldValue) {
         pieces.append(piece.name)
         scores.append(piece.score)
         types.append(piece.type)
-      } else if localField == 3 {
-        cmapBlob = parseCharsMapBlob(localValue) ?? cmapBlob
+      } else if fieldNumber == 3 {
+        normalizationMapData = parseNormalizationMapData(fieldValue) ?? normalizationMapData
       }
     }
-    guard let blob = cmapBlob, let charsmap = CharsMap(blob: blob) else { return nil }
-    return MiniLMTokenizerParts(pieces: pieces, scores: scores, types: types, charsmap: charsmap)
+    guard let blob = normalizationMapData,
+      let characterNormalizationMap = CharacterNormalizationMap(blob: blob) else { return nil }
+    return MiniLMTokenizerParts(
+      pieces: pieces, scores: scores, types: types,
+      characterNormalizationMap: characterNormalizationMap)
   }
 
   private static func parsePiece(_ value: Any) -> ParsedPiece? {
     guard let fieldBytes = value as? [UInt8] else { return nil }
-    var localPrefix = ProtoReader(fieldBytes)
+    var fieldReader = ProtobufReader(fieldBytes)
     var name = ""
-    var localScore: Float = 0
-    var localType = 1
-    localPrefix.eachField { localField, _, localValue in
-      if localField == 1, let bytes = localValue as? [UInt8],
+    var pieceScore: Float = 0
+    var pieceType = 1
+    fieldReader.forEachField { fieldNumber, _, fieldValue in
+      if fieldNumber == 1, let bytes = fieldValue as? [UInt8],
         let decoded = String(bytes: bytes, encoding: .utf8) {
         name = decoded
-      } else if localField == 2, let value = localValue as? Float {
-        localScore = value
-      } else if localField == 3, let value = localValue as? UInt64 {
-        localType = Int(value)
+      } else if fieldNumber == 2, let value = fieldValue as? Float {
+        pieceScore = value
+      } else if fieldNumber == 3, let value = fieldValue as? UInt64 {
+        pieceType = Int(value)
       }
     }
-    return ParsedPiece(name: name, score: Double(localScore), type: localType)
+    return ParsedPiece(name: name, score: Double(pieceScore), type: pieceType)
   }
 
-  private static func parseCharsMapBlob(_ value: Any) -> [UInt8]? {
+  private static func parseNormalizationMapData(_ value: Any) -> [UInt8]? {
     guard let fieldBytes = value as? [UInt8] else { return nil }
-    var localPrefix = ProtoReader(fieldBytes)
+    var fieldReader = ProtobufReader(fieldBytes)
     var result: [UInt8]?
-    localPrefix.eachField { localField, _, localValue in
-      if localField == 2 { result = localValue as? [UInt8] }
+    fieldReader.forEachField { fieldNumber, _, fieldValue in
+      if fieldNumber == 2 { result = fieldValue as? [UInt8] }
     }
     return result
   }
 
-  private static func makeID(_ pieces: [String]) -> [String: Int] {
+  private static func makeTokenIDsByPiece(_ pieces: [String]) -> [String: Int] {
     var id = [String: Int]()
     id.reserveCapacity(pieces.count + 8)
     let special = ["<s>": 0, "<pad>": 1, "</s>": 2, "<unk>": 3]
-    for (localPiece, localString) in pieces.enumerated() {
-      id[localString] = special[localString] ?? localPiece + 1
+    for (pieceIndex, pieceText) in pieces.enumerated() {
+      id[pieceText] = special[pieceText] ?? pieceIndex + 1
     }
     return id
   }
 
   private static func buildCompactTrie(
-    _ parts: MiniLMTokenizerParts, idOf: [String: Int]
-  ) -> (nodes: [FlatNode], edges: [FlatEdge])? {
-    var nodes = [FlatNode()]
-    var edges: [FlatEdge] = []
+    _ parts: MiniLMTokenizerParts, tokenIDsByPiece: [String: Int]
+  ) -> (nodes: [CompactTrieNode], edges: [CompactTrieEdge])? {
+    var nodes = [CompactTrieNode()]
+    var edges: [CompactTrieEdge] = []
     nodes.reserveCapacity(800_000)
     edges.reserveCapacity(800_000)
-    for (localPiece, piece) in parts.pieces.enumerated()
-    where parts.types[localPiece] == 1 || parts.types[localPiece] == 2 {
-      guard let localHFId = idOf[piece], localHFId <= Int(Int32.max) else { return nil }
-      var localCount = 0
+    for (pieceIndex, piece) in parts.pieces.enumerated()
+    where parts.types[pieceIndex] == 1 || parts.types[pieceIndex] == 2 {
+      guard let tokenID = tokenIDsByPiece[piece], tokenID <= Int(Int32.max) else { return nil }
+      var currentNode = 0
       for byte in piece.utf8 {
-        var edge = nodes[localCount].firstEdge
+        var edge = nodes[currentNode].firstEdge
         var found: Int?
         while edge >= 0 {
-          let localEndValue = edges[Int(edge)]
-          if localEndValue.byte == byte {
-            found = Int(localEndValue.child)
+          let edgeValue = edges[Int(edge)]
+          if edgeValue.byte == byte {
+            found = Int(edgeValue.child)
             break
           }
-          edge = localEndValue.next
+          edge = edgeValue.next
         }
         if let value = found {
-          localCount = value
+          currentNode = value
         } else {
           guard nodes.count < Int(Int32.max), edges.count < Int(Int32.max) else { return nil }
           let child = nodes.count
-          nodes.append(FlatNode())
+          nodes.append(CompactTrieNode())
           edges.append(
-            FlatEdge(byte: byte, child: Int32(child), next: nodes[localCount].firstEdge))
-          nodes[localCount].firstEdge = Int32(edges.count - 1)
-          localCount = child
+            CompactTrieEdge(byte: byte, child: Int32(child), next: nodes[currentNode].firstEdge))
+          nodes[currentNode].firstEdge = Int32(edges.count - 1)
+          currentNode = child
         }
       }
-      nodes[localCount].leafID = Int32(localHFId)
-      nodes[localCount].score = parts.scores[localPiece]
+      nodes[currentNode].tokenID = Int32(tokenID)
+      nodes[currentNode].score = parts.scores[pieceIndex]
     }
     return (nodes, edges)
   }
 
   private static func buildExpandedTrie(
-    _ parts: MiniLMTokenizerParts, idOf: [String: Int]
+    _ parts: MiniLMTokenizerParts, tokenIDsByPiece: [String: Int]
   ) -> [UInt8: Node] {
     let root = Node()
-    for (localPiece, localString) in parts.pieces.enumerated()
-    where parts.types[localPiece] == 1 || parts.types[localPiece] == 2 {
-      guard let localHFId = idOf[localString] else { continue }
-      var localCount = root
-      for byte in localString.utf8 {
-        if let localNextNode = localCount.child[byte] {
-          localCount = localNextNode
+    for (pieceIndex, pieceText) in parts.pieces.enumerated()
+    where parts.types[pieceIndex] == 1 || parts.types[pieceIndex] == 2 {
+      guard let tokenID = tokenIDsByPiece[pieceText] else { continue }
+      var currentNode = root
+      for byte in pieceText.utf8 {
+        if let nextNode = currentNode.child[byte] {
+          currentNode = nextNode
         } else {
-          let localInput = Node()
-          localCount.child[byte] = localInput
-          localCount = localInput
+          let newNode = Node()
+          currentNode.child[byte] = newNode
+          currentNode = newNode
         }
       }
-      localCount.leaf = (localHFId, parts.scores[localPiece])
+      currentNode.leaf = (tokenID, parts.scores[pieceIndex])
     }
     return root.child
   }
