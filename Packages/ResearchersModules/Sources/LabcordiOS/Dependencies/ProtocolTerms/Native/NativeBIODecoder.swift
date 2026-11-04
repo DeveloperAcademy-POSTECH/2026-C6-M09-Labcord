@@ -12,17 +12,17 @@ nonisolated enum NativeBIODecoder {
         text: String, logits: [[Float]], offsets: [(Int, Int)]
     ) throws -> [TermHint] {
         let scalars = Array(text.unicodeScalars)
-        guard logits.count == offsets.count else { throw R117NativeError.invalidPrediction }
+        guard logits.count == offsets.count else { throw NativeTermError.invalidPrediction }
         var boundary = 0
         for (start, end) in offsets {
             guard start == boundary, end > start, end <= scalars.count else {
-                throw R117NativeError.invalidPrediction
+                throw NativeTermError.invalidPrediction
             }
             boundary = end
         }
         guard boundary == scalars.count,
               logits.allSatisfy({ $0.count == 3 && $0.allSatisfy(\.isFinite) }) else {
-            throw R117NativeError.invalidPrediction
+            throw NativeTermError.invalidPrediction
         }
         let labels = try mostLikelyLabelSequence(logits)
         var spans: [TermHint] = []

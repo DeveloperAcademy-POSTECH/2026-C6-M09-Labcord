@@ -1,12 +1,12 @@
 import Foundation
 import OSLog
 
-nonisolated public final class R117TermExtractor: Sendable {
-    public static let shared = R117TermExtractor()
+nonisolated public final class ProtocolTermExtractor: Sendable {
+    public static let shared = ProtocolTermExtractor()
     static var resourceDirectory: URL? {
-        Bundle.module.url(forResource: "R117", withExtension: nil)
+        Bundle.module.url(forResource: "ProtocolTermModel", withExtension: nil)
     }
-    private let extractionRuntime = R117ExtractionRuntime()
+    private let extractionRuntime = ProtocolTermExtractionRuntime()
 
     public func extract(
         from text: String, progress: ProtocolTermClient.Progress? = nil
@@ -17,7 +17,7 @@ nonisolated public final class R117TermExtractor: Sendable {
     }
 }
 
-nonisolated public enum R117ExtractionError: LocalizedError, Sendable {
+nonisolated public enum ProtocolTermExtractionError: LocalizedError, Sendable {
     case resourcesUnavailable
 
     public var errorDescription: String? {
@@ -25,9 +25,9 @@ nonisolated public enum R117ExtractionError: LocalizedError, Sendable {
     }
 }
 
-private actor R117ExtractionRuntime {
-    private var candidateGenerator: R117NativeCandidateGenerator?
-    private let logger = Logger(subsystem: "com.labcord", category: "R117")
+private actor ProtocolTermExtractionRuntime {
+    private var candidateGenerator: NativeTermCandidateGenerator?
+    private let logger = Logger(subsystem: "com.labcord", category: "ProtocolTerms")
 
     func extract(
         _ text: String, progress: ProtocolTermClient.Progress?
@@ -36,17 +36,17 @@ private actor R117ExtractionRuntime {
         let extractionStarted = extractionClock.now
         defer {
             let elapsed = String(describing: extractionStarted.duration(to: extractionClock.now))
-            logger.info("R117 extraction finished after \(elapsed, privacy: .public)")
+            logger.info("Term extraction finished after \(elapsed, privacy: .public)")
         }
         try Task.checkCancellation()
-        guard let resourceDirectory = R117TermExtractor.resourceDirectory else {
-            throw R117ExtractionError.resourcesUnavailable
+        guard let resourceDirectory = ProtocolTermExtractor.resourceDirectory else {
+            throw ProtocolTermExtractionError.resourcesUnavailable
         }
-        let candidateGenerator: R117NativeCandidateGenerator
+        let candidateGenerator: NativeTermCandidateGenerator
         if let cachedGenerator = self.candidateGenerator {
             candidateGenerator = cachedGenerator
         } else {
-            candidateGenerator = R117NativeCandidateGenerator(resourceDirectory: resourceDirectory)
+            candidateGenerator = NativeTermCandidateGenerator(resourceDirectory: resourceDirectory)
             self.candidateGenerator = candidateGenerator
         }
         let hints = try await candidateGenerator.hints(text: text, progress: progress)

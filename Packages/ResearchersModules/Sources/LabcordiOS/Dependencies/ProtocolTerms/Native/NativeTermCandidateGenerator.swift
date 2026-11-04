@@ -1,7 +1,7 @@
 import CoreML
 import Foundation
 
-actor R117NativeCandidateGenerator {
+actor NativeTermCandidateGenerator {
     private let resourceDirectory: URL
 
     init(resourceDirectory: URL) {
@@ -11,13 +11,13 @@ actor R117NativeCandidateGenerator {
     func hints(
         text: String, progress: ProtocolTermClient.Progress?
     ) async throws -> [TermHint] {
-        try await R117NativeWorker.shared.hints(
+        try await NativeTermWorker.shared.hints(
             text: text, resourceDirectory: resourceDirectory, progress: progress)
     }
 }
 
-private actor R117NativeWorker {
-    static let shared = R117NativeWorker()
+private actor NativeTermWorker {
+    static let shared = NativeTermWorker()
     private var pipelines: [URL: TermHintPipeline] = [:]
 
     func hints(
@@ -52,6 +52,6 @@ private actor R117NativeWorker {
     }
 }
 
-nonisolated enum R117NativeError: Error {
+nonisolated enum NativeTermError: Error {
     case invalidPrediction
 }

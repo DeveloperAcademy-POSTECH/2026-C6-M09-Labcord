@@ -204,7 +204,8 @@ nonisolated public struct ProtocolTermClient: Sendable {
 extension ProtocolTermClient: DependencyKey {
     nonisolated public static let liveValue: ProtocolTermClient = {
         var client = ProtocolTermClient { text, progress in
-            let terms = try await R117TermExtractor.shared.extract(from: text, progress: progress)
+            let terms = try await ProtocolTermExtractor.shared.extract(
+                from: text, progress: progress)
             try Task.checkCancellation()
             let document = DocumentParseResult(
                 format: .txt,
@@ -216,7 +217,7 @@ extension ProtocolTermClient: DependencyKey {
             )
         }
         client.selectDocumentTerms = { document, progress in
-            let terms = try await R117TermExtractor.shared.extract(
+            let terms = try await ProtocolTermExtractor.shared.extract(
                 from: document.fullText, progress: progress
             )
             try Task.checkCancellation()

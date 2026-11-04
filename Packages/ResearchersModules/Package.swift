@@ -59,7 +59,7 @@ let package = Package(
                     condition: .when(platforms: [.iOS])
                 )
             ],
-            resources: [.copy("Resources/R117")],
+            resources: [.copy("Resources/ProtocolTermModel")],
             swiftSettings: [
                 .defaultIsolation(MainActor.self),
                 .swiftLanguageMode(.v5)

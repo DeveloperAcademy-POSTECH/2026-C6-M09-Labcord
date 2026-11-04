@@ -154,13 +154,13 @@ nonisolated public final class TermHintPipeline {
       }
     }
     guard coveredUnitIndices.count == units.offsets.count else {
-      throw R117NativeError.invalidPrediction
+      throw NativeTermError.invalidPrediction
     }
     try Task.checkCancellation()
     let outputs = predictOutputs(
       text: text, units: units.offsets, windows: ledger.windows, encoding: encoding)
     try Task.checkCancellation()
-    guard let outputs else { throw R117NativeError.invalidPrediction }
+    guard let outputs else { throw NativeTermError.invalidPrediction }
     let logits = TermPreprocessor.mergeUnitLogits(
       windowCount: ledger.windows.count, units: units.offsets.count,
       windows: ledger.windows, outputs: outputs).map { $0.map { Float($0) } }
