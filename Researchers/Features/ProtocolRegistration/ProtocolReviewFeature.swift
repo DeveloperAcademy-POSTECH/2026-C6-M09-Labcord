@@ -96,7 +96,7 @@ struct ProtocolReviewFeature {
             case let .removeTerm(category, id):
                 state.terms[category]?.removeAll { $0.id == id }
             case let .saveTimer(index, seconds):
-                guard seconds > 0, seconds <= 86_399 else { return .none }
+                guard seconds > 0 else { return .none }
                 if let index, state.timerSeconds.indices.contains(index) {
                     state.timerSeconds[index] = seconds
                 } else if index == nil {
