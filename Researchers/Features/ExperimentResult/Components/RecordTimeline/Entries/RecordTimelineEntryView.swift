@@ -32,7 +32,8 @@ struct RecordTimelineEntryView: View {
                 record: record,
                 event: event,
                 timestamp: timestamp,
-                date: entry.date
+                date: entry.date,
+                note: entry.note
             )
         }
     }
@@ -78,7 +79,8 @@ struct RecordTimelineEntryView: View {
                 record: record,
                 event: .start,
                 timestamp: timestamp,
-                date: record.recordedAt
+                date: record.recordedAt,
+                note: record.note
             )
         }
     }
