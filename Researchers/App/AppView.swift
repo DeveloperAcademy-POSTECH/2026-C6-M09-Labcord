@@ -16,7 +16,13 @@ struct AppView: View {
             switch store.case {
             case .registration(let store):
                 ProtocolRegistrationView(store: store)
-                    .navigationSwipeBackEnabled(!store.isSaving)
+                    .navigationSwipeBackEnabled(
+                        !store.isSaving && !store.importing && store.analysisID == nil
+                            && !store.analysisStarting && store.invalidatingJobID == nil
+                    )
+
+            case .recent(let store):
+                RecentProtocolView(store: store)
 
             case .session(let store):
                 ExperimentSessionView(store: store)
