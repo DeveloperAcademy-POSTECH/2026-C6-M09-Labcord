@@ -3,8 +3,15 @@ import Foundation
 nonisolated enum SpeechContextualTerms {
     static func prepare(_ terms: [String]) -> [String] {
         var seen = Set<String>()
-        return terms.flatMap(split).map(removingCalculationDirective)
-            .filter { !$0.isEmpty && seen.insert($0).inserted }
+        var result: [String] = []
+        for term in terms {
+            for candidate in split(term).map(removingCalculationDirective) {
+                guard !candidate.isEmpty, seen.insert(candidate).inserted else { continue }
+                result.append(candidate)
+                if result.count == 100 { return result }
+            }
+        }
+        return result
     }
 
     private static func removingCalculationDirective(_ term: String) -> String {
