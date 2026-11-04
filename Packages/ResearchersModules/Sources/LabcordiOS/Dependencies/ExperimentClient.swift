@@ -2,8 +2,13 @@ import ComposableArchitecture
 import Foundation
 import LabcordShared
 
+public enum RecentProtocolAccessError: Error, Sendable {
+    case notConfigured
+}
+
 public struct ExperimentClient: Sendable {
     public var load: @MainActor @Sendable () throws -> [ExperimentListEntry]
+    public var loadRecentProtocols: @MainActor @Sendable () throws -> [RecentProtocolEntry]
     public var loadDetail: @MainActor @Sendable (UUID) throws -> ExperimentSessionDetail?
     public var loadResultDetail: @MainActor @Sendable (UUID) throws -> ExperimentResultDetail?
     public var updateTitle: @MainActor @Sendable (UUID, String) throws -> ExperimentResultDetail
@@ -34,9 +39,13 @@ public struct ExperimentClient: Sendable {
         cancelVideoSave: @escaping @MainActor @Sendable (UUID, UUID, URL) throws -> Void,
         cancelAudioSave: @escaping @MainActor @Sendable (UUID, UUID, URL) throws -> Void,
         complete: @escaping @MainActor @Sendable (UUID, Date) throws -> Void,
-        delete: @escaping @MainActor @Sendable (UUID) throws -> Void
+        delete: @escaping @MainActor @Sendable (UUID) throws -> Void,
+        loadRecentProtocols: @escaping @MainActor @Sendable () throws -> [RecentProtocolEntry] = {
+            throw RecentProtocolAccessError.notConfigured
+        }
     ) {
         self.load = load
+        self.loadRecentProtocols = loadRecentProtocols
         self.loadDetail = loadDetail
         self.loadResultDetail = loadResultDetail
         self.updateTitle = updateTitle
@@ -96,7 +105,8 @@ extension ExperimentClient: DependencyKey {
             )
         },
         complete: { try ExperimentSessionRepository.shared.complete(id: $0, at: $1) },
-        delete: { try ExperimentListRepository.shared.delete(id: $0) }
+        delete: { try ExperimentListRepository.shared.delete(id: $0) },
+        loadRecentProtocols: { try RecentProtocolRepository.load() }
     )
 }
 
