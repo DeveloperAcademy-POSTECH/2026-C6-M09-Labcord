@@ -12,6 +12,10 @@ public struct ExperimentClient: Sendable {
     public var loadDetail: @MainActor @Sendable (UUID) throws -> ExperimentSessionDetail?
     public var loadResultDetail: @MainActor @Sendable (UUID) throws -> ExperimentResultDetail?
     public var updateTitle: @MainActor @Sendable (UUID, String) throws -> ExperimentResultDetail
+    public var updateRecordNote: @MainActor @Sendable (
+        UUID, UUID, String
+    ) throws -> ExperimentResultDetail
+    public var deleteRecord: @MainActor @Sendable (UUID, UUID) throws -> ExperimentResultDetail
     public var create: @MainActor @Sendable (UUID, Date) throws -> ExperimentListEntry
     public var leaveSession: @MainActor @Sendable (UUID, UUID, Date) throws -> Void
     public var saveTimer: @MainActor @Sendable (UUID, ExperimentTimer, Date?) throws -> Void
@@ -29,6 +33,12 @@ public struct ExperimentClient: Sendable {
         loadResultDetail: @escaping @MainActor @Sendable (UUID) throws -> ExperimentResultDetail?,
         updateTitle: @escaping @MainActor @Sendable (
             UUID, String
+        ) throws -> ExperimentResultDetail,
+        updateRecordNote: @escaping @MainActor @Sendable (
+            UUID, UUID, String
+        ) throws -> ExperimentResultDetail,
+        deleteRecord: @escaping @MainActor @Sendable (
+            UUID, UUID
         ) throws -> ExperimentResultDetail,
         create: @escaping @MainActor @Sendable (UUID, Date) throws -> ExperimentListEntry,
         leaveSession: @escaping @MainActor @Sendable (UUID, UUID, Date) throws -> Void,
@@ -49,6 +59,8 @@ public struct ExperimentClient: Sendable {
         self.loadDetail = loadDetail
         self.loadResultDetail = loadResultDetail
         self.updateTitle = updateTitle
+        self.updateRecordNote = updateRecordNote
+        self.deleteRecord = deleteRecord
         self.create = create
         self.leaveSession = leaveSession
         self.saveTimer = saveTimer
@@ -70,6 +82,14 @@ extension ExperimentClient: DependencyKey {
         },
         loadResultDetail: { try ExperimentResultRepository.shared.loadResultDetail(id: $0) },
         updateTitle: { try ExperimentResultRepository.shared.updateTitle(id: $0, title: $1) },
+        updateRecordNote: {
+            try ExperimentResultRepository.shared.updateRecordNote(
+                experimentID: $0, recordID: $1, note: $2
+            )
+        },
+        deleteRecord: {
+            try ExperimentResultRepository.shared.deleteRecord(experimentID: $0, recordID: $1)
+        },
         create: { try ExperimentListRepository.shared.create(id: $0, at: $1) },
         leaveSession: {
             try ExperimentSessionRepository.shared.leaveSession(id: $0, entryID: $1, at: $2)
