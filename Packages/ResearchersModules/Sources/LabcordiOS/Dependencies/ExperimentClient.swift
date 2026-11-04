@@ -12,8 +12,8 @@ public struct ExperimentClient: Sendable {
     public var loadDetail: @MainActor @Sendable (UUID) throws -> ExperimentSessionDetail?
     public var loadResultDetail: @MainActor @Sendable (UUID) throws -> ExperimentResultDetail?
     public var updateTitle: @MainActor @Sendable (UUID, String) throws -> ExperimentResultDetail
-    public var updateRecordNote: @MainActor @Sendable (
-        UUID, UUID, String
+    public var updateRecordContent: @MainActor @Sendable (
+        UUID, UUID, String, String?
     ) throws -> ExperimentResultDetail
     public var deleteRecord: @MainActor @Sendable (UUID, UUID) throws -> ExperimentResultDetail
     public var create: @MainActor @Sendable (UUID, Date) throws -> ExperimentListEntry
@@ -34,8 +34,8 @@ public struct ExperimentClient: Sendable {
         updateTitle: @escaping @MainActor @Sendable (
             UUID, String
         ) throws -> ExperimentResultDetail,
-        updateRecordNote: @escaping @MainActor @Sendable (
-            UUID, UUID, String
+        updateRecordContent: @escaping @MainActor @Sendable (
+            UUID, UUID, String, String?
         ) throws -> ExperimentResultDetail,
         deleteRecord: @escaping @MainActor @Sendable (
             UUID, UUID
@@ -59,7 +59,7 @@ public struct ExperimentClient: Sendable {
         self.loadDetail = loadDetail
         self.loadResultDetail = loadResultDetail
         self.updateTitle = updateTitle
-        self.updateRecordNote = updateRecordNote
+        self.updateRecordContent = updateRecordContent
         self.deleteRecord = deleteRecord
         self.create = create
         self.leaveSession = leaveSession
@@ -82,9 +82,9 @@ extension ExperimentClient: DependencyKey {
         },
         loadResultDetail: { try ExperimentResultRepository.shared.loadResultDetail(id: $0) },
         updateTitle: { try ExperimentResultRepository.shared.updateTitle(id: $0, title: $1) },
-        updateRecordNote: {
-            try ExperimentResultRepository.shared.updateRecordNote(
-                experimentID: $0, recordID: $1, note: $2
+        updateRecordContent: {
+            try ExperimentResultRepository.shared.updateRecordContent(
+                experimentID: $0, recordID: $1, note: $2, transcript: $3
             )
         },
         deleteRecord: {
