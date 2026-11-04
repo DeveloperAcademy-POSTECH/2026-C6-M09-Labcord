@@ -63,9 +63,9 @@ struct AppView: View {
         }
         .alert("이미 저장된 실험이에요", isPresented: Binding(
             get: { store.reviewAlreadySaved },
-            set: { if !$0 { store.send(.openSavedReview) } }
+            set: { if !$0 { store.send(.confirmAlreadySaved) } }
         )) {
-            Button("저장된 실험으로 이동") { store.send(.openSavedReview) }
+            Button("저장된 실험으로 이동") { store.send(.confirmAlreadySaved) }
         } message: {
             Text("이 분석으로 저장한 실험이 있어요. 이번에 편집한 내용은 반영되지 않아요.")
         }

@@ -40,6 +40,7 @@ struct AppFeature {
         )
         case reviewCleanupFinished(StackElementID, Bool)
         case reviewPreviouslySaved(StackElementID, ExperimentListEntry)
+        case confirmAlreadySaved
         case openSavedReview
         case retryReviewSave
         case dismissReviewSaveFailure
@@ -176,6 +177,12 @@ struct AppFeature {
                 state.reviewAlreadySaved = true
                 return .none
 
+            case .confirmAlreadySaved:
+                guard state.reviewAlreadySaved else { return .none }
+                state.reviewAlreadySaved = false
+                guard let id = state.path.ids.last else { return .none }
+                return .send(.path(.element(id: id, action: .review(.registerTapped))))
+
             case .openSavedReview:
                 guard !state.reviewSaving, let entry = state.savedReview else { return .none }
                 state.reviewAlreadySaved = false
@@ -206,17 +213,13 @@ struct AppFeature {
 
             case let .reviewCleanupFinished(id, succeeded):
                 guard state.reviewSaving, state.path.ids.last == id,
-                      let entry = state.savedReview else { return .none }
+                      state.savedReview != nil else { return .none }
                 state.reviewSaving = false
                 guard succeeded else {
                     state.reviewSaveFailed = true
                     return .none
                 }
-                state.savedReview = nil
-                state.reviewPendingID = nil
-                state.path.removeAll()
-                state.path.append(.session(.init(experimentID: entry.id)))
-                return .send(.home(.list(.created(entry))))
+                return .send(.openSavedReview)
 
             case .retryReviewSave:
                 state.reviewSaveFailed = false
