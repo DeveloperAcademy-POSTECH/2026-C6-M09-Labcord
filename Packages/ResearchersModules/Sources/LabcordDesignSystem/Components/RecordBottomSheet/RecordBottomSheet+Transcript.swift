@@ -51,11 +51,13 @@ struct RecordBottomSheetTranscriptField: View {
                 defaultEditor
             }
 
-            Text(help)
-                .typography(Typography.subheadline)
-                .foregroundStyle(Color(.General.Label.secondary))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .fixedSize(horizontal: false, vertical: true)
+            if !help.isEmpty {
+                Text(help)
+                    .typography(Typography.subheadline)
+                    .foregroundStyle(Color(.General.Label.secondary))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
