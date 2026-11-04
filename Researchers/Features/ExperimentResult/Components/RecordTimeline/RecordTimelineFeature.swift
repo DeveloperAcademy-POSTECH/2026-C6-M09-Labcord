@@ -6,13 +6,11 @@ struct RecordTimelineFeature {
     @ObservableState
     struct State: Equatable {
         var detail: ExperimentResultDetail
+        var entries: [ExperimentResultDetail.TimelineEntry]
 
         init(detail: ExperimentResultDetail) {
             self.detail = detail
-        }
-
-        var entries: [ExperimentResultDetail.TimelineEntry] {
-            Array(detail.timeline.dropFirst())
+            self.entries = Array(detail.timeline.dropFirst())
         }
     }
 
@@ -26,6 +24,7 @@ struct RecordTimelineFeature {
             case let .detailUpdated(detail):
                 guard detail.id == state.detail.id else { return .none }
                 state.detail = detail
+                state.entries = Array(detail.timeline.dropFirst())
                 return .none
             }
         }
