@@ -16,6 +16,8 @@ extension PhoneWatchExperimentCoordinator {
                 if let record = response.record { recordResults[command.requestID] = record }
                 return
             }
+            if try handleSavedRecord(command) { return }
+            if try cancelUnavailableMedia(command) { return }
             if [.startTimer, .pauseTimer, .resumeTimer, .deleteTimer].contains(command.operation),
                try shouldApplyTimerDirectly(command) {
                 try client.applyWatchTimer(command)
@@ -31,8 +33,22 @@ extension PhoneWatchExperimentCoordinator {
 
     public func finishRecord(_ response: WatchExperimentResponse, experimentID: UUID) {
         do {
-            let record = try response.record.map {
-                try publishRecord($0, experimentID: experimentID)
+            var record = try response.record.map {
+                try validateMediaRecord(
+                    $0, requestID: response.requestID, experimentID: experimentID
+                )
+                return try publishRecord($0, experimentID: experimentID)
+            }
+            if response.error == nil, response.phase == .completed, record == nil,
+               let command = requests[response.requestID]?.command,
+               command.operation == .confirmRecord {
+                guard let saved = try savedRecord(command) else {
+                    throw WatchExperimentError.storageFailed
+                }
+                record = saved
+            }
+            if let record {
+                try updateMediaJournal(response, record: record, experimentID: experimentID)
             }
             if let error = response.error {
                 finish(response.requestID, error: error)
@@ -63,11 +79,21 @@ extension PhoneWatchExperimentCoordinator {
         } == true
     }
 
-    private func publishRecord(
+    func publishRecord(
         _ record: WatchRecordSnapshot, experimentID: UUID
     ) throws -> WatchRecordSnapshot {
         guard record.experimentID == nil || record.experimentID == experimentID else {
             throw WatchExperimentError.duplicateConflict
+        }
+        if let previous = recordSnapshots[record.id] {
+            guard previous.experimentID == experimentID, previous.kind == record.kind else {
+                throw WatchExperimentError.duplicateConflict
+            }
+            if previous.phase == .saved { return previous }
+            if previous.phase == .cancelled, record.phase != .saved { return previous }
+            if let revision = record.revision, revision <= (previous.revision ?? 0) {
+                return previous
+            }
         }
         let value = record.withContext(experimentID: experimentID, revision: nil)
         if let previous = recordSnapshots[record.id],
@@ -78,7 +104,7 @@ extension PhoneWatchExperimentCoordinator {
             experimentID: experimentID, revision: try record.revision ?? nextRevision()
         )
         if let previous = recordSnapshots[record.id],
-           previous.experimentID != experimentID {
+           previous.experimentID != experimentID || previous.kind != identified.kind {
             throw WatchExperimentError.duplicateConflict
         }
         recordSnapshots[record.id] = identified
