@@ -58,19 +58,35 @@ struct ExperimentResultFeature {
         Reduce { state, action in
             switch action {
             case .loadResultDetail:
+                state.recordTimeline = nil
                 state.loadMessage = nil
                 let experimentID = state.experimentID
                 return .run { send in
                     async let minimumDisplay = Task.sleep(for: .seconds(1))
+                    await Task.yield()
+                    guard !Task.isCancelled else { return }
+
+                    let detail: ExperimentResultDetail?
+                    let loadFailed: Bool
                     do {
-                        let detail = try await experimentClient.loadResultDetail(experimentID)
-                        try await minimumDisplay
-                        await send(.resultDetailLoaded(detail))
-                    } catch is CancellationError {
-                        return
+                        detail = try await experimentClient.loadResultDetail(experimentID)
+                        loadFailed = false
                     } catch {
-                        try? await minimumDisplay
+                        detail = nil
+                        loadFailed = true
+                    }
+
+                    do {
+                        try await minimumDisplay
+                        try Task.checkCancellation()
+                    } catch {
+                        return
+                    }
+
+                    if loadFailed {
                         await send(.resultDetailLoadFailed)
+                    } else {
+                        await send(.resultDetailLoaded(detail))
                     }
                 }
 
