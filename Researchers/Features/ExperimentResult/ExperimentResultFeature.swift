@@ -62,9 +62,9 @@ struct ExperimentResultFeature {
         }
 
         var canSaveRecord: Bool {
-            guard !isRecordSaving, let selectedRecord else { return false }
+            guard !isRecordSaving, selectedRecord != nil else { return false }
             let noteChanged = normalizedNote
-                != selectedRecord.note.trimmingCharacters(in: .whitespacesAndNewlines)
+                != (selectedEntry?.note ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             return (noteChanged || editedTranscript != nil)
                 && draftNote.count <= 300
                 && (editedTranscript == nil || draftTranscript.count <= 300)
@@ -194,7 +194,7 @@ struct ExperimentResultFeature {
                 switch entry.kind {
                 case let .record(record), let .timer(record, _):
                     state.selectedEntry = entry
-                    state.draftNote = record.note
+                    state.draftNote = entry.note
                     state.draftTranscript = record.type == .audio ? record.transcript ?? "" : ""
                 case .status, .started, .ended, .paused, .resumed:
                     break
@@ -225,10 +225,11 @@ struct ExperimentResultFeature {
                 let experimentID = state.experimentID
                 let note = state.normalizedNote
                 let transcript = state.editedTranscript
+                let timerEventID = record.type == .timer ? state.selectedEntry?.id : nil
                 return .run { send in
                     do {
                         let detail = try await experimentClient.updateRecordContent(
-                            experimentID, record.id, note, transcript
+                            experimentID, record.id, note, transcript, timerEventID
                         )
                         await send(.recordMutationSucceeded(detail, record.id))
                     } catch {
