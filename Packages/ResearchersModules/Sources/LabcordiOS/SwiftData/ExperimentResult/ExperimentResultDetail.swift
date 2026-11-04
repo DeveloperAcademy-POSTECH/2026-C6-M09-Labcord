@@ -23,6 +23,18 @@ public struct ExperimentResultDetail: Equatable, Sendable {
         public let id: String
         public let date: Date
         public let kind: TimelineKind
+
+        public var note: String {
+            switch kind {
+            case let .record(record):
+                record.note
+            case let .timer(record, _):
+                id == "timer-start-\(record.id)"
+                    ? record.note : record.timerEventNotes[id] ?? ""
+            case .status, .started, .ended, .paused, .resumed:
+                ""
+            }
+        }
     }
 
     public struct Procedure: Equatable, Sendable {
@@ -46,6 +58,7 @@ public struct ExperimentResultDetail: Equatable, Sendable {
         public let note: String
         public let filePath: String?
         public let transcript: String?
+        public let timerEventNotes: [String: String]
         public let timerDurationSeconds: Int?
         public let timerEndedAt: Date?
         public let timerPauses: [PauseEntry]
