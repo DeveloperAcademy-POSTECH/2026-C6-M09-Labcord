@@ -10,11 +10,14 @@ import LabcordDesignSystem
 import SwiftUI
 
 struct OnboardingView: View {
-    let store: StoreOf<OnboardingFeature>
+    let onFinish: () -> Void
+    @State private var store = Store(initialState: OnboardingFeature.State()) {
+        OnboardingFeature()
+    }
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            background
+            OnboardingBackground(showsLabImage: store.page == .second)
 
             VStack(alignment: .leading, spacing: 0) {
                 skipRow
@@ -22,7 +25,7 @@ struct OnboardingView: View {
                     .padding(.top, 19)
 
                 if store.page != .second {
-                    card
+                    OnboardingCard(imageName: cardImageName, currentPage: store.page.rawValue + 1)
                         .padding(.top, LayoutTokens.spacing24)
                 } else {
                     Spacer(minLength: 0)
@@ -36,25 +39,14 @@ struct OnboardingView: View {
         }
     }
 
-    private var background: some View {
-        Color("General/Background/Primary")
-            .overlay(alignment: .bottom) {
-                if store.page == .second {
-                    Image("onboarding_lab")
-                        .resizable()
-                        .scaledToFill()
-                        .frame(maxWidth: .infinity)
-                        .aspectRatio(1206 / 1755, contentMode: .fit)
-                        .clipped()
-                }
-            }
-            .ignoresSafeArea()
-    }
 
     private var skipRow: some View {
         HStack {
             Spacer()
-            Button("건너뛰기") { store.send(.skipTapped) }
+            Button("건너뛰기") {
+                store.send(.skipTapped)
+                onFinish()
+            }
                 .buttonStyle(IOSButtonStyle(.accent, size: .medium))
                 .opacity(store.page == .third ? 0 : 1)
                 .disabled(store.page == .third)
@@ -64,42 +56,19 @@ struct OnboardingView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: LayoutTokens.spacing16) {
             VStack(alignment: .leading, spacing: 0) {
-                ForEach(titleLines, id: \.self) { Text($0) }
+                Text(titleText)
             }
             .typography(Typography.title1Bold)
             .foregroundStyle(Color("General/Label/Primary"))
 
             VStack(alignment: .leading, spacing: 0) {
-                ForEach(bodyLines, id: \.self) { Text($0) }
+                Text(bodyText)
             }
             .typography(Typography.body)
             .foregroundStyle(Color("General/Label/Secondary"))
         }
     }
 
-    private var card: some View {
-        Color.clear
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .overlay(alignment: .top) {
-                Image(cardImageName)
-                    .resizable()
-                    .aspectRatio(402.0 / 597.0, contentMode: .fit)
-                    .frame(maxWidth: .infinity)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .overlay(alignment: .bottom) {
-                PageControl(pageCount: 3, selection: .constant(store.page.rawValue + 1))
-                    .frame(height: 32)
-                    .padding(.bottom, 8)
-            }
-            .clipped()
-            .clipShape(RoundedRectangle(cornerRadius: LayoutTokens.radiusLg, style: .continuous))
-            .shadow(
-                color: Color("General/Effect/Shadow/Medium/Color"),
-                radius: EffectTokens().shadowMediumRadius,
-                y: EffectTokens().shadowMediumOffsetY
-            )
-    }
 
     private var footer: some View {
         VStack(spacing: LayoutTokens.spacing16) {
@@ -110,7 +79,12 @@ struct OnboardingView: View {
                         .frame(width: 100)
                 }
                 Button {
-                    store.send(store.page == .third ? .startTapped : .nextTapped)
+                    if store.page == .third {
+                        store.send(.startTapped)
+                        onFinish()
+                    } else {
+                        store.send(.nextTapped)
+                    }
                 } label: {
                     Text(store.page == .third ? "시작" : "다음")
                         .frame(maxWidth: .infinity)
@@ -129,19 +103,22 @@ struct OnboardingView: View {
         }
     }
 
-    private var titleLines: [String] {
+    private var titleText: String {
         switch store.page {
-        case .first: return ["프로토콜 하나로,", "실험을 간편하게"]
-        case .second: return ["필요한 순간,", "동작으로 빠르게"]
-        case .third: return ["실험이 끝나면,", "하나의 기록으로"]
+        case .first:
+            return "프로토콜 하나로,\n실험을 간편하게"
+        case .second:
+            return "필요한 순간,\n동작으로 빠르게"
+        case .third:
+            return "실험이 끝나면,\n하나의 기록으로"
         }
     }
 
-    private var bodyLines: [String] {
+    private var bodyText: String {
         switch store.page {
-        case .first: return ["프로토콜에 있는 타이머와 실험 용어", "그리고 약어까지 자동으로 찾아줘요."]
-        case .second: return ["iPhone과 Apple Watch의 제스처로", "음성 녹음 · 사진 촬영 · 영상 녹화를 시작할 수 있어요."]
-        case .third: return ["실험 중 남긴 기록을 모아서", "시간 순으로 확인하고 수정할 수 있어요."]
+        case .first: return "프로토콜에 있는 타이머와 실험 용어 \n그리고 약어까지 자동으로 찾아줘요."
+        case .second: return "iPhone과 Apple Watch의 제스처로,\n음성 녹음 · 사진 촬영 · 영상 녹화를 시작할 수 있어요."
+        case .third: return "실험 중 남긴 기록을 모아서,\n시간 순으로 확인하고 수정할 수 있어요."
         }
     }
 
@@ -151,7 +128,5 @@ struct OnboardingView: View {
 }
 
 #Preview {
-    OnboardingView(store: Store(initialState: OnboardingFeature.State()) {
-        OnboardingFeature()
-    })
+    OnboardingView(onFinish: {})
 }
