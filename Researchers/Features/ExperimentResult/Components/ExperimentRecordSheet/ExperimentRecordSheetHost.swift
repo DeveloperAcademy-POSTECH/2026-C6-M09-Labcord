@@ -1,3 +1,4 @@
+import AVFoundation
 import LabcordDesignSystem
 import LabcordiOS
 import SwiftUI
@@ -16,6 +17,7 @@ struct ExperimentRecordSheetHost: View {
 
     @State private var contentHeight: CGFloat = 0
     @State private var headerHeight: CGFloat = 0
+    @State private var fullScreenVideoPlayer: AVPlayer?
     @State private var dragOffset: CGFloat = 0
     @State private var isDismissing = false
     @GestureState private var isHeaderDragging = false
@@ -51,7 +53,9 @@ struct ExperimentRecordSheetHost: View {
                             canSave: canSave,
                             onDismiss: onDismiss,
                             onSave: onSave,
-                            onDelete: onDelete
+                            onDelete: onDelete,
+                            isVideoFullScreen: fullScreenVideoPlayer != nil,
+                            onOpenVideoFullScreen: { fullScreenVideoPlayer = $0 }
                         )
                             .frame(maxWidth: .infinity)
                             .onGeometryChange(for: CGFloat.self) { contentGeometry in
@@ -91,6 +95,14 @@ struct ExperimentRecordSheetHost: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             .coordinateSpace(name: "recordSheetDrag")
+        }
+        .background {
+            NativeVideoPlayerPresenter(player: fullScreenVideoPlayer) {
+                fullScreenVideoPlayer?.play()
+                fullScreenVideoPlayer = nil
+            }
+            .frame(width: 1, height: 1)
+            .allowsHitTesting(false)
         }
         .labcordDismissKeyboardOnTapOutside()
         .presentationBackground(.clear)
