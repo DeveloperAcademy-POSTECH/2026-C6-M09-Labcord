@@ -35,6 +35,7 @@ struct ExperimentResultFeature {
         var selectedSort: RecordSort = .oldest
         var selectedEntry: ExperimentResultDetail.TimelineEntry?
         var draftNote = ""
+        var draftTranscript = ""
         var isRecordSaving = false
         var isRecordDeleteConfirmationPresented = false
         var recordSaveMessage: String?
@@ -48,11 +49,31 @@ struct ExperimentResultFeature {
             }
         }
 
-        var canSaveRecordNote: Bool {
+        var normalizedNote: String {
+            draftNote.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        var editedTranscript: String? {
+            guard let selectedRecord, selectedRecord.type == .audio else { return nil }
+            let transcript = draftTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
+            let original = (selectedRecord.transcript ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return transcript == original ? nil : transcript
+        }
+
+        var canSaveRecord: Bool {
             guard !isRecordSaving, let selectedRecord else { return false }
-            return draftNote.trimmingCharacters(in: .whitespacesAndNewlines)
+            let noteChanged = normalizedNote
                 != selectedRecord.note.trimmingCharacters(in: .whitespacesAndNewlines)
+            return (noteChanged || editedTranscript != nil)
                 && draftNote.count <= 300
+                && (editedTranscript == nil || draftTranscript.count <= 300)
+        }
+
+        mutating func clearRecordDraft() {
+            selectedEntry = nil
+            draftNote = ""
+            draftTranscript = ""
         }
 
         var displayedEntries: [ExperimentResultDetail.TimelineEntry] {
@@ -97,6 +118,7 @@ struct ExperimentResultFeature {
         case timelineEntrySelected(ExperimentResultDetail.TimelineEntry)
         case timelineSheetDismissed
         case recordNoteChanged(String)
+        case recordTranscriptChanged(String)
         case recordSaveTapped
         case recordDeleteTapped
         case recordDeleteConfirmed
@@ -118,8 +140,7 @@ struct ExperimentResultFeature {
             case .loadResultDetail:
                 state.recordTimeline = nil
                 state.loadMessage = nil
-                state.selectedEntry = nil
-                state.draftNote = ""
+                state.clearRecordDraft()
                 state.isRecordDeleteConfirmationPresented = false
                 let experimentID = state.experimentID
                 return .run { send in
@@ -174,14 +195,14 @@ struct ExperimentResultFeature {
                 case let .record(record), let .timer(record, _):
                     state.selectedEntry = entry
                     state.draftNote = record.note
+                    state.draftTranscript = record.type == .audio ? record.transcript ?? "" : ""
                 case .status, .started, .ended, .paused, .resumed:
                     break
                 }
                 return .none
 
             case .timelineSheetDismissed:
-                state.selectedEntry = nil
-                state.draftNote = ""
+                state.clearRecordDraft()
                 state.isRecordDeleteConfirmationPresented = false
                 return .none
 
@@ -190,18 +211,26 @@ struct ExperimentResultFeature {
                 state.draftNote = String(note.prefix(300))
                 return .none
 
+            case let .recordTranscriptChanged(transcript):
+                guard !state.isRecordSaving, state.selectedRecord?.type == .audio else {
+                    return .none
+                }
+                state.draftTranscript = String(transcript.prefix(300))
+                return .none
+
             case .recordSaveTapped:
-                guard state.canSaveRecordNote,
-                      let recordID = state.selectedRecord?.id else { return .none }
+                guard state.canSaveRecord,
+                      let record = state.selectedRecord else { return .none }
                 state.isRecordSaving = true
                 let experimentID = state.experimentID
-                let note = state.draftNote.trimmingCharacters(in: .whitespacesAndNewlines)
+                let note = state.normalizedNote
+                let transcript = state.editedTranscript
                 return .run { send in
                     do {
-                        let detail = try await experimentClient.updateRecordNote(
-                            experimentID, recordID, note
+                        let detail = try await experimentClient.updateRecordContent(
+                            experimentID, record.id, note, transcript
                         )
-                        await send(.recordMutationSucceeded(detail, recordID))
+                        await send(.recordMutationSucceeded(detail, record.id))
                     } catch {
                         await send(.recordMutationFailed)
                     }
@@ -237,8 +266,7 @@ struct ExperimentResultFeature {
                 guard detail.id == state.experimentID else { return .none }
                 state.isRecordSaving = false
                 if state.selectedRecord?.id == recordID {
-                    state.selectedEntry = nil
-                    state.draftNote = ""
+                    state.clearRecordDraft()
                 }
                 return .send(.recordTimeline(.detailUpdated(detail)))
 
