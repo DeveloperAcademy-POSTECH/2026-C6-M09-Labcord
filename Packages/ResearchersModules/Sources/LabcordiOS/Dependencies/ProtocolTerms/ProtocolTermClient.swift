@@ -158,21 +158,28 @@ nonisolated public struct ProtocolTermReviewCheckpoint: Codable, Equatable, Send
     }
 }
 
+nonisolated public enum ProtocolTermClientError: Error {
+    case classificationNotConfigured
+}
+
 nonisolated public struct ProtocolTermClient: Sendable {
     public typealias Progress = @Sendable (ProtocolTermProgress) async -> Void
     public typealias Checkpoint = @Sendable (ProtocolExtractedTerms) async throws -> Void
+    public typealias Selection = @Sendable (
+        DocumentParseResult, Progress?
+    ) async throws -> [String]
+    public typealias Classification = @Sendable (
+        [String], String, ProtocolExtractedTerms?, Progress?, Checkpoint
+    ) async throws -> ProtocolExtractedTerms
     public typealias ReviewCheckpoint = @Sendable (
         ProtocolTermReviewCheckpoint
     ) async throws -> Void
-    public var reviewDocumentTerms: (@Sendable (
+    public typealias Review = @Sendable (
         [String], DocumentParseResult, ProtocolTermReviewCheckpoint?, Progress?, ReviewCheckpoint
-    ) async throws -> ProtocolExtractedTerms)?
-    public var selectDocumentTerms: @Sendable (
-        DocumentParseResult, Progress?
-    ) async throws -> [String]
-    public var classifyDocumentTerms: @Sendable (
-        [String], String, ProtocolExtractedTerms?, Progress?, Checkpoint
     ) async throws -> ProtocolExtractedTerms
+    public var reviewDocumentTerms: Review?
+    public var selectDocumentTerms: Selection
+    public var classifyDocumentTerms: Classification
     public var extract: @Sendable (String) async throws -> ProtocolExtractedTerms
     public var extractWithProgress: @Sendable (
         String, Progress?
@@ -181,7 +188,13 @@ nonisolated public struct ProtocolTermClient: Sendable {
     public init(extract: @escaping @Sendable (String) async throws -> ProtocolExtractedTerms) {
         self.extract = extract
         selectDocumentTerms = { document, _ in try await extract(document.fullText).all }
-        classifyDocumentTerms = { _, text, _, _, _ in try await extract(text) }
+        classifyDocumentTerms = { terms, _, seed, _, _ in
+            try Task.checkCancellation()
+            if terms.isEmpty, seed?.isEmpty != false {
+                return seed ?? ProtocolExtractedTerms()
+            }
+            throw ProtocolTermClientError.classificationNotConfigured
+        }
         extractWithProgress = { text, _ in try await extract(text) }
     }
 
@@ -194,9 +207,27 @@ nonisolated public struct ProtocolTermClient: Sendable {
         selectDocumentTerms = { document, progress in
             try await extractWithProgress(document.fullText, progress).all
         }
-        classifyDocumentTerms = { _, text, _, progress, _ in
-            try await extractWithProgress(text, progress)
+        classifyDocumentTerms = { terms, _, seed, _, _ in
+            try Task.checkCancellation()
+            if terms.isEmpty, seed?.isEmpty != false {
+                return seed ?? ProtocolExtractedTerms()
+            }
+            throw ProtocolTermClientError.classificationNotConfigured
         }
+        extract = { text in try await extractWithProgress(text, nil) }
+    }
+
+    public init(
+        selectDocumentTerms: @escaping Selection,
+        classifyDocumentTerms: @escaping Classification,
+        extractWithProgress: @escaping @Sendable (String, Progress?) async throws
+            -> ProtocolExtractedTerms,
+        reviewDocumentTerms: Review? = nil
+    ) {
+        self.reviewDocumentTerms = reviewDocumentTerms
+        self.selectDocumentTerms = selectDocumentTerms
+        self.classifyDocumentTerms = classifyDocumentTerms
+        self.extractWithProgress = extractWithProgress
         extract = { text in try await extractWithProgress(text, nil) }
     }
 }

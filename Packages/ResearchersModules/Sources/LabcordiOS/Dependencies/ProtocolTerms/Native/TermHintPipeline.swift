@@ -32,7 +32,7 @@ nonisolated public final class TermHintPipeline {
     configuration: MLModelConfiguration = .init()
   ) throws {
     guard let loadedTokenizer = MiniLMTokenizer(modelPath: tokenizerModelURL.path) else {
-      throw PreprocessError.checksum
+      throw NativeTermError.tokenizerLoadFailed
     }
     tokenizer = loadedTokenizer
     let compiledModelURL = try MLModel.compileModel(at: coreMLPackageURL)
@@ -41,10 +41,10 @@ nonisolated public final class TermHintPipeline {
     guard
       let vocabularyObject = try JSONSerialization.jsonObject(with: vocabularyData)
         as? [String: Any]
-    else { throw PreprocessError.checksum }
+    else { throw NativeTermError.invalidCharacterVocabulary }
     var map = [UInt32: Int]()
     guard let characterValues = vocabularyObject["characters"] as? [String] else {
-      throw PreprocessError.checksum
+      throw NativeTermError.invalidCharacterVocabulary
     }
     for (characterIndex, character) in characterValues.enumerated() {
       for scalar in character.unicodeScalars { map[scalar.value] = characterIndex + 2 }
@@ -55,12 +55,11 @@ nonisolated public final class TermHintPipeline {
   private func predictOutputs(
     text: String, units: [(Int, Int)], windows: [TermPreprocessor.LedgerWindow],
     encoding: (tokenIDs: [Int], offsets: [(Int, Int)])
-  ) -> [[[Float]]]? {
+  ) throws -> [[[Float]]] {
     var outputs: [[[Float]]] = []
     for window in windows {
-      guard !Task.isCancelled else { return nil }
-      guard let rows = predictWindow(text, units: units, window: window, encoding: encoding)
-      else { return nil }
+      try Task.checkCancellation()
+      let rows = try predictWindow(text, units: units, window: window, encoding: encoding)
       outputs.append(rows)
     }
     return outputs
@@ -69,16 +68,26 @@ nonisolated public final class TermHintPipeline {
   private func predictWindow(
     _ text: String, units: [(Int, Int)], window: TermPreprocessor.LedgerWindow,
     encoding: (tokenIDs: [Int], offsets: [(Int, Int)])
-  ) -> [[Float]]? {
+  ) throws -> [[Float]] {
     let unitCount = window.unitIndices.count
     guard unitCount > 0 else { return [] }
-    guard let modelInput = makeWindowInput(
-      text, units: units, window: window, encoding: encoding) else { return nil }
-    guard let output = try? model.prediction(from: modelInput.provider),
-      let key = output.featureNames.first,
+    let modelInput = try makeWindowInput(
+      text, units: units, window: window, encoding: encoding)
+    try Task.checkCancellation()
+    let output: MLFeatureProvider
+    do {
+      output = try model.prediction(from: modelInput.provider)
+    } catch {
+      try Task.checkCancellation()
+      throw error
+    }
+    try Task.checkCancellation()
+    guard let key = output.featureNames.first,
       let logits = output.featureValue(for: key)?.multiArrayValue,
-      logits.count == modelInput.unitCount * 3 else { return nil }
-    guard (0..<logits.count).allSatisfy({ logits[$0].floatValue.isFinite }) else { return nil }
+      logits.count == modelInput.unitCount * 3 else { throw NativeTermError.invalidPrediction }
+    guard (0..<logits.count).allSatisfy({ logits[$0].floatValue.isFinite }) else {
+      throw NativeTermError.invalidPrediction
+    }
     var rows = [[Float]](repeating: [0, 0, 0], count: modelInput.unitCount)
     for unitIndex in 0..<modelInput.unitCount {
       for featureIndex in 0..<3 {
@@ -92,7 +101,7 @@ nonisolated public final class TermHintPipeline {
   private func makeWindowInput(
     _ text: String, units: [(Int, Int)], window: TermPreprocessor.LedgerWindow,
     encoding: (tokenIDs: [Int], offsets: [(Int, Int)])
-  ) -> TermHintModelWindowInput? {
+  ) throws -> TermHintModelWindowInput {
     let unitCount = window.unitIndices.count
     let characterEncoding = TermPreprocessor.characterIDs(
       text: text, unitOffsets: units, selectedUnitIndices: window.unitIndices,
@@ -102,7 +111,7 @@ nonisolated public final class TermHintPipeline {
       (1..<characterEncoding.unitCharacterOffsets.count).map {
         characterEncoding.unitCharacterOffsets[$0] - characterEncoding.unitCharacterOffsets[$0 - 1]
       }.max() ?? 1)
-    guard maximumCharactersPerUnit <= 64 else { return nil }
+    guard maximumCharactersPerUnit <= 64 else { throw NativeTermError.invalidPrediction }
     var characterIDTensorValues = [Int](repeating: 0, count: unitCount * maximumCharactersPerUnit)
     var characterMaskTensorValues = [Int](
       repeating: 0, count: unitCount * maximumCharactersPerUnit)
@@ -124,7 +133,7 @@ nonisolated public final class TermHintPipeline {
     let tokenIDs = window.sourceTokenIndices.enumerated().map { tokenPosition, sourceTokenIndex in
       sourceTokenIndex < 0 ? (tokenPosition == 0 ? 0 : 2) : encoding.tokenIDs[sourceTokenIndex]
     }
-    guard let provider = try? MLDictionaryFeatureProvider(dictionary: [
+    let provider = try MLDictionaryFeatureProvider(dictionary: [
       "ids": makeIntegerTensor(tokenIDs, [1, window.sourceTokenIndices.count]),
       "attention_1": makeIntegerTensor(
         Array(repeating: 1, count: window.sourceTokenIndices.count),
@@ -135,7 +144,7 @@ nonisolated public final class TermHintPipeline {
         characterMaskTensorValues, [1, unitCount, maximumCharactersPerUnit]),
       "token_indices": makeIntegerTensor(window.tokenIndices, [1, unitCount]),
       "relative": makeFloatTensor(relativePositionTensorValues, [1, unitCount, 3])
-    ]) else { return nil }
+    ])
     return TermHintModelWindowInput(provider: provider, unitCount: unitCount)
   }
 
@@ -157,10 +166,9 @@ nonisolated public final class TermHintPipeline {
       throw NativeTermError.invalidPrediction
     }
     try Task.checkCancellation()
-    let outputs = predictOutputs(
+    let outputs = try predictOutputs(
       text: text, units: units.offsets, windows: ledger.windows, encoding: encoding)
     try Task.checkCancellation()
-    guard let outputs else { throw NativeTermError.invalidPrediction }
     let logits = TermPreprocessor.mergeUnitLogits(
       windowCount: ledger.windows.count, units: units.offsets.count,
       windows: ledger.windows, outputs: outputs).map { $0.map { Float($0) } }

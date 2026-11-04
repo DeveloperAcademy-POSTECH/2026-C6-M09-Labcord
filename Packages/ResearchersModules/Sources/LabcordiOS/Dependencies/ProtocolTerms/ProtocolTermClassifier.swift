@@ -117,6 +117,7 @@ nonisolated public enum ProtocolTermClassifier {
                 Array(terms.prefix(end)), labels: state.labels, usedFallback: state.usedFallback
             )
             try await checkpoint(result)
+            try Task.checkCancellation()
             await progress?(.classifyingTerms(completed: end, total: terms.count))
         }
     }

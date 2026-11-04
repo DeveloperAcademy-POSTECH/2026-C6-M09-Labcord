@@ -52,6 +52,16 @@ private actor NativeTermWorker {
     }
 }
 
-nonisolated enum NativeTermError: Error {
+nonisolated public enum NativeTermError: LocalizedError {
+    case tokenizerLoadFailed
+    case invalidCharacterVocabulary
     case invalidPrediction
+
+    public var errorDescription: String? {
+        switch self {
+        case .tokenizerLoadFailed: "토크나이저를 불러오지 못했습니다."
+        case .invalidCharacterVocabulary: "문자 어휘 파일의 형식이 올바르지 않습니다."
+        case .invalidPrediction: "모델의 추론 결과가 올바르지 않습니다."
+        }
+    }
 }

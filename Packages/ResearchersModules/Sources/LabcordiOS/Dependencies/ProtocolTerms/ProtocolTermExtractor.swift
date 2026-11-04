@@ -36,7 +36,7 @@ private actor ProtocolTermExtractionRuntime {
         let extractionStarted = extractionClock.now
         defer {
             let elapsed = String(describing: extractionStarted.duration(to: extractionClock.now))
-            logger.info("Term extraction finished after \(elapsed, privacy: .public)")
+            logger.info("Term extraction duration: \(elapsed, privacy: .public)")
         }
         try Task.checkCancellation()
         guard let resourceDirectory = ProtocolTermExtractor.resourceDirectory else {
