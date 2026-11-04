@@ -41,40 +41,6 @@ final class ExperimentListRepository {
         return Self.entry(experiment)
     }
 
-    func createWithProtocol(
-        id: UUID,
-        at date: Date,
-        title: String,
-        procedure: ExperimentProtocol
-    ) throws -> ExperimentListEntry {
-        let context = try store.makeContext()
-        if let existing = try store.find(id: id, in: context) {
-            guard existing.mode == .procedure,
-                  existing.title == title,
-                  let saved = existing.procedure,
-                  saved.timerSeconds == procedure.timerSeconds,
-                  saved.materials == procedure.materials,
-                  saved.samples == procedure.samples,
-                  saved.glossaryTerms == procedure.glossaryTerms,
-                  saved.units == procedure.units else {
-                throw ExperimentCreationError.conflictingIdentifier
-            }
-            return Self.entry(existing)
-        }
-
-        let experiment = Experiment(
-            id: id,
-            title: title,
-            createdAt: date,
-            startedAt: .now,
-            mode: .procedure,
-            procedure: procedure
-        )
-        context.insert(experiment)
-        try context.save()
-        return Self.entry(experiment)
-    }
-
     func delete(id: UUID) throws {
         let context = try store.makeContext()
         if let experiment = try store.find(id: id, in: context) {
