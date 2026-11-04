@@ -8,7 +8,6 @@
 import ComposableArchitecture
 import Foundation
 import LabcordiOS
-import LabcordShared
 
 @Reducer
 struct ExperimentResultFeature {
@@ -18,16 +17,6 @@ struct ExperimentResultFeature {
         case audio
         case video
         case timer
-
-        func includes(_ type: RecordType) -> Bool {
-            switch self {
-            case .all: true
-            case .photo: type == .photo
-            case .audio: type == .audio
-            case .video: type == .video
-            case .timer: type == .timer
-            }
-        }
     }
 
     enum RecordSort: CaseIterable, Hashable {
@@ -39,7 +28,7 @@ struct ExperimentResultFeature {
     struct State: Equatable {
         let experimentID: UUID
         let isOpenedFromHome: Bool
-        var detail: ExperimentResultDetail?
+        var recordTimeline: RecordTimelineFeature.State?
         var loadMessage: String?
         var selectedType: RecordFilter = .all
         var selectedSort: RecordSort = .oldest
@@ -49,24 +38,6 @@ struct ExperimentResultFeature {
             self.experimentID = experimentID
             self.isOpenedFromHome = isOpenedFromHome
         }
-
-        var displayedRecords: [ExperimentResultDetail.Record] {
-            guard let detail else { return [] }
-
-            let filteredRecords = detail.records.filter {
-                selectedType.includes($0.type)
-            }
-            return filteredRecords.sorted { lhs, rhs in
-                if lhs.recordedAt == rhs.recordedAt {
-                    return selectedSort == .oldest
-                        ? lhs.id.uuidString < rhs.id.uuidString
-                        : lhs.id.uuidString > rhs.id.uuidString
-                }
-                return selectedSort == .oldest
-                    ? lhs.recordedAt < rhs.recordedAt
-                    : lhs.recordedAt > rhs.recordedAt
-            }
-        }
     }
 
     enum Action: Equatable {
@@ -75,6 +46,7 @@ struct ExperimentResultFeature {
         case resultDetailLoadFailed
         case recordFilterSelected(RecordFilter)
         case recordSortSelected(RecordSort)
+        case recordTimeline(RecordTimelineFeature.Action)
         case editTapped
         case titleEditOverlay(TitleEditOverlayFeature.Action)
         case homeTapped
@@ -89,16 +61,21 @@ struct ExperimentResultFeature {
                 state.loadMessage = nil
                 let experimentID = state.experimentID
                 return .run { send in
+                    async let minimumDisplay = Task.sleep(for: .seconds(1))
                     do {
                         let detail = try await experimentClient.loadResultDetail(experimentID)
+                        try await minimumDisplay
                         await send(.resultDetailLoaded(detail))
+                    } catch is CancellationError {
+                        return
                     } catch {
+                        try? await minimumDisplay
                         await send(.resultDetailLoadFailed)
                     }
                 }
 
             case let .resultDetailLoaded(detail):
-                state.detail = detail
+                state.recordTimeline = detail.map { RecordTimelineFeature.State(detail: $0) }
                 state.loadMessage = detail == nil ? "실험을 찾을 수 없습니다." : nil
                 return .none
 
@@ -115,7 +92,7 @@ struct ExperimentResultFeature {
                 return .none
 
             case .editTapped:
-                guard let title = state.detail?.title else { return .none }
+                guard let title = state.recordTimeline?.detail.title else { return .none }
                 state.titleEditOverlay = TitleEditOverlayFeature.State(
                     experimentID: state.experimentID,
                     originalTitle: title
@@ -123,10 +100,10 @@ struct ExperimentResultFeature {
                 return .none
 
             case let .titleEditOverlay(.delegate(.saved(detail))):
-                guard detail.id == state.experimentID else { return .none }
-                state.detail = detail
+                guard detail.id == state.experimentID,
+                      state.recordTimeline != nil else { return .none }
                 state.titleEditOverlay = nil
-                return .none
+                return .send(.recordTimeline(.detailUpdated(detail)))
 
             case .titleEditOverlay(.delegate(.dismiss)):
                 state.titleEditOverlay = nil
@@ -135,12 +112,18 @@ struct ExperimentResultFeature {
             case .titleEditOverlay:
                 return .none
 
+            case .recordTimeline:
+                return .none
+
             case .homeTapped:
                 return .none
             }
         }
         .ifLet(\.titleEditOverlay, action: \.titleEditOverlay) {
             TitleEditOverlayFeature()
+        }
+        .ifLet(\.recordTimeline, action: \.recordTimeline) {
+            RecordTimelineFeature()
         }
     }
 }
