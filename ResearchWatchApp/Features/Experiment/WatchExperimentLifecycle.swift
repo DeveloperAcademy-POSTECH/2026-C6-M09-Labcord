@@ -7,9 +7,11 @@ extension WatchExperimentFeature {
     func activate(state: inout State) -> Effect<Action> {
         guard !state.isVisible else { return .none }
         state.isVisible = true
+        state.isReachable = false
         let streamID = uuid()
         state.streamID = streamID
         return .merge(
+            observeRecords(streamID),
             .run { [client] send in
                 let snapshots = await client.snapshots()
                 for await snapshot in snapshots {
@@ -36,12 +38,11 @@ extension WatchExperimentFeature {
         case let .snapshotReceived(id, snapshot):
             guard state.isVisible, state.streamID == id else { return .none }
             accept(snapshot, state: &state)
+            if state.countdownID == nil { return .cancel(id: CancelID.countdown) }
             return .none
         case let .streamEnded(id):
             guard state.streamID == id else { return .none }
-            state.isVisible = false
-            state.message = "상태 수신이 중단됐어요. 다시 연결해주세요."
-            return .cancel(id: CancelID.connection)
+            return endObservation(state: &state)
         case let .connectionChanged(id, reachable):
             guard state.streamID == id, state.isVisible else { return .none }
             let reconnected = !state.isReachable && reachable
@@ -57,6 +58,30 @@ extension WatchExperimentFeature {
         }
     }
 
+    private func endObservation(state: inout State) -> Effect<Action> {
+    state.isVisible = false
+    state.isRequestingPermission = false
+    state.cleanupRequestID = nil
+    state.isReachable = false
+    state.streamID = nil
+    state.startToken = nil
+    state.countdownID = nil
+    state.authorization = nil
+    state.isPreparingInterruption = false
+    if case .countdown = state.screen { state.screen = .experiment }
+    if let pending = state.pending,
+       WatchRequestPolicy.canAbandon(pending.command.operation) {
+        state.pending = nil
+    } else if state.pending != nil {
+        state.pending?.phase = .uncertain
+    }
+    state.message = "상태 수신이 중단됐어요. 다시 연결해주세요."
+    return .merge(
+        .merge(CancelID.all.map { .cancel(id: $0) }),
+        .send(.recording(.recoveryFailed))
+    )
+    }
+
     func accept(_ snapshot: WatchExperimentSnapshot, state: inout State) {
         let id = snapshot.experiment.id
         guard id == state.selectedID else { return }
@@ -64,19 +89,13 @@ extension WatchExperimentFeature {
             revision: snapshot.revision, previous: state.snapshots[id]?.revision
         ) else { return }
         state.snapshots[id] = snapshot
+        if snapshot.experiment.status != .ready, case .countdown = state.screen {
+            state.startToken = nil
+            state.countdownID = nil
+            state.screen = .experiment
+        }
         if let index = state.experiments.firstIndex(where: { $0.id == id }) {
             state.experiments[index] = snapshot.experiment
         }
-    }
-}
-
-enum WatchPresentationRules {
-    static func accepts(revision: UInt64, previous: UInt64?) -> Bool {
-        previous.map { revision > $0 } ?? true
-    }
-
-    static func time(_ seconds: Int) -> String {
-        let value = max(0, seconds)
-        return String(format: "%02d:%02d:%02d", value / 3600, value / 60 % 60, value % 60)
     }
 }

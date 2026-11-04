@@ -6,24 +6,45 @@ struct WatchExperimentView: View {
     let store: StoreOf<WatchExperimentFeature>
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 12) {
-                screen
-                if let message = store.message {
-                    Text(message)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .accessibilityLabel("안내: \(message)")
+        Group {
+            if store.screen == .timers, store.recording.focused == nil {
+                WatchTimersView(store: store)
+            } else {
+                ScrollView {
+                    VStack(spacing: 12) {
+                        if store.screen == .recordCleanup {
+                            recordCleanup
+                        } else if let record = store.recording.focused {
+                            WatchRecordView(
+                                store: store.scope(state: \.recording, action: \.recording),
+                                record: record
+                            )
+                        } else {
+                            screen
+                        }
+                        if let message = store.message {
+                            Text(message)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .accessibilityLabel("안내: \(message)")
+                        }
+                        requestStatus
+                    }
+                    .padding(.horizontal, 8)
                 }
-                requestStatus
             }
-            .padding(.horizontal, 8)
         }
         .navigationTitle(title)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 if store.screen != .selection {
-                    Button("닫기", systemImage: "xmark") { store.send(.closeTapped) }
+                    Button("닫기", systemImage: "xmark") {
+                        if store.recording.focused != nil, store.screen != .recordCleanup {
+                            store.send(.recording(.close))
+                        } else {
+                            store.send(.closeTapped)
+                        }
+                    }
                         .labelStyle(.iconOnly)
                 }
             }
@@ -38,9 +59,13 @@ struct WatchExperimentView: View {
         case .countdown: "실험 준비"
         case .confirmPause: "실험 중단"
         case .confirmComplete: "실험 종료"
+        case .confirmResume: "실험 재개"
+        case .recordCleanup: "실험 기록"
         case .connection: "연결 상태"
         case .gestures: "제스처 설정"
         case .experiment: store.selectedTitle
+        case .timers: "타이머"
+        case .timerEditor: "타이머 설정"
         }
     }
 
@@ -66,8 +91,19 @@ struct WatchExperimentView: View {
                 .font(.caption)
             Button("실험 종료", role: .destructive) { store.send(.confirmed) }
             Button("취소", role: .cancel) { store.send(.closeTapped) }
+        case .confirmResume:
+            Text("실험을 이어할까요?")
+            Button("실험 재개") { store.send(.resumeConfirmed) }
+                .disabled(!store.canOperate)
+            Button("취소", role: .cancel) { store.send(.closeTapped) }
+        case .recordCleanup:
+            recordCleanup
         case .connection:
             connection
+        case .timers:
+            WatchTimersView(store: store)
+        case .timerEditor:
+            WatchTimerEditorView(store: store)
         case .gestures:
             Text("Watch 설정 → 손쉬운 사용 → AssistiveTouch에서 손 제스처 연결 방식을 확인해주세요.")
             Text("현재는 아래 화면 버튼으로 기록할 수 있어요. 제스처의 단축어 연결·실행 지원은 별도 확인이 필요해요.")
@@ -116,18 +152,23 @@ struct WatchExperimentView: View {
                     .disabled(!store.canOperate)
             case .running:
                 Text("실험 진행 중")
+                Button("타이머", systemImage: "timer") { store.send(.timersTapped) }
+                WatchRecordControls(store: store)
                 Button("실험 중단", systemImage: "pause.fill") { store.send(.pauseTapped) }
                     .disabled(!store.canOperate)
                 Button("실험 종료", role: .destructive) { store.send(.completeTapped) }
                     .disabled(!store.canOperate)
             case .paused:
                 Text("실험이 중단됐어요.")
+                Button("타이머 상태", systemImage: "timer") { store.send(.timersTapped) }
+                WatchRecordControls(store: store)
                 Button("실험 재개", systemImage: "play.fill") { store.send(.resumeTapped) }
                     .disabled(!store.canOperate)
                 Button("실험 종료", role: .destructive) { store.send(.completeTapped) }
                     .disabled(!store.canOperate)
             case .completed:
                 Text("실험이 종료됐어요.")
+                WatchRecordControls(store: store)
                 Text("기록 저장·정리 결과는 iPhone에서 확인해주세요.")
                     .font(.caption)
             }
@@ -141,10 +182,20 @@ struct WatchExperimentView: View {
         }
         Button("제스처 설정") { store.send(.gesturesTapped) }
         Button("실험 목록") { store.send(.backTapped) }
-            .disabled(store.pending != nil)
+            .disabled(store.pending != nil
+                      || store.recording.hasUnsettledRecords(in: store.selectedID))
     }
 
+    @ViewBuilder
     private var permission: some View {
+        if store.isRequestingPermission {
+            WatchPreparationView(value: "준비")
+        } else {
+            permissionPrompt
+        }
+    }
+
+    private var permissionPrompt: some View {
         VStack(spacing: 8) {
             Text(store.permissionDenied ? "마이크 권한이 꺼져 있어요." : "마이크 권한 허용")
                 .font(.headline)
