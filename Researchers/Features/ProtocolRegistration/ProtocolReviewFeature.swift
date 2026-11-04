@@ -4,6 +4,8 @@ import LabcordiOS
 
 @Reducer
 struct ProtocolReviewFeature {
+    static let maximumTimerSeconds = Int(Double(Int.max).nextDown)
+
     @ObservableState
     struct State: Equatable {
         var title: String
@@ -19,6 +21,12 @@ struct ProtocolReviewFeature {
         var titleValid: Bool {
             !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 && title.count <= 60
+        }
+
+        var timersValid: Bool {
+            timerSeconds.allSatisfy {
+                (1...ProtocolReviewFeature.maximumTimerSeconds).contains($0)
+            }
         }
 
         var hasUncommittedTerm: Bool {
@@ -96,7 +104,7 @@ struct ProtocolReviewFeature {
             case let .removeTerm(category, id):
                 state.terms[category]?.removeAll { $0.id == id }
             case let .saveTimer(index, seconds):
-                guard seconds > 0 else { return .none }
+                guard (1...Self.maximumTimerSeconds).contains(seconds) else { return .none }
                 if let index, state.timerSeconds.indices.contains(index) {
                     state.timerSeconds[index] = seconds
                 } else if index == nil {

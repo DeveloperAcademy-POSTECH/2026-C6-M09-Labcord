@@ -275,7 +275,7 @@ private extension AppFeature {
     func registerReview(_ state: inout State, id: StackElementID) -> Effect<Action> {
         guard !state.reviewSaving, state.path.ids.last == id,
               let review = state.path[id: id, case: \.review], review.titleValid,
-              !review.hasUncommittedTerm else { return .none }
+              review.timersValid, !review.hasUncommittedTerm else { return .none }
         if state.savedReview != nil {
             state.reviewSaving = true
             let jobID = state.reviewRegistrationID.flatMap {
