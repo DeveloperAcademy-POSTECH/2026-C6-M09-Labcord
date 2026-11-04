@@ -23,6 +23,7 @@ struct ProtocolRegistrationFeature {
         var pendingID: UUID?
         var hasFailed = false
         var importing = false
+        var restoringAnalysis = true
         var importedPhotos: [ImportedProtocolInput] = []
         var importedFile: ImportedProtocolInput?
         var analysisJobID: UUID?
@@ -102,6 +103,7 @@ struct ProtocolRegistrationFeature {
         case removePhoto(UUID)
         case removeFile
         case restoreAnalysisJob(ProtocolAnalysisJobSnapshot)
+        case restoreCheckFinished
         case analysisJobUpdated(ProtocolAnalysisJobSnapshot)
         case analysisJobFailed(UUID)
         case startAnalysis(UUID)
@@ -109,7 +111,7 @@ struct ProtocolRegistrationFeature {
         case cancelAnalysis
         case showReview
         case clearImportedInputs
-        case invalidationFinished(UUID, Bool)
+        case invalidationFinished(UUID, Bool, [ImportedProtocolInput])
         case retryInvalidation
     }
 
@@ -130,7 +132,7 @@ struct ProtocolRegistrationFeature {
         Reduce { state, action in
             switch action {
             case .backTapped:
-                guard !state.importing, state.analysisID == nil,
+                guard !state.restoringAnalysis, !state.importing, state.analysisID == nil,
                       state.invalidatingJobID == nil else { return .none }
                 return invalidateAnalysis(into: &state, then: .back)
 
@@ -147,8 +149,8 @@ struct ProtocolRegistrationFeature {
                 return invalidateAnalysis(into: &state, then: .clear)
 
             case .skipTapped:
-                guard !state.isSaving, !state.hasFailed, !state.importing,
-                      state.invalidatingJobID == nil else { return .none }
+                guard !state.restoringAnalysis, !state.isSaving, !state.hasFailed,
+                      !state.importing, state.invalidatingJobID == nil else { return .none }
                 if state.analysisStarting {
                     state.afterStart = .skip
                     state.analysisCancellationRequested = true
@@ -194,6 +196,10 @@ struct ProtocolRegistrationFeature {
             case .sourceTapped:
                 return .none
 
+            case .restoreCheckFinished:
+                state.restoringAnalysis = false
+                return .none
+
             case .importStarted:
                 state.importing = true
                 return .none
@@ -228,8 +234,13 @@ struct ProtocolRegistrationFeature {
                 state.importedFile = nil
                 return invalidateAnalysis(into: &state)
 
-            case let .invalidationFinished(id, succeeded):
+            case let .invalidationFinished(id, succeeded, preserved):
                 guard state.invalidatingJobID == id else { return .none }
+                let copies = Dictionary(uniqueKeysWithValues: preserved.map { ($0.id, $0) })
+                state.importedPhotos = state.importedPhotos.map { copies[$0.id] ?? $0 }
+                if let file = state.importedFile {
+                    state.importedFile = copies[file.id] ?? file
+                }
                 if succeeded {
                     state.invalidatingJobID = nil
                     state.invalidationFailed = false
@@ -249,10 +260,9 @@ struct ProtocolRegistrationFeature {
                     return .none
                 }
                 state.invalidationFailed = false
-                return .run { send in
-                    let succeeded = await jobManager.cancel(id: id)
-                    await send(.invalidationFinished(id, succeeded))
-                }
+                return invalidateEffect(
+                    id: id, inputs: state.selectedInputs, then: state.afterInvalidation
+                )
 
             case .restoreAnalysisJob, .analysisJobUpdated, .analysisJobFailed,
                  .startAnalysis, .analysisStartFinished:
@@ -292,9 +302,23 @@ extension ProtocolRegistrationFeature {
         state.analysisPaused = false
         state.invalidationFailed = false
         state.analysisCancellationRequested = state.analysisID != nil
-        return .run { send in
-            let succeeded = await jobManager.cancel(id: id)
-            await send(.invalidationFinished(id, succeeded))
+        return invalidateEffect(id: id, inputs: state.selectedInputs, then: next)
+    }
+
+    func invalidateEffect(
+        id: UUID, inputs: [ImportedProtocolInput], then next: AfterInvalidation?
+    ) -> Effect<Action> {
+        .run { send in
+            do {
+                var copies: [ImportedProtocolInput] = []
+                if next == nil || next == .inputsChanged {
+                    for input in inputs { copies.append(try await input.preservedCopy()) }
+                }
+                let succeeded = await jobManager.cancel(id: id)
+                await send(.invalidationFinished(id, succeeded, copies))
+            } catch {
+                await send(.invalidationFinished(id, false, []))
+            }
         }
     }
 

@@ -45,6 +45,7 @@ struct ProtocolRegistrationView: View {
                 setupContent
             }
         }
+        .disabled(store.restoringAnalysis)
         .alert("실험을 저장하지 못했어요", isPresented: Binding(
             get: { store.hasFailed },
             set: { if !$0 { store.send(.dismissFailure) } }
@@ -109,6 +110,7 @@ struct ProtocolRegistrationView: View {
             } catch {
                 recoveryFailed = true
             }
+            store.send(.restoreCheckFinished)
             for await update in await jobManager.updates() {
                 guard !Task.isCancelled else { break }
                 store.send(.analysisJobUpdated(update))
@@ -128,8 +130,9 @@ struct ProtocolRegistrationView: View {
                         showExitConfirmation = true
                     }
                 }
-                .disabled(store.isSaving || store.importing || store.analysisID != nil
-                          || store.invalidatingJobID != nil || store.analysisStarting)
+                .disabled(store.restoringAnalysis || store.isSaving || store.importing
+                          || store.analysisID != nil || store.invalidatingJobID != nil
+                          || store.analysisStarting)
                 .accessibilityIdentifier("entry-back")
             }
         }

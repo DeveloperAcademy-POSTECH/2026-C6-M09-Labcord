@@ -69,7 +69,8 @@ private extension ProtocolRegistrationFeature {
     }
 
     func startAnalysis(_ id: UUID, state: inout State) -> Effect<Action> {
-        guard state.analysisID == nil, !state.analysisStarting, state.invalidatingJobID == nil,
+        guard !state.restoringAnalysis, state.analysisID == nil, !state.analysisStarting,
+              state.invalidatingJobID == nil,
               !state.importing, !state.isSaving,
               !state.pendingInputs.isEmpty || state.analysisPaused else { return .none }
         let isResuming = state.analysisJobID != nil

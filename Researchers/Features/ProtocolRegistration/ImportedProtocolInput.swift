@@ -12,12 +12,14 @@ nonisolated struct ImportedProtocolInput: Identifiable, Equatable, Sendable, Tra
     let url: URL
     let name: String
     private let ownership: ImportedInputOwnership
+    private let isRecovered: Bool
 
     private init(id: UUID, url: URL, name: String, removeOnRelease: Bool = true) {
         self.id = id
         self.url = url
         self.name = name
         self.ownership = ImportedInputOwnership(url: url, removeOnRelease: removeOnRelease)
+        self.isRecovered = !removeOnRelease
     }
 
     static func recovered(id: UUID, url: URL, name: String) -> Self {
@@ -46,10 +48,29 @@ nonisolated struct ImportedProtocolInput: Identifiable, Equatable, Sendable, Tra
         }
     }
 
-    private static func copyOwned(_ source: URL, useSecurityScope: Bool) throws -> Self {
-        let id = UUID()
+    func preservedCopy() async throws -> Self {
+        guard isRecovered else { return self }
+        let result: Self = try await withCheckedThrowingContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                do {
+                    continuation.resume(returning: try Self.copyOwned(
+                        self.url, useSecurityScope: false, inputID: self.id, inputName: self.name
+                    ))
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+        try Task.checkCancellation()
+        return result
+    }
+
+    private static func copyOwned(
+        _ source: URL, useSecurityScope: Bool, inputID: UUID? = nil, inputName: String? = nil
+    ) throws -> Self {
+        let id = inputID ?? UUID()
         let target = FileManager.default.temporaryDirectory
-            .appendingPathComponent("labcord-protocol-\(id.uuidString)")
+            .appendingPathComponent("labcord-protocol-\(UUID().uuidString)")
             .appendingPathExtension(source.pathExtension)
         let scoped = useSecurityScope && source.startAccessingSecurityScopedResource()
         defer { if scoped { source.stopAccessingSecurityScopedResource() } }
@@ -63,7 +84,7 @@ nonisolated struct ImportedProtocolInput: Identifiable, Equatable, Sendable, Tra
             try? FileManager.default.removeItem(at: target)
             throw error
         }
-        return Self(id: id, url: target, name: source.lastPathComponent)
+        return Self(id: id, url: target, name: inputName ?? source.lastPathComponent)
     }
 
     private static func coordinatedCopy(_ source: URL, to target: URL) throws {
