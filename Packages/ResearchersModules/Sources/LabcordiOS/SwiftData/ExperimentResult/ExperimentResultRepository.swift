@@ -32,7 +32,8 @@ final class ExperimentResultRepository {
         experimentID: UUID,
         recordID: UUID,
         note: String,
-        transcript: String?
+        transcript: String?,
+        timerEventID: String?
     ) throws -> ExperimentResultDetail {
         let context = try store.makeContext()
         guard let experiment = try store.find(id: experimentID, in: context) else {
@@ -41,7 +42,34 @@ final class ExperimentResultRepository {
         guard let record = experiment.records.first(where: { $0.id == recordID }) else {
             throw RecordError.notFound
         }
-        record.note = String(note.prefix(300))
+        let savedNote = String(note.prefix(300))
+        if record.type == .timer {
+            guard let timerEventID else { throw RecordError.timerEventNotFound }
+            if timerEventID == "timer-start-\(record.id)" {
+                record.note = savedNote
+            } else {
+                let isEnd = timerEventID == "timer-end-\(record.id)"
+                    && record.timerEndedAt != nil
+                let isPauseEvent = record.timerPauses.contains { pause in
+                    timerEventID == "timer-pause-\(pause.id)"
+                        || (pause.resumedAt != nil && timerEventID == "timer-resume-\(pause.id)")
+                }
+                guard isEnd || isPauseEvent else { throw RecordError.timerEventNotFound }
+
+                guard var notes = Self.timerEventNotes(for: record) else {
+                    throw RecordError.invalidTimerEventNotes
+                }
+                if savedNote.isEmpty {
+                    notes.removeValue(forKey: timerEventID)
+                } else {
+                    notes[timerEventID] = savedNote
+                }
+                record.timerEventNotesData = notes.isEmpty
+                    ? nil : try JSONEncoder().encode(notes)
+            }
+        } else {
+            record.note = savedNote
+        }
         if record.type == .audio, let transcript {
             record.transcript = String(transcript.prefix(300))
         }
@@ -71,6 +99,13 @@ final class ExperimentResultRepository {
 
     private enum RecordError: Error {
         case notFound
+        case timerEventNotFound
+        case invalidTimerEventNotes
+    }
+
+    private static func timerEventNotes(for record: ExperimentRecord) -> [String: String]? {
+        guard let data = record.timerEventNotesData else { return [:] }
+        return try? JSONDecoder().decode([String: String].self, from: data)
     }
 
     private static func resultDetail(_ experiment: Experiment) -> ExperimentResultDetail {
@@ -117,6 +152,7 @@ final class ExperimentResultRepository {
             note: record.note,
             filePath: record.filePath,
             transcript: record.transcript,
+            timerEventNotes: timerEventNotes(for: record) ?? [:],
             timerDurationSeconds: record.timerDurationSeconds,
             timerEndedAt: record.timerEndedAt,
             timerPauses: record.timerPauses.map {
