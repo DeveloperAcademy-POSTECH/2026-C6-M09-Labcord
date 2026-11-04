@@ -5,25 +5,32 @@ import SwiftUI
 
 struct ExperimentRecordSheetView: View {
     let entry: ExperimentResultDetail.TimelineEntry
+    @Binding var note: String
+    let canSave: Bool
     let onDismiss: () -> Void
+    let onSave: () -> Void
+    let onDelete: () -> Void
 
     var body: some View {
         if let presentation = ExperimentRecordSheetPresentation(entry: entry) {
             let record = presentation.record
             RecordBottomSheet(
                 type: presentation.type,
+                contentState: canSave ? .filled : .empty,
                 setDuration: presentation.timer?.setDuration ?? "",
                 timerState: presentation.timer?.state ?? .start,
                 timerElapsedTime: presentation.timer?.elapsedTime ?? "",
                 timerCumulativeTime: presentation.timer?.cumulativeTime ?? "",
                 timerPauseCount: presentation.timer?.pauseCount ?? "",
                 voiceContent: voiceContent(for: presentation),
+                note: $note,
                 mediaContent: mediaContent(for: presentation),
                 transcriptContent: AnyView(readOnlyText(record.transcript ?? "")),
-                noteContent: AnyView(readOnlyText(record.note)),
                 transcriptHelp: "",
                 onDismiss: onDismiss,
-                showsActions: false
+                onSave: onSave,
+                onDelete: onDelete,
+                showsHeader: false
             )
         }
     }
