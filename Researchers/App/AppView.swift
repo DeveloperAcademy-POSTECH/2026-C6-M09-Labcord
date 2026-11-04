@@ -26,10 +26,13 @@ struct AppView: View {
                     .disabled(self.store.savedReview != nil)
                     .overlay(alignment: .bottom) {
                         if self.store.savedReview != nil {
-                            Button("정리 다시 시도") { self.store.send(.retryReviewSave) }
-                                .padding()
-                                .background(.regularMaterial, in: Capsule())
-                                .padding()
+                            VStack {
+                                Button("정리 다시 시도") { self.store.send(.retryReviewSave) }
+                                Button("저장된 실험으로 이동") { self.store.send(.openSavedReview) }
+                            }
+                            .padding()
+                            .background(.regularMaterial, in: Capsule())
+                            .padding()
                         }
                     }
                     .navigationSwipeBackEnabled(false)
@@ -49,9 +52,22 @@ struct AppView: View {
             set: { if !$0 { store.send(.dismissReviewSaveFailure) } }
         )) {
             Button("재시도") { store.send(.retryReviewSave) }
+            if store.savedReview != nil {
+                Button("저장된 실험으로 이동") { store.send(.openSavedReview) }
+            }
             Button("닫기", role: .cancel) { store.send(.dismissReviewSaveFailure) }
         } message: {
-            Text("입력한 내용은 유지돼요. 다시 시도해 주세요.")
+            Text(store.savedReview == nil
+                 ? "입력한 내용은 유지돼요. 다시 시도해 주세요."
+                 : "실험은 저장됐지만 정리되지 않은 분석 파일이 남을 수 있어요.")
+        }
+        .alert("이미 저장된 실험이에요", isPresented: Binding(
+            get: { store.reviewAlreadySaved },
+            set: { if !$0 { store.send(.openSavedReview) } }
+        )) {
+            Button("저장된 실험으로 이동") { store.send(.openSavedReview) }
+        } message: {
+            Text("이 분석으로 저장한 실험이 있어요. 이번에 편집한 내용은 반영되지 않아요.")
         }
         .alert("결과 편집을 종료할까요?", isPresented: Binding(
             get: { store.reviewExitRequested },

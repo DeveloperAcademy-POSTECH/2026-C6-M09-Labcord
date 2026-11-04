@@ -15,11 +15,10 @@ struct ProtocolReviewFeature {
         var termError: String?
         var attemptedRegistration = false
         var titleEdited = false
-        var titleTooLong = false
 
         var titleValid: Bool {
             !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                && title.count <= 60 && !titleTooLong
+                && title.count <= 60
         }
 
         var hasUncommittedTerm: Bool {
@@ -27,7 +26,6 @@ struct ProtocolReviewFeature {
         }
 
         var titleError: String? {
-            if titleTooLong { return "실험 이름은 60자까지 입력할 수 있어요." }
             if titleEdited && title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 return "실험 이름을 입력해 주세요."
             }
@@ -56,7 +54,6 @@ struct ProtocolReviewFeature {
             switch action {
             case let .titleChanged(title):
                 state.titleEdited = true
-                state.titleTooLong = title.count > 60
                 state.title = String(title.prefix(60))
             case let .expandedChanged(category, isExpanded):
                 if isExpanded {

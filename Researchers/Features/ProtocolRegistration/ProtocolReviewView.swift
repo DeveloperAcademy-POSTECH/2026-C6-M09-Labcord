@@ -207,6 +207,7 @@ private struct TimerEditorSheet: View {
     let onDelete: (Int?) -> Void
     let onCancel: () -> Void
     @State private var duration: Duration
+    @State private var invalidDuration = false
 
     init(
         editor: TimerEditor,
@@ -227,7 +228,17 @@ private struct TimerEditorSheet: View {
         } onDelete: {
             onDelete(editor.index)
         } onConfirm: {
-            onConfirm(editor.index, Int(duration.components.seconds))
+            let seconds = Int(duration.components.seconds)
+            guard (1...86_399).contains(seconds) else {
+                invalidDuration = true
+                return
+            }
+            onConfirm(editor.index, seconds)
+        }
+        .alert("타이머 시간을 확인해 주세요", isPresented: $invalidDuration) {
+            Button("확인", role: .cancel) {}
+        } message: {
+            Text("1초부터 23시간 59분 59초까지 설정해 주세요.")
         }
     }
 }

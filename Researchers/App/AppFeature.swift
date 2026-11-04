@@ -20,6 +20,7 @@ struct AppFeature {
         var path = StackState<Path.State>()
         var reviewSaving = false
         var reviewSaveFailed = false
+        var reviewAlreadySaved = false
         var reviewExitRequested = false
         var reviewPendingID: UUID?
         var reviewRegistrationID: StackElementID?
@@ -38,6 +39,8 @@ struct AppFeature {
             StackElementID, Result<ExperimentListEntry, ProtocolRegistrationFeature.SaveFailure>
         )
         case reviewCleanupFinished(StackElementID, Bool)
+        case reviewPreviouslySaved(StackElementID, ExperimentListEntry)
+        case openSavedReview
         case retryReviewSave
         case dismissReviewSaveFailure
         case confirmReviewExit
@@ -164,46 +167,30 @@ struct AppFeature {
                 return .none
 
             case let .path(.element(id: id, action: .review(.registerTapped))):
-                guard !state.reviewSaving, state.path.ids.last == id,
-                      let review = state.path[id: id, case: \.review], review.titleValid,
-                      !review.hasUncommittedTerm else { return .none }
-                if state.savedReview != nil {
-                    state.reviewSaving = true
-                    let jobID = state.reviewRegistrationID.flatMap {
-                        state.path[id: $0, case: \.registration]?.analysisJobID
-                    }
-                    return .run { send in
-                        let success = if let jobID {
-                            await jobManager.cancel(id: jobID)
-                        } else {
-                            true
-                        }
-                        await send(.reviewCleanupFinished(id, success))
-                    }
-                }
-                let procedure = ExperimentProtocol(
-                    timerSeconds: review.timerSeconds,
-                    materials: review.terms[.materials, default: []].map(\.value),
-                    samples: review.terms[.samples, default: []].map(\.value),
-                    glossaryTerms: review.terms[.glossary, default: []].map(\.value),
-                    units: review.terms[.units, default: []].map(\.value)
-                )
-                let identifier = state.reviewPendingID ?? uuid()
-                state.reviewPendingID = identifier
-                state.reviewSaving = true
+                return registerReview(&state, id: id)
+
+            case let .reviewPreviouslySaved(id, entry):
+                guard state.reviewSaving, state.path.ids.last == id else { return .none }
+                state.reviewSaving = false
+                state.savedReview = entry
+                state.reviewAlreadySaved = true
+                return .none
+
+            case .openSavedReview:
+                guard !state.reviewSaving, let entry = state.savedReview else { return .none }
+                state.reviewAlreadySaved = false
                 state.reviewSaveFailed = false
-                let date = now
-                let title = review.title.trimmingCharacters(in: .whitespacesAndNewlines)
-                return .run { send in
-                    do {
-                        let entry = try await experimentClient.createWithProtocol(
-                            identifier, date, title, procedure
-                        )
-                        await send(.reviewSaved(id, .success(entry)))
-                    } catch {
-                        await send(.reviewSaved(id, .failure(.saving)))
-                    }
+                state.savedReview = nil
+                state.reviewPendingID = nil
+                state.path.removeAll()
+                if entry.status == .completed {
+                    state.path.append(.result(.init(
+                        experimentID: entry.id, isOpenedFromHome: true
+                    )))
+                } else {
+                    state.path.append(.session(.init(experimentID: entry.id)))
                 }
+                return .send(.home(.list(.created(entry))))
 
             case let .reviewSaved(id, result):
                 guard state.reviewSaving, state.path.ids.last == id else { return .none }
@@ -278,6 +265,61 @@ struct AppFeature {
             }
         }
         .forEach(\.path, action: \.path)
+    }
+}
+
+private extension AppFeature {
+    func registerReview(_ state: inout State, id: StackElementID) -> Effect<Action> {
+        guard !state.reviewSaving, state.path.ids.last == id,
+              let review = state.path[id: id, case: \.review], review.titleValid,
+              !review.hasUncommittedTerm else { return .none }
+        if state.savedReview != nil {
+            state.reviewSaving = true
+            let jobID = state.reviewRegistrationID.flatMap {
+                state.path[id: $0, case: \.registration]?.analysisJobID
+            }
+            return .run { send in
+                let success = if let jobID {
+                    await jobManager.cancel(id: jobID)
+                } else {
+                    true
+                }
+                await send(.reviewCleanupFinished(id, success))
+            }
+        }
+        let procedure = ExperimentProtocol(
+            timerSeconds: review.timerSeconds,
+            materials: review.terms[.materials, default: []].map(\.value),
+            samples: review.terms[.samples, default: []].map(\.value),
+            glossaryTerms: review.terms[.glossary, default: []].map(\.value),
+            units: review.terms[.units, default: []].map(\.value)
+        )
+        let jobID = state.reviewRegistrationID.flatMap {
+            state.path[id: $0, case: \.registration]?.analysisJobID
+        }
+        let identifier = state.reviewPendingID ?? jobID ?? uuid()
+        state.reviewPendingID = identifier
+        state.reviewSaving = true
+        state.reviewSaveFailed = false
+        let date = now
+        let title = review.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        return .run { send in
+            do {
+                if jobID != nil,
+                   let existing = try await experimentClient.load().first(where: {
+                       $0.id == identifier
+                   }) {
+                    await send(.reviewPreviouslySaved(id, existing))
+                    return
+                }
+                let entry = try await experimentClient.createWithProtocol(
+                    identifier, date, title, procedure
+                )
+                await send(.reviewSaved(id, .success(entry)))
+            } catch {
+                await send(.reviewSaved(id, .failure(.saving)))
+            }
+        }
     }
 }
 
