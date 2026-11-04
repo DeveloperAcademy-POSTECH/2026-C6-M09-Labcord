@@ -266,9 +266,11 @@ public struct RecordBottomSheet: View {
             dismiss()
         }
     }
+}
 
+private extension RecordBottomSheet {
     @ViewBuilder
-    private var recordContent: some View {
+    var recordContent: some View {
         switch type {
         case .timer:
             TimerRecord(
@@ -312,7 +314,7 @@ public struct RecordBottomSheet: View {
         }
     }
 
-    private var noteField: some View {
+    var noteField: some View {
         VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
             Text("메모")
                 .typography(Typography.calloutSemiBold)
@@ -329,7 +331,7 @@ public struct RecordBottomSheet: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var actions: some View {
+    var actions: some View {
         HStack(spacing: LayoutTokens.spacing12) {
             Button(role: .destructive, action: onDelete) {
                 Text("삭제")
@@ -351,12 +353,10 @@ public struct RecordBottomSheet: View {
         .padding(.top, 8)
     }
 
-    private var canSave: Bool {
+    var canSave: Bool {
         contentState == .filled
     }
-}
 
-private extension RecordBottomSheet {
     var bottomPadding: CGFloat {
         let base = isPresented ? 0 : LayoutTokens.spacing32
         return base + (isKeyboardVisible ? LayoutTokens.spacing16 : 0)

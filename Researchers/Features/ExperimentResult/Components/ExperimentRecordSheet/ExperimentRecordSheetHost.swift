@@ -44,9 +44,13 @@ struct ExperimentRecordSheetHost: View {
 
                 VStack(spacing: 0) {
                     RecordBottomSheetHeader(onDismiss: onDismiss)
-                        .onGeometryChange(for: CGFloat.self) { headerGeometry in
-                            headerGeometry.size.height.rounded(.up)
-                        } action: { headerHeight = $0 }
+                        .onGeometryChange(
+                            for: CGFloat.self,
+                            of: { headerGeometry in
+                                headerGeometry.size.height.rounded(.up)
+                            },
+                            action: { headerHeight = $0 }
+                        )
 
                     ScrollViewReader { proxy in
                         ScrollView {
@@ -63,18 +67,24 @@ struct ExperimentRecordSheetHost: View {
                                 onOpenVideoFullScreen: { fullScreenVideoPlayer = $0 }
                             )
                                 .frame(maxWidth: .infinity)
-                                .onGeometryChange(for: CGFloat.self) { contentGeometry in
-                                    contentGeometry.size.height.rounded(.up)
-                                } action: { contentHeight = $0 }
+                                .onGeometryChange(
+                                    for: CGFloat.self,
+                                    of: { contentGeometry in
+                                        contentGeometry.size.height.rounded(.up)
+                                    },
+                                    action: { contentHeight = $0 }
+                                )
                                 .alert(
                                     "기록을 삭제할까요?",
-                                    isPresented: $isDeleteConfirmationPresented
-                                ) {
-                                    Button("기록 삭제", role: .destructive, action: onConfirmDelete)
-                                    Button("취소", role: .cancel, action: onCancelDelete)
-                                } message: {
-                                    Text("삭제한 기록은 복구할 수 없어요.")
-                                }
+                                    isPresented: $isDeleteConfirmationPresented,
+                                    actions: {
+                                        Button("기록 삭제", role: .destructive, action: onConfirmDelete)
+                                        Button("취소", role: .cancel, action: onCancelDelete)
+                                    },
+                                    message: {
+                                        Text("삭제한 기록은 복구할 수 없어요.")
+                                    }
+                                )
                         }
                         .scrollIndicators(.hidden)
                         .scrollBounceBehavior(.basedOnSize)
@@ -126,11 +136,11 @@ struct ExperimentRecordSheetHost: View {
         .alert("기록 변경 실패", isPresented: Binding(
             get: { saveMessage != nil },
             set: { if !$0 { saveMessage = nil } }
-        )) {
+        ), actions: {
             Button("확인") { saveMessage = nil }
-        } message: {
+        }, message: {
             Text(saveMessage ?? "")
-        }
+        })
     }
 
     private var headerDragArea: some View {
