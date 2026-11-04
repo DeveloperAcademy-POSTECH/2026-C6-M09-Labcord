@@ -12,6 +12,7 @@ struct ExperimentRecordSheetView: View {
     let onDismiss: () -> Void
     let onSave: () -> Void
     let onDelete: () -> Void
+    let onScrollTargetChange: (RecordBottomSheetScrollTarget?) -> Void
     let isVideoFullScreen: Bool
     let onOpenVideoFullScreen: (AVPlayer) -> Void
 
@@ -30,6 +31,7 @@ struct ExperimentRecordSheetView: View {
                 note: $note,
                 mediaContent: mediaContent(for: presentation),
                 onDismiss: onDismiss,
+                onScrollTargetChange: onScrollTargetChange,
                 onSave: onSave,
                 onDelete: onDelete,
                 showsHeader: false

@@ -19,6 +19,7 @@ struct ExperimentRecordSheetHost: View {
     @State private var contentHeight: CGFloat = 0
     @State private var headerHeight: CGFloat = 0
     @State private var fullScreenVideoPlayer: AVPlayer?
+    @State private var scrollTarget: RecordBottomSheetScrollTarget?
     @State private var dragOffset: CGFloat = 0
     @State private var isDismissing = false
     @GestureState private var isHeaderDragging = false
@@ -47,36 +48,48 @@ struct ExperimentRecordSheetHost: View {
                             headerGeometry.size.height.rounded(.up)
                         } action: { headerHeight = $0 }
 
-                    ScrollView {
-                        ExperimentRecordSheetView(
-                            entry: entry,
-                            note: $note,
-                            transcript: $transcript,
-                            canSave: canSave,
-                            onDismiss: onDismiss,
-                            onSave: onSave,
-                            onDelete: onDelete,
-                            isVideoFullScreen: fullScreenVideoPlayer != nil,
-                            onOpenVideoFullScreen: { fullScreenVideoPlayer = $0 }
-                        )
-                            .frame(maxWidth: .infinity)
-                            .onGeometryChange(for: CGFloat.self) { contentGeometry in
-                                contentGeometry.size.height.rounded(.up)
-                            } action: { contentHeight = $0 }
-                            .alert(
-                                "기록을 삭제할까요?",
-                                isPresented: $isDeleteConfirmationPresented
-                            ) {
-                                Button("기록 삭제", role: .destructive, action: onConfirmDelete)
-                                Button("취소", role: .cancel, action: onCancelDelete)
-                            } message: {
-                                Text("삭제한 기록은 복구할 수 없어요.")
-                            }
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            ExperimentRecordSheetView(
+                                entry: entry,
+                                note: $note,
+                                transcript: $transcript,
+                                canSave: canSave,
+                                onDismiss: onDismiss,
+                                onSave: onSave,
+                                onDelete: onDelete,
+                                onScrollTargetChange: { scrollTarget = $0 },
+                                isVideoFullScreen: fullScreenVideoPlayer != nil,
+                                onOpenVideoFullScreen: { fullScreenVideoPlayer = $0 }
+                            )
+                                .frame(maxWidth: .infinity)
+                                .onGeometryChange(for: CGFloat.self) { contentGeometry in
+                                    contentGeometry.size.height.rounded(.up)
+                                } action: { contentHeight = $0 }
+                                .alert(
+                                    "기록을 삭제할까요?",
+                                    isPresented: $isDeleteConfirmationPresented
+                                ) {
+                                    Button("기록 삭제", role: .destructive, action: onConfirmDelete)
+                                    Button("취소", role: .cancel, action: onCancelDelete)
+                                } message: {
+                                    Text("삭제한 기록은 복구할 수 없어요.")
+                                }
+                        }
+                        .scrollIndicators(.hidden)
+                        .scrollBounceBehavior(.basedOnSize)
+                        .scrollDisabled(isHeaderDragging || dragOffset > 0)
+                        .frame(height: max(0, height - headerHeight))
+                        .onChange(of: scrollTarget) { _, _ in
+                            scrollToFocusedField(using: proxy)
+                        }
+                        .onChange(of: geometry.size.height) { _, _ in
+                            scrollToFocusedField(using: proxy)
+                        }
+                        .onChange(of: contentHeight) { _, _ in
+                            scrollToFocusedField(using: proxy)
+                        }
                     }
-                    .scrollIndicators(.hidden)
-                    .scrollBounceBehavior(.basedOnSize)
-                    .scrollDisabled(isHeaderDragging || dragOffset > 0)
-                    .frame(height: max(0, height - headerHeight))
                 }
                 .frame(height: height)
                 .overlay(alignment: .top) { headerDragArea }
@@ -162,6 +175,16 @@ struct ExperimentRecordSheetHost: View {
         guard dragOffset > 0 else { return }
         withAnimation(reduceMotion ? nil : LabcordMotion.settle.animation) {
             dragOffset = 0
+        }
+    }
+
+    private func scrollToFocusedField(using proxy: ScrollViewProxy) {
+        guard let scrollTarget else { return }
+        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) {
+            proxy.scrollTo(
+                scrollTarget,
+                anchor: scrollTarget == .transcript ? .top : .bottom
+            )
         }
     }
 }

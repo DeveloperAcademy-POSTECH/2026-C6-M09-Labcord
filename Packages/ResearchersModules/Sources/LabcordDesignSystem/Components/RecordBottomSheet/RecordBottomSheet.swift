@@ -15,6 +15,11 @@ public enum RecordContentState: String, CaseIterable, Sendable {
     case filled
 }
 
+public enum RecordBottomSheetScrollTarget: Hashable, Sendable {
+    case transcript
+    case actions
+}
+
 public struct RecordBottomSheetHeader: View {
     private let onDismiss: () -> Void
     @ScaledMetric(relativeTo: .body) private var controlScale: CGFloat = 1
@@ -77,6 +82,7 @@ public struct RecordBottomSheet: View {
     private let noteContent: AnyView?
     private let transcriptHelp: String
     private let onDismiss: (() -> Void)?
+    private let onScrollTargetChange: ((RecordBottomSheetScrollTarget?) -> Void)?
     private let onSave: () -> Void
     private let onDelete: () -> Void
     private let showsActions: Bool
@@ -118,6 +124,7 @@ public struct RecordBottomSheet: View {
         noteContent: AnyView? = nil,
         transcriptHelp: String = "잘못 인식된 용어와 수치를 확인해 주세요.",
         onDismiss: (() -> Void)? = nil,
+        onScrollTargetChange: ((RecordBottomSheetScrollTarget?) -> Void)? = nil,
         onSave: @escaping () -> Void = {},
         onDelete: @escaping () -> Void = {},
         showsActions: Bool = true,
@@ -145,6 +152,7 @@ public struct RecordBottomSheet: View {
         self.noteContent = noteContent
         self.transcriptHelp = transcriptHelp
         self.onDismiss = onDismiss
+        self.onScrollTargetChange = onScrollTargetChange
         self.onSave = onSave
         self.onDelete = onDelete
         self.showsActions = showsActions
@@ -166,12 +174,15 @@ public struct RecordBottomSheet: View {
                         focus: $isTranscriptFocused,
                         bounds: $transcriptBounds
                     )
+                    .id(RecordBottomSheetScrollTarget.transcript)
                 }
 
                 VStack(alignment: .center, spacing: LayoutTokens.spacing16) {
                     recordContent
 
-                    noteField
+                    if type != .voice || !isTranscriptFocused {
+                        noteField
+                    }
 
                     if showsActions {
                         actions
@@ -180,6 +191,7 @@ public struct RecordBottomSheet: View {
                 .padding(.horizontal, LayoutTokens.spacing16)
                 .padding(.bottom, bottomPadding)
                 .frame(maxWidth: .infinity)
+                .id(RecordBottomSheetScrollTarget.actions)
             }
         }
         .frame(maxWidth: .infinity)
@@ -206,6 +218,20 @@ public struct RecordBottomSheet: View {
                 }
             }
         )
+        .onChange(of: isNoteFocused) { _, isFocused in
+            if isFocused {
+                onScrollTargetChange?(.actions)
+            } else if !isTranscriptFocused {
+                onScrollTargetChange?(nil)
+            }
+        }
+        .onChange(of: isTranscriptFocused) { _, isFocused in
+            if isFocused {
+                onScrollTargetChange?(.transcript)
+            } else if !isNoteFocused {
+                onScrollTargetChange?(nil)
+            }
+        }
         #if os(iOS)
         .onReceive(
             NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)
@@ -268,8 +294,8 @@ public struct RecordBottomSheet: View {
             }
                 .aspectRatio(type == .video ? 358.0 / 201.0 : 16.0 / 9.0, contentMode: .fit)
                 .frame(maxWidth: .infinity)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
                 .padding(.horizontal, type == .video ? 6 : 0)
-                .clipped()
         }
     }
 
