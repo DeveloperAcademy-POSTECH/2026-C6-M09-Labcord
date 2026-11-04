@@ -1,5 +1,7 @@
 import ComposableArchitecture
+import Foundation
 import LabcordiOS
+import LabcordShared
 
 @Reducer
 struct AppFeature {
@@ -7,6 +9,7 @@ struct AppFeature {
     enum Path {
         case registration(ProtocolRegistrationFeature)
         case recent(RecentProtocolFeature)
+        case review(ProtocolReviewFeature)
         case session(ExperimentSessionFeature)
         case result(ExperimentResultFeature)
     }
@@ -15,6 +18,14 @@ struct AppFeature {
     struct State: Equatable {
         var home = HomeFeature.State()
         var path = StackState<Path.State>()
+        var reviewSaving = false
+        var reviewSaveFailed = false
+        var reviewAlreadySaved = false
+        var reviewExitRequested = false
+        var reviewPendingID: UUID?
+        var reviewRegistrationID: StackElementID?
+        var recentRegistrationID: StackElementID?
+        var savedReview: ExperimentListEntry?
     }
 
     enum Action {
@@ -24,7 +35,23 @@ struct AppFeature {
         case registrationSucceeded(StackElementID, ExperimentListEntry)
         case showResult(StackElementID)
         case returnHome(StackElementID)
+        case reviewSaved(
+            StackElementID, Result<ExperimentListEntry, ProtocolRegistrationFeature.SaveFailure>
+        )
+        case reviewCleanupFinished(StackElementID, Bool)
+        case reviewPreviouslySaved(StackElementID, ExperimentListEntry)
+        case confirmAlreadySaved
+        case openSavedReview
+        case retryReviewSave
+        case dismissReviewSaveFailure
+        case confirmReviewExit
+        case cancelReviewExit
     }
+
+    @Dependency(\.experimentClient) var experimentClient
+    @Dependency(\.protocolAnalysisJobManager) var jobManager
+    @Dependency(\.uuid) var uuid
+    @Dependency(\.date.now) var now
 
     var body: some Reducer<State, Action> {
         Scope(state: \.home, action: \.home) { HomeFeature() }
@@ -77,12 +104,131 @@ struct AppFeature {
                       !registration.importing, !registration.isSaving,
                       registration.analysisID == nil, !registration.analysisStarting,
                       registration.invalidatingJobID == nil else { return .none }
+                state.recentRegistrationID = id
                 state.path.append(.recent(RecentProtocolFeature.State()))
                 return .none
 
             case let .path(.element(id: id, action: .recent(.backTapped))):
                 guard state.path.ids.last == id else { return .none }
                 state.path.pop(from: id)
+                return .none
+
+            case let .path(.element(id: id, action: .recent(.useSelected))):
+                guard state.path.ids.last == id,
+                      let recent = state.path[id: id, case: \.recent],
+                      let entry = recent.entries.first(where: { $0.id == recent.selectedID }),
+                      let registrationID = state.recentRegistrationID else { return .none }
+                let categories: [(ProtocolTermCategory, [String])] = [
+                    (.materials, entry.materials), (.samples, entry.samples),
+                    (.glossary, entry.glossaryTerms), (.units, entry.units)
+                ]
+                var terms: [ProtocolTermCategory: [ProtocolReviewTerm]] = [:]
+                for (category, values) in categories {
+                    terms[category] = values.map { ProtocolReviewTerm(id: uuid(), value: $0) }
+                }
+                state.reviewRegistrationID = registrationID
+                state.path.append(.review(.init(
+                    title: entry.title, timerSeconds: entry.timerSeconds, terms: terms
+                )))
+                return .none
+
+            case let .path(.element(id: id, action: .registration(.showReview))):
+                guard state.path.ids.last == id,
+                      let registration = state.path[id: id, case: \.registration],
+                      registration.analysisID == nil, !registration.analysisStarting,
+                      registration.invalidatingJobID == nil,
+                      !registration.successfulResults.isEmpty else { return .none }
+                let seconds = registration.successfulResults.flatMap { item -> [Int] in
+                    guard let text = item.extractedText else { return [] }
+                    return ProtocolTimerExtractor.extract(from: text)
+                }
+                let terms = registration.extractedTerms.mapValues { values in
+                    values.map { ProtocolReviewTerm(id: uuid(), value: $0) }
+                }
+                state.reviewRegistrationID = id
+                state.path.append(.review(.init(title: "", timerSeconds: seconds, terms: terms)))
+                return .none
+
+            case let .path(.element(id: id, action: .review(.backTapped))):
+                guard !state.reviewSaving, state.path.ids.last == id else { return .none }
+                state.reviewExitRequested = true
+                return .none
+
+            case .confirmReviewExit:
+                state.reviewExitRequested = false
+                guard !state.reviewSaving, state.savedReview == nil,
+                      let id = state.path.ids.last,
+                      state.path[id: id, case: \.review] != nil else { return .none }
+                state.reviewPendingID = nil
+                state.path.pop(from: id)
+                return .none
+
+            case .cancelReviewExit:
+                state.reviewExitRequested = false
+                return .none
+
+            case let .path(.element(id: id, action: .review(.registerTapped))):
+                return registerReview(&state, id: id)
+
+            case let .reviewPreviouslySaved(id, entry):
+                guard state.reviewSaving, state.path.ids.last == id else { return .none }
+                state.reviewSaving = false
+                state.savedReview = entry
+                state.reviewAlreadySaved = true
+                return .none
+
+            case .confirmAlreadySaved:
+                guard state.reviewAlreadySaved else { return .none }
+                state.reviewAlreadySaved = false
+                guard let id = state.path.ids.last else { return .none }
+                return .send(.path(.element(id: id, action: .review(.registerTapped))))
+
+            case .openSavedReview:
+                guard !state.reviewSaving, let entry = state.savedReview else { return .none }
+                state.reviewAlreadySaved = false
+                state.reviewSaveFailed = false
+                state.savedReview = nil
+                state.reviewPendingID = nil
+                state.path.removeAll()
+                if entry.status == .completed {
+                    state.path.append(.result(.init(
+                        experimentID: entry.id, isOpenedFromHome: true
+                    )))
+                } else {
+                    state.path.append(.session(.init(experimentID: entry.id)))
+                }
+                return .send(.home(.list(.created(entry))))
+
+            case let .reviewSaved(id, result):
+                guard state.reviewSaving, state.path.ids.last == id else { return .none }
+                state.reviewSaving = false
+                switch result {
+                case let .success(entry):
+                    state.savedReview = entry
+                    return .send(.path(.element(id: id, action: .review(.registerTapped))))
+                case .failure:
+                    state.reviewSaveFailed = true
+                    return .none
+                }
+
+            case let .reviewCleanupFinished(id, succeeded):
+                guard state.reviewSaving, state.path.ids.last == id,
+                      state.savedReview != nil else { return .none }
+                state.reviewSaving = false
+                guard succeeded else {
+                    state.reviewSaveFailed = true
+                    return .none
+                }
+                return .send(.openSavedReview)
+
+            case .retryReviewSave:
+                state.reviewSaveFailed = false
+                guard let id = state.path.ids.last,
+                      state.path[id: id, case: \.review] != nil else { return .none }
+                return .send(.path(.element(id: id, action: .review(.registerTapped))))
+
+            case .dismissReviewSaveFailure:
+                state.reviewSaveFailed = false
                 return .none
 
             case let .path(.element(id: id, action: .registration(.saveSucceeded(entry)))):
@@ -122,6 +268,61 @@ struct AppFeature {
             }
         }
         .forEach(\.path, action: \.path)
+    }
+}
+
+private extension AppFeature {
+    func registerReview(_ state: inout State, id: StackElementID) -> Effect<Action> {
+        guard !state.reviewSaving, state.path.ids.last == id,
+              let review = state.path[id: id, case: \.review], review.titleValid,
+              review.timersValid, !review.hasUncommittedTerm else { return .none }
+        if state.savedReview != nil {
+            state.reviewSaving = true
+            let jobID = state.reviewRegistrationID.flatMap {
+                state.path[id: $0, case: \.registration]?.analysisJobID
+            }
+            return .run { send in
+                let success = if let jobID {
+                    await jobManager.cancel(id: jobID)
+                } else {
+                    true
+                }
+                await send(.reviewCleanupFinished(id, success))
+            }
+        }
+        let procedure = ExperimentProtocol(
+            timerSeconds: review.timerSeconds,
+            materials: review.terms[.materials, default: []].map(\.value),
+            samples: review.terms[.samples, default: []].map(\.value),
+            glossaryTerms: review.terms[.glossary, default: []].map(\.value),
+            units: review.terms[.units, default: []].map(\.value)
+        )
+        let jobID = state.reviewRegistrationID.flatMap {
+            state.path[id: $0, case: \.registration]?.analysisJobID
+        }
+        let identifier = state.reviewPendingID ?? jobID ?? uuid()
+        state.reviewPendingID = identifier
+        state.reviewSaving = true
+        state.reviewSaveFailed = false
+        let date = now
+        let title = review.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        return .run { send in
+            do {
+                if jobID != nil,
+                   let existing = try await experimentClient.load().first(where: {
+                       $0.id == identifier
+                   }) {
+                    await send(.reviewPreviouslySaved(id, existing))
+                    return
+                }
+                let entry = try await experimentClient.createWithProtocol(
+                    identifier, date, title, procedure
+                )
+                await send(.reviewSaved(id, .success(entry)))
+            } catch {
+                await send(.reviewSaved(id, .failure(.saving)))
+            }
+        }
     }
 }
 
