@@ -167,18 +167,31 @@ public struct RecordBottomSheet: View {
 
             VStack(alignment: .center, spacing: LayoutTokens.spacing24) {
                 if type == .voice {
-                    RecordBottomSheetTranscriptField(
-                        transcript: $transcript,
-                        content: transcriptContent,
-                        help: transcriptHelp,
-                        focus: $isTranscriptFocused,
-                        bounds: $transcriptBounds
+                    VStack(alignment: .center, spacing: LayoutTokens.spacing8) {
+                        RecordBottomSheetTranscriptField(
+                            transcript: $transcript,
+                            content: transcriptContent,
+                            help: transcriptHelp,
+                            focus: $isTranscriptFocused,
+                            bounds: $transcriptBounds
+                        )
+                        .id(RecordBottomSheetScrollTarget.transcript)
+                        
+                        recordContent
+                    }
+                    .padding(LayoutTokens.spacing8)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        Color(.General.Background.Grouped.primary),
+                        in: RoundedRectangle(cornerRadius: 8)
                     )
-                    .id(RecordBottomSheetScrollTarget.transcript)
+                    .padding(.horizontal, LayoutTokens.spacing16)
                 }
 
                 VStack(alignment: .center, spacing: LayoutTokens.spacing16) {
-                    recordContent
+                    if type != .voice {
+                        recordContent
+                    }
 
                     if type != .voice || !isTranscriptFocused {
                         noteField
