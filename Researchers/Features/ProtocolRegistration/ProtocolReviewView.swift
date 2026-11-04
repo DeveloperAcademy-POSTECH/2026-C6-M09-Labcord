@@ -128,7 +128,7 @@ struct ProtocolReviewView: View {
     private var termSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("추출한 용어").typography(Typography.calloutSemiBold)
-            Text("프로토콜에서 추출한 전문 용어를 음성 인식에 반영해요.")
+            Text("프로토콜에서 추출한 용어를 확인하고 수정할 수 있어요.")
                 .typography(Typography.subheadline)
                 .foregroundStyle(Color(
                     "General/Label/Secondary", bundle: LabcordDesignSystemResources.bundle
