@@ -1,14 +1,11 @@
-import ComposableArchitecture
 import LabcordDesignSystem
 import LabcordiOS
 import SwiftUI
 
 struct RecordTimelineView: View {
-    let store: StoreOf<RecordTimelineFeature>
+    let entries: [ExperimentResultDetail.TimelineEntry]
 
     var body: some View {
-        let entries = store.entries
-
         LazyVStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
             ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
                 let date = ExperimentResultDateFormatter.date(entry.date)
