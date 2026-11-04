@@ -57,7 +57,7 @@ public struct ProtocolUploadButton: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(LayoutTokens.spacing16)
         }
-        .buttonStyle(ProtocolUploadButtonStyle(state: state))
+        .buttonStyle(ProtocolUploadButtonStyle(state: state, showDescription: showDescription))
         .disabled(state == .disabled)
         .accessibilityHint(Text("프로토콜 파일을 선택합니다"))
     }
@@ -66,6 +66,7 @@ public struct ProtocolUploadButton: View {
 
 private struct ProtocolUploadButtonStyle: ButtonStyle {
     let state: ProtocolUploadButtonState
+    let showDescription: Bool
 
     @Environment(\.isEnabled) private var isEnabled
 
@@ -74,6 +75,7 @@ private struct ProtocolUploadButtonStyle: ButtonStyle {
             .foregroundStyle(foregroundColor)
             .frame(
                 maxWidth: .infinity,
+                minHeight: showDescription ? (effectiveState == .disabled ? 97 : 99) : nil,
                 alignment: .topLeading
             )
             .background {
