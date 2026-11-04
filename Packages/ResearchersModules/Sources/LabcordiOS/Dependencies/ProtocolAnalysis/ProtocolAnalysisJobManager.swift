@@ -1,4 +1,3 @@
-import ComposableArchitecture
 import Foundation
 import OmniParser
 
@@ -63,7 +62,9 @@ public actor ProtocolAnalysisJobManager {
         guard execution == nil, record?.status != .queued, record?.status != .running else {
             throw CocoaError(.userCancelled)
         }
+        let previousID = record?.id
         record = try store.prepare(id: id, inputs: inputs, now: Date())
+        if let previousID, previousID != id { try? store.remove(previousID) }
         phase = .queued
         publish()
         await schedule(id)
@@ -79,22 +80,52 @@ public actor ProtocolAnalysisJobManager {
               record?.status == .paused || record?.status == .failed else {
             throw CocoaError(.fileReadNoSuchFile)
         }
+        let previousRecord = record
+        let previousPhase = phase
         record?.status = .queued
         record?.message = nil
         phase = .queued
-        try persist()
+        do {
+            try persist()
+        } catch {
+            record = previousRecord
+            phase = previousPhase
+            throw error
+        }
         publish()
         await schedule(id)
     }
 
-    public func cancel(id: UUID) async {
-        guard record?.id == id else { return }
+    @discardableResult
+    public func cancel(id: UUID) async -> Bool {
+        guard record?.id == id else { return false }
         let finish = stopExecution(id: id)
         record?.status = .cancelled
         record?.message = nil
-        try? persist()
+        do {
+            try persist()
+        } catch {
+            record?.status = .failed
+            record?.message = "분석 취소 상태를 저장하지 못했어요. 다시 시도해 주세요."
+            publish()
+            await finish.value
+            return false
+        }
+        let cancelled = record
         publish()
         await finish.value
+        if let pending = draining { await pending.task.value }
+        do {
+            if let cancelled { try store.removeInputs(cancelled) }
+            return true
+        } catch {
+            if record?.id == id {
+                record?.status = .failed
+                record?.message = "분석 파일을 정리하지 못했어요. 다시 시도해 주세요."
+                publish()
+            }
+            return false
+        }
     }
 
     public func enteredBackground() async {
@@ -292,27 +323,12 @@ private extension ProtocolAnalysisJobManager {
 
     private func updateSystemProgress(id: UUID) async {
         guard let record, record.id == id else { return }
-        let total = Int64(record.inputs.count * 3_000)
-        var completed = Int64(
-            record.documents.count + record.selected.count + record.finished.count
-        ) * 1_000
-        let subtitle: String
-        switch phase {
-        case .queued: subtitle = "분석 시작을 기다리고 있어요"
-        case .reading: subtitle = "문서에서 본문을 읽고 있어요"
-        case let .terms(_, value):
-            if case let .classifyingTerms(done, count) = value {
-                subtitle = "용어 분류 \(done)/\(count)개"
-                completed += Int64(done * 1_000 / max(1, count))
-            } else if case let .rankingProgress(done, count) = value {
-                subtitle = "용어 문맥 검토 \(done)/\(count)개"
-                completed += Int64(done * 1_000 / max(1, count))
-            } else {
-                subtitle = "타이머와 용어를 찾고 있어요"
-            }
-        }
+        let progress = ProtocolAnalysisProgress.values(
+            record: record, phase: phase
+        )
         await ProtocolAnalysisBackgroundScheduler.shared.update(
-            id: id, completed: min(total, completed), total: total, subtitle: subtitle
+            id: id, completed: min(progress.total, progress.completed),
+            total: progress.total, subtitle: progress.subtitle
         )
     }
 
@@ -373,24 +389,5 @@ private extension ProtocolAnalysisJobManager {
         guard let value = try? snapshot() else { return }
         for listener in listeners.values { listener.yield(value) }
     }
-
-    private func removeListener(_ id: UUID) {
-        listeners[id] = nil
-    }
-}
-
-extension ProtocolAnalysisJobManager: DependencyKey {
-    public static let liveValue = shared
-    public static let testValue = ProtocolAnalysisJobManager(
-        directory: FileManager.default.temporaryDirectory
-            .appendingPathComponent("labcord-analysis-tests-" + UUID().uuidString),
-        usesSystemScheduler: false
-    )
-}
-
-public extension DependencyValues {
-    var protocolAnalysisJobManager: ProtocolAnalysisJobManager {
-        get { self[ProtocolAnalysisJobManager.self] }
-        set { self[ProtocolAnalysisJobManager.self] = newValue }
-    }
+    private func removeListener(_ id: UUID) { listeners[id] = nil }
 }

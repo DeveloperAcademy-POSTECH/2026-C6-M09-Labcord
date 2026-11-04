@@ -15,6 +15,17 @@ nonisolated struct ProtocolAnalysisJobStore: Sendable {
             throw CocoaError(.fileWriteFileExists)
         }
         try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true)
+        do {
+            return try prepareRecord(id: id, inputs: inputs, now: now, target: target)
+        } catch {
+            try? FileManager.default.removeItem(at: target)
+            throw error
+        }
+    }
+
+    private func prepareRecord(
+        id: UUID, inputs: [ProtocolAnalysisJobInput], now: Date, target: URL
+    ) throws -> ProtocolAnalysisJobRecord {
         try protect(target)
         var stored: [ProtocolAnalysisJobRecord.Input] = []
         for input in inputs {
@@ -60,21 +71,37 @@ nonisolated struct ProtocolAnalysisJobStore: Sendable {
         let urls = try FileManager.default.contentsOfDirectory(
             at: directory, includingPropertiesForKeys: [.contentModificationDateKey]
         ).filter { UUID(uuidString: $0.lastPathComponent) != nil }
-        let records = try urls.compactMap { url -> ProtocolAnalysisJobRecord? in
+        var records: [ProtocolAnalysisJobRecord] = []
+        var corrupt: [(error: Error, date: Date)] = []
+        for url in urls {
             let checkpoint = url.appendingPathComponent("checkpoint.json")
-            guard FileManager.default.fileExists(atPath: checkpoint.path) else { return nil }
-            let record = try JSONDecoder().decode(
-                ProtocolAnalysisJobRecord.self, from: Data(contentsOf: checkpoint)
-            )
-            guard (1...2).contains(record.version),
-                  record.id.uuidString == url.lastPathComponent else {
-                throw CocoaError(.coderReadCorrupt)
+            guard FileManager.default.fileExists(atPath: checkpoint.path) else { continue }
+            do {
+                let record = try JSONDecoder().decode(
+                    ProtocolAnalysisJobRecord.self, from: Data(contentsOf: checkpoint)
+                )
+                guard (1...2).contains(record.version),
+                      record.id.uuidString == url.lastPathComponent else {
+                    throw CocoaError(.coderReadCorrupt)
+                }
+                try validateReviews(record)
+                records.append(record)
+            } catch {
+                let date = (try? checkpoint.resourceValues(
+                    forKeys: [.contentModificationDateKey]
+                ).contentModificationDate) ?? .distantFuture
+                corrupt.append((error, date))
             }
-            try validateReviews(record)
-            return record
         }
         let latest = records.max { $0.updatedAt < $1.updatedAt }
-        return latest?.status == .cancelled ? nil : latest
+        if let failure = corrupt.max(by: { $0.date < $1.date }) {
+            guard let latest, failure.date < latest.updatedAt else { throw failure.error }
+        }
+        if let latest, latest.status == .cancelled {
+            try removeInputs(latest)
+            return nil
+        }
+        return latest
     }
 
     private func validateReviews(_ record: ProtocolAnalysisJobRecord) throws {
@@ -90,6 +117,20 @@ nonisolated struct ProtocolAnalysisJobStore: Sendable {
                 throw CocoaError(.coderReadCorrupt)
             }
             try review.validate(terms: terms, source: document.restored().fullText)
+        }
+    }
+
+    func removeInputs(_ record: ProtocolAnalysisJobRecord) throws {
+        let existing = try inputs(record).filter {
+            FileManager.default.fileExists(atPath: $0.url.path)
+        }
+        for input in existing { try FileManager.default.removeItem(at: input.url) }
+    }
+
+    func remove(_ id: UUID) throws {
+        let target = jobDirectory(id)
+        if FileManager.default.fileExists(atPath: target.path) {
+            try FileManager.default.removeItem(at: target)
         }
     }
 
