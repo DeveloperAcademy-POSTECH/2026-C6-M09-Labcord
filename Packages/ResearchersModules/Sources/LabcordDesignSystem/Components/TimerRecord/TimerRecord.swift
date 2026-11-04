@@ -106,47 +106,30 @@ public struct TimerRecord: View {
     }
 
     private var singleLineContent: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .center, spacing: LayoutTokens.spacing8) {
-                durationLabel
-                stateLabel
-            }
-            .fixedSize(horizontal: true, vertical: true)
-
-            VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
-                durationLabel
-                stateLabel
-            }
+        HStack(alignment: .center) {
+            stateLabel
+            
+            Spacer()
+            
+            durationLabel
         }
         .frame(minHeight: 22, alignment: .leading)
     }
 
     private var pausedContent: some View {
         VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .firstTextBaseline, spacing: LayoutTokens.spacing8) {
-                    durationLabel
-                    pausedStatus
-                }
-                .fixedSize(horizontal: true, vertical: true)
-
-                VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
-                    durationLabel
-                    pausedStatus
-                }
+            HStack(alignment: .center) {
+                pausedStatus
+                
+                Spacer()
+                
+                durationLabel
             }
 
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .firstTextBaseline, spacing: LayoutTokens.spacing16) {
-                    elapsedDetail
-                    cumulativeDetail
-                }
-                .fixedSize(horizontal: true, vertical: true)
+            HStack(alignment: .firstTextBaseline, spacing: LayoutTokens.spacing16) {
+                elapsedDetail
 
-                VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
-                    elapsedDetail
-                    cumulativeDetail
-                }
+                cumulativeDetail
             }
         }
     }
@@ -213,19 +196,14 @@ public struct TimerRecord: View {
 
     private var durationLabel: some View {
         Text(setDuration)
-            .typography(Typography.bodySemiBold)
-            .foregroundStyle(Color(.General.Label.primary))
+            .padding(.horizontal, 4)
+            .typography(Typography.subheadlineSemiBold)
+            .foregroundStyle(Color(.General.Label.light))
             .contentTransition(.numericText())
             .labcordMotion(.state, value: setDuration)
-            .padding(.leading, LayoutTokens.spacing4 + 3)
-            .frame(minHeight: 22, alignment: .leading)
-            .overlay(alignment: .leading) {
-                Rectangle()
-                    .fill(identity.color)
-                    .frame(width: 3)
-                    .accessibilityHidden(true)
-            }
-            .fixedSize(horizontal: false, vertical: true)
+            .frame(minHeight: 20)
+            .background(Color(identity.color))
+            .cornerRadius(4)
     }
 
     private var accessibilityText: String {
