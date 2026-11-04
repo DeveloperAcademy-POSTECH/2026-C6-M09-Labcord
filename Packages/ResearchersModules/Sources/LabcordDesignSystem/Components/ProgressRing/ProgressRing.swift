@@ -2,12 +2,16 @@ import SwiftUI
 
 public struct ProgressRing: View {
     private let value: Double
+    private let showPercentage: Bool
+    private let centerText: String?
 
     @ScaledMetric(relativeTo: .title2) private var diameter: CGFloat = 160
     @ScaledMetric(relativeTo: .title2) private var lineWidth: CGFloat = 16
 
-    public init(value: Double) {
+    public init(value: Double, showPercentage: Bool = true, centerText: String? = nil) {
         self.value = value
+        self.showPercentage = showPercentage
+        self.centerText = centerText
     }
 
     public var body: some View {
@@ -29,14 +33,20 @@ public struct ProgressRing: View {
                     }
             }
 
-            Text("\(Int((progress * 100).rounded()))%")
-                .typography(Typography.title2Bold)
-                .foregroundStyle(Color(.General.Label.primary))
+            if let centerText {
+                Text(centerText)
+                    .typography(Typography.title2Bold)
+                    .foregroundStyle(Color(.General.Label.light))
+            } else if showPercentage {
+                Text("\(Int((progress * 100).rounded()))%")
+                    .typography(Typography.title2Bold)
+                    .foregroundStyle(Color(.General.Label.primary))
+            }
         }
         .frame(width: diameter, height: diameter)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("진행률")
-        .accessibilityValue("\(Int((progress * 100).rounded()))%")
+        .accessibilityValue(centerText ?? "\(Int((progress * 100).rounded()))%")
     }
 
     private var progress: Double {
