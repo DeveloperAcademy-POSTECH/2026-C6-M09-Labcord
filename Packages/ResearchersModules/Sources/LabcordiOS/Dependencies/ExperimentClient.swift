@@ -12,6 +12,8 @@ public enum ExperimentCreationError: Error, Sendable {
 }
 
 public struct ExperimentClient: Sendable {
+    public var applyWatchTimer: @MainActor @Sendable (WatchExperimentCommand) throws -> Void
+    public var dismissWatchTimer: @MainActor @Sendable (UUID, UUID) throws -> Void
     public var watchState: @MainActor @Sendable (UUID) throws -> WatchExperimentState?
     public var load: @MainActor @Sendable () throws -> [ExperimentListEntry]
     public var loadRecentProtocols: @MainActor @Sendable () throws -> [RecentProtocolEntry]
@@ -75,8 +77,18 @@ public struct ExperimentClient: Sendable {
         },
         watchState: @escaping @MainActor @Sendable (UUID) throws -> WatchExperimentState? = { _ in
             throw ExperimentCreationError.unavailable
+        },
+        applyWatchTimer: @escaping @MainActor @Sendable (
+            WatchExperimentCommand
+        ) throws -> Void = { _ in
+            throw ExperimentCreationError.unavailable
+        },
+        dismissWatchTimer: @escaping @MainActor @Sendable (UUID, UUID) throws -> Void = { _, _ in
+            throw ExperimentCreationError.unavailable
         }
     ) {
+        self.applyWatchTimer = applyWatchTimer
+        self.dismissWatchTimer = dismissWatchTimer
         self.watchState = watchState
         self.load = load
         self.loadRecentProtocols = loadRecentProtocols
@@ -159,7 +171,11 @@ extension ExperimentClient: DependencyKey {
                 id: $0, at: $1, title: $2, procedure: $3
             )
         },
-        watchState: { try ExperimentSessionRepository.shared.watchState(id: $0) }
+        watchState: { try ExperimentSessionRepository.shared.watchState(id: $0) },
+        applyWatchTimer: { try ExperimentSessionRepository.shared.applyWatchTimer($0) },
+        dismissWatchTimer: {
+            try ExperimentSessionRepository.shared.dismissWatchTimer(experimentID: $0, timerID: $1)
+        }
     )
 }
 
