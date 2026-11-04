@@ -19,24 +19,26 @@ struct ProtocolRegistrationView: View {
     @State private var showDiscardConfirmation = false
     @Dependency(\.protocolAnalysisJobManager) private var jobManager
 
+    private var input: ProtocolInputAnalysisFeature.State { store.inputAnalysis }
+
     var body: some View {
         Group {
-            if store.analysisID != nil {
+            if input.analysisID != nil {
                 ProtocolAnalysisProgressView(
-                    phase: store.analysisPhase,
-                    inputName: store.analysisInput?.name,
-                    inputNumber: store.analysisInputNumber,
-                    inputCount: store.selectedInputs.count,
-                    startedAt: store.analysisStartedAt,
-                    isCancelling: store.analysisCancellationRequested,
-                    notice: store.analysisMessage
+                    phase: input.analysisPhase,
+                    inputName: input.analysisInput?.name,
+                    inputNumber: input.analysisInputNumber,
+                    inputCount: input.selectedInputs.count,
+                    startedAt: input.analysisStartedAt,
+                    isCancelling: input.analysisCancellationRequested,
+                    notice: input.analysisMessage
                 ) {
                     showSkipConfirmation = true
                 }
                 .background(Color(
                     "General/Background/Primary", bundle: LabcordDesignSystemResources.bundle
                 ))
-            } else if store.showsAnalysisCompletion && store.invalidatingJobID == nil {
+            } else if input.showsAnalysisCompletion && input.invalidatingJobID == nil {
                 ProtocolAnalysisCompletionView(onReview: requestReview)
                     .background(Color(
                         "General/Background/Primary", bundle: LabcordDesignSystemResources.bundle
@@ -45,7 +47,7 @@ struct ProtocolRegistrationView: View {
                 setupContent
             }
         }
-        .disabled(store.restoringAnalysis)
+        .disabled(input.restoringAnalysis)
         .alert("실험을 저장하지 못했어요", isPresented: Binding(
             get: { store.hasFailed },
             set: { if !$0 { store.send(.dismissFailure) } }
@@ -80,14 +82,14 @@ struct ProtocolRegistrationView: View {
             Text("분석 결과는 초기화되고 프로토콜 없이 실험을 시작해요.")
         }
         .alert("실험 등록을 종료할까요?", isPresented: $showExitConfirmation) {
-            Button("실험 등록 종료", role: .destructive) { store.send(.backTapped) }
+            Button("실험 등록 종료", role: .destructive) { store.send(.inputAnalysis(.backTapped)) }
             Button("취소", role: .cancel) { }
         } message: {
             Text("이 화면을 나가면 분석 결과가 초기화돼요.")
         }
         .alert("입력을 버리고 나갈까요?", isPresented: $showDiscardConfirmation) {
             Button("버리고 나가기", role: .destructive) {
-                store.send(.discardFailedInvalidation)
+                store.send(.inputAnalysis(.discardFailedInvalidation))
             }
             Button("취소", role: .cancel) { }
         } message: {
@@ -113,15 +115,15 @@ struct ProtocolRegistrationView: View {
         .task {
             do {
                 if let saved = try await jobManager.restore() {
-                    store.send(.restoreAnalysisJob(saved))
+                    store.send(.inputAnalysis(.restoreAnalysisJob(saved)))
                 }
             } catch {
                 recoveryFailed = true
             }
-            store.send(.restoreCheckFinished)
+            store.send(.inputAnalysis(.restoreCheckFinished))
             for await update in await jobManager.updates() {
                 guard !Task.isCancelled else { break }
-                store.send(.analysisJobUpdated(update))
+                store.send(.inputAnalysis(.analysisJobUpdated(update)))
             }
         }
         .onChange(of: scenePhase) { _, phase in
@@ -130,17 +132,17 @@ struct ProtocolRegistrationView: View {
         .navigationBarBackButtonHidden()
         .toolbar(.hidden, for: .navigationBar)
         .safeAreaInset(edge: .top, spacing: 0) {
-            if store.analysisID == nil {
-                NavigationPageTitle(store.showsAnalysisCompletion ? "" : "실험 등록") {
-                    if store.selectedInputs.isEmpty {
-                        store.send(.backTapped)
+            if input.analysisID == nil {
+                NavigationPageTitle(input.showsAnalysisCompletion ? "" : "실험 등록") {
+                    if input.selectedInputs.isEmpty {
+                        store.send(.inputAnalysis(.backTapped))
                     } else {
                         showExitConfirmation = true
                     }
                 }
-                .disabled(store.restoringAnalysis || store.isSaving || store.importing
-                          || store.analysisID != nil || store.invalidatingJobID != nil
-                          || store.analysisStarting)
+                .disabled(input.restoringAnalysis || store.isSaving || input.importing
+                          || input.analysisID != nil || input.invalidatingJobID != nil
+                          || input.analysisStarting)
                 .accessibilityIdentifier("entry-back")
             }
         }
@@ -155,7 +157,7 @@ private extension ProtocolRegistrationView {
                 VStack(spacing: 8) {
                     ProtocolUploadButton(
                         "사진", description: "PNG, JPG",
-                        state: store.importedPhotos.isEmpty ? .default : .selected
+                        state: input.importedPhotos.isEmpty ? .default : .selected
                     ) {
                         photoPickerPresented = true
                     }
@@ -164,23 +166,25 @@ private extension ProtocolRegistrationView {
 
                     ProtocolUploadButton(
                         "파일", description: "PDF, XLSX, DOCX",
-                        state: store.importedFile == nil ? .default : .selected
+                        state: input.importedFile == nil ? .default : .selected
                     ) {
                         filePickerPresented = true
                     }
                     .accessibilityIdentifier("entry-source-file")
 
-                    if let importedFile = store.importedFile {
+                    if let importedFile = input.importedFile {
                         HStack {
                             Text(importedFile.name).lineLimit(1)
                             Spacer()
-                            Button("삭제", systemImage: "xmark") { store.send(.removeFile) }
+                            Button("삭제", systemImage: "xmark") {
+                                store.send(.inputAnalysis(.removeFile))
+                            }
                                 .labelStyle(.iconOnly)
                         }
                         .padding(.horizontal, 16)
                     }
 
-                    if store.importing {
+                    if input.importing {
                         ProgressView("파일을 가져오고 있어요")
                     }
 
@@ -193,19 +197,19 @@ private extension ProtocolRegistrationView {
                     .accessibilityHint("최근 사용한 프로토콜을 확인합니다")
                     .accessibilityIdentifier("entry-source-recent")
                 }
-                .disabled(store.isSaving || store.importing || store.analysisID != nil
-                          || store.invalidatingJobID != nil || store.analysisStarting)
+                .disabled(store.isSaving || input.importing || input.analysisID != nil
+                          || input.invalidatingJobID != nil || input.analysisStarting)
                 .padding(.horizontal, 16)
                 .padding(.top, 16)
             }
 
             VStack(spacing: 8) {
-                if !store.importedPhotos.isEmpty {
+                if !input.importedPhotos.isEmpty {
                     ScrollView(.horizontal) {
                         HStack(spacing: 8) {
-                            ForEach(store.importedPhotos) { photo in
+                            ForEach(input.importedPhotos) { photo in
                                 ProtocolPhotoItem {
-                                    store.send(.removePhoto(photo.id))
+                                    store.send(.inputAnalysis(.removePhoto(photo.id)))
                                 } content: {
                                     ProtocolPhotoThumbnail(url: photo.url)
                                 }
@@ -213,44 +217,44 @@ private extension ProtocolRegistrationView {
                             ProtocolPhotoItem { photoPickerPresented = true }
                         }
                     }
-                    .disabled(store.isSaving || store.importing || store.analysisID != nil
-                          || store.invalidatingJobID != nil || store.analysisStarting)
+                    .disabled(store.isSaving || input.importing || input.analysisID != nil
+                          || input.invalidatingJobID != nil || input.analysisStarting)
                 }
-                if store.invalidatingJobID != nil && !store.invalidationFailed {
+                if input.invalidatingJobID != nil && !input.invalidationFailed {
                     ProgressView("이전 분석을 정리하고 있어요")
                 }
-                if store.invalidationFailed {
+                if input.invalidationFailed {
                     InvalidationRetryView(
-                        retry: { store.send(.retryInvalidation) },
+                        retry: { store.send(.inputAnalysis(.retryInvalidation)) },
                         discard: { showDiscardConfirmation = true }
                     )
                 }
-                if let message = store.analysisMessage, store.analysisID == nil {
+                if let message = input.analysisMessage, input.analysisID == nil {
                     Text(message).typography(Typography.subheadline)
                 }
-                if store.analysisID == nil {
-                    ForEach(store.selectedInputs) { input in
-                        if let item = store.analysisResults[input.id],
+                if input.analysisID == nil {
+                    ForEach(input.selectedInputs) { selectedInput in
+                        if let item = input.analysisResults[selectedInput.id],
                            let reason = item.failureDescription {
-                            Text("\(input.name): \(reason)")
+                            Text("\(selectedInput.name): \(reason)")
                                 .font(.footnote)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
                 }
-                if store.analysisID == nil && store.analysisFailed {
-                    Text(store.pendingParsingInputs.isEmpty
+                if input.analysisID == nil && input.analysisFailed {
+                    Text(input.pendingParsingInputs.isEmpty
                          ? "일부 파일에서 용어를 추출하지 못했어요. 다시 시도해 주세요."
                          : "일부 파일을 분석하지 못했어요. 다시 시도해 주세요.")
                         .font(.footnote)
                 }
-                if !store.successfulResults.isEmpty, store.analysisID == nil {
+                if !input.successfulResults.isEmpty, input.analysisID == nil {
                     Button("분석 결과 보기", action: requestReview)
                         .buttonStyle(.labcord(.accent, size: .medium))
-                        .disabled(store.invalidatingJobID != nil || store.analysisStarting)
+                        .disabled(input.invalidatingJobID != nil || input.analysisStarting)
                 }
                 Button {
-                    if store.selectedInputs.isEmpty {
+                    if input.selectedInputs.isEmpty {
                         store.send(.skipTapped)
                     } else {
                         showSkipConfirmation = true
@@ -267,16 +271,16 @@ private extension ProtocolRegistrationView {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.labcord(.accent, size: .medium))
-                .disabled(store.isSaving || store.importing || store.analysisID != nil
-                          || store.invalidatingJobID != nil || store.analysisStarting)
+                .disabled(store.isSaving || input.importing || input.analysisID != nil
+                          || input.invalidatingJobID != nil || input.analysisStarting)
                 .accessibilityIdentifier("entry-skip")
 
                 EntryNextButton(
-                    enabled: (!store.pendingInputs.isEmpty || store.analysisPaused)
-                        && !store.importing
-                        && !store.isSaving && store.analysisID == nil
-                        && store.invalidatingJobID == nil && !store.analysisStarting,
-                    retry: store.analysisFailed || store.analysisPaused,
+                    enabled: (!input.pendingInputs.isEmpty || input.analysisPaused)
+                        && !input.importing
+                        && !store.isSaving && input.analysisID == nil
+                        && input.invalidatingJobID == nil && !input.analysisStarting,
+                    retry: input.analysisFailed || input.analysisPaused,
                     action: analyze
                 )
             }
@@ -290,30 +294,30 @@ private extension ProtocolRegistrationView {
 
     var reviewConfirmationMessage: String {
         var messages: [String] = []
-        if !store.pendingParsingInputs.isEmpty {
+        if !input.pendingParsingInputs.isEmpty {
             messages.append("분석하지 못한 파일은 제외돼요.")
         }
-        if store.successfulResults.contains(where: \.hasWarnings) {
+        if input.successfulResults.contains(where: \.hasWarnings) {
             messages.append("일부 내용을 읽지 못했을 수 있어요.")
         }
-        if store.termExtractionFailed {
+        if input.termExtractionFailed {
             messages.append("일부 파일에서 용어를 추출하지 못했어요. 직접 입력해 주세요.")
-        } else if store.extractedTerms.isEmpty {
+        } else if input.extractedTerms.isEmpty {
             messages.append("타이머를 확인하고 용어를 직접 입력해 주세요.")
         } else {
             messages.append("추출한 타이머와 용어를 확인하고 필요하면 수정해 주세요.")
         }
-        if store.hasAmbiguousTimers {
+        if input.hasAmbiguousTimers {
             messages.append("시간 범위와 조건은 타이머에 자동 추가하지 않았어요. 원문을 확인해 주세요.")
         }
-        if store.analysisTerms.values.contains(where: \.usedFallback) {
+        if input.analysisTerms.values.contains(where: \.usedFallback) {
             messages.append("일부 용어의 분류나 단위 표기를 확인해 주세요.")
         }
         return messages.joined(separator: " ")
     }
 
     func requestReview() {
-        if store.requiresReviewConfirmation {
+        if input.requiresReviewConfirmation {
             showReviewConfirmation = true
         } else {
             store.send(.showReview)
@@ -321,16 +325,16 @@ private extension ProtocolRegistrationView {
     }
 
     func analyze() {
-        guard store.analysisID == nil, store.invalidatingJobID == nil, !store.analysisStarting,
-              !store.importing, !store.isSaving else { return }
-        guard !store.selectedInputs.isEmpty else { return }
-        let id = store.analysisJobID ?? UUID()
-        store.send(.startAnalysis(id))
+        guard input.analysisID == nil, input.invalidatingJobID == nil, !input.analysisStarting,
+              !input.importing, !store.isSaving else { return }
+        guard !input.selectedInputs.isEmpty else { return }
+        let id = input.analysisJobID ?? UUID()
+        store.send(.inputAnalysis(.startAnalysis(id)))
     }
 
     func importPhotos(_ selection: [PhotosPickerItem]) {
         guard !selection.isEmpty else { return }
-        store.send(.importStarted)
+        store.send(.inputAnalysis(.importStarted))
         Task {
             var failed = false
             for item in selection {
@@ -341,27 +345,27 @@ private extension ProtocolRegistrationView {
                         failed = true
                         continue
                     }
-                    store.send(.photoImported(input))
+                    store.send(.inputAnalysis(.photoImported(input)))
                 } catch {
                     failed = true
                 }
             }
             photoSelection = []
-            store.send(.importFinished)
+            store.send(.inputAnalysis(.importFinished))
             importFailed = failed
         }
     }
 
     func importFile(_ url: URL) {
-        store.send(.importStarted)
+        store.send(.inputAnalysis(.importStarted))
         Task {
             do {
                 let input = try await ImportedProtocolInput.copyFile(url)
-                store.send(.fileImported(input))
+                store.send(.inputAnalysis(.fileImported(input)))
             } catch {
                 importFailed = true
             }
-            store.send(.importFinished)
+            store.send(.inputAnalysis(.importFinished))
         }
     }
 }

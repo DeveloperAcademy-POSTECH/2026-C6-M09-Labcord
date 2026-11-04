@@ -2,7 +2,7 @@ import ComposableArchitecture
 import Foundation
 import LabcordiOS
 
-extension ProtocolRegistrationFeature {
+extension ProtocolInputAnalysisFeature {
     func reduceAnalysisJob(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case let .startAnalysis(id):
@@ -47,7 +47,7 @@ extension ProtocolRegistrationFeature {
     }
 }
 
-private extension ProtocolRegistrationFeature {
+private extension ProtocolInputAnalysisFeature {
     func restoreAnalysisJob(
         _ snapshot: ProtocolAnalysisJobSnapshot, state: inout State
     ) -> Effect<Action> {
@@ -143,7 +143,7 @@ private extension ProtocolRegistrationFeature {
     }
 }
 
-extension ProtocolRegistrationFeature.State {
+extension ProtocolInputAnalysisFeature.State {
     var analysisInput: ImportedProtocolInput? {
         selectedInputs.first { $0.id == analysisInputID }
     }
