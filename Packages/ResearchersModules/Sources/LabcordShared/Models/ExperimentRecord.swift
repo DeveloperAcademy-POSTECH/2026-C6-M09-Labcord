@@ -16,6 +16,7 @@ public final class ExperimentRecord {
     public var note: String
     public var filePath: String?
     public var transcript: String?
+    public var timerEventNotesData: Data?
     public var timerDurationSeconds: Int?
     public var timerEndedAt: Date?
 
@@ -29,6 +30,7 @@ public final class ExperimentRecord {
         note: String,
         filePath: String? = nil,
         transcript: String? = nil,
+        timerEventNotesData: Data? = nil,
         timerDurationSeconds: Int? = nil,
         timerEndedAt: Date? = nil,
         timerPauses: [Pause] = []
@@ -39,6 +41,7 @@ public final class ExperimentRecord {
         self.note = note
         self.filePath = filePath
         self.transcript = transcript
+        self.timerEventNotesData = timerEventNotesData
         self.timerDurationSeconds = timerDurationSeconds
         self.timerEndedAt = timerEndedAt
         self.timerPauses = timerPauses
