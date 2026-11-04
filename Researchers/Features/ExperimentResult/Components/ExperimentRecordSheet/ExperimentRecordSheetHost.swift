@@ -4,9 +4,18 @@ import SwiftUI
 
 struct ExperimentRecordSheetHost: View {
     let entry: ExperimentResultDetail.TimelineEntry
+    @Binding var note: String
+    @Binding var isDeleteConfirmationPresented: Bool
+    @Binding var saveMessage: String?
+    let canSave: Bool
     let onDismiss: () -> Void
+    let onSave: () -> Void
+    let onDelete: () -> Void
+    let onConfirmDelete: () -> Void
+    let onCancelDelete: () -> Void
 
     @State private var contentHeight: CGFloat = 0
+    @State private var headerHeight: CGFloat = 0
     @State private var dragOffset: CGFloat = 0
     @State private var isDismissing = false
     @GestureState private var isHeaderDragging = false
@@ -18,26 +27,53 @@ struct ExperimentRecordSheetHost: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let height = contentHeight > 0
-                ? min(contentHeight, geometry.size.height)
+            let height = contentHeight > 0 && headerHeight > 0
+                ? min(contentHeight + headerHeight, geometry.size.height)
                 : geometry.size.height
 
             ZStack(alignment: .bottom) {
                 Color.clear
                     .contentShape(Rectangle())
-                    .onTapGesture(perform: onDismiss)
+                    .onTapGesture {
+                        if !canSave { onDismiss() }
+                    }
 
-                ScrollView {
-                    ExperimentRecordSheetView(entry: entry, onDismiss: onDismiss)
-                        .frame(maxWidth: .infinity)
-                        .overlay(alignment: .top) { headerDragArea }
-                        .onGeometryChange(for: CGFloat.self) { contentGeometry in
-                            contentGeometry.size.height.rounded(.up)
-                        } action: { contentHeight = $0 }
+                VStack(spacing: 0) {
+                    RecordBottomSheetHeader(onDismiss: onDismiss)
+                        .onGeometryChange(for: CGFloat.self) { headerGeometry in
+                            headerGeometry.size.height.rounded(.up)
+                        } action: { headerHeight = $0 }
+
+                    ScrollView {
+                        ExperimentRecordSheetView(
+                            entry: entry,
+                            note: $note,
+                            canSave: canSave,
+                            onDismiss: onDismiss,
+                            onSave: onSave,
+                            onDelete: onDelete
+                        )
+                            .frame(maxWidth: .infinity)
+                            .onGeometryChange(for: CGFloat.self) { contentGeometry in
+                                contentGeometry.size.height.rounded(.up)
+                            } action: { contentHeight = $0 }
+                            .alert(
+                                "기록을 삭제할까요?",
+                                isPresented: $isDeleteConfirmationPresented
+                            ) {
+                                Button("기록 삭제", role: .destructive, action: onConfirmDelete)
+                                Button("취소", role: .cancel, action: onCancelDelete)
+                            } message: {
+                                Text("삭제한 기록은 복구할 수 없어요.")
+                            }
+                    }
+                    .scrollIndicators(.hidden)
+                    .scrollBounceBehavior(.basedOnSize)
+                    .scrollDisabled(isHeaderDragging || dragOffset > 0)
+                    .frame(height: max(0, height - headerHeight))
                 }
-                .scrollBounceBehavior(.basedOnSize)
-                .scrollDisabled(isHeaderDragging || dragOffset > 0)
                 .frame(height: height)
+                .overlay(alignment: .top) { headerDragArea }
                 .clipShape(sheetShape)
                 .background(alignment: .top) {
                     sheetShape
@@ -45,7 +81,7 @@ struct ExperimentRecordSheetHost: View {
                         .frame(height: height + geometry.safeAreaInsets.bottom)
                         .allowsHitTesting(false)
                 }
-                .opacity(contentHeight > 0 ? 1 : 0)
+                .opacity(contentHeight > 0 && headerHeight > 0 ? 1 : 0)
                 .offset(y: dragOffset)
                 .onChange(of: isHeaderDragging) { _, isDragging in
                     if !isDragging, !isDismissing {
@@ -56,9 +92,18 @@ struct ExperimentRecordSheetHost: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             .coordinateSpace(name: "recordSheetDrag")
         }
+        .labcordDismissKeyboardOnTapOutside()
         .presentationBackground(.clear)
         .presentationCornerRadius(0)
         .presentationDragIndicator(.hidden)
+        .alert("기록 변경 실패", isPresented: Binding(
+            get: { saveMessage != nil },
+            set: { if !$0 { saveMessage = nil } }
+        )) {
+            Button("확인") { saveMessage = nil }
+        } message: {
+            Text(saveMessage ?? "")
+        }
     }
 
     private var headerDragArea: some View {
