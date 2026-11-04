@@ -16,6 +16,9 @@ struct AppFeature {
 
     @ObservableState
     struct State: Equatable {
+        var watchPendingStartID: UUID?
+        var watchIsActive = false
+        var watchRequestID: UUID?
         var home = HomeFeature.State()
         var path = StackState<Path.State>()
         var reviewSaving = false
@@ -29,6 +32,9 @@ struct AppFeature {
     }
 
     enum Action {
+        case watchTask
+        case watchEvent(PhoneWatchExperimentCoordinator.Event)
+        case watchSceneChanged(Bool)
         case home(HomeFeature.Action)
         case path(StackActionOf<Path>)
         case closeRegistration(StackElementID)
@@ -55,9 +61,13 @@ struct AppFeature {
 
     var body: some Reducer<State, Action> {
         Scope(state: \.home, action: \.home) { HomeFeature() }
+        watchReducer
 
         Reduce { state, action in
             switch action {
+            case .watchTask, .watchEvent, .watchSceneChanged:
+                return .none
+
             case .home(.addTapped):
                 guard state.path.isEmpty, !state.home.list.isDeleting,
                       state.home.list.pendingDeletion == nil else { return .none }
@@ -240,9 +250,11 @@ struct AppFeature {
                 return .send(.home(.list(.created(entry))))
 
             case let .path(.element(id: id, action: .session(.stopCompleted))):
+                finishWatchRequest(&state)
                 return .send(.showResult(id))
 
             case let .path(.element(id: id, action: .session(.homeExitCompleted))):
+                finishWatchRequest(&state)
                 return .send(.returnHome(id))
 
             case let .showResult(id):
@@ -268,6 +280,7 @@ struct AppFeature {
             }
         }
         .forEach(\.path, action: \.path)
+        watchContextReducer
     }
 }
 

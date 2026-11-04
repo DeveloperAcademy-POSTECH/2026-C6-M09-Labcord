@@ -3,6 +3,7 @@ import LabcordiOS
 import SwiftUI
 
 struct AppView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @State private var store = Store(initialState: AppFeature.State()) {
         AppFeature()
     }
@@ -46,7 +47,12 @@ struct AppView: View {
                     .navigationSwipeBackEnabled(store.isOpenedFromHome)
             }
         }
-        .disabled(store.reviewSaving)
+        .task { await store.send(.watchTask).finish() }
+        .onAppear { store.send(.watchSceneChanged(scenePhase == .active)) }
+        .onChange(of: scenePhase) { _, phase in
+            store.send(.watchSceneChanged(phase == .active))
+        }
+        .disabled(store.reviewSaving || store.watchRequestID != nil)
         .alert("실험을 저장하거나 정리하지 못했어요", isPresented: Binding(
             get: { store.reviewSaveFailed },
             set: { if !$0 { store.send(.dismissReviewSaveFailure) } }
