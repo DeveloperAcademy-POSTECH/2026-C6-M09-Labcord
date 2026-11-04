@@ -76,9 +76,11 @@ struct WatchRecordView: View {
                     systemImage: record.kind == .voice ? "mic" : "camera"
                 ) { store.send(.recapture(record.id)) }
             } else if record.originalRetained {
-                Button("원본으로 재시도", systemImage: "arrow.clockwise") {
+                Button(record.kind == .voice ? "원본으로 재시도" : "저장 다시 시도",
+                       systemImage: "arrow.clockwise") {
                     store.send(.retry(record.id))
                 }
+                Button("기록 취소", role: .destructive) { store.send(.cancel(record.id)) }
             } else {
                 Text("원본과 처리 결과를 먼저 확인해주세요.").font(.caption)
                 Button("상태 확인") { store.send(.delegate(.local(.reconcile))) }

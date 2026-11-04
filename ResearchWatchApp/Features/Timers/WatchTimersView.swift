@@ -21,33 +21,40 @@ struct WatchTimersView: View {
                         }
                     }
                 }
-                if !snapshot.protocolTimerSeconds.isEmpty {
+                if snapshot.mode == .procedure {
                     Text("프로토콜 타이머")
                         .font(.headline)
-                    ForEach(protocolDurations) { choice in
-                        Button(WatchPresentationRules.time(choice.seconds)) {
-                            store.send(.timerStarted(choice.seconds))
-                        }
-                        .disabled(!canModify || choice.seconds <= 0)
-                    }
-                }
-                Text("자유 타이머")
-                    .font(.headline)
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())]) {
-                    ForEach([60, 180, 300, 600], id: \.self) { seconds in
-                        Button("\(seconds / 60)분") { store.send(.timerStarted(seconds)) }
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())]) {
+                        ForEach(protocolDurations) { choice in
+                            Button {
+                                store.send(.timerStarted(choice.seconds))
+                            } label: {
+                                Text(choice.seconds % 60 == 0
+                                     ? "\(choice.seconds / 60)\n분"
+                                     : WatchPresentationRules.time(choice.seconds))
+                                    .multilineTextAlignment(.center)
+                                    .frame(maxWidth: .infinity)
+                                    .aspectRatio(1, contentMode: .fit)
+                            }
+                            .buttonStyle(.bordered)
                             .buttonBorderShape(.circle)
-                            .disabled(!canModify)
+                            .disabled(!canModify || choice.seconds <= 0)
+                        }
                     }
                 }
-                Button("직접 설정", systemImage: "plus") { store.send(.timerEditorTapped) }
-                    .disabled(!canModify)
             }
             if let message = store.message { Text(message).font(.caption) }
             if let pending = store.pending {
                 Text(pending.phase == .processing ? "iPhone 처리 중" : "요청 결과 확인 중")
                 Button("요청 상태 확인") { store.send(.checkRequest) }
                     .disabled(!store.isReachable)
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button("타이머 추가", systemImage: "plus") { store.send(.timerEditorTapped) }
+                    .labelStyle(.iconOnly)
+                    .disabled(!canModify)
             }
         }
     }
