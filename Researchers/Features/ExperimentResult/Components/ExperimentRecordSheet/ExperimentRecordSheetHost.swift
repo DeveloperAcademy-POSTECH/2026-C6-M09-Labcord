@@ -60,7 +60,7 @@ struct ExperimentRecordSheetHost: View {
                                 onDelete: onDelete,
                                 onScrollTargetChange: { scrollTarget = $0 },
                                 isVideoFullScreen: fullScreenVideoPlayer != nil
-                            )                                { fullScreenVideoPlayer = $0 }
+                            ) { fullScreenVideoPlayer = $0 }
                                 .frame(maxWidth: .infinity)
                                 .onGeometryChange(for: CGFloat.self) { contentGeometry in
                                     contentGeometry.size.height.rounded(.up)
