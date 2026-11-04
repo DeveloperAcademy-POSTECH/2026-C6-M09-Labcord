@@ -108,9 +108,9 @@ public struct TimerRecord: View {
     private var singleLineContent: some View {
         HStack(alignment: .center) {
             stateLabel
-            
+
             Spacer()
-            
+
             durationLabel
         }
         .frame(minHeight: 22, alignment: .leading)
@@ -120,9 +120,9 @@ public struct TimerRecord: View {
         VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
             HStack(alignment: .center) {
                 pausedStatus
-                
+
                 Spacer()
-                
+
                 durationLabel
             }
 
