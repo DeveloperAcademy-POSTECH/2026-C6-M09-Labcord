@@ -23,7 +23,7 @@ struct AppFeature {
         var reviewAlreadySaved = false
         var reviewExitRequested = false
         var reviewPendingID: UUID?
-        var reviewRegistrationID: StackElementID?
+        var reviewAnalysisJobID: UUID?
         var recentRegistrationID: StackElementID?
         var savedReview: ExperimentListEntry?
     }
@@ -117,7 +117,7 @@ struct AppFeature {
                 guard state.path.ids.last == id,
                       let recent = state.path[id: id, case: \.recent],
                       let entry = recent.entries.first(where: { $0.id == recent.selectedID }),
-                      let registrationID = state.recentRegistrationID else { return .none }
+                      state.recentRegistrationID != nil else { return .none }
                 let categories: [(ProtocolTermCategory, [String])] = [
                     (.materials, entry.materials), (.samples, entry.samples),
                     (.glossary, entry.glossaryTerms), (.units, entry.units)
@@ -126,7 +126,7 @@ struct AppFeature {
                 for (category, values) in categories {
                     terms[category] = values.map { ProtocolReviewTerm(id: uuid(), value: $0) }
                 }
-                state.reviewRegistrationID = registrationID
+                state.reviewAnalysisJobID = nil
                 state.path.append(.review(.init(
                     title: entry.title, timerSeconds: entry.timerSeconds, terms: terms
                 )))
@@ -145,7 +145,7 @@ struct AppFeature {
                 let terms = registration.extractedTerms.mapValues { values in
                     values.map { ProtocolReviewTerm(id: uuid(), value: $0) }
                 }
-                state.reviewRegistrationID = id
+                state.reviewAnalysisJobID = registration.analysisJobID
                 state.path.append(.review(.init(title: "", timerSeconds: seconds, terms: terms)))
                 return .none
 
@@ -278,9 +278,7 @@ private extension AppFeature {
               review.timersValid, !review.hasUncommittedTerm else { return .none }
         if state.savedReview != nil {
             state.reviewSaving = true
-            let jobID = state.reviewRegistrationID.flatMap {
-                state.path[id: $0, case: \.registration]?.analysisJobID
-            }
+            let jobID = state.reviewAnalysisJobID
             return .run { send in
                 let success = if let jobID {
                     await jobManager.cancel(id: jobID)
@@ -297,9 +295,7 @@ private extension AppFeature {
             glossaryTerms: review.terms[.glossary, default: []].map(\.value),
             units: review.terms[.units, default: []].map(\.value)
         )
-        let jobID = state.reviewRegistrationID.flatMap {
-            state.path[id: $0, case: \.registration]?.analysisJobID
-        }
+        let jobID = state.reviewAnalysisJobID
         let identifier = state.reviewPendingID ?? jobID ?? uuid()
         state.reviewPendingID = identifier
         state.reviewSaving = true
