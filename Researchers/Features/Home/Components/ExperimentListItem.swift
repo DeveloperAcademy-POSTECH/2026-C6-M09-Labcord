@@ -48,6 +48,7 @@ struct ExperimentListItem: View {
             .padding(LayoutTokens.spacing8)
             .contentShape(Rectangle())
         }
+        .background(Color("General/Background/Primary"))
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(Color("General/Border/Default"))
@@ -55,8 +56,6 @@ struct ExperimentListItem: View {
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
         }
-        .accessibilityIdentifier("experiment-row-\(entry.id.uuidString)")
-        .accessibilityElement(children: .combine)
     }
 
     private static let dateFormatter: DateFormatter = {
