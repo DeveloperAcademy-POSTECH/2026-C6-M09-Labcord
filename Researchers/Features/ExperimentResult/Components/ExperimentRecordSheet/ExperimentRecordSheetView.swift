@@ -7,6 +7,7 @@ import SwiftUI
 struct ExperimentRecordSheetView: View {
     let entry: ExperimentResultDetail.TimelineEntry
     @Binding var note: String
+    @Binding var transcript: String
     let canSave: Bool
     let onDismiss: () -> Void
     let onSave: () -> Void
@@ -16,7 +17,6 @@ struct ExperimentRecordSheetView: View {
 
     var body: some View {
         if let presentation = ExperimentRecordSheetPresentation(entry: entry) {
-            let record = presentation.record
             RecordBottomSheet(
                 type: presentation.type,
                 contentState: canSave ? .filled : .empty,
@@ -26,10 +26,9 @@ struct ExperimentRecordSheetView: View {
                 timerCumulativeTime: presentation.timer?.cumulativeTime ?? "",
                 timerPauseCount: presentation.timer?.pauseCount ?? "",
                 voiceContent: voiceContent(for: presentation),
+                transcript: $transcript,
                 note: $note,
                 mediaContent: mediaContent(for: presentation),
-                transcriptContent: AnyView(readOnlyText(record.transcript ?? "")),
-                transcriptHelp: "",
                 onDismiss: onDismiss,
                 onSave: onSave,
                 onDelete: onDelete,
@@ -79,11 +78,4 @@ struct ExperimentRecordSheetView: View {
         }
     }
 
-    private func readOnlyText(_ value: String) -> some View {
-        Text(value.isEmpty ? "내용이 없습니다." : value)
-            .typography(Typography.subheadline)
-            .foregroundStyle(Color("General/Label/Primary"))
-            .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
-            .padding(LayoutTokens.spacing12)
-    }
 }
