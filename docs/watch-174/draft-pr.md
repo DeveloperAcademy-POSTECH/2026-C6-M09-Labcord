@@ -1,9 +1,9 @@
 # Watch PR 초안 안내
 
-현재 단계는 #170 Watch 선택·준비·상태 기반이다.
-선택·권한·준비·카운트다운·닫기·관찰 수명을 담당한다. 루트 Feature가 참조하는 WatchRecordFeature/Presentation과 오류 표시 타입을 함께 도입한다.
+현재 단계는 #171 Watch 진행·기록 화면·실제 연결이다.
+진행 도구·타이머·기록 View·정리 화면, 실제 recorder bridge/events, 미확정 요청 journal·재실행·취소·늦은 응답 복구를 담당한다.
 
-WatchExperimentFeature/Requests/Lifecycle/View는 선택·준비에 필요한 역사 버전으로 시작한다. App 진입과 준비 링 asset을 포함하고 후속 도구·Intent 참조는 각 단계에서 확장한다.
+WatchExperimentFeature/Requests/Lifecycle/Tools/View를 실제 도구와 pending 복구로 확장한다. App Store에 live bridge를 주입한다. 사진 취소 버튼·카운트다운은 실제 취소·복구와 같은 PR에 둔다.
 
 7개 PR은 #173 → #174 → #268 → #269 → #170 → #171 → #270 순차 stack이다.
 첫 base는 `feat/#167-Devin-prepared`, 이후 base는 직전 `feat/#번호-Codex`다.
