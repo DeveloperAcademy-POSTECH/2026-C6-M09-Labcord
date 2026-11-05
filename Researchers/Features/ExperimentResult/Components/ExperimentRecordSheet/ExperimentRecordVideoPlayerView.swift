@@ -1,8 +1,8 @@
 import AVFoundation
 import Combine
 import Foundation
-import SwiftUI
 import LabcordDesignSystem
+import SwiftUI
 
 struct ExperimentRecordVideoPlayerView: View {
     private final class Playback: ObservableObject {
