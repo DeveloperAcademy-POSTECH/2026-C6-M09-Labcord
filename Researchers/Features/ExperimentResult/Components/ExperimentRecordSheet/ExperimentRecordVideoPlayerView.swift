@@ -2,6 +2,7 @@ import AVFoundation
 import Combine
 import Foundation
 import SwiftUI
+import LabcordDesignSystem
 
 struct ExperimentRecordVideoPlayerView: View {
     private final class Playback: ObservableObject {
@@ -88,6 +89,8 @@ struct ExperimentRecordVideoPlayerView: View {
 
                 HStack(spacing: 12) {
                     Text(timeLabel(currentTime))
+                        .typography(Typography.caption2)
+                        .foregroundStyle(.gray)
 
                     GeometryReader { geometry in
                         Capsule()
@@ -101,6 +104,8 @@ struct ExperimentRecordVideoPlayerView: View {
                     .frame(height: 4)
 
                     Text(timeLabel(duration))
+                        .typography(Typography.caption2)
+                        .foregroundStyle(.gray)
                 }
                 .font(.system(size: 14, weight: .medium, design: .rounded))
                 .monospacedDigit()
