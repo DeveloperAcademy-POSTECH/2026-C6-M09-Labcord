@@ -14,9 +14,20 @@
 | 들여쓰기 | 스타일 가이드는 2 spaces, 기존 Swift는 주로 4 spaces. 적용 기준은 팀 확인 사항이며 일괄 포맷 변경하지 않음 |
 | import 배치 | 스타일 가이드와 기존 코드 배치에 차이가 있음. `.swiftlint.yml`의 `sorted_imports`도 확인하며 새 우선순위를 임의 확정하지 않음 |
 | 줄 길이 | warning 99·error 150이고 `--strict`는 warning도 실패 처리 |
-| 도구·SDK | Package의 iOS/watchOS 최소 26, 프로젝트 배포 대상 27.0, CI runner `xcode-27`, Swift tools 6.4 |
+| 도구·SDK | Package의 iOS 최소 27·watchOS 최소 26, 프로젝트 배포 대상 27.0, CI runner `xcode-27`, Swift tools 6.4 |
 | TCA API | 잠긴 버전은 1.26.2. 사용하는 API의 지원 여부를 확인 |
 
 현재 경로·버전·설정 등 확인 가능한 사실은 실제 저장소와 일치하도록 유지합니다.
 기존 팀 규칙과 충돌하는 동작이나 새 정책의 결정이 필요하면 팀에 확인합니다.
 단순한 경로·버전 갱신을 위해 별도 승인을 반복해서 요청하지 않습니다.
+
+## Watch 구현
+
+- 통신·iPhone 시작 정책: 실험 명령·응답·snapshot·전송·조회·중복 방어·일회성 토큰과 iPhone 화면 정책을 담당한다. record 결과 필드와 저장 라우팅은 후속 단계에서 확장한다.
+- 음성 녹음·전사·전송·복구: 공통 기록 snapshot/전송 기반과 Watch 녹음·archive·누락 재전송·iPhone 전사·수정 전사 충돌·저장 ACK를 담당한다.
+
+Watch audio background 설정과 실제 WC/audio 서비스가 있다. Watch 영구 실험 저장은 iPhone이 담당한다.
+Watch 실제 기록 UI bridge는 #171에서 연결한다.
+세 Intent와 Runtime은 #270에서 연결한다.
+
+계약·검증 경계는 [Watch 구현](../watch-implementation.md)과 [검증](../watch-174/integrated-validation.md)을 참고한다.
