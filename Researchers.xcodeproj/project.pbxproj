@@ -50,6 +50,11 @@
 			membershipExceptions = (Info.plist, );
 			target = 8E0691143080743D0081547E /* Researchers */;
 		};
+		BA1740013000000000000001 /* Exceptions for ResearchWatchApp */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (Info.plist, );
+			target = 8E2E27283084877E0043EEB3 /* ResearchWatch Watch App */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -61,6 +66,7 @@
 		};
 		8E2E272A3084877E0043EEB3 /* ResearchWatchApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (BA1740013000000000000001 /* Exceptions for ResearchWatchApp */, );
 			path = ResearchWatchApp;
 			sourceTree = "<group>";
 		};
@@ -501,6 +507,7 @@
 				DEVELOPMENT_TEAM = HJGS4LQ7XH;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ResearchWatchApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Labcord;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "실험 중 음성을 녹음하고 기록하기 위해 마이크 접근이 필요합니다.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
@@ -535,6 +542,7 @@
 				DEVELOPMENT_TEAM = HJGS4LQ7XH;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ResearchWatchApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Labcord;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "실험 중 음성을 녹음하고 기록하기 위해 마이크 접근이 필요합니다.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
