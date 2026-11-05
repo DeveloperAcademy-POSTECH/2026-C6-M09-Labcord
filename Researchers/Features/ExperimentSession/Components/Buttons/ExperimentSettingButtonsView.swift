@@ -10,7 +10,9 @@ import LabcordDesignSystem
 
 struct ExperimentSettingButtonsView: View {
     let onShowGestureGuide: () -> Void
+    let onShowRunningTimers: () -> Void
     let onSwitchCamera: () -> Void
+    let showsRunningTimerButton: Bool
     let canSwitchCamera: Bool
 
     var body: some View {
@@ -27,14 +29,17 @@ struct ExperimentSettingButtonsView: View {
             Spacer()
             
             HStack(spacing: 20) {
-                ExperimentControlButton(action: {}) {
-                    Image(labcordIcon: .timer)
-                        .foregroundStyle(Color("Experiment/Timer/Foreground"))
+                if showsRunningTimerButton {
+                    ExperimentControlButton(action: onShowRunningTimers) {
+                        Image(labcordIcon: .timer)
+                            .foregroundStyle(Color("Experiment/Timer/Foreground"))
+                    }
+                    .accessibilityLabel("진행 중인 타이머 보기")
+                    .background(
+                        VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
+                    )
+                    .cornerRadius(LayoutTokens.radiusFull)
                 }
-                .background(
-                    VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
-                )
-                .cornerRadius(LayoutTokens.radiusFull)
                 
                 ExperimentControlButton(
                     state: canSwitchCamera ? .default : .disabled,
@@ -64,7 +69,9 @@ struct ExperimentSettingButtonsView: View {
 #Preview {
     ExperimentSettingButtonsView(
         onShowGestureGuide: {},
+        onShowRunningTimers: {},
         onSwitchCamera: {},
+        showsRunningTimerButton: true,
         canSwitchCamera: true
     )
         .background(.black)

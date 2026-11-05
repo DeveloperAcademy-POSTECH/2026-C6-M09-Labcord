@@ -7,9 +7,11 @@
 
 import ComposableArchitecture
 import LabcordDesignSystem
+import LabcordShared
 import SwiftUI
 
 struct PortraitSessionView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Binding var isSidePanelExpanded: Bool
 
     let store: StoreOf<CameraCaptureFeature>
@@ -50,14 +52,24 @@ struct PortraitSessionView: View {
                     VStack(spacing: 16) {
                         ExperimentSettingButtonsView(
                             onShowGestureGuide: onShowGestureGuide,
+                            onShowRunningTimers: {
+                                timerStore.send(.timerTabSelected(.active))
+                                withAnimation(reduceMotion ? nil : LabcordMotion.layout.animation) {
+                                    isSidePanelExpanded = true
+                                }
+                            },
                             onSwitchCamera: { store.send(.cameraSwitchRequested) },
+                            showsRunningTimerButton: !isSidePanelExpanded
+                                && timerStore.timerCollection.hasRunningTimers,
                             canSwitchCamera: store.canSwitchCamera
                         )
                         
                         ExperimentSidePanel(
                             layout: .portrait,
                             isExpanded: $isSidePanelExpanded
-                        )
+                        ) {
+                            SessionTimerView(store: timerStore)
+                        }
                         .ignoresSafeArea()
                         .frame(height: isSidePanelExpanded ? 398 : 83)
                         .anchorPreference(key: CameraPreviewAnchorKey.self, value: .bounds) { $0 }
