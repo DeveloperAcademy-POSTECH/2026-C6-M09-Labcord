@@ -12,6 +12,7 @@ public enum ExperimentCreationError: Error, Sendable {
 }
 
 public struct ExperimentClient: Sendable {
+    public var watchState: @MainActor @Sendable (UUID) throws -> WatchExperimentState?
     public var load: @MainActor @Sendable () throws -> [ExperimentListEntry]
     public var loadRecentProtocols: @MainActor @Sendable () throws -> [RecentProtocolEntry]
     public var loadDetail: @MainActor @Sendable (UUID) throws -> ExperimentSessionDetail?
@@ -55,8 +56,12 @@ public struct ExperimentClient: Sendable {
             UUID, Date, String, ExperimentProtocol
         ) throws -> ExperimentListEntry = { _, _, _, _ in
             throw ExperimentCreationError.unavailable
+        },
+        watchState: @escaping @MainActor @Sendable (UUID) throws -> WatchExperimentState? = { _ in
+            throw ExperimentCreationError.unavailable
         }
     ) {
+        self.watchState = watchState
         self.load = load
         self.loadRecentProtocols = loadRecentProtocols
         self.loadDetail = loadDetail
@@ -125,7 +130,8 @@ extension ExperimentClient: DependencyKey {
             try ExperimentListRepository.shared.createWithProtocol(
                 id: $0, at: $1, title: $2, procedure: $3
             )
-        }
+        },
+        watchState: { try ExperimentSessionRepository.shared.watchState(id: $0) }
     )
 }
 
