@@ -9,6 +9,8 @@ struct ExperimentSessionFeature {
     struct State: Equatable {
         let experimentID: UUID
         var detail: ExperimentSessionDetail?
+        var isLoadingDetail = false
+        var detailLoadFailed = false
         var timer: SessionTimerFeature.State
 
         var permissions = SessionPermissionsFeature.State()
@@ -45,6 +47,8 @@ struct ExperimentSessionFeature {
     enum Action: Equatable {
         case loadDetail
         case detailLoaded(ExperimentSessionDetail)
+        case detailLoadingFailed
+        case dismissDetailLoadFailure
         case timer(SessionTimerFeature.Action)
         case permissions(SessionPermissionsFeature.Action)
         case voice(VoiceRecordingFeature.Action)
@@ -91,17 +95,12 @@ struct ExperimentSessionFeature {
         Reduce { state, action in
             switch action {
             case .loadDetail:
-                let experimentID = state.experimentID
-                return .run { send in
-                    await timerCompletionNotificationClient.cancelForExperiment(experimentID)
-                    guard let detail = try? await experimentClient.loadDetail(experimentID) else {
-                        return
-                    }
-                    await send(.detailLoaded(detail))
-                }
+                return loadDetail(state: &state)
 
             case let .detailLoaded(detail):
+                state.isLoadingDetail = false
                 state.detail = detail
+                state.voice.contextualStrings = detail.speechContextualStrings
                 return .send(
                     .timer(
                         .configure(
@@ -111,6 +110,15 @@ struct ExperimentSessionFeature {
                         )
                     )
                 )
+
+            case .detailLoadingFailed:
+                state.isLoadingDetail = false
+                state.detailLoadFailed = true
+                return .none
+
+            case .dismissDetailLoadFailure:
+                state.detailLoadFailed = false
+                return .none
 
             case .appBecameActive:
                 guard !state.isReady else { return .none }
@@ -264,15 +272,7 @@ struct ExperimentSessionFeature {
                 }
 
             case .voiceStartRequested:
-                guard state.voice.phase == .hidden,
-                      state.capture.isCameraViewVisible,
-                      !state.capture.isCapturingPhoto,
-                      state.capture.capturedPhotoData == nil,
-                      state.capture.videoPhase == .idle else { return .none }
-                return .merge(
-                    .send(.capture(.cancelPhotoGesture)),
-                    .send(.voice(.prepareRequested))
-                )
+                return prepareVoiceRecording(state: &state)
 
             case .photoStartRequested:
                 guard state.voice.phase == .hidden else {
@@ -288,5 +288,42 @@ struct ExperimentSessionFeature {
                 return .none
             }
         }
+    }
+}
+
+private extension ExperimentSessionFeature {
+    func loadDetail(state: inout State) -> Effect<Action> {
+        guard state.detail == nil, !state.isLoadingDetail else { return .none }
+        state.isLoadingDetail = true
+        state.detailLoadFailed = false
+        let experimentID = state.experimentID
+        return .run { send in
+            await timerCompletionNotificationClient.cancelForExperiment(experimentID)
+            guard let detail = try? await experimentClient.loadDetail(experimentID) else {
+                await send(.detailLoadingFailed)
+                return
+            }
+            await send(.detailLoaded(detail))
+        }
+    }
+
+    func prepareVoiceRecording(state: inout State) -> Effect<Action> {
+        guard state.detail != nil else {
+            if state.isLoadingDetail {
+                state.voice.errorMessage = "실험 정보를 불러오고 있어요. 잠시 후 다시 시도해 주세요."
+            } else {
+                state.detailLoadFailed = true
+            }
+            return .none
+        }
+        guard state.voice.phase == .hidden,
+              state.capture.isCameraViewVisible,
+              !state.capture.isCapturingPhoto,
+              state.capture.capturedPhotoData == nil,
+              state.capture.videoPhase == .idle else { return .none }
+        return .merge(
+            .send(.capture(.cancelPhotoGesture)),
+            .send(.voice(.prepareRequested))
+        )
     }
 }

@@ -167,6 +167,7 @@ struct ExperimentSessionView: View {
         } message: {
             Text(captureStore.cameraErrorMessage ?? "")
         }
+        .modifier(DetailLoadFailureAlert(store: store))
         .alert(
             "음성 기록 오류",
             isPresented: Binding(
@@ -240,6 +241,22 @@ struct ExperimentSessionView: View {
             }
         } message: {
             Text("실험 상태를 저장하지 못했습니다.")
+        }
+    }
+}
+
+private struct DetailLoadFailureAlert: ViewModifier {
+    let store: StoreOf<ExperimentSessionFeature>
+
+    func body(content: Content) -> some View {
+        content.alert("실험 정보를 불러오지 못했어요", isPresented: Binding(
+            get: { store.detailLoadFailed },
+            set: { if !$0 { store.send(.dismissDetailLoadFailure) } }
+        )) {
+            Button("다시 시도") { store.send(.loadDetail) }
+            Button("닫기", role: .cancel) { store.send(.dismissDetailLoadFailure) }
+        } message: {
+            Text("실험 정보를 불러온 뒤 녹음할 수 있어요.")
         }
     }
 }
