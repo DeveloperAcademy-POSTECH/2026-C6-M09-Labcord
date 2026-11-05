@@ -3,6 +3,7 @@ import ComposableArchitecture
 import Foundation
 import LabcordShared
 import LabcordWatchOS
+import OSLog
 #if os(watchOS)
 import WatchKit
 #endif
@@ -28,6 +29,8 @@ final class WatchIntentRuntime {
     private let isActive: @MainActor () -> Bool
     private let microphoneAllowed: @MainActor () -> Bool
     private var isPerforming = false
+    private let logger = Logger(subsystem: "com.researchers.Researchers.watchkitapp",
+                                category: "WatchIntentRuntime")
 
     init(
         store: StoreOf<WatchExperimentFeature>,
@@ -40,6 +43,7 @@ final class WatchIntentRuntime {
     }
 
     func perform(_ kind: WatchRecordPresentation.Kind) async throws -> String {
+        logger.info("Intent invoked: \(String(describing: kind), privacy: .public)")
         guard !isPerforming else { throw WatchIntentRuntimeError.busy }
         isPerforming = true
         defer { isPerforming = false }
@@ -48,6 +52,7 @@ final class WatchIntentRuntime {
         let deadline = ContinuousClock.now.advanced(by: .seconds(3))
         do {
             try await waitForRoot(until: deadline)
+            logger.info("Intent foreground ready")
             try validateLease(practice: startedInPractice, selectedID: selectedID)
             if startedInPractice {
                 _ = try WatchIntentRouting.action(for: kind, state: store.withState { $0 })
@@ -93,8 +98,19 @@ final class WatchIntentRuntime {
         let previousIDs = Set(store.recording.records.keys)
         let experimentID = store.selectedID
         store.send(action)
-        await Task.yield()
-        try verifyAccepted(action, previousIDs: previousIDs, experimentID: experimentID)
+        logger.info("Intent dispatched recording action")
+        let deadline = ContinuousClock.now.advanced(by: .seconds(3))
+        while true {
+            try Task.checkCancellation()
+            guard isActive(), store.isVisible, store.selectedID == experimentID else {
+                throw WatchIntentRuntimeError.contextChanged
+            }
+            if try verifyAccepted(
+                action, previousIDs: previousIDs, experimentID: experimentID
+            ) { break }
+            try await pause(until: deadline)
+        }
+        logger.info("Intent recording request accepted; capture and save are not confirmed")
         return "기록 요청을 접수했어요. 앱에서 처리·저장 결과를 확인해주세요."
     }
 
@@ -168,7 +184,7 @@ final class WatchIntentRuntime {
 
     private func verifyAccepted(
         _ action: WatchExperimentFeature.Action, previousIDs: Set<UUID>, experimentID: UUID?
-    ) throws {
+    ) throws -> Bool {
         let record: WatchRecordPresentation?
         switch action {
         case let .recordTapped(kind):
@@ -180,9 +196,10 @@ final class WatchIntentRuntime {
         default:
             throw WatchIntentRuntimeError.notReady
         }
-        guard let record else { throw WatchIntentRuntimeError.notReady }
+        guard let record else { return false }
         if record.phase == .failed {
             throw WatchIntentRuntimeError.requestRejected(record.detail ?? "기록 요청을 처리하지 못했어요.")
         }
+        return true
     }
 }

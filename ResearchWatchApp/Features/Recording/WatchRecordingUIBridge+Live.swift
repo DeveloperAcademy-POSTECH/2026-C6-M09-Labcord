@@ -44,11 +44,17 @@ final class WatchRecordingService {
 
     func activate() {
         guard startup == nil else { return }
-        observeTransport()
+        if receiptTask == nil { observeTransport() }
         startup = Task {
-            try await recorder.recoverInterruptedRecordings()
-            try await restoreLocalRecords()
-            transfer.startRecovery()
+            do {
+                try await recorder.recoverInterruptedRecordings()
+                try await restoreLocalRecords()
+                transfer.startRecovery()
+            } catch {
+                // 일시적인 복구 실패를 이후의 모든 녹음 요청에 고정하지 않는다.
+                startup = nil
+                throw error
+            }
         }
     }
 
@@ -67,7 +73,14 @@ final class WatchRecordingService {
 
     func perform(_ input: WatchRecordingUIBridge.Input) async throws {
         activate()
-        try await startup?.value
+        do {
+            try await startup?.value
+        } catch {
+            if case let .startVoice(experimentID, recordID) = input {
+                await rejectEmptyVoiceStart(experimentID: experimentID, recordID: recordID)
+            }
+            throw error
+        }
         switch input {
         case let .startVoice(experimentID, recordID):
             try await startVoice(experimentID: experimentID, recordID: recordID)
@@ -95,17 +108,7 @@ final class WatchRecordingService {
         do {
             events = try await recorder.start(experimentID: experimentID, recordingID: recordID)
         } catch {
-            // 보관 조회 성공과 활성 녹음 부재가 모두 확인돼야 새 녹음을 허용한다.
-            if recorder.activeRecording == nil,
-               (try? await hasNoVoiceOriginal(recordID)) == true {
-                var rejected = WatchRecordPresentation(
-                    id: recordID, experimentID: experimentID, kind: .voice
-                )
-                rejected.phase = .failed
-                rejected.captureRejectedBeforeStart = true
-                rejected.detail = "녹음을 시작하지 못했어요. 권한·저장 공간·앱 상태를 확인해주세요."
-                publish(rejected)
-            }
+            await rejectEmptyVoiceStart(experimentID: experimentID, recordID: recordID)
             throw error
         }
         captureTasks[recordID] = Task { [weak self] in
@@ -115,6 +118,19 @@ final class WatchRecordingService {
             }
             self?.captureTasks[recordID] = nil
         }
+    }
+
+    private func rejectEmptyVoiceStart(experimentID: UUID, recordID: UUID) async {
+        // 보관 조회 성공과 활성 녹음 부재가 모두 확인돼야 새 녹음을 허용한다.
+        guard recorder.activeRecording == nil,
+              (try? await hasNoVoiceOriginal(recordID)) == true else { return }
+        var rejected = WatchRecordPresentation(
+            id: recordID, experimentID: experimentID, kind: .voice
+        )
+        rejected.phase = .failed
+        rejected.captureRejectedBeforeStart = true
+        rejected.detail = "녹음을 시작하지 못했어요. 권한·저장 공간·앱 상태를 확인해주세요."
+        publish(rejected)
     }
 
     private func hasNoVoiceOriginal(_ recordID: UUID) async throws -> Bool {

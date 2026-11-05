@@ -57,7 +57,12 @@ public final class WatchAudioTransferClient {
         do {
             for header in try await archive.headers() {
                 try Task.checkCancellation()
-                try await recover(header)
+                do {
+                    try await recover(header)
+                } catch let error as WatchAudioError {
+                    // A retained record with invalid data must not starve later recordings.
+                    lastError = error
+                }
             }
         } catch is CancellationError {
             return
@@ -173,13 +178,13 @@ public final class WatchAudioImmediateExchange {
         let id = UUID()
         return try await withCheckedThrowingContinuation { continuation in
             pending[id] = continuation
-            WCSession.default.sendMessageData(data) { [weak self] reply in
+            WCSession.default.sendMessageData(data) { @Sendable [weak self] reply in
                 Task { @MainActor in
                     self?.resolve(id, result: Result {
                         try JSONDecoder().decode(WatchAudioReceipt.self, from: reply)
                     })
                 }
-            } errorHandler: { [weak self] error in
+            } errorHandler: { @Sendable [weak self] error in
                 Task { @MainActor in self?.resolve(id, result: .failure(error)) }
             }
             Task { [weak self] in

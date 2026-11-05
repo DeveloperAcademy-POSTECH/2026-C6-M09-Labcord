@@ -74,8 +74,7 @@ extension PhoneWatchExperimentCoordinator {
             }
             if current.experiment.status == .completed {
                 try client.resumeCompleted(id, .now)
-            }
-            guard try client.loadDetail(id) != nil else {
+            } else if try client.loadDetail(id) == nil {
                 throw WatchExperimentError.experimentNotFound
             }
         }

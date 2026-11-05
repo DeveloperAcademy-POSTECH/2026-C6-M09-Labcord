@@ -119,8 +119,10 @@ public final class WatchAudioRecorder {
         continuation: AsyncThrowingStream<Data, Error>.Continuation
     ) {
         hasTap = true
-        input.installTap(onBus: 0, bufferSize: 4096, format: format) { buffer, _ in
-            guard let samples = buffer.floatChannelData?[0], buffer.frameLength <= 4096 else {
+        input.installTap(onBus: 0, bufferSize: 4096, format: format) { @Sendable buffer, _ in
+            // The engine can deliver more frames than the requested tap buffer size.
+            guard let samples = buffer.floatChannelData?[0],
+                  buffer.frameLength <= buffer.frameCapacity, buffer.frameLength <= 65_536 else {
                 continuation.finish(throwing: WatchAudioError.invalidAudio)
                 return
             }
@@ -177,9 +179,15 @@ public final class WatchAudioRecorder {
     public func recoverInterruptedRecordings() async throws {
         guard header == nil, !starting else { throw WatchAudioError.conflict }
         for header in try await archive.headers() {
-            let receipt = try await archive.status(header)
-            if receipt.manifest == nil, !receipt.receivedSequences.isEmpty {
-                _ = try await archive.sealInterrupted(header)
+            try Task.checkCancellation()
+            do {
+                let receipt = try await archive.status(header)
+                if receipt.manifest == nil, !receipt.receivedSequences.isEmpty {
+                    _ = try await archive.sealInterrupted(header)
+                }
+            } catch {
+                // Restoration reports this retained record; other recordings can still recover.
+                continue
             }
         }
     }
@@ -200,15 +208,17 @@ public final class WatchAudioRecorder {
         do {
             for try await pcm in stream {
                 pending.append(pcm)
-                guard pending.count >= 16_384 else { continue }
-                let chunk = WatchAudioChunk(
-                    header: header, sequence: sequence, firstSample: firstSample, pcm: pending
-                )
-                _ = try await archive.accept(chunk)
-                pending.removeAll(keepingCapacity: true)
-                firstSample += chunk.sampleCount
-                sequence += 1
-                events?.yield(.retaining(header, throughSample: firstSample))
+                while pending.count >= 16_384 {
+                    let chunk = WatchAudioChunk(
+                        header: header, sequence: sequence, firstSample: firstSample,
+                        pcm: Data(pending.prefix(16_384))
+                    )
+                    _ = try await archive.accept(chunk)
+                    pending.removeFirst(16_384)
+                    firstSample += chunk.sampleCount
+                    sequence += 1
+                    events?.yield(.retaining(header, throughSample: firstSample))
+                }
             }
             if !pending.isEmpty {
                 let chunk = WatchAudioChunk(
@@ -251,7 +261,7 @@ public final class WatchAudioRecorder {
                 failure = (error as? WatchAudioError) ?? .interrupted
             }
         }
-        return failure
+        return sequence == 0 ? failure ?? .invalidAudio : failure
     }
 
 }

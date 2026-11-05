@@ -119,3 +119,27 @@ AssistiveTouch 직접 배정·Watch 화면 크기/Figma 렌더는 미실행이�
 
 iPhone 앱은 `Researchers/Info.plist`의 `UIUserInterfaceStyle = Light`로 라이트 테마를 사용한다.
 시작 화면과 앱 내 시스템 화면도 같은 표시 정책을 적용받는다.
+
+## 제스처·음성 실패 보완
+
+오디오 tap의 `bufferSize`는 요청 크기다. 실제 프레임 수는 `frameCapacity`와 전송 형식의
+최대 크기로 검사하고, 확보한 PCM은 순서를 보존해 16,384바이트 구간으로 보관한다.
+tap과 즉시 음성 전송 응답 콜백은 `@Sendable`로 실행 큐 상속을 막고, 상태 변경은 기존
+MainActor 경로를 사용한다. 샘플 없이 종료한 녹음도 실패 이벤트로 종결한다.
+
+일부 보관 기록의 복구 실패는 해당 기록에 표시하고 다음 기록 복구를 계속한다.
+초기 복구 전체가 실패하면 다음 요청에서 다시 초기화할 수 있으며 통신 구독을 중복 생성하지 않는다.
+헤더·오디오 구간·수신 확인을 삭제하지 않는다. 로컬과 iPhone 양쪽에 구간·완료·저장 정보가 없다는
+기존 확인 조건 없이 빈 기록으로 판정하지 않는다. 보관 파일 조회 오류도 원본 없음으로 간주하지 않는다.
+
+Intent는 한 번의 `Task.yield()`로 접수 여부를 판정하지 않고 최대 3초간 실제 기록 상태 생성을
+기다린다. 대기 중 취소·전면 이탈·실험 변경 시 성공 응답을 반환하지 않는다.
+`WatchIntentRuntime` 로그는 호출·전면 준비·Action 전달·접수를 구분하며 음성·전사 내용은 기록하지 않는다.
+접수는 실제 캡처 또는 iPhone 저장 완료가 아니다. Watch 사진 촬영의 기존 5초 대기는 유지한다.
+완료 실험 재개는 `resumeCompleted` 저장 후 `loadDetail`을 중복 호출하지 않는다.
+
+현재 세 Intent는 Watch 대상에만 등록된다. iPhone의 '알 수 없는 동작'은 실제 사용자 단축어의
+앱·동작 참조 및 설치 상태를 확인해야 원인을 확정할 수 있다. 기존 Watch action 식별자는 유지한다.
+iPhone에 같은 이름을 등록하는 것만으로 기존 단축어 복구나 Watch 실행을 보장하지 않는다.
+[Apple의 Watch App Shortcuts 설명](https://developer.apple.com/videos/play/wwdc2023/10102/)에 따라
+iPhone App Shortcut을 Watch에서 자동 실행하는 것으로 해석하지 않는다.

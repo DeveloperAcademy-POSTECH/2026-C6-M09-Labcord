@@ -40,45 +40,53 @@ extension WatchRecordingService {
     func restoreLocalRecords(recordID: UUID? = nil) async throws {
         for header in try await archive.headers()
             where recordID == nil || header.recordingID == recordID {
-            let local = try await archive.status(header)
-            let remote = try await archive.remoteReceipt(header)
-            var record = voice(header)
-            record.originalRetained = !local.receivedSequences.isEmpty
-            if recorder.activeRecording == header {
-                record.phase = .capturing
-            } else if local.isCancelled {
-                record.phase = .cancelled
-            } else if local.savedRecordID == header.recordingID {
-                _ = try await archive.completeManifest(header)
-                record.phase = .saved
-            } else if local.manifest != nil {
-                record.phase = .transferring
+            do {
+                try await restoreLocalRecord(header)
+            } catch {
+                failed(header, detail: "보관된 기록을 확인하지 못했어요. 원본은 유지해요.")
+            }
+        }
+    }
+
+    private func restoreLocalRecord(_ header: WatchAudioHeader) async throws {
+        let local = try await archive.status(header)
+        let remote = try await archive.remoteReceipt(header)
+        var record = voice(header)
+        record.originalRetained = !local.receivedSequences.isEmpty
+        if recorder.activeRecording == header {
+            record.phase = .capturing
+        } else if local.isCancelled {
+            record.phase = .cancelled
+        } else if local.savedRecordID == header.recordingID {
+            _ = try await archive.completeManifest(header)
+            record.phase = .saved
+        } else if local.manifest != nil {
+            record.phase = .transferring
+        } else {
+            record.phase = .failed
+            if recorder.activeRecording == nil, local.receivedSequences.isEmpty,
+               local.manifest == nil,
+               remote.map({ $0.receivedSequences.isEmpty && $0.manifest == nil
+                   && $0.savedRecordID == nil && !$0.isReviewing
+                   && !$0.isCancelled && $0.failure == nil }) ?? false {
+                record.captureRejectedBeforeStart = true
+                record.detail = "저장된 음성 구간이 없어요. 다시 녹음해주세요."
             } else {
-                record.phase = .failed
-                if recorder.activeRecording == nil, local.receivedSequences.isEmpty,
-                   local.manifest == nil,
-                   remote.map({ $0.receivedSequences.isEmpty && $0.manifest == nil
-                       && $0.savedRecordID == nil && !$0.isReviewing
-                       && !$0.isCancelled && $0.failure == nil }) ?? false {
-                    record.captureRejectedBeforeStart = true
-                    record.detail = "저장된 음성 구간이 없어요. 다시 녹음해주세요."
-                } else {
-                    record.detail = "보관된 구간을 확인해주세요. 원본은 유지해요."
-                }
+                record.detail = "보관된 구간을 확인해주세요. 원본은 유지해요."
             }
-            if let manifest = local.manifest {
-                record.elapsedSeconds = Int(manifest.totalSamples / Int64(header.sampleRate))
-            }
-            if let remote, acceptTranscript(remote.transcript, into: &record),
-               remote.hasTranscriptConflict == true {
-                record.hasTranscriptConflict = true
-            }
-            publish(record)
-            if let remote {
-                // 저장 ACK는 원본 전체와 다시 대조한 뒤 화면에 반영한다.
-                if remote.savedRecordID != nil { try await archive.acknowledgeSaved(remote) }
-                await receiveAudio(remote)
-            }
+        }
+        if let manifest = local.manifest {
+            record.elapsedSeconds = Int(manifest.totalSamples / Int64(header.sampleRate))
+        }
+        if let remote, acceptTranscript(remote.transcript, into: &record),
+           remote.hasTranscriptConflict == true {
+            record.hasTranscriptConflict = true
+        }
+        publish(record)
+        if let remote {
+            // 저장 ACK는 원본 전체와 다시 대조한 뒤 화면에 반영한다.
+            if remote.savedRecordID != nil { try await archive.acknowledgeSaved(remote) }
+            await receiveAudio(remote)
         }
     }
 
