@@ -187,6 +187,48 @@ struct ExperimentSessionView: View {
             }
         }
         .background(.black)
+        .modifier(SessionAlerts(store: store))
+    }
+
+    private func previewFrame(anchor: Anchor<CGRect>?, geometry: GeometryProxy) -> CGRect {
+        let fullFrame = CGRect(origin: .zero, size: geometry.size)
+        guard let anchor else { return fullFrame }
+
+        let anchoredFrame = geometry[anchor]
+        if verticalSizeClass == .compact {
+            return anchoredFrame
+        }
+
+        let previewOverlap: CGFloat = 50 + (isSidePanelExpanded ? 0 : 30)
+        return CGRect(
+            x: 0,
+            y: 0,
+            width: geometry.size.width,
+            height: min(geometry.size.height, max(0, anchoredFrame.minY + previewOverlap))
+        )
+    }
+
+}
+
+private struct SessionAlerts: ViewModifier {
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
+    let store: StoreOf<ExperimentSessionFeature>
+
+    private var captureStore: StoreOf<CameraCaptureFeature> {
+        store.scope(state: \.capture, action: \.capture)
+    }
+
+    private var voiceStore: StoreOf<VoiceRecordingFeature> {
+        store.scope(state: \.voice, action: \.voice)
+    }
+
+    private var timerStore: StoreOf<SessionTimerFeature> {
+        store.scope(state: \.timer, action: \.timer)
+    }
+
+    func body(content: Content) -> some View {
+        content
         .alert(
             store.permissions.issue == .settingsUnavailable ? "설정 열기 실패" : "권한 안내",
             isPresented: Binding(
@@ -281,25 +323,6 @@ struct ExperimentSessionView: View {
             Text("타이머 기록을 저장하지 못했습니다.")
         }
     }
-
-    private func previewFrame(anchor: Anchor<CGRect>?, geometry: GeometryProxy) -> CGRect {
-        let fullFrame = CGRect(origin: .zero, size: geometry.size)
-        guard let anchor else { return fullFrame }
-
-        let anchoredFrame = geometry[anchor]
-        if verticalSizeClass == .compact {
-            return anchoredFrame
-        }
-
-        let previewOverlap: CGFloat = 50 + (isSidePanelExpanded ? 0 : 30)
-        return CGRect(
-            x: 0,
-            y: 0,
-            width: geometry.size.width,
-            height: min(geometry.size.height, max(0, anchoredFrame.minY + previewOverlap))
-        )
-    }
-
 }
 
 private struct PauseOverlay: ViewModifier {

@@ -49,9 +49,10 @@ struct ExperimentSettingButtonsView: View {
                 )
                 .cornerRadius(LayoutTokens.radiusFull)
 
-                ExperimentControlButton(action: {}) {
-                    Image(labcordIcon: .rectanglePortraitRotate)
-                }
+                ExperimentControlButton(
+                    action: {},
+                    icon: { Image(labcordIcon: .rectanglePortraitRotate) }
+                )
                 .background(
                     VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
                 )

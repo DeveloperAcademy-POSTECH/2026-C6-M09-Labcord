@@ -31,7 +31,6 @@ struct SessionTimerView: View {
     }
 
     var body: some View {
-        let selectedTab = store.selectedTimerTab
         let timerCollection = store.timerCollection
         let currentTime = timerCollection.currentTime
         let activeTimers = timerCollection.sortedTimers
@@ -40,20 +39,16 @@ struct SessionTimerView: View {
             TimerTileItem(id: $0.offset, seconds: $0.element)
         }
         let canStartTimer = timerCollection.canStartTimer && store.canModifyTimers
-        let isFreeMode = store.mode == .free
 
         return VStack(alignment: .leading, spacing: 12) {
             if isTimerSetupPresented {
                 timerSetup(canStartTimer: canStartTimer)
             } else {
                 timerList(
-                    selectedTab: selectedTab,
                     activeTimers: activeTimers,
                     timerItems: timerItems,
-                    timerSeconds: timerSeconds,
                     currentTime: currentTime,
-                    canStartTimer: canStartTimer,
-                    isFreeMode: isFreeMode
+                    canStartTimer: canStartTimer
                 )
             }
         }
@@ -61,17 +56,14 @@ struct SessionTimerView: View {
     }
 
     private func timerList(
-        selectedTab: SessionTimerFeature.TimerTab,
         activeTimers: [ExperimentTimer],
         timerItems: [TimerTileItem],
-        timerSeconds: [Int],
         currentTime: Date,
-        canStartTimer: Bool,
-        isFreeMode: Bool
+        canStartTimer: Bool
     ) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                if isFreeMode {
+                if store.mode == .free {
                     Text("타이머")
                         .font(.body.weight(.semibold))
                 } else {
@@ -94,97 +86,104 @@ struct SessionTimerView: View {
                 .buttonStyle(.labcordIcon(.plain, size: .large))
             }
 
-            if isFreeMode || selectedTab == .active {
+            if store.mode == .free || store.selectedTimerTab == .active {
                 if activeTimers.isEmpty {
                     emptyState
                 } else {
                     activeTimerPages(activeTimers, at: currentTime)
                 }
-            } else if timerSeconds.isEmpty {
+            } else if timerItems.isEmpty {
                 emptyState
             } else {
-                let tileWidth: CGFloat = isPortrait ? 115 : 91
-                let tileHeight: CGFloat = 60
-                let tileSpacing: CGFloat = 12
-                let gridHeight = tileHeight * 3 + tileSpacing * 2
-
-                GeometryReader { geometry in
-                    let threeColumnWidth = tileWidth * 3 + tileSpacing * 2
-                    let columnCount = geometry.size.width >= threeColumnWidth ? 3 : 2
-                    let itemsPerPage = columnCount * 3
-                    let pageCount = (timerItems.count + itemsPerPage - 1) / itemsPerPage
-                    let currentPage = min(selectedPage ?? 0, pageCount - 1)
-
-                    VStack(spacing: 12) {
-                        ScrollView(.horizontal) {
-                            HStack(spacing: 0) {
-                                ForEach(0..<pageCount, id: \.self) { page in
-                                    let start = page * itemsPerPage
-                                    let pageItems = Array(
-                                        timerItems.dropFirst(start).prefix(itemsPerPage)
-                                    )
-
-                                    LazyVGrid(
-                                        columns: Array(
-                                            repeating: GridItem(
-                                                .fixed(tileWidth),
-                                                spacing: tileSpacing
-                                            ),
-                                            count: columnCount
-                                        ),
-                                        alignment: .leading,
-                                        spacing: tileSpacing
-                                    ) {
-                                        ForEach(pageItems) { item in
-                                            Button {
-                                                store.send(.timerStarted(item.id))
-                                            } label: {
-                                                let parts = TimerDurationFormatStyle()
-                                                    .formattedParts(for: .seconds(item.seconds))
-                                                ProtocolTimerItem(
-                                                    value: parts.value,
-                                                    unit: parts.unit,
-                                                    format: .long,
-                                                    width: isPortrait ? tileWidth : nil
-                                                )
-                                            }
-                                            .buttonStyle(.plain)
-                                            .disabled(!canStartTimer)
-                                        }
-                                    }
-                                    .frame(
-                                        width: geometry.size.width,
-                                        height: gridHeight,
-                                        alignment: .topLeading
-                                    )
-                                    .id(page)
-                                }
-                            }
-                            .scrollTargetLayout()
-                        }
-                        .scrollIndicators(.hidden)
-                        .scrollTargetBehavior(.paging)
-                        .scrollPosition(id: $selectedPage)
-                        .clipped()
-                        .frame(height: gridHeight)
-
-                        HStack(spacing: 6) {
-                            ForEach(0..<pageCount, id: \.self) { page in
-                                Circle()
-                                    .fill(currentPage == page ? Color.white : Color.gray)
-                                    .frame(width: 6, height: 6)
-                            }
-                        }
-                    }
-                    .onChange(of: pageCount) { _, newCount in
-                        if let selectedPage, selectedPage >= newCount {
-                            self.selectedPage = max(newCount - 1, 0)
-                        }
-                    }
-                }
-                .frame(height: gridHeight + 18)
+                configuredTimerPages(timerItems, canStartTimer: canStartTimer)
             }
         }
+    }
+
+    private func configuredTimerPages(
+        _ timerItems: [TimerTileItem],
+        canStartTimer: Bool
+    ) -> some View {
+        let tileWidth: CGFloat = isPortrait ? 115 : 91
+        let tileHeight: CGFloat = 60
+        let tileSpacing: CGFloat = 12
+        let gridHeight = tileHeight * 3 + tileSpacing * 2
+
+        return GeometryReader { geometry in
+            let threeColumnWidth = tileWidth * 3 + tileSpacing * 2
+            let columnCount = geometry.size.width >= threeColumnWidth ? 3 : 2
+            let itemsPerPage = columnCount * 3
+            let pageCount = (timerItems.count + itemsPerPage - 1) / itemsPerPage
+            let currentPage = min(selectedPage ?? 0, pageCount - 1)
+
+            VStack(spacing: 12) {
+                ScrollView(.horizontal) {
+                    HStack(spacing: 0) {
+                        ForEach(0..<pageCount, id: \.self) { page in
+                            let start = page * itemsPerPage
+                            let pageItems = Array(
+                                timerItems.dropFirst(start).prefix(itemsPerPage)
+                            )
+
+                            LazyVGrid(
+                                columns: Array(
+                                    repeating: GridItem(
+                                        .fixed(tileWidth),
+                                        spacing: tileSpacing
+                                    ),
+                                    count: columnCount
+                                ),
+                                alignment: .leading,
+                                spacing: tileSpacing
+                            ) {
+                                ForEach(pageItems) { item in
+                                    Button {
+                                        store.send(.timerStarted(item.id))
+                                    } label: {
+                                        let parts = TimerDurationFormatStyle()
+                                            .formattedParts(for: .seconds(item.seconds))
+                                        ProtocolTimerItem(
+                                            value: parts.value,
+                                            unit: parts.unit,
+                                            format: .long,
+                                            width: isPortrait ? tileWidth : nil
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
+                                    .disabled(!canStartTimer)
+                                }
+                            }
+                            .frame(
+                                width: geometry.size.width,
+                                height: gridHeight,
+                                alignment: .topLeading
+                            )
+                            .id(page)
+                        }
+                    }
+                    .scrollTargetLayout()
+                }
+                .scrollIndicators(.hidden)
+                .scrollTargetBehavior(.paging)
+                .scrollPosition(id: $selectedPage)
+                .clipped()
+                .frame(height: gridHeight)
+
+                HStack(spacing: 6) {
+                    ForEach(0..<pageCount, id: \.self) { page in
+                        Circle()
+                            .fill(currentPage == page ? Color.white : Color.gray)
+                            .frame(width: 6, height: 6)
+                    }
+                }
+            }
+            .onChange(of: pageCount) { _, newCount in
+                if let selectedPage, selectedPage >= newCount {
+                    self.selectedPage = max(newCount - 1, 0)
+                }
+            }
+        }
+        .frame(height: gridHeight + 18)
     }
 
     private var timerTabSelection: Binding<TimerTabs.Selection> {
