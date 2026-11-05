@@ -71,7 +71,8 @@ struct RecordBottomSheetTranscriptField: View {
             text: $transcript,
             focus: focus,
             bounds: $bounds,
-            accessibilityLabel: "음성 전사"
+            accessibilityLabel: "음성 전사",
+            characterLimit: nil
         )
 #endif
     }

@@ -6,6 +6,7 @@ struct RecordBottomSheetTextEditor: View {
     let focus: FocusState<Bool>.Binding
     @Binding var bounds: CGRect
     let accessibilityLabel: String
+    let characterLimit: Int?
 
     var body: some View {
         TextEditor(text: Binding(
@@ -14,7 +15,7 @@ struct RecordBottomSheetTextEditor: View {
                 if focus.wrappedValue, updated == text + "\n" {
                     focus.wrappedValue = false
                 } else {
-                    text = String(updated.prefix(300))
+                    text = characterLimit.map { String(updated.prefix($0)) } ?? updated
                 }
             }
         ))

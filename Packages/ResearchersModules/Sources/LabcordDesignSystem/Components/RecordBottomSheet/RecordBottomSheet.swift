@@ -372,7 +372,8 @@ private extension RecordBottomSheet {
                 text: $note,
                 focus: $isNoteFocused,
                 bounds: $noteBounds,
-                accessibilityLabel: "메모"
+                accessibilityLabel: "메모",
+                characterLimit: 300
             )
 
             Text("\(note.count)/300")

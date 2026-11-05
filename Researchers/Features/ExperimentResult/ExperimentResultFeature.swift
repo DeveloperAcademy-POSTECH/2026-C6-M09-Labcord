@@ -67,7 +67,6 @@ struct ExperimentResultFeature {
                 != (selectedEntry?.note ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             return (noteChanged || editedTranscript != nil)
                 && draftNote.count <= 300
-                && (editedTranscript == nil || draftTranscript.count <= 300)
         }
 
         mutating func clearRecordDraft() {
@@ -188,7 +187,7 @@ struct ExperimentResultFeature {
                 guard !state.isRecordSaving, state.selectedRecord?.type == .audio else {
                     return .none
                 }
-                state.draftTranscript = String(transcript.prefix(300))
+                state.draftTranscript = transcript
                 return .none
 
             case .recordSaveTapped:

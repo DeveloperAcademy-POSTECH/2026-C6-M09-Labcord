@@ -71,7 +71,7 @@ final class ExperimentResultRepository {
             record.note = savedNote
         }
         if record.type == .audio, let transcript {
-            record.transcript = String(transcript.prefix(300))
+            record.transcript = transcript
         }
         try context.save()
         return Self.resultDetail(experiment)
