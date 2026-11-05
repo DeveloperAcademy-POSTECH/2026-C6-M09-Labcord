@@ -62,7 +62,7 @@ struct ExperimentRecordSheetHost: View {
                                 onDismiss: onDismiss,
                                 onSave: onSave,
                                 onDelete: onDelete,
-                                onScrollTargetChange: { scrollTarget = $0 },
+                                onScrollTargetChange: updateScrollTarget,
                                 isVideoFullScreen: fullScreenVideoPlayer != nil
                             ) { fullScreenVideoPlayer = $0 }
                                 .frame(maxWidth: .infinity)
@@ -189,6 +189,10 @@ struct ExperimentRecordSheetHost: View {
         withAnimation(reduceMotion ? nil : LabcordMotion.settle.animation) {
             dragOffset = 0
         }
+    }
+
+    private func updateScrollTarget(_ target: RecordBottomSheetScrollTarget?) {
+        scrollTarget = target
     }
 
     private func scrollToFocusedField(using proxy: ScrollViewProxy) {
