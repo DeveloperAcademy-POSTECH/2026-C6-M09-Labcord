@@ -12,6 +12,7 @@ import SwiftUI
 struct ExperimentSessionView: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.scenePhase) private var scenePhase
+    @State private var isSidePanelExpanded = true
 
     let store: StoreOf<ExperimentSessionFeature>
 
@@ -37,6 +38,7 @@ struct ExperimentSessionView: View {
                 )
             } else {
                 PortraitSessionView(
+                    isSidePanelExpanded: $isSidePanelExpanded,
                     store: captureStore,
                     timerStore: timerStore,
                     sessionStore: store
@@ -237,11 +239,12 @@ struct ExperimentSessionView: View {
             return anchoredFrame
         }
 
+        let previewOverlap: CGFloat = 50 + (isSidePanelExpanded ? 0 : 30)
         return CGRect(
             x: 0,
             y: 0,
             width: geometry.size.width,
-            height: min(geometry.size.height, max(0, anchoredFrame.maxY + 32))
+            height: min(geometry.size.height, max(0, anchoredFrame.maxY + previewOverlap))
         )
     }
 }

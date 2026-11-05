@@ -10,7 +10,7 @@ import LabcordDesignSystem
 import SwiftUI
 
 struct PortraitSessionView: View {
-    @State private var isSidePanelExpanded = true
+    @Binding var isSidePanelExpanded: Bool
 
     let store: StoreOf<CameraCaptureFeature>
     let timerStore: StoreOf<SessionTimerFeature>
@@ -37,8 +37,7 @@ struct PortraitSessionView: View {
                         isExpanded: $isSidePanelExpanded
                     )
                     .ignoresSafeArea()
-                    .fixedSize(horizontal: false, vertical: !isSidePanelExpanded)
-                    .frame(height: isSidePanelExpanded ? 398 : nil)
+                    .frame(height: isSidePanelExpanded ? 398 : 83)
                 }
             }
             .foregroundStyle(.white)
@@ -47,7 +46,10 @@ struct PortraitSessionView: View {
 }
 
 #Preview {
+    @Previewable @State var isSidePanelExpanded = true
+
     PortraitSessionView(
+        isSidePanelExpanded: $isSidePanelExpanded,
         store: Store(
             initialState: CameraCaptureFeature.State(experimentID: UUID())
         ) {
