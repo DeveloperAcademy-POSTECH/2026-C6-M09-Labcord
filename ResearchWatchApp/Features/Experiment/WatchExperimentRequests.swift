@@ -182,6 +182,9 @@ extension WatchExperimentFeature {
         guard clearRetainedRequest(pending.command, state: &state) else {
             return .merge(.cancel(id: CancelID.delivery), .cancel(id: CancelID.poll))
         }
+        if WatchRequestPolicy.isReadOnly(pending.command.operation) {
+            state.lastReadRequestID = pending.command.requestID
+        }
         if let experiments = response.experiments, pending.command.operation == .list {
             state.experiments = experiments
         }

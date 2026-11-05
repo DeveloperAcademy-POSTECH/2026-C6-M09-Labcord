@@ -62,7 +62,7 @@ struct WatchExperimentView: View {
         case .confirmResume: "실험 재개"
         case .recordCleanup: "실험 기록"
         case .connection: "연결 상태"
-        case .gestures: "제스처 설정"
+        case .gestures: "제스처 연습"
         case .experiment: store.selectedTitle
         case .timers: "타이머"
         case .timerEditor: "타이머 설정"
@@ -105,10 +105,7 @@ struct WatchExperimentView: View {
         case .timerEditor:
             WatchTimerEditorView(store: store)
         case .gestures:
-            Text("Watch 설정 → 손쉬운 사용 → AssistiveTouch에서 손 제스처 연결 방식을 확인해주세요.")
-            Text("현재는 아래 화면 버튼으로 기록할 수 있어요. 제스처의 단축어 연결·실행 지원은 별도 확인이 필요해요.")
-                .font(.caption)
-            Button("닫기") { store.send(.closeTapped) }
+            WatchGesturePracticeView(store: store)
         }
     }
 
@@ -180,7 +177,7 @@ struct WatchExperimentView: View {
         Button("연결 확인", systemImage: store.isReachable ? "iphone" : "iphone.slash") {
             store.send(.connectionTapped)
         }
-        Button("제스처 설정") { store.send(.gesturesTapped) }
+        Button("제스처 연습") { store.send(.gesturesTapped) }
         Button("실험 목록") { store.send(.backTapped) }
             .disabled(store.pending != nil
                       || store.recording.hasUnsettledRecords(in: store.selectedID))

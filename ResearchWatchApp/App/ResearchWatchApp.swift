@@ -22,13 +22,9 @@ struct ResearchWatchApp: App {
         WatchRecordingService.shared.activate()
     }
 
-    private let store = Store(initialState: WatchExperimentFeature.State()) {
-        WatchExperimentFeature(recordingBridge: .live)
-    }
-
     var body: some Scene {
         WindowGroup {
-            ContentView(store: store)
+            ContentView(store: WatchIntentRuntime.shared.store)
         }
         .backgroundTask(.watchConnectivity) { [connectivity] in
             await connectivity.waitForPendingUserInfo()
