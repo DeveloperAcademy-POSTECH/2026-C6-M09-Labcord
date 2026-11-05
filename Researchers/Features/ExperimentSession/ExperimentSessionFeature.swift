@@ -8,6 +8,8 @@ struct ExperimentSessionFeature {
     @ObservableState
     struct State: Equatable {
         let experimentID: UUID
+        var watchCommand: WatchExperimentCommand?
+        var watchCameraWasVisible = false
         var detail: ExperimentSessionDetail?
         var isLoadingDetail = false
         var detailLoadFailed = false
@@ -45,6 +47,9 @@ struct ExperimentSessionFeature {
     }
 
     enum Action: Equatable {
+        case watchControl(WatchExperimentCommand)
+        case watchResourcesReleased
+        case watchControlFinished(UUID, WatchExperimentError?)
         case loadDetail
         case detailLoaded(ExperimentSessionDetail)
         case detailLoadingFailed
@@ -76,6 +81,7 @@ struct ExperimentSessionFeature {
     @Dependency(\.timerCompletionNotificationClient) var timerCompletionNotificationClient
 
     var body: some Reducer<State, Action> {
+        watchReducer
         Scope(state: \.permissions, action: \.permissions) {
             SessionPermissionsFeature()
         }
@@ -94,6 +100,9 @@ struct ExperimentSessionFeature {
 
         Reduce { state, action in
             switch action {
+            case .watchControl, .watchResourcesReleased, .watchControlFinished:
+                return .none
+
             case .loadDetail:
                 return loadDetail(state: &state)
 
@@ -126,30 +135,21 @@ struct ExperimentSessionFeature {
                 return .none
 
             case .stopTapped:
-                guard state.canCloseSession else { return .none }
-                state.isCompleting = true
-                state.timer.isClosing = true
-                state.completionFailed = false
-                let experimentID = state.experimentID
-                let completedAt = now
-                return .run { send in
-                    do {
-                        try await experimentClient.complete(experimentID, completedAt)
-                        await send(.stopCompleted)
-                    } catch {
-                        await send(.stopFailed)
-                    }
-                }
+                return completeSession(state: &state)
 
             case .stopCompleted:
                 state.isCompleting = false
+                state.watchCommand = nil
                 return .none
 
             case .stopFailed:
                 state.isCompleting = false
                 state.timer.isClosing = false
                 state.completionFailed = true
-                return .send(.timer(.timerTick(now)))
+                return .merge(
+                    .send(.timer(.timerTick(now))),
+                    finishWatchClose(state: &state, error: .storageFailed)
+                )
 
             case .dismissStopFailure:
                 state.completionFailed = false
@@ -197,13 +197,17 @@ struct ExperimentSessionFeature {
                 }
 
             case .homeExitCompleted:
+                state.watchCommand = nil
                 return .none
 
             case .homeExitFailed:
                 state.isReturningHome = false
                 state.timer.isClosing = false
                 state.exitFailed = true
-                return .send(.timer(.timerTick(now)))
+                return .merge(
+                    .send(.timer(.timerTick(now))),
+                    finishWatchClose(state: &state, error: .storageFailed)
+                )
 
             case .dismissHomeExitFailure:
                 state.exitFailed = false
@@ -238,6 +242,7 @@ struct ExperimentSessionFeature {
                 return .send(.videoStartRequested)
 
             case let .capture(.delegate(.handEvent(event))):
+                guard state.watchCommand == nil else { return .none }
                 switch event {
                 case .openHandHeld:
                     guard state.voice.phase == .hidden else { return .none }
@@ -275,13 +280,14 @@ struct ExperimentSessionFeature {
                 return prepareVoiceRecording(state: &state)
 
             case .photoStartRequested:
+                guard state.watchCommand == nil else { return .none }
                 guard state.voice.phase == .hidden else {
                     return .send(.capture(.cancelPhotoGesture))
                 }
                 return .send(.capture(.photoCaptureRequested))
 
             case .videoStartRequested:
-                guard state.voice.phase == .hidden else { return .none }
+                guard state.watchCommand == nil, state.voice.phase == .hidden else { return .none }
                 return .send(.capture(.videoRecordRequested))
 
             case .permissions, .voice, .capture, .timer:
@@ -292,6 +298,23 @@ struct ExperimentSessionFeature {
 }
 
 private extension ExperimentSessionFeature {
+    func completeSession(state: inout State) -> Effect<Action> {
+        guard state.canCloseSession else { return .none }
+        state.isCompleting = true
+        state.timer.isClosing = true
+        state.completionFailed = false
+        let experimentID = state.experimentID
+        let completedAt = now
+        return .run { send in
+            do {
+                try await experimentClient.complete(experimentID, completedAt)
+                await send(.stopCompleted)
+            } catch {
+                await send(.stopFailed)
+            }
+        }
+    }
+
     func loadDetail(state: inout State) -> Effect<Action> {
         guard state.detail == nil, !state.isLoadingDetail else { return .none }
         state.isLoadingDetail = true
@@ -308,6 +331,7 @@ private extension ExperimentSessionFeature {
     }
 
     func prepareVoiceRecording(state: inout State) -> Effect<Action> {
+        guard state.watchCommand == nil else { return .none }
         guard state.detail != nil else {
             if state.isLoadingDetail {
                 state.voice.errorMessage = "실험 정보를 불러오고 있어요. 잠시 후 다시 시도해 주세요."
