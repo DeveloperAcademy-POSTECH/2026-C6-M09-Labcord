@@ -4,9 +4,8 @@ import SwiftUI
 
 struct AppView: View {
     @Environment(\.scenePhase) private var scenePhase
-    @State private var store = Store(initialState: AppFeature.State()) {
-        AppFeature()
-    }
+    @State private var store = PhoneIntentRuntime.shared.store
+    @State private var intentRuntime = PhoneIntentRuntime.shared
 
     var body: some View {
         @Bindable var store = store
@@ -53,6 +52,18 @@ struct AppView: View {
             store.send(.watchSceneChanged(phase == .active))
         }
         .disabled(store.reviewSaving || store.watchRequestID != nil)
+        .alert("이전 Watch 음성 요청 확인", isPresented: $intentRuntime.pendingResolutionRequested) {
+            Button("요청 유지", role: .cancel) { }
+            Button("확인 후 해제", role: .destructive) { intentRuntime.releasePendingVoice() }
+        } message: {
+            Text("Watch의 녹음 상태를 직접 확인한 뒤에만 해제하세요. 이미 실행됐다면 다시 "
+                 + "요청할 때 녹음이 반대로 전환될 수 있어요. 보관 원본은 삭제하지 않아요.")
+        }
+        .alert("요청 상태를 정리하지 못했어요", isPresented: $intentRuntime.pendingResolutionFailed) {
+            Button("확인", role: .cancel) { }
+        } message: {
+            Text("요청은 유지돼요. 저장 공간을 확인한 뒤 다시 시도해주세요.")
+        }
         .alert("실험을 저장하거나 정리하지 못했어요", isPresented: Binding(
             get: { store.reviewSaveFailed },
             set: { if !$0 { store.send(.dismissReviewSaveFailure) } }

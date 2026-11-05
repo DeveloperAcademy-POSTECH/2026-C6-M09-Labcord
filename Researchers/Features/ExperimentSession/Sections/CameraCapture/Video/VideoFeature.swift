@@ -36,6 +36,7 @@ struct VideoFeature {
         case prepareRequested
         case recordRequested
         case watchRecordRequested(UUID)
+        case shortcutRecordRequested(UUID)
         case stopRequested
         case stopAndSaveRequested
         case discardForWatchPause
@@ -81,6 +82,11 @@ struct VideoFeature {
                 state.requiresExternalConfirmation = true
                 return .send(.recordRequested)
 
+            case let .shortcutRecordRequested(id):
+                guard state.phase == .idle, state.requestedRecordID == nil else { return .none }
+                state.requestedRecordID = id
+                return startRecording(state: &state)
+
             case .stopAndSaveRequested:
                 guard state.phase != .idle else { return .none }
                 state.shouldSaveOnStop = true
@@ -110,30 +116,7 @@ struct VideoFeature {
                 }
 
             case .recordRequested:
-                guard state.phase == .idle else { return .none }
-                state.sessionID = UUID()
-                state.phase = .starting
-                let id = state.sessionID
-                return .run { send in
-                    do {
-                        let url = try await cameraSessionClient.recordVideo {
-                            Task { await send(.started(id, .now)) }
-                        }
-                        guard !Task.isCancelled else {
-                            await cameraSessionClient.discardVideo(url)
-                            return
-                        }
-                        await send(.recorded(id, url))
-                    } catch let error as PermissionAccessError {
-                        await send(.delegate(.permissionAccessFailed(error.kind)))
-                        await send(.recordingFailed(id, error.localizedDescription))
-                    } catch is CancellationError {
-                        await send(.watchPauseDiscarded(id))
-                    } catch {
-                        await send(.recordingFailed(id, error.localizedDescription))
-                    }
-                }
-                .cancellable(id: CancelID.recording, cancelInFlight: true)
+                return startRecording(state: &state)
 
             case let .started(id, startedAt):
                 return videoStarted(id, at: startedAt, state: &state)
@@ -283,6 +266,33 @@ struct VideoFeature {
 }
 
 private extension VideoFeature {
+    func startRecording(state: inout State) -> Effect<Action> {
+        guard state.phase == .idle else { return .none }
+        state.sessionID = UUID()
+        state.phase = .starting
+        let id = state.sessionID
+        return .run { send in
+            do {
+                let url = try await cameraSessionClient.recordVideo {
+                    Task { await send(.started(id, .now)) }
+                }
+                guard !Task.isCancelled else {
+                    await cameraSessionClient.discardVideo(url)
+                    return
+                }
+                await send(.recorded(id, url))
+            } catch let error as PermissionAccessError {
+                await send(.delegate(.permissionAccessFailed(error.kind)))
+                await send(.recordingFailed(id, error.localizedDescription))
+            } catch is CancellationError {
+                await send(.watchPauseDiscarded(id))
+            } catch {
+                await send(.recordingFailed(id, error.localizedDescription))
+            }
+        }
+        .cancellable(id: CancelID.recording, cancelInFlight: true)
+    }
+
     func videoStarted(_ id: UUID, at startedAt: Date, state: inout State) -> Effect<Action> {
         guard id == state.sessionID, state.phase == .starting else { return .none }
         state.phase = .recording(startedAt)
@@ -342,6 +352,7 @@ private extension VideoFeature.Action {
         case .prepareRequested,
                  .recordRequested,
                  .watchRecordRequested,
+                 .shortcutRecordRequested,
                  .retakeRequested,
                  .cancelRequested: true
         default: false

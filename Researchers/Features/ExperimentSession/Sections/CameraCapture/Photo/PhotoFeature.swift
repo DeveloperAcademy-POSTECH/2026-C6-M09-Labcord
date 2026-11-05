@@ -30,6 +30,7 @@ struct PhotoFeature {
         case delayElapsed(UUID)
         case captureRequested(UUID?)
         case watchCaptureRequested(UUID)
+        case shortcutCaptureRequested(UUID)
         case captured(UUID, Data)
         case captureFailed(String)
         case retakeRequested
@@ -67,6 +68,20 @@ struct PhotoFeature {
         Reduce { state, action in
             if state.isSessionClosing, action.isBlockedDuringSessionClose { return .none }
             switch action {
+            case let .shortcutCaptureRequested(id):
+                guard !state.isCapturing, !state.isScheduled,
+                      state.capturedData == nil, !state.requiresExternalConfirmation else {
+                    return .none
+                }
+                state.requestedRecordID = id
+                state.isScheduled = true
+                state.scheduledAt = now
+                return .run { send in
+                    try await Task.sleep(for: .seconds(5))
+                    await send(.delayElapsed(id))
+                }
+                .cancellable(id: CancelID.captureDelay, cancelInFlight: true)
+
             case let .watchCaptureRequested(id):
                 guard state.pendingWatchCaptureID == id,
                       !state.isCapturing, !state.isScheduled,
@@ -252,7 +267,8 @@ struct PhotoFeature {
 private extension PhotoFeature.Action {
     var isBlockedDuringSessionClose: Bool {
         switch self {
-        case .watchCaptureRequested, .gestureEvent, .captureRequested, .retakeRequested: true
+        case .watchCaptureRequested, .shortcutCaptureRequested, .gestureEvent,
+             .captureRequested, .retakeRequested: true
         default: false
         }
     }
