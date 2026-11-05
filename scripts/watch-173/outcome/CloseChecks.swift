@@ -33,14 +33,24 @@ struct Client {
                 let stream = AsyncStream<Coordinator.Event> { coordinator.commandSubscriber = $0 }
                 let receiver = Task { @MainActor in
                     for await case let .command(command) in stream {
-                        let continuation = coordinator.completions.removeValue(forKey: command.requestID)!
-                        if definite { continuation.resume(throwing: WatchDefinitiveRejection(error: .phoneBusy)) }
-                        else { continuation.resume(throwing: WatchExperimentError.phoneBusy) }
+                        let continuation = coordinator.completions.removeValue(
+                            forKey: command.requestID
+                        )!
+                        if definite {
+                            continuation.resume(
+                                throwing: WatchDefinitiveRejection(error: .phoneBusy)
+                            )
+                        } else {
+                            continuation.resume(throwing: WatchExperimentError.phoneBusy)
+                        }
                         break
                     }
                 }
                 do {
-                    try await coordinator.close(.init(operation: .pause), current: .init(experiment: .init(id: id, status: .running)))
+                    try await coordinator.close(
+                        .init(operation: .pause),
+                        current: .init(experiment: .init(id: id, status: .running))
+                    )
                     fatalError("expected error")
                 } catch WatchExperimentError.phoneBusy {
                     precondition(definite && !prepared)

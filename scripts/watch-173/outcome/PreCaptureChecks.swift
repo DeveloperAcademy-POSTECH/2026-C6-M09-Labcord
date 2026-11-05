@@ -19,16 +19,32 @@ struct Classifier {
     static func main() {
         let id = UUID()
         for operation in [Operation.takePhoto, .startVideo] {
-            let classifier = Classifier(requests: [id: Request(command: Command(operation: operation))])
+            let classifier = Classifier(
+                requests: [id: Request(command: Command(operation: operation))]
+            )
             for error in [Failure.permissionDenied, .cameraUnavailable] {
-                precondition(classifier.isPreCaptureRejection(.init(requestID: id, phase: .failed, error: error, record: nil)))
-                precondition(!classifier.isPreCaptureRejection(.init(requestID: id, phase: .failed, error: error, record: false)))
+                let response = WatchExperimentResponse(
+                    requestID: id, phase: .failed, error: error, record: nil
+                )
+                let withRecord = WatchExperimentResponse(
+                    requestID: id, phase: .failed, error: error, record: false
+                )
+                precondition(classifier.isPreCaptureRejection(response))
+                precondition(!classifier.isPreCaptureRejection(withRecord))
             }
-            precondition(!classifier.isPreCaptureRejection(.init(requestID: id, phase: .failed, error: .storageFailed, record: nil)))
+            let storageFailure = WatchExperimentResponse(
+                requestID: id, phase: .failed, error: .storageFailed, record: nil
+            )
+            precondition(!classifier.isPreCaptureRejection(storageFailure))
         }
-        let classifier = Classifier(requests: [id: Request(command: Command(operation: .confirmRecord))])
-        precondition(!classifier.isPreCaptureRejection(.init(requestID: id, phase: .failed, error: .cameraUnavailable, record: nil)))
-        precondition(!Classifier(requests: [:]).isPreCaptureRejection(.init(requestID: id, phase: .failed, error: .cameraUnavailable, record: nil)))
+        let classifier = Classifier(
+            requests: [id: Request(command: Command(operation: .confirmRecord))]
+        )
+        let unavailable = WatchExperimentResponse(
+            requestID: id, phase: .failed, error: .cameraUnavailable, record: nil
+        )
+        precondition(!classifier.isPreCaptureRejection(unavailable))
+        precondition(!Classifier(requests: [:]).isPreCaptureRejection(unavailable))
         print("PASS: pre-capture failures permit retry; failed records remain uncertain")
     }
 }
