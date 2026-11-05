@@ -176,7 +176,7 @@ public struct RecordBottomSheet: View {
                             bounds: $transcriptBounds
                         )
                         .id(RecordBottomSheetScrollTarget.transcript)
-                        
+
                         recordContent
                     }
                     .padding(LayoutTokens.spacing8)
