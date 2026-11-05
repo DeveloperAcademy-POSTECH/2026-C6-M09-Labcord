@@ -113,3 +113,8 @@ AssistiveTouch 직접 배정·Watch 화면 크기/Figma 렌더는 미실행이�
 기존 24개 head 빌드/CI와 freeze 집중 검사 결과를 새 head 성공으로 옮기지 않는다.
 
 최종 원요구 103개 대조는 [요구사항](watch-174/requirements-status.md)을 참고한다.
+
+## iPhone 표시 테마
+
+iPhone 앱은 `Researchers/Info.plist`의 `UIUserInterfaceStyle = Light`로 라이트 테마를 사용한다.
+시작 화면과 앱 내 시스템 화면도 같은 표시 정책을 적용받는다.
