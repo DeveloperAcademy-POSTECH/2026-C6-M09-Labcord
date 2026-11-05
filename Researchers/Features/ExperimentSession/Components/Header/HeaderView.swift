@@ -22,6 +22,10 @@ struct HeaderView: View {
                     .foregroundStyle(Color("Experiment/Label/Primary"))
             }
             .buttonStyle(.labcordIcon(.neutral, size: .large))
+            .background(
+                VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
+            )
+            .cornerRadius(LayoutTokens.radiusFull)
 
             Text(store.detail?.title ?? "불러오는 중...")
                 .lineLimit(1)

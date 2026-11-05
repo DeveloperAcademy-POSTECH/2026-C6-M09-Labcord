@@ -68,7 +68,7 @@ struct PortraitSessionView: View {
                             layout: .portrait,
                             isExpanded: $isSidePanelExpanded
                         ) {
-                            SessionTimerView(store: timerStore)
+                            SessionTimerView(store: timerStore, isPortrait: true)
                         }
                         .ignoresSafeArea()
                         .frame(height: isSidePanelExpanded ? 398 : 83)

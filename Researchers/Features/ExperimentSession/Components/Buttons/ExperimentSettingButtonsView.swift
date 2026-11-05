@@ -30,15 +30,11 @@ struct ExperimentSettingButtonsView: View {
             
             HStack(spacing: 20) {
                 if showsRunningTimerButton {
-                    ExperimentControlButton(action: onShowRunningTimers) {
-                        Image(labcordIcon: .timer)
-                            .foregroundStyle(Color("Experiment/Timer/Foreground"))
-                    }
-                    .accessibilityLabel("진행 중인 타이머 보기")
-                    .background(
-                        VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
-                    )
-                    .cornerRadius(LayoutTokens.radiusFull)
+                    TimerControlButton(state: .running, action: onShowRunningTimers)
+                        .background(
+                            VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
+                        )
+                        .cornerRadius(LayoutTokens.radiusFull)
                 }
                 
                 ExperimentControlButton(
