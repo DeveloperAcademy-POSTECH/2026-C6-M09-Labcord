@@ -228,6 +228,12 @@ private struct SessionAlerts: ViewModifier {
     }
 
     func body(content: Content) -> some View {
+        let initialAlerts = permissionAndCameraAlerts(on: content)
+        let recordingAlerts = voiceAndPhotoAlerts(on: initialAlerts)
+        return videoAndTimerAlerts(on: recordingAlerts)
+    }
+
+    private func permissionAndCameraAlerts<V: View>(on content: V) -> some View {
         content
         .alert(
             store.permissions.issue == .settingsUnavailable ? "설정 열기 실패" : "권한 안내",
@@ -261,6 +267,10 @@ private struct SessionAlerts: ViewModifier {
             Text(captureStore.cameraErrorMessage ?? "")
         }
         .modifier(DetailLoadFailureAlert(store: store))
+    }
+
+    private func voiceAndPhotoAlerts<V: View>(on content: V) -> some View {
+        content
         .alert(
             "음성 기록 오류",
             isPresented: Binding(
@@ -293,6 +303,10 @@ private struct SessionAlerts: ViewModifier {
         } message: {
             Text(captureStore.photo.saveError ?? "사진을 저장하지 못했습니다.")
         }
+    }
+
+    private func videoAndTimerAlerts<V: View>(on content: V) -> some View {
+        content
         .alert(
             "영상 저장 실패",
             isPresented: Binding(

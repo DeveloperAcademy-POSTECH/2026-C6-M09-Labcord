@@ -54,7 +54,9 @@ struct PortraitSessionView: View {
                             onShowGestureGuide: onShowGestureGuide,
                             onShowRunningTimers: {
                                 timerStore.send(.timerTabSelected(.active))
-                                withAnimation(reduceMotion ? nil : LabcordMotion.layout.animation) {
+                                withAnimation(
+                                    reduceMotion ? nil : LabcordMotion.layout.animation
+                                ) {
                                     isSidePanelExpanded = true
                                 }
                             },
