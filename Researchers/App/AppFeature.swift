@@ -268,7 +268,11 @@ struct AppFeature {
                 return .none
 
             case let .path(.element(id: id, action: .result(.homeTapped))):
+                guard state.path[id: id, case: \.result]?.isResuming == false else { return .none }
                 return .send(.returnHome(id))
+
+            case let .path(.element(id: id, action: .result(.resumeReady))):
+                return openResumedSession(&state, id: id)
 
             case let .returnHome(id):
                 guard state.path.ids.last == id else { return .none }
@@ -285,6 +289,16 @@ struct AppFeature {
 }
 
 private extension AppFeature {
+    func openResumedSession(_ state: inout State, id: StackElementID) -> Effect<Action> {
+        guard state.path.ids.last == id,
+              let result = state.path[id: id, case: \.result],
+              result.isResuming else { return .none }
+        let experimentID = result.experimentID
+        state.path.removeAll()
+        state.path.append(.session(.init(experimentID: experimentID)))
+        return .none
+    }
+
     func registerReview(_ state: inout State, id: StackElementID) -> Effect<Action> {
         guard !state.reviewSaving, state.path.ids.last == id,
               let review = state.path[id: id, case: \.review], review.titleValid,
