@@ -161,7 +161,7 @@ final class WatchIntentRuntime {
             try await pause(until: deadline)
         }
         logger.info("Intent recording request accepted; capture and save are not confirmed")
-        return "기록 요청을 접수했어요. 앱에서 처리·저장 결과를 확인해주세요."
+        return "기록 요청을 접수했어요."
     }
 
     private func waitForRoot(

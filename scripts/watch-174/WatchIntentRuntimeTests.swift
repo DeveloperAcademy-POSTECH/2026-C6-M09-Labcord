@@ -260,3 +260,87 @@ final class WatchIntentRuntimeTests: XCTestCase {
     }
 
 }
+
+extension WatchIntentRuntimeTests {
+    func testDefinitivePhotoRejectionDoesNotBlockNextGesture() async throws {
+        let experimentID = UUID()
+        let recordID = UUID()
+        let command = WatchExperimentCommand(
+            operation: .takePhoto, experimentID: experimentID, targetID: recordID
+        )
+        let journal = WatchPendingRequestJournal(
+            url: FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        )
+        try journal.save(command)
+        var state = WatchExperimentFeature.State()
+        state.isVisible = true
+        state.streamID = UUID()
+        state.hasRestoredPending = true
+        state.screen = .experiment
+        state.selectedID = experimentID
+        state.recording.isIntegrated = true
+        state.snapshots[experimentID] = .init(
+            experiment: .init(id: experimentID, title: "A", status: .running), revision: 1
+        )
+        state.pending = .init(command: command, responseID: command.requestID)
+        state.recording.records[recordID] = .init(
+            id: recordID, experimentID: experimentID, kind: .photo
+        )
+        let store = TestStore(initialState: state) {
+            WatchExperimentFeature(pendingJournal: journal)
+        }
+        store.exhaustivity = .off
+        await store.send(.response(command.requestID, .init(
+            requestID: command.requestID, phase: .failed, error: .phoneBusy
+        )))
+        await store.receive(.recording(.captureRejected(
+            recordID, WatchExperimentError.phoneBusy.watchMessage
+        )))
+        XCTAssertNil(store.state.pending)
+        XCTAssertEqual(store.state.recording.records[recordID]?.canRecapture, true)
+        XCTAssertEqual(try WatchIntentRouting.action(for: .video, state: store.state),
+                       .recordTapped(.video))
+        XCTAssertNil(try journal.load())
+        await store.finish()
+    }
+
+    func testUnknownPhotoOutcomeKeepsPendingAndBlocksNextGesture() async throws {
+        let experimentID = UUID()
+        let recordID = UUID()
+        let command = WatchExperimentCommand(
+            operation: .takePhoto, experimentID: experimentID, targetID: recordID
+        )
+        let journal = WatchPendingRequestJournal(
+            url: FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        )
+        try journal.save(command)
+        var state = WatchExperimentFeature.State()
+        state.isVisible = true
+        state.streamID = UUID()
+        state.hasRestoredPending = true
+        state.screen = .experiment
+        state.selectedID = experimentID
+        state.recording.isIntegrated = true
+        state.snapshots[experimentID] = .init(
+            experiment: .init(id: experimentID, title: "A", status: .running), revision: 1
+        )
+        state.pending = .init(command: command, responseID: command.requestID)
+        state.recording.records[recordID] = .init(
+            id: recordID, experimentID: experimentID, kind: .photo
+        )
+        let store = TestStore(initialState: state) {
+            WatchExperimentFeature(pendingJournal: journal)
+        }
+        store.exhaustivity = .off
+        await store.send(.response(command.requestID, .init(
+            requestID: command.requestID, phase: .unknown
+        )))
+        XCTAssertEqual(store.state.pending?.phase, .uncertain)
+        XCTAssertEqual(try journal.load(), command)
+        XCTAssertThrowsError(try WatchIntentRouting.action(for: .video, state: store.state)) {
+            XCTAssertEqual($0 as? WatchIntentRuntimeError, .busy)
+        }
+        await store.finish()
+    }
+
+}

@@ -285,8 +285,12 @@ extension WatchExperimentFeature {
            state.recording.records[id] != nil {
             let operation = authorization?.operation ?? command?.operation
             let captureStart = operation == .takePhoto || operation == .startVideo
-            let rejectedCapture = captureStart
-                && (error == .cameraUnavailable || error == .permissionDenied)
+            let rejectedBeforeCapture: [WatchExperimentError] = [
+                .cameraUnavailable, .permissionDenied, .phoneBusy, .phoneUnlockRequired,
+                .activeExperimentConflict, .staleRevision, .requestExpired
+            ]
+            let rejectedCapture = captureStart && rejectedBeforeCapture.contains(error)
+                && (definitive || error == .cameraUnavailable || error == .permissionDenied)
             let action: WatchRecordFeature.Action = rejectedCapture
                 ? .captureRejected(id, error.watchMessage) : .commandFailed(id, error.watchMessage)
             effects.append(.send(.recording(action)))
