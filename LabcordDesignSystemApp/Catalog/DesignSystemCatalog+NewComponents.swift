@@ -78,13 +78,18 @@ struct DesignSystemProtocolPhotoItemPage: View {
 
 struct DesignSystemNavigationPageTitlePage: View {
     @State private var showsBackButton = true
+    @State private var showsTitle = true
     @State private var backCount = 0
 
     var body: some View {
         DesignSystemCatalogPage(title: "Navigation Page Title", context: .general) {
             DesignSystemCatalogCard("Navigation Page Title", description: "뒤로 버튼이 있는 제목과 없는 제목") {
-                NavigationPageTitle("실험 등록", onBack: showsBackButton ? { backCount += 1 } : nil)
+                NavigationPageTitle(
+                    "실험 등록", showsTitle: showsTitle,
+                    onBack: showsBackButton ? { backCount += 1 } : nil
+                )
                 Toggle("뒤로 버튼 표시", isOn: $showsBackButton)
+                Toggle("제목 표시", isOn: $showsTitle)
                 Text("뒤로 버튼 누른 횟수: \(backCount)")
                     .typography(Typography.footnote)
             }
@@ -110,6 +115,9 @@ struct DesignSystemProgressRingPage: View {
             DesignSystemCatalogCard("Progress Ring", description: "진행률에 따른 원형 표시") {
                 ProgressRing(value: progress)
                     .frame(maxWidth: .infinity)
+                ProgressRing(value: progress, appearance: .experiment)
+                    .frame(maxWidth: .infinity)
+                    .background(Color("Experiment/Background/Primary", bundle: catalogBundle))
                 Slider(value: $progress, in: 0...1)
                     .accessibilityLabel("진행률 조절")
             }

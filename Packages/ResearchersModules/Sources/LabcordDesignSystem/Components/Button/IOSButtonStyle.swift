@@ -15,18 +15,25 @@ public struct IOSButtonStyle: ButtonStyle {
         public static var plain: Self { .quaternary }
     }
 
+    public enum ColorPalette: Sendable {
+        case general, experiment
+    }
+
     private let variant: Variant
     private let size: ComponentSize?
     private let isLoading: Bool
+    private let colorPalette: ColorPalette
 
     public init(
         _ variant: Variant,
         size: ComponentSize? = nil,
-        isLoading: Bool = false
+        isLoading: Bool = false,
+        colorPalette: ColorPalette = .general
     ) {
         self.variant = variant
         self.size = size
         self.isLoading = isLoading
+        self.colorPalette = colorPalette
     }
 
     public func makeBody(configuration: Configuration) -> some View {
@@ -34,7 +41,8 @@ public struct IOSButtonStyle: ButtonStyle {
             configuration: configuration,
             variant: variant,
             size: size,
-            isLoading: isLoading
+            isLoading: isLoading,
+            colorPalette: colorPalette
         )
     }
 
@@ -48,6 +56,7 @@ public struct IOSButtonStyle: ButtonStyle {
         let variant: Variant
         let size: ComponentSize?
         let isLoading: Bool
+        let colorPalette: ColorPalette
 
         private var resolvedSize: ComponentSize {
             size ?? ComponentSize(controlSize)
@@ -61,7 +70,8 @@ public struct IOSButtonStyle: ButtonStyle {
             labcordButtonAppearance(
                 variant: variant,
                 isDestructive: configuration.role == .destructive,
-                isDisabled: !isEnabled && !isLoading
+                isDisabled: !isEnabled && !isLoading,
+                colorPalette: colorPalette
             )
         }
 
@@ -170,9 +180,10 @@ public extension ButtonStyle where Self == IOSButtonStyle {
     static func labcord(
         _ variant: IOSButtonStyle.Variant,
         size: ComponentSize? = nil,
-        isLoading: Bool = false
+        isLoading: Bool = false,
+        colorPalette: IOSButtonStyle.ColorPalette = .general
     ) -> IOSButtonStyle {
-        IOSButtonStyle(variant, size: size, isLoading: isLoading)
+        IOSButtonStyle(variant, size: size, isLoading: isLoading, colorPalette: colorPalette)
     }
 }
 
@@ -266,57 +277,91 @@ struct ButtonAppearance {
 func labcordButtonAppearance(
     variant: IOSButtonStyle.Variant,
     isDestructive: Bool,
-    isDisabled: Bool
+    isDisabled: Bool,
+    colorPalette: IOSButtonStyle.ColorPalette = .general
 ) -> ButtonAppearance {
+    let resolve: (ColorResource, ColorResource) -> Color = {
+        Color(colorPalette == .general ? $0 : $1)
+    }
+
     if isDisabled {
         return ButtonAppearance(
             background: variant == .quaternary || variant == .accent
-                ? nil : Color(.General.Action.Disabled.background),
-            foreground: Color(.General.Action.Disabled.foreground),
+                ? nil : resolve(
+                    .General.Action.Disabled.background,
+                    .Experiment.Action.Disabled.background
+                ),
+            foreground: resolve(
+                .General.Action.Disabled.foreground,
+                .Experiment.Action.Disabled.foreground
+            ),
             border: nil
         )
     }
 
-    let subtleBackground = Color(.General.Action.Destructive.subtleBackground)
-    let subtleForeground = Color(.General.Action.Destructive.subtleForeground)
-    let secondaryLabel = Color(.General.Label.secondary)
+    let subtleBackground = resolve(
+        .General.Action.Destructive.subtleBackground,
+        .Experiment.Action.Destructive.subtleBackground
+    )
+    let subtleForeground = resolve(
+        .General.Action.Destructive.subtleForeground,
+        .Experiment.Action.Destructive.subtleForeground
+    )
+    let secondaryLabel = resolve(.General.Label.secondary, .Experiment.Label.secondary)
     switch variant {
-    case .primary:
-        return ButtonAppearance(
-            background: isDestructive
-                ? Color(.General.Action.Destructive.background)
-                : Color(.General.Action.Primary.background),
-            foreground: isDestructive
-                ? Color(.General.Action.Destructive.foreground)
-                : Color(.General.Label.inverse),
-            border: isDestructive
-                ? Color(.General.Action.Destructive.background)
-                : nil
-        )
-    case .secondary:
-        return ButtonAppearance(
-            background: isDestructive
-                ? subtleBackground : Color(.General.Action.Secondary.background),
-            foreground: isDestructive
-                ? subtleForeground : Color(.General.Action.Secondary.foreground),
-            border: nil
+    case .primary, .secondary:
+        return prominentButtonAppearance(
+            variant: variant, isDestructive: isDestructive, resolve: resolve
         )
     case .tertiary:
         return ButtonAppearance(
             background: isDestructive
-                ? subtleBackground : Color(.General.Fill.secondary),
+                ? subtleBackground : resolve(.General.Fill.secondary, .Experiment.Fill.secondary),
             foreground: isDestructive ? subtleForeground : secondaryLabel,
             border: nil
         )
     case .quaternary, .accent:
         let normal = variant == .accent
-            ? Color(.General.Label.brand) : secondaryLabel
+            ? resolve(.General.Label.brand, .Experiment.Label.brand) : secondaryLabel
         return ButtonAppearance(
             background: nil,
             foreground: isDestructive ? subtleForeground : normal,
             border: nil
         )
     }
+}
+
+private func prominentButtonAppearance(
+    variant: IOSButtonStyle.Variant,
+    isDestructive: Bool,
+    resolve: (ColorResource, ColorResource) -> Color
+) -> ButtonAppearance {
+    let destructiveBackground = resolve(
+        .General.Action.Destructive.background,
+        .Experiment.Action.Destructive.background
+    )
+    if variant == .primary {
+        return ButtonAppearance(
+            background: isDestructive ? destructiveBackground : resolve(
+                .General.Action.Primary.background, .Experiment.Action.Primary.background
+            ),
+            foreground: isDestructive ? resolve(
+                .General.Action.Destructive.foreground, .Experiment.Action.Destructive.foreground
+            ) : resolve(.General.Label.inverse, .Experiment.Label.inverse),
+            border: isDestructive ? destructiveBackground : nil
+        )
+    }
+    return ButtonAppearance(
+        background: isDestructive ? resolve(
+            .General.Action.Destructive.subtleBackground,
+            .Experiment.Action.Destructive.subtleBackground
+        ) : resolve(.General.Action.Secondary.background, .Experiment.Action.Secondary.background),
+        foreground: isDestructive ? resolve(
+            .General.Action.Destructive.subtleForeground,
+            .Experiment.Action.Destructive.subtleForeground
+        ) : resolve(.General.Action.Secondary.foreground, .Experiment.Action.Secondary.foreground),
+        border: nil
+    )
 }
 
 #Preview("버튼") {

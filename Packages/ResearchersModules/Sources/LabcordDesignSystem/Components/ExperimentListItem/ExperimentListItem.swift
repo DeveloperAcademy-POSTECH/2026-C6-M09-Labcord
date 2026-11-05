@@ -8,6 +8,7 @@ public struct ExperimentListItem: View {
     @Binding private var isSelected: Bool
     private let showBadge: Bool
     private let showRadioButton: Bool
+    private let showRunningTimer: Bool
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -20,6 +21,7 @@ public struct ExperimentListItem: View {
         isSelected: Binding<Bool>,
         showBadge: Bool = true,
         showRadioButton: Bool = true,
+        showRunningTimer: Bool = false,
         onSelect: @escaping () -> Void
     ) {
         self.init(
@@ -29,6 +31,7 @@ public struct ExperimentListItem: View {
             isSelected: isSelected,
             showBadge: showBadge,
             showRadioButton: showRadioButton,
+            showRunningTimer: showRunningTimer,
             onSelect: onSelect
         )
     }
@@ -40,6 +43,7 @@ public struct ExperimentListItem: View {
         isSelected: Binding<Bool> = .constant(false),
         showBadge: Bool = true,
         showRadioButton: Bool = true,
+        showRunningTimer: Bool = false,
         onSelect: @escaping () -> Void = {}
     ) {
         self.title = title
@@ -48,6 +52,7 @@ public struct ExperimentListItem: View {
         _isSelected = isSelected
         self.showBadge = showBadge
         self.showRadioButton = showRadioButton
+        self.showRunningTimer = showRunningTimer
         self.onSelect = onSelect
     }
 
@@ -115,11 +120,35 @@ public struct ExperimentListItem: View {
                 .labcordMotion(.state, value: title)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Text(date)
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 10) {
+                    dateLabel
+                    if showRunningTimer { runningTimerLabel }
+                }
+                VStack(alignment: .leading, spacing: LayoutTokens.spacing4) {
+                    dateLabel
+                    if showRunningTimer { runningTimerLabel }
+                }
+            }
+        }
+    }
+
+    private var dateLabel: some View {
+        Text(date)
+            .typography(Typography.subheadline)
+            .foregroundStyle(Color(.General.Label.tertiary))
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var runningTimerLabel: some View {
+        HStack(spacing: LayoutTokens.spacing4) {
+            IconArtwork(icon: .dot, size: 16)
+                .accessibilityHidden(true)
+            Text("타이머 진행 중")
                 .typography(Typography.subheadline)
-                .foregroundStyle(Color(.General.Label.tertiary))
                 .fixedSize(horizontal: false, vertical: true)
         }
+        .foregroundStyle(Color(.General.Timer.Identity._04))
     }
 
     private var actionContent: some View {

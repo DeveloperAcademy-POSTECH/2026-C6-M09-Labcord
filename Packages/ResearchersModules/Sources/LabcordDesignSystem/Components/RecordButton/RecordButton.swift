@@ -29,6 +29,10 @@ public struct RecordButton: View {
         }
     }
 
+    public enum Appearance: Sendable {
+        case general, experiment
+    }
+
     public enum State: String, CaseIterable, Sendable {
         case `default`
         case disabled
@@ -36,15 +40,18 @@ public struct RecordButton: View {
 
     private let type: Kind
     private let state: State
+    private let appearance: Appearance
     private let action: () -> Void
 
     public init(
         type: Kind = .audio,
         state: State = .default,
+        appearance: Appearance = .experiment,
         action: @escaping () -> Void
     ) {
         self.type = type
         self.state = state
+        self.appearance = appearance
         self.action = action
     }
 
@@ -58,9 +65,15 @@ public struct RecordButton: View {
         }
         .buttonStyle(
             RunIconButtonStyle(
-                background: Color(.Experiment.Fill.secondary),
-                foreground: Color(.Experiment.Label.brand),
-                iconSize: LayoutTokens.iconDefaultSize
+                background: appearance == .general
+                    ? Color(.General.Fill.secondary) : Color(.Experiment.Fill.secondary),
+                foreground: appearance == .general
+                    ? Color(.General.Label.brand) : Color(.Experiment.Label.brand),
+                iconSize: LayoutTokens.iconDefaultSize,
+                disabledBackground: appearance == .general
+                    ? Color(.General.Fill.disabled) : Color(.Experiment.Fill.disabled),
+                disabledForeground: appearance == .general
+                    ? Color(.General.Label.disabled) : Color(.Experiment.Label.disabled)
             )
         )
         .disabled(state == .disabled)

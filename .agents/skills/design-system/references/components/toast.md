@@ -7,6 +7,7 @@ Toast("저장했어요", type: .success, onDismiss: dismissToast)
 ```
 
 - `onAction`·`onDismiss`를 생략하면 해당 버튼이 표시되지 않습니다. 재시도가 필요하면 `actionTitle`과 `onAction`을 함께 전달합니다.
+- `colorPalette: .general`은 General 색상 체계를 사용합니다. 기본값 `.experiment`는 기존 실험 화면 색상을 유지합니다.
 - `appearance: .accent`는 상태별 강조 배경과 글자색을 사용합니다. 기본값은 `.default`입니다.
 - 콜백이 실제 재시도와 토스트 제거를 처리합니다. 자동 타임아웃이나 저장 동작은 내장하지 않습니다.
 

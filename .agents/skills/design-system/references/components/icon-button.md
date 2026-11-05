@@ -17,3 +17,5 @@ Button(role: .destructive, action: remove) {
 - `isLoading`만으로 액션을 막지 않습니다. `.disabled`를 함께 연결합니다.
 - `size:`를 생략하면 `.controlSize`를 사용하며 원형 컨테이너와 아이콘은 Dynamic Type에 맞춰집니다.
 - `size: .extraLarge`로 Figma의 XLarge 크기를 사용합니다.
+
+- 기본 색상은 General입니다. 실험 영역에서는 `colorPalette: .experiment`를 지정합니다.

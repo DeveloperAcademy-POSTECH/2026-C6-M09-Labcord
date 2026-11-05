@@ -40,7 +40,11 @@ private struct ProgressContent: View {
     let configuration: ProgressViewStyleConfiguration
 
     private var resolvedForeground: Color {
-        foreground ?? Color(.General.Action.Primary.foreground)
+        foreground ?? Color(.General.Label.primary)
+    }
+
+    private var inactiveForeground: Color {
+        foreground ?? Color(.General.Label.tertiary)
     }
 
     @ViewBuilder
@@ -51,12 +55,18 @@ private struct ProgressContent: View {
                 .tint(foreground ?? Color(.General.Label.primary))
         } else if let label = configuration.label {
             HStack(spacing: LayoutTokens.spacing8) {
-                LoadingIndicator(size: size, foreground: resolvedForeground)
+                LoadingIndicator(
+                    size: size,
+                    foreground: resolvedForeground,
+                    inactiveForeground: inactiveForeground
+                )
                 label
             }
             .accessibilityElement(children: .combine)
         } else {
-            LoadingIndicator(size: size, foreground: resolvedForeground)
+            LoadingIndicator(
+                size: size, foreground: resolvedForeground, inactiveForeground: inactiveForeground
+            )
                 .accessibilityElement(children: .ignore)
         }
     }
@@ -65,12 +75,14 @@ private struct ProgressContent: View {
 private struct LoadingIndicator: View {
     private let size: LoadingIndicatorStyle.Size
     private let foreground: Color
+    private let inactiveForeground: Color
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ScaledMetric private var scaledSize: CGFloat
 
-    init(size: LoadingIndicatorStyle.Size, foreground: Color) {
+    init(size: LoadingIndicatorStyle.Size, foreground: Color, inactiveForeground: Color) {
         self.size = size
         self.foreground = foreground
+        self.inactiveForeground = inactiveForeground
         _scaledSize = ScaledMetric(wrappedValue: size.points, relativeTo: .body)
     }
 
@@ -115,7 +127,7 @@ private struct LoadingIndicator: View {
         HStack(spacing: 0) {
             ForEach(0..<3) { dot in
                 Circle()
-                    .fill(foreground)
+                    .fill(activeDot == dot ? foreground : inactiveForeground)
                     .frame(width: inactiveDotSize, height: inactiveDotSize)
                     .scaleEffect(activeDot == dot ? activeDotSize / inactiveDotSize : 1)
                     .frame(width: activeDotSize, height: activeDotSize)
