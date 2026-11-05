@@ -63,8 +63,9 @@ struct ExperimentRecordSheetHost: View {
                                 onSave: onSave,
                                 onDelete: onDelete,
                                 onScrollTargetChange: { scrollTarget = $0 },
-                                isVideoFullScreen: fullScreenVideoPlayer != nil
-                            ) { fullScreenVideoPlayer = $0 }
+                                isVideoFullScreen: fullScreenVideoPlayer != nil,
+                                onOpenVideoFullScreen: { fullScreenVideoPlayer = $0 }
+                            )
                                 .frame(maxWidth: .infinity)
                                 .onGeometryChange(
                                     for: CGFloat.self,
@@ -77,7 +78,11 @@ struct ExperimentRecordSheetHost: View {
                                     "기록을 삭제할까요?",
                                     isPresented: $isDeleteConfirmationPresented,
                                     actions: {
-                                        Button("기록 삭제", role: .destructive, action: onConfirmDelete)
+                                        Button(
+                                            "기록 삭제",
+                                            role: .destructive,
+                                            action: onConfirmDelete
+                                        )
                                         Button("취소", role: .cancel, action: onCancelDelete)
                                     },
                                     message: {
