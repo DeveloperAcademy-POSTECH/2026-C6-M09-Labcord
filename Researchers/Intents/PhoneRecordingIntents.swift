@@ -16,7 +16,7 @@ struct TogglePhoneVoiceRecordingIntent: AppIntent {
 
 struct TakePhoneExperimentPhotoIntent: AppIntent {
     static let title: LocalizedStringResource = "iPhone 실험 사진 촬영"
-    static let description = IntentDescription("현재 실험에서 iPhone 카메라로 사진을 촬영합니다.")
+    static let description = IntentDescription("현재 실험에서 카메라로 사진을 촬영합니다.")
     static let supportedModes: IntentModes = .foreground(.immediate)
     static let authenticationPolicy: IntentAuthenticationPolicy =
         .requiresLocalDeviceAuthentication
@@ -30,7 +30,7 @@ struct TakePhoneExperimentPhotoIntent: AppIntent {
 
 struct TogglePhoneExperimentVideoIntent: AppIntent {
     static let title: LocalizedStringResource = "iPhone 실험 영상 녹화 시작"
-    static let description = IntentDescription("현재 실험에서 iPhone 카메라로 영상 녹화를 시작합니다.")
+    static let description = IntentDescription("현재 실험에서 카메라로 영상 녹화를 시작합니다.")
     static let supportedModes: IntentModes = .foreground(.immediate)
     static let authenticationPolicy: IntentAuthenticationPolicy =
         .requiresLocalDeviceAuthentication
