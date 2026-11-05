@@ -19,10 +19,11 @@ struct ResearchWatchApp: App {
     init() {
         batteryClient.start()
         deviceNameClient.start()
+        WatchRecordingService.shared.activate()
     }
 
     private let store = Store(initialState: WatchExperimentFeature.State()) {
-        WatchExperimentFeature()
+        WatchExperimentFeature(recordingBridge: .live)
     }
 
     var body: some Scene {

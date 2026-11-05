@@ -1,3 +1,5 @@
+import ComposableArchitecture
+import LabcordShared
 import SwiftUI
 
 struct WatchPreparationView: View {
@@ -14,5 +16,46 @@ struct WatchPreparationView: View {
                     .monospacedDigit()
             }
             .accessibilityLabel(value == "준비" ? "실험 준비" : "실험 시작까지 \(value)초")
+    }
+}
+
+extension WatchExperimentView {
+    @ViewBuilder
+    var recordCleanup: some View {
+        if store.canReviewCompletedExperiment {
+            Image(systemName: "iphone")
+                .font(.largeTitle)
+            Text("실험을 종료했어요.")
+                .multilineTextAlignment(.center)
+            Text("개별 기록 저장 결과는 iPhone에서 확인해주세요.")
+                .font(.caption)
+                .multilineTextAlignment(.center)
+            Button("확인") { store.send(.closeTapped) }
+        } else if store.pending?.command.operation == .complete,
+                  store.pending?.phase == .processing {
+            ProgressView()
+            Text("실험 기록을\n정리중이에요.")
+                .multilineTextAlignment(.center)
+            Text("최종 저장 결과를 확인하고 있어요.")
+                .font(.caption)
+        } else {
+            Text("기록 저장·정리 결과를 확인해주세요.")
+                .font(.headline)
+            ForEach(unsettledRecords) { record in
+                Button("기록 결과 확인") {
+                    store.send(.closeTapped)
+                    store.send(.recording(.open(record.id)))
+                }
+            }
+            Button("상태 다시 확인") { store.send(.refresh) }
+                .disabled(!store.isReachable)
+            Button("실험으로 돌아가기") { store.send(.closeTapped) }
+        }
+    }
+
+    private var unsettledRecords: [WatchRecordPresentation] {
+        store.recording.records.values
+            .filter { $0.experimentID == store.selectedID && !$0.isSettled }
+            .sorted { $0.id.uuidString < $1.id.uuidString }
     }
 }
