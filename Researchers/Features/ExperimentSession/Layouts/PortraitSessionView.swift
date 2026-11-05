@@ -31,13 +31,17 @@ struct PortraitSessionView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .anchorPreference(key: CameraPreviewAnchorKey.self, value: .bounds) { $0 }
-
-                    ExperimentSidePanel(
-                        layout: .portrait,
-                        isExpanded: $isSidePanelExpanded
-                    )
-                    .ignoresSafeArea()
-                    .frame(height: isSidePanelExpanded ? 398 : 83)
+                    
+                    VStack(spacing: 16) {
+                        ExperimentSettingButtonsView()
+                        
+                        ExperimentSidePanel(
+                            layout: .portrait,
+                            isExpanded: $isSidePanelExpanded
+                        )
+                        .ignoresSafeArea()
+                        .frame(height: isSidePanelExpanded ? 398 : 83)
+                    }
                 }
             }
             .foregroundStyle(.white)
