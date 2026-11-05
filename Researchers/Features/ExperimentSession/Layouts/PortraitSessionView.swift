@@ -22,18 +22,23 @@ struct PortraitSessionView: View {
                 Color.clear
                     .ignoresSafeArea()
 
-                VStack {
-                    HeaderView(store: sessionStore)
-                        .padding(16)
+                VStack(spacing: 0) {
+                    VStack {
+                        HeaderView(store: sessionStore)
+                            .padding(16)
 
-                    Spacer()
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity)
+                    .anchorPreference(key: CameraPreviewAnchorKey.self, value: .bounds) { $0 }
 
                     ExperimentSidePanel(
                         layout: .portrait,
                         isExpanded: $isSidePanelExpanded
                     )
                     .ignoresSafeArea()
-                    .frame(height: 398)
+                    .fixedSize(horizontal: false, vertical: !isSidePanelExpanded)
+                    .frame(height: isSidePanelExpanded ? 398 : nil)
                 }
             }
             .foregroundStyle(.white)

@@ -46,9 +46,7 @@ struct ExperimentSessionView: View {
         .backgroundPreferenceValue(CameraPreviewAnchorKey.self) { anchor in
             GeometryReader { geometry in
                 if let connector = captureStore.previewConnector {
-                    let frame = verticalSizeClass == .compact
-                        ? anchor.map { geometry[$0] } ?? CGRect(origin: .zero, size: geometry.size)
-                        : CGRect(origin: .zero, size: geometry.size)
+                    let frame = previewFrame(anchor: anchor, geometry: geometry)
                     CameraPreviewView(connector: connector, showsHandOverlay: false)
                         .frame(width: frame.width, height: frame.height)
                         .clipShape(
@@ -69,6 +67,7 @@ struct ExperimentSessionView: View {
                             }
                         }
                         .position(x: frame.midX, y: frame.midY)
+                        .transaction { $0.disablesAnimations = true }
                         .allowsHitTesting(false)
                 }
             }
@@ -227,6 +226,23 @@ struct ExperimentSessionView: View {
         } message: {
             Text("타이머 기록을 저장하지 못했습니다.")
         }
+    }
+
+    private func previewFrame(anchor: Anchor<CGRect>?, geometry: GeometryProxy) -> CGRect {
+        let fullFrame = CGRect(origin: .zero, size: geometry.size)
+        guard let anchor else { return fullFrame }
+
+        let anchoredFrame = geometry[anchor]
+        if verticalSizeClass == .compact {
+            return anchoredFrame
+        }
+
+        return CGRect(
+            x: 0,
+            y: 0,
+            width: geometry.size.width,
+            height: min(geometry.size.height, max(0, anchoredFrame.maxY + 32))
+        )
     }
 }
 
