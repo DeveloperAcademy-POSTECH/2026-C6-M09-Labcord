@@ -169,11 +169,15 @@ struct VoiceRecordingFeature {
                     if state.phase == .recording || state.phase == .stopping {
                         state.transcript = text
                     }
+                case .transcriptionUnavailable:
+                    state.errorMessage = "음성 전사가 중단됐어요. 녹음은 계속됩니다."
                 case let .finished(recording):
                     guard state.phase == .recording || state.phase == .stopping else {
                         return .none
                     }
                     return finishRecording(recording, state: &state)
+                case let .interrupted(recording, message):
+                    return interrupted(recording, message: message, state: &state)
                 case let .failed(message):
                     state.phase = .hidden
                     state.errorMessage = message
@@ -195,10 +199,7 @@ struct VoiceRecordingFeature {
             case let .stopped(id, recording):
                 guard id == state.sessionID, state.phase == .stopping else { return .none }
                 if let recording {
-                    return .merge(
-                        finishRecording(recording, state: &state),
-                        .cancel(id: CancelID.voiceStream)
-                    )
+                    return finishStopped(recording, state: &state)
                 }
                 state.phase = .hidden
                 state.errorMessage = "녹음하지 못했어요. 하단 마이크 버튼을 눌러 다시 녹음해 주세요."
@@ -281,18 +282,43 @@ struct VoiceRecordingFeature {
 }
 
 private extension VoiceRecordingFeature {
+    func finishStopped(_ recording: SpeechRecording, state: inout State) -> Effect<Action> {
+        if recording.captureInterrupted {
+            return interrupted(
+                recording, message: "녹음 저장이 중단됐어요. 보관된 원본을 확인해주세요.",
+                state: &state
+            )
+        }
+        return .merge(finishRecording(recording, state: &state), .cancel(id: CancelID.voiceStream))
+    }
+
+    func interrupted(
+        _ recording: SpeechRecording, message: String, state: inout State
+    ) -> Effect<Action> {
+        guard state.phase == .recording || state.phase == .stopping else { return .none }
+        state.shouldSaveOnStop = false
+        let effect = finishRecording(recording, autoSave: false, state: &state)
+        state.errorMessage = message
+        return effect
+    }
+
     func finishRecording(
         _ recording: SpeechRecording,
+        autoSave: Bool = true,
         state: inout State
     ) -> Effect<Action> {
         let id = uuid()
         state.recording = recording
         state.transcript = recording.transcript
+        if recording.transcriptionIncomplete {
+            state.errorMessage = "음성 전사를 완료하지 못했어요. 녹음 원본을 확인해주세요."
+        }
         state.recordID = id
         state.recordedAt = state.recordedAt ?? now
         state.phase = .finished
         state.saveError = nil
-        state.isAutoSavePending = true
+        state.isAutoSavePending = autoSave
+        guard autoSave else { return .none }
         if state.shouldSaveOnStop { return saveAudio(state: &state) }
         return .run { send in
             try await Task.sleep(for: .seconds(3))

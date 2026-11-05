@@ -4,16 +4,25 @@ import Foundation
 public struct SpeechRecording: Equatable, Sendable {
     public let audioURL: URL
     public let transcript: String
+    public let transcriptionIncomplete: Bool
+    public let captureInterrupted: Bool
 
-    public init(audioURL: URL, transcript: String) {
+    public init(
+        audioURL: URL, transcript: String, transcriptionIncomplete: Bool = false,
+        captureInterrupted: Bool = false
+    ) {
         self.audioURL = audioURL
         self.transcript = transcript
+        self.transcriptionIncomplete = transcriptionIncomplete
+        self.captureInterrupted = captureInterrupted
     }
 }
 
 public enum SpeechRecordingEvent: Equatable, Sendable {
     case transcript(String)
+    case transcriptionUnavailable
     case finished(SpeechRecording)
+    case interrupted(SpeechRecording, String)
     case failed(String)
 }
 

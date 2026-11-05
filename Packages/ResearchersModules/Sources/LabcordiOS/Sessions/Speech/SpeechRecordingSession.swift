@@ -2,6 +2,27 @@ import AVFoundation
 import Foundation
 import Speech
 
+private final class SpeechRecognitionInput: @unchecked Sendable {
+    private let lock = NSLock()
+    private var request: SFSpeechAudioBufferRecognitionRequest?
+
+    init(_ request: SFSpeechAudioBufferRecognitionRequest) {
+        self.request = request
+    }
+
+    func append(_ buffer: AVAudioPCMBuffer) {
+        lock.lock()
+        defer { lock.unlock() }
+        request?.append(buffer)
+    }
+
+    func stop() {
+        lock.lock()
+        defer { lock.unlock() }
+        request = nil
+    }
+}
+
 @MainActor
 public final class SpeechRecordingSession {
     private let audioEngine = AVAudioEngine()
@@ -11,6 +32,7 @@ public final class SpeechRecordingSession {
     private var startupID: UUID?
     private var recordingID: UUID?
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
+    private var recognitionInput: SpeechRecognitionInput?
     private var recognitionTask: SFSpeechRecognitionTask?
     private var eventContinuation: AsyncStream<SpeechRecordingEvent>.Continuation?
     private var stopContinuations: [CheckedContinuation<SpeechRecording?, Never>] = []
@@ -18,10 +40,13 @@ public final class SpeechRecordingSession {
     private var recordingURL: URL?
     private var recordingFile: AVAudioFile?
     private var latestRecording: SpeechRecording?
+    private var latestRecordingIsRecovery = false
     private var hasInputTap = false
     private var audioActivationPending = false
     private var ownsAudioSession = false
     private var transcript = ""
+    private var recognitionEnded = false
+    private var transcriptionIncomplete = false
 
     public init(locale: Locale = Locale(identifier: "ko-KR")) {
         self.locale = locale
@@ -101,8 +126,12 @@ public final class SpeechRecordingSession {
         request.shouldReportPartialResults = true
         request.contextualStrings = contextualStrings
         recognitionRequest = request
+        let input = SpeechRecognitionInput(request)
+        recognitionInput = input
         recordingID = id
         transcript = ""
+        recognitionEnded = false
+        transcriptionIncomplete = false
 
         let (stream, continuation) = AsyncStream<SpeechRecordingEvent>.makeStream(
             bufferingPolicy: .bufferingNewest(1)
@@ -115,7 +144,7 @@ public final class SpeechRecordingSession {
             }
         }
 
-        installInputTap(on: inputNode, format: format, request: request, file: file, id: id)
+        installInputTap(on: inputNode, format: format, input: input, file: file, id: id)
         audioEngine.prepare()
         try audioEngine.start()
         try Task.checkCancellation()
@@ -126,12 +155,12 @@ public final class SpeechRecordingSession {
     private func installInputTap(
         on inputNode: AVAudioInputNode,
         format: AVAudioFormat,
-        request: SFSpeechAudioBufferRecognitionRequest,
+        input: SpeechRecognitionInput,
         file: AVAudioFile,
         id: UUID
     ) {
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
-            request.append(buffer)
+            input.append(buffer)
             do {
                 try file.write(from: buffer)
             } catch {
@@ -151,11 +180,16 @@ public final class SpeechRecordingSession {
             stopContinuations.append(continuation)
             guard isFirstStop else { return }
             stopInput()
+            if recognitionEnded {
+                finishRecording(keepingFile: true)
+                return
+            }
             recognitionRequest?.endAudio()
             stopTimeout = Task { [weak self] in
                 do {
                     try await Task.sleep(for: .seconds(2))
                     guard self?.recordingID == id else { return }
+                    self?.transcriptionIncomplete = true
                     self?.finishRecording(keepingFile: true)
                 } catch {
                     return
@@ -175,22 +209,35 @@ public final class SpeechRecordingSession {
         error: Error?,
         recordingID id: UUID
     ) {
-        guard recordingID == id else { return }
+        guard recordingID == id, !recognitionEnded else { return }
         if let result {
             transcript = result.bestTranscription.formattedString
             eventContinuation?.yield(.transcript(transcript))
             if result.isFinal {
-                finishRecording(keepingFile: true)
+                recognitionEnded = true
+                recognitionInput?.stop()
+                if !stopContinuations.isEmpty {
+                    finishRecording(keepingFile: true)
+                } else {
+                    transcriptionIncomplete = true
+                    eventContinuation?.yield(.transcriptionUnavailable)
+                }
                 return
             }
         }
-        if let error { fail(error, recordingID: id) }
+        if error != nil {
+            recognitionEnded = true
+            recognitionInput?.stop()
+            transcriptionIncomplete = true
+            eventContinuation?.yield(.transcriptionUnavailable)
+            if !stopContinuations.isEmpty { finishRecording(keepingFile: true) }
+        }
     }
 
     private func fail(_ error: Error, recordingID id: UUID) {
         guard recordingID == id else { return }
-        eventContinuation?.yield(.failed(error.localizedDescription))
-        finishRecording(keepingFile: false)
+        transcriptionIncomplete = true
+        finishRecording(keepingFile: true, interruption: error.localizedDescription)
     }
 
     private func stopInput() {
@@ -201,23 +248,36 @@ public final class SpeechRecordingSession {
         }
     }
 
-    private func finishRecording(keepingFile: Bool) {
+    private func finishRecording(keepingFile: Bool, interruption: String? = nil) {
         stopTimeout?.cancel()
         stopTimeout = nil
         stopInput()
         audioEngine.reset()
         recognitionTask?.cancel()
         recognitionTask = nil
+        recognitionInput?.stop()
+        recognitionInput = nil
         recognitionRequest = nil
         recordingFile = nil
         recordingID = nil
 
         let result: SpeechRecording?
         if keepingFile, let recordingURL {
-            let completed = SpeechRecording(audioURL: recordingURL, transcript: transcript)
+            let recoveredURL = interruption == nil
+                ? recordingURL : preservePartialFile(recordingURL)
+            let completed = SpeechRecording(
+                audioURL: recoveredURL, transcript: transcript,
+                transcriptionIncomplete: transcriptionIncomplete,
+                captureInterrupted: interruption != nil
+            )
             result = completed
             latestRecording = completed
-            eventContinuation?.yield(.finished(completed))
+            latestRecordingIsRecovery = interruption != nil
+            if let interruption {
+                eventContinuation?.yield(.interrupted(completed, interruption))
+            } else {
+                eventContinuation?.yield(.finished(completed))
+            }
         } else {
             if let recordingURL { try? FileManager.default.removeItem(at: recordingURL) }
             result = nil
@@ -231,13 +291,32 @@ public final class SpeechRecordingSession {
     }
 
     private func discardLatestRecording() {
-        if let latestRecording {
+        if let latestRecording, !latestRecordingIsRecovery {
             try? FileManager.default.removeItem(at: latestRecording.audioURL)
-            self.latestRecording = nil
+        }
+        latestRecording = nil
+        latestRecordingIsRecovery = false
+    }
+
+}
+
+private extension SpeechRecordingSession {
+    func preservePartialFile(_ original: URL) -> URL {
+        let directory = URL.applicationSupportDirectory
+            .appending(path: "IncompleteVoiceRecordings")
+        let destination = directory.appending(path: original.lastPathComponent)
+        do {
+            try FileManager.default.createDirectory(
+                at: directory, withIntermediateDirectories: true
+            )
+            try FileManager.default.moveItem(at: original, to: destination)
+            return destination
+        } catch {
+            return original
         }
     }
 
-    private func activateAudioSession() async throws {
+    func activateAudioSession() async throws {
         try await withCheckedThrowingContinuation { continuation in
             audioSessionQueue.async {
                 do {
@@ -252,7 +331,7 @@ public final class SpeechRecordingSession {
         }
     }
 
-    private func releaseAudioSession() {
+    func releaseAudioSession() {
         guard audioActivationPending || ownsAudioSession else { return }
         audioActivationPending = false
         ownsAudioSession = false

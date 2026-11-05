@@ -348,7 +348,10 @@ private extension ExperimentSessionFeature {
     }
 
     func prepareVoiceRecording(state: inout State) -> Effect<Action> {
-        guard state.watchCommand == nil else { return .none }
+        guard state.watchCommand == nil else {
+            state.voice.errorMessage = "Watch의 실험 중단 또는 종료를 처리 중이에요. 완료 후 다시 시도해주세요."
+            return .none
+        }
         guard state.detail != nil else {
             if state.isLoadingDetail {
                 state.voice.errorMessage = "실험 정보를 불러오고 있어요. 잠시 후 다시 시도해 주세요."
