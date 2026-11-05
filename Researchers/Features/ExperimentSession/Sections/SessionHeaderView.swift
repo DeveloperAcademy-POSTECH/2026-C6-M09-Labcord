@@ -6,6 +6,7 @@
 //
 
 import ComposableArchitecture
+import LabcordDesignSystem
 import LabcordiOS
 import SwiftUI
 
@@ -13,32 +14,21 @@ struct SessionHeaderView: View {
     let store: StoreOf<ExperimentSessionFeature>
 
     var body: some View {
-        HStack(spacing: 19) {
+        HStack(spacing: 16) {
+            Button {
+                store.send(.pauseTapped)
+            } label: {
+                Image(labcordIcon: .pause)
+                    .foregroundStyle(Color("Experiment/Label/Primary"))
+            }
+            .buttonStyle(.labcordIcon(.neutral, size: .large))
+
             Text(store.detail?.title ?? "불러오는 중...")
                 .lineLimit(1)
-                .font(.title2.bold())
+                .typography(Typography.headline)
+                .foregroundStyle(Color("Experiment/Label/Primary"))
 
             Spacer()
-
-            Button {
-                store.send(.stopTapped)
-            } label: {
-                Image(systemName: "stop.fill")
-                    .frame(width: 40, height: 40)
-            }
-            .buttonStyle(.glass)
-            .buttonBorderShape(.circle)
-            .disabled(!store.canCloseSession)
-
-            Button {
-                store.send(.returnHomeTapped)
-            } label: {
-                Image(systemName: "pause.fill")
-                    .frame(width: 40, height: 40)
-            }
-            .buttonStyle(.glassProminent)
-            .buttonBorderShape(.circle)
-            .disabled(!store.canCloseSession)
         }
     }
 }
@@ -51,4 +41,5 @@ struct SessionHeaderView: View {
             ExperimentSessionFeature()
         }
     )
+    .background(.black)
 }
