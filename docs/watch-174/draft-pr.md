@@ -1,9 +1,9 @@
 # Watch PR 초안 안내
 
-현재 단계는 #269 사진·영상·기록 저장 조율이다.
-촬영 예약·취소·영상 중지·저장 재시도·실제 저장 파일 조회·미디어 journal과 공통 기록 명령 dispatch·중단/종료 drain을 담당한다.
+현재 단계는 #170 Watch 선택·준비·상태 기반이다.
+선택·권한·준비·카운트다운·닫기·관찰 수명을 담당한다. 루트 Feature가 참조하는 WatchRecordFeature/Presentation과 오류 표시 타입을 함께 도입한다.
 
-PhoneWatchExperimentCoordinator+Records, App/Session의 record handler·응답·완료 drain을 이 PR에서 연결한다. 음성 저장 명령과 타이머 dispatch도 이미 준비된 실제 서비스에 연결한다.
+WatchExperimentFeature/Requests/Lifecycle/View는 선택·준비에 필요한 역사 버전으로 시작한다. App 진입과 준비 링 asset을 포함하고 후속 도구·Intent 참조는 각 단계에서 확장한다.
 
 7개 PR은 #173 → #174 → #268 → #269 → #170 → #171 → #270 순차 stack이다.
 첫 base는 `feat/#167-Devin-prepared`, 이후 base는 직전 `feat/#번호-Codex`다.

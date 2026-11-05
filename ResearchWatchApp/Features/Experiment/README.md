@@ -1,0 +1,23 @@
+# Watch 실험 화면
+
+### #170 Watch 선택·준비와 기록 상태 기반
+
+초기 Store와 실제 Client를 연결해 실험 목록·선택·권한·준비 링·시작 카운트다운·닫기·중단/종료 확인을
+제공한다. 카운트다운 직후 새 토큰을 받고 변경 요청을 보낸다. 닫기·타임아웃·stream 종료는 준비 의도를
+무효화하고 늦은 시작 응답으로 다른 화면을 열지 않는다. 조회 종료와 미확정 변경 요청을 구분한다.
+
+루트 상태가 참조하는 `WatchRecordFeature/Presentation`과 오류 표시 타입을 함께 제공한다.
+진행 도구 View와 실제 recorder bridge는 #171에서 연결한다. 이 head에서 아직 주입되지 않은 bridge를
+음성 성공으로 취급하지 않는다. 준비 링은 기존 SVG 자산을 사용한다. 렌더/Figma 일치는 미검증이다.
+
+## 통신·저장 계약
+
+실제 `WatchExperimentClient`와 DTO를 사용한다. 수신 ACK·처리 결과·영구 저장 ACK를 구분한다.
+`requestStatus`의 조회 요청 ID와 원 요청 ID를 대조한다. 오래된 revision·다른 실험 응답으로 화면을 바꾸지 않는다.
+
+실제 페어링 WC·Speech·다언어 지연·카메라·권한·잠금·화면 비활성 녹음·Shortcuts OS 실행·
+AssistiveTouch 직접 배정·Watch 화면 크기/Figma 렌더는 미실행이다. 실기기가 없고 이 작업은 로컬
+재구성 범위다. UI 화면 첨부와 실제 기기 검증은 작성자 잔여 작업이다. 새 7개 head의 CI는 미실행이다.
+
+전체 계약은 [Watch 구현](../../../docs/watch-implementation.md), 실행 기준은
+[검증](../../../docs/watch-174/validation.md)을 참고한다.

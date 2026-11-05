@@ -67,6 +67,16 @@ App/Session에 이미 구현된 음성·타이머·미디어 명령 dispatch와 
 Watch 녹음 보관 barrier와 iPhone 음성·영상 stopAndSave, 사진 예약 취소, 저장 결과를 기다린다.
 실패하면 화면 이탈/카메라 deactivate로 먼저 진행하지 않는다. 종료 시 타이머 endedAt을 저장한다.
 
+### #170 Watch 선택·준비와 기록 상태 기반
+
+초기 Store와 실제 Client를 연결해 실험 목록·선택·권한·준비 링·시작 카운트다운·닫기·중단/종료 확인을
+제공한다. 카운트다운 직후 새 토큰을 받고 변경 요청을 보낸다. 닫기·타임아웃·stream 종료는 준비 의도를
+무효화하고 늦은 시작 응답으로 다른 화면을 열지 않는다. 조회 종료와 미확정 변경 요청을 구분한다.
+
+루트 상태가 참조하는 `WatchRecordFeature/Presentation`과 오류 표시 타입을 함께 제공한다.
+진행 도구 View와 실제 recorder bridge는 #171에서 연결한다. 이 head에서 아직 주입되지 않은 bridge를
+음성 성공으로 취급하지 않는다. 준비 링은 기존 SVG 자산을 사용한다. 렌더/Figma 일치는 미검증이다.
+
 ## 검증 경계
 
 실제 페어링 WC·Speech·다언어 지연·카메라·권한·잠금·화면 비활성 녹음·Shortcuts OS 실행·
