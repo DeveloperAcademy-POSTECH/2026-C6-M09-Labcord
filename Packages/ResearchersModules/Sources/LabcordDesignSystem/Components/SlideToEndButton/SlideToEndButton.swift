@@ -32,7 +32,7 @@ public struct SlideToEndButton: View {
                 if progress == 0 {
                     Text("밀어서 실험 종료")
                         .typography(Typography.subheadline)
-                        .foregroundStyle(Color(.General.Label.secondary))
+                        .foregroundStyle(Color(.Experiment.Label.primary))
                         .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
                         .frame(
                             width: max(availableWidth - thumbWidth - 10, 0),
@@ -47,6 +47,10 @@ public struct SlideToEndButton: View {
                 alignment: .leading
             )
             .background(Color(.General.Feedback.Error.subtle), in: Capsule())
+            .overlay {
+                Capsule()
+                    .strokeBorder(Color(.General.Action.Destructive.background), lineWidth: 1)
+            }
             .frame(width: availableWidth, height: height, alignment: .trailing)
             .contentShape(Capsule())
             .gesture(dragGesture(travel: travel))
