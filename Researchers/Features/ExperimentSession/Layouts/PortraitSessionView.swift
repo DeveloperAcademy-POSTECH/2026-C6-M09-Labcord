@@ -17,6 +17,16 @@ struct PortraitSessionView: View {
     let sessionStore: StoreOf<ExperimentSessionFeature>
     let onShowGestureGuide: () -> Void
 
+    private var areRecordButtonsDisabled: Bool {
+        sessionStore.voice.phase != .hidden
+            || store.previewConnector == nil
+            || store.isCameraSwitching
+            || store.isPhotoCaptureScheduled
+            || store.isCapturingPhoto
+            || store.capturedPhotoData != nil
+            || store.videoPhase != .idle
+    }
+
     var body: some View {
         GeometryReader { _ in
             ZStack {
@@ -24,9 +34,14 @@ struct PortraitSessionView: View {
                     .ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    VStack {
+                    VStack(alignment: .trailing, spacing: 18) {
                         HeaderView(store: sessionStore)
                             .padding(16)
+
+                        ExperimentRecordButtonsView(
+                            store: store,
+                            isDisabled: areRecordButtonsDisabled
+                        )
 
                         Spacer()
                     }
