@@ -241,6 +241,11 @@ public actor CameraSession {
         try? FileManager.default.removeItem(at: url)
     }
 
+    /// A normal stop preserves the delegate result; cancellation deliberately discards it.
+    public func stopVideoRecording() {
+        if movieOutput.isRecording { movieOutput.stopRecording() }
+    }
+
     public func prepareVideoRecording() throws {
         guard AVAudioApplication.shared.recordPermission == .granted else {
             throw PermissionAccessError(.microphone)

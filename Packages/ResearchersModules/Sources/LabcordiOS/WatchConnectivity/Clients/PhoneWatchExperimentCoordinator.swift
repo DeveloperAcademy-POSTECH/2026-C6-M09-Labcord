@@ -28,6 +28,8 @@ public final class PhoneWatchExperimentCoordinator {
     var tokens: [UUID: (UUID, ContinuousClock.Instant)] = [:]
     var states: [UUID: WatchExperimentState] = [:]
     var revisions: [UUID: UInt64] = [:]
+    var recordResults: [UUID: WatchRecordSnapshot] = [:]
+    var recordSnapshots: [UUID: WatchRecordSnapshot] = [:]
     var executing: UUID?
     var photoCancellationID: UUID?
     var subscriberID: UUID?
@@ -170,12 +172,20 @@ public final class PhoneWatchExperimentCoordinator {
 
     func requestStatus(_ command: WatchExperimentCommand) -> WatchExperimentResponse {
         guard let id = command.targetID else { return failure(command, .invalidPayload) }
-        let response = requests[id]?.response ?? journal?.entries[id]?.response
-        guard let response else {
+        if let original = requests[id]?.command ?? journal?.entries[id]?.command,
+           let experimentID = original.experimentID {
+            do { try restoreSavedRecords(experimentID) } catch {
+                return failure(command, error as? WatchExperimentError ?? .storageFailed)
+            }
+        }
+        let entry = requests[id] ?? journal?.entries[id]
+        guard let entry else {
             return WatchExperimentResponse(
-                requestID: command.requestID, phase: .unknown, error: .resultUnknown
+                requestID: command.requestID, phase: .unknown, error: .resultUnknown,
+                queriedRequestID: id
             )
         }
+        let response = latestMediaResult(entry.command, response: entry.response)
         // 조회 envelope의 ID는 조회 요청의 ID이며 targetID의 결과를 담습니다.
         let interrupted = requests[id] == nil
             && (response.phase == .received || response.phase == .processing)
@@ -183,7 +193,7 @@ public final class PhoneWatchExperimentCoordinator {
             requestID: command.requestID, phase: interrupted ? .unknown : response.phase,
             experiments: response.experiments, snapshot: response.snapshot,
             error: interrupted ? .resultUnknown : response.error,
-            startToken: response.startToken
+            startToken: response.startToken, record: response.record, queriedRequestID: id
         )
     }
 
@@ -202,14 +212,16 @@ public final class PhoneWatchExperimentCoordinator {
             publish(updated)
             response = WatchExperimentResponse(
                 requestID: command.requestID, phase: .completed,
-                snapshot: updated, startToken: token
+                snapshot: updated, startToken: token,
+                record: recordResults.removeValue(forKey: command.requestID)
             )
         } catch {
             response = failure(command, error as? WatchExperimentError ?? .storageFailed)
         }
+        let result = latestMediaResult(command, response: response)
         do {
-            try journal?.save(command, response: response)
-            requests[command.requestID]?.response = response
+            try journal?.save(command, response: result)
+            requests[command.requestID]?.response = result
         } catch {
             requests[command.requestID]?.response = failure(command, .resultUnknown)
         }
@@ -219,6 +231,7 @@ public final class PhoneWatchExperimentCoordinator {
         guard let state = try client.watchState(id) else {
             throw WatchExperimentError.experimentNotFound
         }
+        try restoreSavedRecords(id)
         if states[id] != state {
             let next = try nextRevision()
             revisions[id] = next
