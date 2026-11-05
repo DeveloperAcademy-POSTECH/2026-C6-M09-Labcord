@@ -123,13 +123,13 @@ extension WatchRecordingService {
             } else if receipt.isCancelled {
                 record.phase = .cancelled
                 record.detail = "취소 결과를 확인했어요. 보관 원본은 유지해요."
+            } else if recorder.activeRecording == receipt.header {
+                record = capturing(record)
             } else if let failure = receipt.failure {
                 record.phase = .failed
                 record.detail = failure == .recognitionUnavailable
                     ? "전사할 수 없어요. iPhone 권한·언어 설정과 연결을 확인해주세요."
                     : "기록 처리를 완료하지 못했어요. 보관한 원본으로 다시 시도해주세요."
-            } else if recorder.activeRecording == receipt.header {
-                record.phase = .capturing
             } else if recorder.activeRecording == nil, local.receivedSequences.isEmpty,
                       local.manifest == nil, receipt.receivedSequences.isEmpty,
                       receipt.manifest == nil, receipt.savedRecordID == nil,
@@ -151,6 +151,13 @@ extension WatchRecordingService {
         } catch {
             failed(receipt.header, detail: "수신·저장 확인을 대조하지 못했어요. 원본은 유지해요.")
         }
+    }
+
+    private func capturing(_ existing: WatchRecordPresentation) -> WatchRecordPresentation {
+        var record = existing
+        record.phase = .capturing
+        record.detail = nil
+        return record
     }
 
     func receiveRecord(_ snapshot: WatchRecordSnapshot, experimentID: UUID) {

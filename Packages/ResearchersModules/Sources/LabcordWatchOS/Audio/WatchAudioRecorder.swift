@@ -89,16 +89,7 @@ public final class WatchAudioRecorder {
         events = eventContinuation
         installTap(input: input, format: format, continuation: continuation)
         writer = Task { await self.consume(stream, header: header) }
-        interruptions = Task { [weak self] in
-            for await _ in NotificationCenter.default.notifications(
-                named: AVAudioSession.interruptionNotification
-            ) {
-                guard let self, self.header == header else { return }
-                self.interrupted = true
-                await self.stop()
-                return
-            }
-        }
+        interruptions = monitorInterruptions(header)
         do {
             try engine.start()
         } catch {
@@ -275,4 +266,24 @@ public final class WatchAudioRecorder {
         return sequence == 0 ? failure ?? .invalidAudio : failure
     }
 
+}
+
+private extension WatchAudioRecorder {
+    func monitorInterruptions(_ header: WatchAudioHeader) -> Task<Void, Never> {
+        Task { [weak self] in
+            for await notification in NotificationCenter.default.notifications(
+                named: AVAudioSession.interruptionNotification
+            ) {
+                guard let self, self.header == header else { return }
+                guard let rawType = notification.userInfo?[AVAudioSessionInterruptionTypeKey]
+                        as? UInt,
+                      AVAudioSession.InterruptionType(rawValue: rawType) == .began else {
+                    continue
+                }
+                self.interrupted = true
+                await self.stop()
+                return
+            }
+        }
+    }
 }

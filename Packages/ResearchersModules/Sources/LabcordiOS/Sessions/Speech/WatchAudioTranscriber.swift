@@ -41,6 +41,7 @@ final class WatchAudioTranscriber {
     }
 
     func append(_ chunk: WatchAudioChunk) throws {
+        if case let .failure(error) = terminal { throw error }
         guard chunk.header == header, chunk.firstSample == throughSample, terminal == nil,
               let format = AVAudioFormat(
                 commonFormat: .pcmFormatInt16, sampleRate: Double(header.sampleRate),

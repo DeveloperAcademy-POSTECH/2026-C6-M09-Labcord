@@ -1,6 +1,7 @@
 import AVFoundation
 import Foundation
 import LabcordShared
+import OSLog
 
 private struct WatchAudioPipeline {
     let transcriber: WatchAudioTranscriber
@@ -11,6 +12,8 @@ private struct WatchAudioPipeline {
 @MainActor
 public final class WatchAudioReceiver {
     public typealias Context = @MainActor (UUID) throws -> [String]
+
+    private let logger = Logger(subsystem: "Labcord", category: "WatchAudio")
 
     private let archive: WatchAudioArchive
     private let client: ExperimentClient
@@ -162,6 +165,10 @@ public final class WatchAudioReceiver {
             } catch {
                 guard self.processIDs[header.recordingID] == processID else { return }
                 self.pipelines.removeValue(forKey: header.recordingID)?.transcriber.cancel()
+                let underlying = error as NSError
+                let domain = underlying.domain
+                let code = underlying.code
+                self.logger.error("Watch audio error: \(domain, privacy: .public) code=\(code)")
                 self.failures[header.recordingID] = (error as? WatchAudioError)
                     ?? .recognitionUnavailable
             }
@@ -197,6 +204,7 @@ public final class WatchAudioReceiver {
         let transcript = try await pipeline.transcriber.finish()
         try Task.checkCancellation()
         guard try !(await archive.status(header)).isCancelled else { return }
+        failures.removeValue(forKey: header.recordingID)
         guard await reviewGate.wait(header.recordingID) else { return }
         try Task.checkCancellation()
         guard try !(await archive.status(header)).isCancelled else { return }
