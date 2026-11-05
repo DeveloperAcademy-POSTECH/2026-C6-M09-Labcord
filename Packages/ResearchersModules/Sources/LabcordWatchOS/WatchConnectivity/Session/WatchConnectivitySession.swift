@@ -34,7 +34,7 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         activationDidCompleteWith state: WCSessionActivationState,
         error: Error?
     ) {
-        records.resend(session: session)
+        Task { @MainActor in records.resend(session: session) }
     }
 
     public func session(

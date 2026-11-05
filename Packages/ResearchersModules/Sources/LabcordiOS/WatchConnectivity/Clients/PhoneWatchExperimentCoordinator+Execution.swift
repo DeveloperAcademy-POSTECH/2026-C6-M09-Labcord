@@ -29,9 +29,6 @@ extension PhoneWatchExperimentCoordinator {
         let id = current.experiment.id
         switch command.operation {
         case .prepareStart:
-            guard current.experiment.status != .completed else {
-                throw WatchExperimentError.invalidState
-            }
             guard current.experiment.status == .running
                     || AVAudioApplication.shared.recordPermission == .granted else {
                 throw WatchExperimentError.permissionDenied
@@ -69,8 +66,14 @@ extension PhoneWatchExperimentCoordinator {
             guard AVAudioApplication.shared.recordPermission == .granted else {
                 throw WatchExperimentError.permissionDenied
             }
-            guard [.ready, .paused].contains(current.experiment.status) else {
+            let canResumeCompleted = command.operation == .resume
+                && current.experiment.status == .completed
+            guard canResumeCompleted || [.ready, .paused].contains(current.experiment.status)
+            else {
                 throw WatchExperimentError.invalidState
+            }
+            if current.experiment.status == .completed {
+                try client.resumeCompleted(id, .now)
             }
             guard try client.loadDetail(id) != nil else {
                 throw WatchExperimentError.experimentNotFound

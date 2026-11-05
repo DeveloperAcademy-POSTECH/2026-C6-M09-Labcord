@@ -41,6 +41,7 @@ extension WatchRecordingService {
         for header in try await archive.headers()
             where recordID == nil || header.recordingID == recordID {
             let local = try await archive.status(header)
+            let remote = try await archive.remoteReceipt(header)
             var record = voice(header)
             record.originalRetained = !local.receivedSequences.isEmpty
             if recorder.activeRecording == header {
@@ -54,12 +55,20 @@ extension WatchRecordingService {
                 record.phase = .transferring
             } else {
                 record.phase = .failed
-                record.detail = "보관된 구간을 확인해주세요. 원본은 유지해요."
+                if recorder.activeRecording == nil, local.receivedSequences.isEmpty,
+                   local.manifest == nil,
+                   remote.map({ $0.receivedSequences.isEmpty && $0.manifest == nil
+                       && $0.savedRecordID == nil && !$0.isReviewing
+                       && !$0.isCancelled && $0.failure == nil }) ?? false {
+                    record.captureRejectedBeforeStart = true
+                    record.detail = "저장된 음성 구간이 없어요. 다시 녹음해주세요."
+                } else {
+                    record.detail = "보관된 구간을 확인해주세요. 원본은 유지해요."
+                }
             }
             if let manifest = local.manifest {
                 record.elapsedSeconds = Int(manifest.totalSamples / Int64(header.sampleRate))
             }
-            let remote = try await archive.remoteReceipt(header)
             if let remote, acceptTranscript(remote.transcript, into: &record),
                remote.hasTranscriptConflict == true {
                 record.hasTranscriptConflict = true
@@ -103,6 +112,13 @@ extension WatchRecordingService {
                     : "기록 처리를 완료하지 못했어요. 보관한 원본으로 다시 시도해주세요."
             } else if recorder.activeRecording == receipt.header {
                 record.phase = .capturing
+            } else if recorder.activeRecording == nil, local.receivedSequences.isEmpty,
+                      local.manifest == nil, receipt.receivedSequences.isEmpty,
+                      receipt.manifest == nil, receipt.savedRecordID == nil,
+                      !receipt.isReviewing {
+                record.phase = .failed
+                record.captureRejectedBeforeStart = true
+                record.detail = "저장된 음성 구간이 없어요. 다시 녹음해주세요."
             } else if receipt.isReviewing {
                 let manifest = try await archive.completeManifest(receipt.header)
                 guard receipt.manifest == manifest,

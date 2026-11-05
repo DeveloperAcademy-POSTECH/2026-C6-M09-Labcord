@@ -56,7 +56,7 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         error: Error?
     ) {
         notifyStateObservers()
-        records.resend(session: session)
+        Task { @MainActor in records.resend(session: session) }
     }
 
     public func sessionWatchStateDidChange(_ session: WCSession) {
@@ -65,7 +65,7 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
 
     public func sessionReachabilityDidChange(_ session: WCSession) {
         notifyStateObservers()
-        records.resend(session: session)
+        Task { @MainActor in records.resend(session: session) }
     }
 
     public func session(

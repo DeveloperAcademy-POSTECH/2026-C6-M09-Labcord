@@ -20,7 +20,7 @@ extension WatchExperimentFeature {
             guard let snapshot, snapshot.experiment.id == experimentID else { return false }
             switch operation {
             case .start: return snapshot.experiment.status == .ready
-            case .resume: return snapshot.experiment.status == .paused
+            case .resume: return [.paused, .completed].contains(snapshot.experiment.status)
             case .takePhoto, .startVideo: return snapshot.experiment.status == .running
             default: return false
             }

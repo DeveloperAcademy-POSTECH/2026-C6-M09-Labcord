@@ -8,7 +8,10 @@ public final class PhoneWatchExperimentCoordinator {
     public static let shared = PhoneWatchExperimentCoordinator()
     public var isBusy = false
     public var visibleExperimentID: UUID?
-    public internal(set) var pendingStartID: UUID?
+    private static let pendingStartKey = "labcord.watch.pendingStartID"
+    public internal(set) var pendingStartID: UUID? {
+        didSet { persistPendingStart() }
+    }
 
     public enum Event: Sendable {
         case command(WatchExperimentCommand)
@@ -61,10 +64,8 @@ public final class PhoneWatchExperimentCoordinator {
         journal = try? WatchExperimentRequestJournal(
             url: directory.appendingPathComponent("requests.json")
         )
-        pendingStartID = journal?.entries.values
-            .compactMap { $0.response.snapshot }
-            .max { $0.recordedAt < $1.recordedAt }
-            .flatMap { $0.experiment.status == .running ? $0.experiment.id : nil }
+        pendingStartID = UserDefaults.standard.string(forKey: Self.pendingStartKey)
+            .flatMap(UUID.init(uuidString:))
     }
 
     public func events() -> AsyncStream<Event> {
@@ -271,5 +272,15 @@ public final class PhoneWatchExperimentCoordinator {
     func failure(_ command: WatchExperimentCommand, _ error: WatchExperimentError)
         -> WatchExperimentResponse {
         WatchExperimentResponse(requestID: command.requestID, phase: .failed, error: error)
+    }
+}
+
+private extension PhoneWatchExperimentCoordinator {
+    func persistPendingStart() {
+        if let pendingStartID {
+            UserDefaults.standard.set(pendingStartID.uuidString, forKey: Self.pendingStartKey)
+        } else {
+            UserDefaults.standard.removeObject(forKey: Self.pendingStartKey)
+        }
     }
 }

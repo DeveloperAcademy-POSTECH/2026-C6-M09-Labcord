@@ -32,6 +32,7 @@ public struct ExperimentClient: Sendable {
     public var cancelVideoSave: @MainActor @Sendable (UUID, UUID, URL) throws -> Void
     public var cancelAudioSave: @MainActor @Sendable (UUID, UUID, URL) throws -> Void
     public var complete: @MainActor @Sendable (UUID, Date) throws -> Void
+    public var resumeCompleted: @MainActor @Sendable (UUID, Date) throws -> Void
     public var delete: @MainActor @Sendable (UUID) throws -> Void
 
     public init(
@@ -67,6 +68,9 @@ public struct ExperimentClient: Sendable {
         ) throws -> Void = { _ in
             throw ExperimentCreationError.unavailable
         },
+        resumeCompleted: @escaping @MainActor @Sendable (UUID, Date) throws -> Void = { _, _ in
+            throw ExperimentCreationError.unavailable
+        },
         dismissWatchTimer: @escaping @MainActor @Sendable (UUID, UUID) throws -> Void = { _, _ in
             throw ExperimentCreationError.unavailable
         }
@@ -89,6 +93,7 @@ public struct ExperimentClient: Sendable {
         self.cancelVideoSave = cancelVideoSave
         self.cancelAudioSave = cancelAudioSave
         self.complete = complete
+        self.resumeCompleted = resumeCompleted
         self.delete = delete
     }
 }
@@ -145,6 +150,9 @@ extension ExperimentClient: DependencyKey {
         },
         watchState: { try ExperimentSessionRepository.shared.watchState(id: $0) },
         applyWatchTimer: { try ExperimentSessionRepository.shared.applyWatchTimer($0) },
+        resumeCompleted: {
+            try ExperimentSessionRepository.shared.resumeCompleted(id: $0, at: $1)
+        },
         dismissWatchTimer: {
             try ExperimentSessionRepository.shared.dismissWatchTimer(experimentID: $0, timerID: $1)
         }

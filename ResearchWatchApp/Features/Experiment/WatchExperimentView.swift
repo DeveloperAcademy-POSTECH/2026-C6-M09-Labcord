@@ -41,6 +41,8 @@ struct WatchExperimentView: View {
                     Button("닫기", systemImage: "xmark") {
                         if store.recording.focused != nil, store.screen != .recordCleanup {
                             store.send(.recording(.close))
+                        } else if store.screen == .experiment {
+                            store.send(.backTapped)
                         } else {
                             store.send(.closeTapped)
                         }
@@ -166,6 +168,8 @@ struct WatchExperimentView: View {
             case .completed:
                 Text("실험이 종료됐어요.")
                 WatchRecordControls(store: store)
+                Button("실험 재개", systemImage: "play.fill") { store.send(.resumeTapped) }
+                    .disabled(!store.canOperate)
                 Text("기록 저장·정리 결과는 iPhone에서 확인해주세요.")
                     .font(.caption)
             }

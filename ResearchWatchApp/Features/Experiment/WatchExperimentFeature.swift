@@ -68,6 +68,7 @@ struct WatchExperimentFeature {
             isVisible && streamID != nil && pending == nil && isReachable
                 && snapshot != nil && !isPreparingInterruption && !pendingRecoveryFailed
         }
+        var canResume: Bool { [.paused, .completed].contains(snapshot?.experiment.status) }
     }
 
     enum Action: Equatable {
@@ -238,13 +239,13 @@ struct WatchExperimentFeature {
                 state.screen = .experiment
                 return prepareInterruption(operation, state: &state)
             case .resumeTapped:
-                guard state.canOperate,
-                      state.snapshot?.experiment.status == .paused else { return .none }
+                guard state.canOperate, state.canResume else { return .none }
                 state.screen = .confirmResume
                 return .none
             case .resumeConfirmed:
-                guard state.screen == .confirmResume, state.canOperate,
-                      state.snapshot?.experiment.status == .paused else { return .none }
+                guard state.screen == .confirmResume, state.canOperate, state.canResume else {
+                    return .none
+                }
                 state.screen = .experiment
                 return request(.resume, state: &state)
             case .connectionTapped:
