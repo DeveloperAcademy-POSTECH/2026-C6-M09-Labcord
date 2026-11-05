@@ -40,6 +40,16 @@ backend review gate는 명시적 확인/취소를 기다린다. Watch UI의 3초
 Watch background audio 설정을 포함한다. 실험 부모의 기록 명령 dispatch/drain은 #269, 실제 Watch
 recorder bridge는 #171에서 연결하므로 이 단계의 서비스 구현을 전체 사용자 흐름 완료로 표시하지 않는다.
 
+### #268 타이머 실행·동기화
+
+`WatchTimerMutation`은 start 요청 ID를 타이머 ID로 사용해 중복 시작을 방어한다. 양수 초·Int32 범위와
+최대 5개를 검사하고 pause/resume/delete는 targetID로 처리한다. `ExperimentClient/Repository` 및
+`SessionTimerFeature`의 기존 저장 경로를 사용한다. 저장 실패는 완료로 바꾸지 않고 재시도 상태를 유지한다.
+완료 표시 sidecar는 실험 기록 삭제와 구분한다. endedAt과 자연 완료 시각을 보존한다.
+
+snapshot의 측정 시각으로 남은 시간을 보정하며 실험 pause와 개별 타이머 pause는 별개다.
+부모의 공통 record dispatch는 #269, Watch 타이머 View는 #171에서 연결한다.
+
 ## 검증 경계
 
 실제 페어링 WC·Speech·다언어 지연·카메라·권한·잠금·화면 비활성 녹음·Shortcuts OS 실행·

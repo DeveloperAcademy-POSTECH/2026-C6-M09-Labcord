@@ -1,9 +1,9 @@
 # Watch PR 초안 안내
 
-현재 단계는 #174 음성 녹음·전사·전송·복구이다.
-공통 기록 snapshot/전송 기반과 Watch 녹음·archive·누락 재전송·iPhone 전사·수정 전사 충돌·저장 ACK를 담당한다.
+현재 단계는 #268 타이머 실행·동기화이다.
+타이머 mutation·저장·완료 표시 sidecar·실패 재시도와 SessionTimerFeature 명령 처리를 담당한다.
 
-WatchExperimentResponse의 optional record, 양쪽 WCSession 음성·기록 라우팅, WatchExperimentClient의 기록 stream. Watch background audio 설정은 이 PR에 포함한다.
+ExperimentClient/Repository는 타이머 조회·변경·완료 표시 확장만 포함한다. 공통 Session dispatch는 #269에서 연결한다.
 
 7개 PR은 #173 → #174 → #268 → #269 → #170 → #171 → #270 순차 stack이다.
 첫 base는 `feat/#167-Devin-prepared`, 이후 base는 직전 `feat/#번호-Codex`다.
