@@ -8,6 +8,12 @@ struct WatchTimersView: View {
     var body: some View {
         List {
             if let snapshot = store.snapshot {
+                Text("진행 중인 타이머")
+                    .font(.system(size: 13, weight: .medium))
+                Button("타이머 추가", systemImage: "plus") {
+                    store.send(.timerEditorTapped)
+                }
+                .disabled(!canModify)
                 if snapshot.timers.isEmpty {
                     Text("진행 중인 타이머가 없어요.")
                         .font(.caption)
@@ -23,7 +29,7 @@ struct WatchTimersView: View {
                 }
                 if snapshot.mode == .procedure {
                     Text("프로토콜 타이머")
-                        .font(.headline)
+                        .font(.system(size: 13, weight: .medium))
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())]) {
                         ForEach(protocolDurations) { choice in
                             Button {
@@ -50,13 +56,6 @@ struct WatchTimersView: View {
                     .disabled(!store.isReachable)
             }
         }
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button("타이머 추가", systemImage: "plus") { store.send(.timerEditorTapped) }
-                    .labelStyle(.iconOnly)
-                    .disabled(!canModify)
-            }
-        }
     }
 
     private var protocolDurations: [WatchPresentationRules.ProtocolTimerChoice] {
@@ -80,38 +79,82 @@ private struct WatchTimerRow: View {
     let action: (Operation) -> Void
 
     var body: some View {
-        VStack(spacing: 4) {
-            HStack {
-                VStack(alignment: .leading) {
-                    Text(WatchPresentationRules.time(timer.durationSeconds))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    TimelineView(.periodic(from: .now, by: 1)) { context in
-                        Text(WatchPresentationRules.time(timer.remaining(at: context.date)))
-                            .font(.headline.monospacedDigit())
-                    }
-                    Text(status)
-                        .font(.caption2)
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(durationLabel)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    Text(WatchPresentationRules.time(timer.remaining(at: context.date)))
+                        .font(.system(size: 16, weight: .medium).monospacedDigit())
                 }
-                Spacer(minLength: 2)
-                Button {
-                    action(timer.status == .running ? .pause : .resume)
-                } label: {
-                    Image(systemName: timer.status == .running ? "pause.fill" : "play.fill")
-                }
-                .accessibilityLabel(timer.status == .running ? "타이머 일시정지" : "타이머 재개")
-                .buttonBorderShape(.circle)
-                .disabled(!canOperate || timer.status == .finished)
             }
-            Button(timer.status == .finished ? "완료 확인" : "타이머 종료") { action(.finish) }
-                .font(.caption)
-                .disabled(!canOperate)
+            Spacer(minLength: 2)
+            Button {
+                switch timer.status {
+                case .running: action(.pause)
+                case .paused: action(.resume)
+                case .finished: action(.finish)
+                }
+            } label: {
+                Image(systemName: buttonSymbol)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 30, height: 30)
+                    .background(buttonColor, in: Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(buttonLabel)
+            .disabled(!canOperate)
         }
         .padding(8)
-        .background(.quaternary, in: .rect(cornerRadius: 9))
+        .background {
+            RoundedRectangle(cornerRadius: 9)
+                .fill(rowColor)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityValue(status)
+        .accessibilityAction(named: Text("타이머 종료")) {
+            if canOperate { action(.finish) }
+        }
         .swipeActions {
             Button("삭제", role: .destructive) { action(.finish) }
                 .disabled(!canOperate)
+        }
+    }
+
+    private var buttonColor: Color {
+        timer.status == .finished ? .orange : .blue
+    }
+
+    private var durationLabel: String {
+        let seconds = timer.durationSeconds
+        if seconds >= 3600, seconds % 60 == 0 {
+            let hours = seconds / 3600
+            let minutes = (seconds % 3600) / 60
+            return minutes == 0 ? "\(hours)시간" : "\(hours)시간 \(minutes)분"
+        }
+        if seconds > 0, seconds % 60 == 0 { return "\(seconds / 60)분" }
+        return WatchPresentationRules.time(seconds)
+    }
+
+    private var rowColor: Color {
+        timer.status == .finished ? .orange.opacity(0.2) : .white.opacity(0.14)
+    }
+
+    private var buttonSymbol: String {
+        switch timer.status {
+        case .running: "pause.fill"
+        case .paused: "play.fill"
+        case .finished: "xmark"
+        }
+    }
+
+    private var buttonLabel: String {
+        switch timer.status {
+        case .running: "타이머 일시정지"
+        case .paused: "타이머 재개"
+        case .finished: "완료 확인"
         }
     }
 
@@ -133,15 +176,19 @@ struct WatchTimerEditorView: View {
                 wheel("시간", value: store.timerHours, range: 0..<24) {
                     store.send(.timerHoursChanged($0))
                 }
+                separator
                 wheel("분", value: store.timerMinutes, range: 0..<60) {
                     store.send(.timerMinutesChanged($0))
                 }
+                separator
                 wheel("초", value: store.timerSeconds, range: 0..<60) {
                     store.send(.timerSecondsChanged($0))
                 }
             }
             .frame(height: 100)
             Button("타이머 실행") { store.send(.customTimerStarted) }
+                .buttonStyle(.borderedProminent)
+                .tint(.blue)
                 .disabled(!store.canOperate || duration == 0)
             Button("취소", role: .cancel) { store.send(.timersTapped) }
         }
@@ -151,13 +198,27 @@ struct WatchTimerEditorView: View {
         store.timerHours * 3600 + store.timerMinutes * 60 + store.timerSeconds
     }
 
+    private var separator: some View {
+        Text(":")
+            .font(.system(size: 24))
+            .accessibilityHidden(true)
+    }
+
     private func wheel(
         _ title: String, value: Int, range: Range<Int>, change: @escaping (Int) -> Void
     ) -> some View {
-        Picker(title, selection: Binding(get: { value }, set: change)) {
-            ForEach(range, id: \.self) { Text($0.formatted()).tag($0) }
+        VStack(spacing: 0) {
+            Text(title)
+                .font(.caption2)
+                .accessibilityHidden(true)
+            Picker(title, selection: Binding(get: { value }, set: change)) {
+                ForEach(range, id: \.self) { Text($0.formatted()).tag($0) }
+            }
+            .pickerStyle(.wheel)
+            .labelsHidden()
+            .accessibilityLabel(title)
         }
-        .pickerStyle(.wheel)
-        .accessibilityLabel(title)
+        .frame(maxWidth: .infinity)
+        .clipped()
     }
 }
