@@ -34,6 +34,7 @@ struct WatchRecordPresentation: Equatable, Identifiable, Sendable {
     var isFinalTranscript = false
     var hasTranscriptConflict = false
     var originalRetained = false
+    var captureCompleteConfirmed = false
     var captureRejectedBeforeStart = false
     var detail: String?
     /// #174가 검토 가능 시점(영상은 미리보기 종료)을 확인했을 때만 true.
@@ -44,6 +45,10 @@ struct WatchRecordPresentation: Equatable, Identifiable, Sendable {
     }
 
     var isSettled: Bool { phase == .saved || phase == .cancelled || canRecapture }
+
+    var isRecoverableVoiceFailure: Bool {
+        kind == .voice && phase == .failed && originalRetained && captureCompleteConfirmed
+    }
 
     static func isEmptyVoiceCapture(
         local: WatchAudioReceipt, remote: WatchAudioReceipt?, hasActiveCapture: Bool

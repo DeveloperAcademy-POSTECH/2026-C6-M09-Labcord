@@ -84,7 +84,7 @@ enum WatchIntentRouting {
         }
         guard state.recording.isIntegrated else { throw WatchIntentRuntimeError.notReady }
         let unsettled = state.recording.records.values.filter {
-            !$0.isSettled && ($0.experimentID == id || $0.phase == .starting
+            state.recording.blocksNewCapture($0) && ($0.experimentID == id || $0.phase == .starting
                 || $0.phase == .capturing || $0.phase == .stopping)
         }
         if let record = unsettled.first {

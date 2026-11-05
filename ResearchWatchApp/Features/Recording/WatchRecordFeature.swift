@@ -24,6 +24,11 @@ struct WatchRecordFeature {
             guard let experimentID else { return false }
             return records.values.contains { $0.experimentID == experimentID && !$0.isSettled }
         }
+
+        func blocksNewCapture(_ record: WatchRecordPresentation) -> Bool {
+            if decisions[record.id] != nil || failedDecisions.contains(record.id) { return true }
+            return !record.isSettled && !record.isRecoverableVoiceFailure
+        }
     }
 
     enum Action: Equatable {
@@ -189,7 +194,7 @@ private extension WatchRecordFeature {
             return .none
         }
         if let record = state.records.values.first(where: {
-            $0.experimentID == experimentID && $0.kind == kind && !$0.isSettled
+            $0.experimentID == experimentID && $0.kind == kind && state.blocksNewCapture($0)
         }) {
             state.focusedID = record.id
             return .none

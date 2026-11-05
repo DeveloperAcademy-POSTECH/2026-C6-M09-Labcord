@@ -10,10 +10,12 @@ extension WatchRecordingService {
         case let .recording(header):
             var record = voice(header)
             record.phase = .capturing
+            record.captureCompleteConfirmed = false
             publish(record)
         case let .retaining(header, throughSample):
             var record = voice(header)
             record.phase = .capturing
+            record.captureCompleteConfirmed = false
             record.originalRetained = true
             record.elapsedSeconds = Int(throughSample / Int64(header.sampleRate))
             publish(record)
@@ -53,8 +55,7 @@ extension WatchRecordingService {
     private func restoreLocalRecord(_ header: WatchAudioHeader) async throws {
         let local = try await archive.status(header)
         let remote = try await archive.remoteReceipt(header)
-        var record = voice(header)
-        record.originalRetained = !local.receivedSequences.isEmpty
+        var record = await voiceWithLocalStatus(header, local: local)
         if transfer.isCancellationPending(header) {
             record.phase = .saving
             record.detail = "녹음 취소를 확인하고 있어요."
@@ -103,8 +104,7 @@ extension WatchRecordingService {
     private func processAudio(_ receipt: WatchAudioReceipt) async {
         do {
             let local = try await archive.status(receipt.header)
-            var record = voice(receipt.header)
-            record.originalRetained = !local.receivedSequences.isEmpty
+            var record = await voiceWithLocalStatus(receipt.header, local: local)
             if let manifest = local.manifest {
                 record.elapsedSeconds = Int(
                     manifest.totalSamples / Int64(receipt.header.sampleRate)
@@ -156,7 +156,29 @@ extension WatchRecordingService {
     private func capturing(_ existing: WatchRecordPresentation) -> WatchRecordPresentation {
         var record = existing
         record.phase = .capturing
+        record.captureCompleteConfirmed = false
         record.detail = nil
+        return record
+    }
+
+    private func hasSealedOriginal(
+        _ header: WatchAudioHeader, local: WatchAudioReceipt
+    ) async -> Bool {
+        guard let manifest = local.manifest, !local.receivedSequences.isEmpty,
+              recorder.activeRecording != header else { return false }
+        if records[header.recordingID]?.captureCompleteConfirmed == true,
+           local.receivedSequences.count == manifest.chunkCount { return true }
+        guard (try? await archive.completeManifest(header)) != nil else { return false }
+        return recorder.activeRecording != header
+    }
+
+    private func voiceWithLocalStatus(
+        _ header: WatchAudioHeader, local: WatchAudioReceipt
+    ) async -> WatchRecordPresentation {
+        let captureComplete = await hasSealedOriginal(header, local: local)
+        var record = voice(header)
+        record.originalRetained = !local.receivedSequences.isEmpty
+        record.captureCompleteConfirmed = captureComplete
         return record
     }
 

@@ -99,7 +99,7 @@ extension WatchExperimentFeature {
             state.isRequestingPermission = false
             guard state.isVisible, state.streamID != nil, state.selectedID == id,
                   state.pending == nil, !state.isPreparingInterruption,
-                  !state.pendingRecoveryFailed,
+                  state.hasRestoredPending, !state.pendingRecoveryFailed,
                   state.snapshot?.experiment.status == .running else { return .none }
             guard granted else {
                 state.message = "마이크 권한이 필요해요. Watch 설정에서 권한을 확인해주세요."
@@ -124,7 +124,7 @@ extension WatchExperimentFeature {
         _ kind: WatchRecordPresentation.Kind, state: inout State
     ) -> Effect<Action> {
         guard state.isVisible, state.pending == nil, !state.isPreparingInterruption,
-              !state.pendingRecoveryFailed,
+              state.hasRestoredPending, !state.pendingRecoveryFailed,
               state.snapshot?.experiment.status == .running,
               let id = state.selectedID else { return .none }
         guard kind == .voice || state.isReachable else { return .none }
@@ -144,7 +144,8 @@ extension WatchExperimentFeature {
     private func canStartRemoteVoice(_ id: UUID, expiresAt: Date, state: State) -> Bool {
         Date.now < expiresAt && state.isVisible && state.streamID != nil
             && state.selectedID == id && state.pending == nil && !state.isPreparingInterruption
-            && !state.pendingRecoveryFailed && state.snapshot?.experiment.status == .running
+            && state.hasRestoredPending && !state.pendingRecoveryFailed
+            && state.snapshot?.experiment.status == .running
             && (state.screen == .experiment || state.screen == .timers)
     }
 
