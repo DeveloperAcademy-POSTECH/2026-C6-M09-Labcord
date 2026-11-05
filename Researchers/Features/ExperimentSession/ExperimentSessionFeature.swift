@@ -16,19 +16,18 @@ struct ExperimentSessionFeature {
         var permissions = SessionPermissionsFeature.State()
         var voice: VoiceRecordingFeature.State
         var capture: CameraCaptureFeature.State
+        var pause: ExperimentPauseFeature.State
         var permissionRequestGeneration = 0
         var isPausePresented = false
         var isReturningHome = false
         var exitID: UUID?
-        var exitFailed = false
-        var isCompleting = false
-        var completionFailed = false
 
         init(experimentID: UUID) {
             self.experimentID = experimentID
             self.timer = SessionTimerFeature.State(experimentID: experimentID)
             self.voice = VoiceRecordingFeature.State(experimentID: experimentID)
             self.capture = CameraCaptureFeature.State(experimentID: experimentID)
+            self.pause = ExperimentPauseFeature.State(experimentID: experimentID)
         }
 
         var isReady: Bool {
@@ -40,8 +39,8 @@ struct ExperimentSessionFeature {
         }
 
         var canCloseSession: Bool {
-            timer.isConfigured && timer.pendingSave == nil && !voice.isSaving
-                && !isCompleting && !isReturningHome
+            timer.isConfigured && timer.pendingSave == nil && !timer.isClosing && !voice.isSaving
+                && !pause.isCompleting && !isReturningHome
         }
     }
 
@@ -54,20 +53,15 @@ struct ExperimentSessionFeature {
         case permissions(SessionPermissionsFeature.Action)
         case voice(VoiceRecordingFeature.Action)
         case capture(CameraCaptureFeature.Action)
+        case pause(ExperimentPauseFeature.Action)
         case voiceStartRequested
         case photoStartRequested
         case videoStartRequested
         case appBecameActive
         case pauseTapped
-        case resumeTapped
-        case stopTapped
         case stopCompleted
-        case stopFailed
-        case dismissStopFailure
-        case returnHomeTapped
         case homeExitCompleted
         case homeExitFailed
-        case dismissHomeExitFailure
     }
 
     @Dependency(\.experimentClient) var experimentClient
@@ -93,6 +87,10 @@ struct ExperimentSessionFeature {
 
         Scope(state: \.timer, action: \.timer) {
             SessionTimerFeature()
+        }
+
+        Scope(state: \.pause, action: \.pause) {
+            ExperimentPauseFeature()
         }
 
         Reduce { state, action in
@@ -132,45 +130,29 @@ struct ExperimentSessionFeature {
                 state.isPausePresented = true
                 return .send(.capture(.cancelPhotoGesture))
 
-            case .resumeTapped:
+            case .pause(.delegate(.resumeRequested)):
                 state.isPausePresented = false
                 return .none
 
-            case .stopTapped:
-                guard state.canCloseSession else { return .none }
-                state.isCompleting = true
+            case .pause(.delegate(.stopRequested)):
+                guard state.canCloseSession else { return .send(.pause(.stopRejected)) }
                 state.timer.isClosing = true
-                state.completionFailed = false
-                let experimentID = state.experimentID
-                let completedAt = now
-                return .run { send in
-                    do {
-                        try await experimentClient.complete(experimentID, completedAt)
-                        await send(.stopCompleted)
-                    } catch {
-                        await send(.stopFailed)
-                    }
-                }
+                return .send(.pause(.completeRequested))
+
+            case .pause(.delegate(.completed)):
+                return .send(.stopCompleted)
 
             case .stopCompleted:
-                state.isCompleting = false
                 return .none
 
-            case .stopFailed:
-                state.isCompleting = false
+            case .pause(.delegate(.completionFailed)):
                 state.timer.isClosing = false
-                state.completionFailed = true
                 return .send(.timer(.timerTick(now)))
 
-            case .dismissStopFailure:
-                state.completionFailed = false
-                return .none
-
-            case .returnHomeTapped:
+            case .pause(.delegate(.returnHomeRequested)):
                 guard state.canCloseSession else { return .none }
                 state.isReturningHome = true
                 state.timer.isClosing = true
-                state.exitFailed = false
                 let experimentID = state.experimentID
                 let exitID = state.exitID ?? uuid()
                 state.exitID = exitID
@@ -180,32 +162,35 @@ struct ExperimentSessionFeature {
                 let runningTimers = state.timer.timerCollection.timers.filter {
                     $0.status == .running && $0.remainingSeconds(at: exitedAt) > 0
                 }
-                return .run { send in
-                    do {
-                        try await experimentClient.leaveSession(experimentID, exitID, exitedAt)
-                    } catch {
-                        await send(.homeExitFailed)
-                        return
-                    }
-                    if !runningTimers.isEmpty,
-                       let status = try? await notificationPermissionClient.requestAccess() {
-                        switch status {
-                        case .authorized, .provisional, .ephemeral:
-                            for timer in runningTimers {
-                                try? await timerCompletionNotificationClient.schedule(
-                                    experimentID, title, timer
-                                )
-                            }
-                        case .notDetermined, .denied, .unknown:
-                            break
+                return .concatenate(
+                    .send(.pause(.homeExitStarted)),
+                    .run { send in
+                        do {
+                            try await experimentClient.leaveSession(experimentID, exitID, exitedAt)
+                        } catch {
+                            await send(.homeExitFailed)
+                            return
                         }
+                        if !runningTimers.isEmpty,
+                           let status = try? await notificationPermissionClient.requestAccess() {
+                            switch status {
+                            case .authorized, .provisional, .ephemeral:
+                                for timer in runningTimers {
+                                    try? await timerCompletionNotificationClient.schedule(
+                                        experimentID, title, timer
+                                    )
+                                }
+                            case .notDetermined, .denied, .unknown:
+                                break
+                            }
+                        }
+                        await send(.voice(.closeRequested))
+                        await cameraSessionClient.cancelVideoRecording()
+                        await speechRecordingClient.cancel()
+                        await cameraSessionClient.deactivate(ownerID)
+                        await send(.homeExitCompleted)
                     }
-                    await send(.voice(.closeRequested))
-                    await cameraSessionClient.cancelVideoRecording()
-                    await speechRecordingClient.cancel()
-                    await cameraSessionClient.deactivate(ownerID)
-                    await send(.homeExitCompleted)
-                }
+                )
 
             case .homeExitCompleted:
                 return .none
@@ -213,12 +198,10 @@ struct ExperimentSessionFeature {
             case .homeExitFailed:
                 state.isReturningHome = false
                 state.timer.isClosing = false
-                state.exitFailed = true
-                return .send(.timer(.timerTick(now)))
-
-            case .dismissHomeExitFailure:
-                state.exitFailed = false
-                return .none
+                return .merge(
+                    .send(.timer(.timerTick(now))),
+                    .send(.pause(.homeExitFailed))
+                )
 
             case .permissions(.microphoneStatusUpdated(.authorized)):
                 return .send(.capture(.prepareVideoRecordingRequested))
@@ -300,7 +283,7 @@ struct ExperimentSessionFeature {
                 guard state.voice.phase == .hidden else { return .none }
                 return .send(.capture(.videoRecordRequested))
 
-            case .permissions, .voice, .capture, .timer:
+            case .permissions, .voice, .capture, .timer, .pause:
                 return .none
             }
         }

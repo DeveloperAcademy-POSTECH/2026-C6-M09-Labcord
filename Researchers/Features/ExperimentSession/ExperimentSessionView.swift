@@ -227,22 +227,6 @@ struct ExperimentSessionView: View {
         } message: {
             Text("타이머 기록을 저장하지 못했습니다.")
         }
-        .alert(
-            "실험 일시정지 저장 실패",
-            isPresented: Binding(
-                get: { store.exitFailed },
-                set: { if !$0 { store.send(.dismissHomeExitFailure) } }
-            )
-        ) {
-            Button("다시 시도") {
-                store.send(.returnHomeTapped)
-            }
-            Button("닫기", role: .cancel) {
-                store.send(.dismissHomeExitFailure)
-            }
-        } message: {
-            Text("실험 상태를 저장하지 못했습니다.")
-        }
     }
 }
 
@@ -252,7 +236,10 @@ private struct PauseOverlay: ViewModifier {
     func body(content: Content) -> some View {
         content.overlay {
             if store.isPausePresented {
-                PauseView(store: store)
+                ExperimentPauseView(
+                    store: store.scope(state: \.pause, action: \.pause),
+                    canCloseSession: store.canCloseSession
+                )
             }
         }
     }
