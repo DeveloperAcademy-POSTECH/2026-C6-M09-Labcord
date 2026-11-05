@@ -13,6 +13,8 @@ cp "$script_dir/WatchExperimentClient.swift" "$task_dir/Sources/LabcordWatchOS/"
 cp "$script_dir/IntentRuntimeLiveBoundary.swift" "$task_dir/Sources/WatchScreens/"
 cp "$repo_dir/scripts/watch-174/WatchRecordAutoSaveTests.swift" \
   "$task_dir/Tests/WatchScreensTests/"
+cp "$repo_dir/scripts/watch-174/WatchIntentRuntimeTests.swift" \
+  "$task_dir/Tests/WatchScreensTests/"
 
 shared="$repo_dir/Packages/ResearchersModules/Sources/LabcordShared"
 for file in Models/ExperimentMode.swift Models/ExperimentStatus.swift Audio/WatchAudioMessage.swift \
@@ -41,7 +43,7 @@ if [ -n "${LABCORD_AUTOSAVE_BUILD_CACHE:-}" ]; then
   cp -cR "$LABCORD_AUTOSAVE_BUILD_CACHE" "$task_dir/.build"
 fi
 
-if swift test --package-path "$task_dir" --filter WatchRecordAutoSaveTests \
+if swift test --package-path "$task_dir" --filter 'WatchRecordAutoSaveTests|WatchIntentRuntimeTests' \
   > "$task_dir/test.log" 2>&1; then
   grep -E "Test Case .* (started|passed)|Executed [0-9]+ tests" "$task_dir/test.log"
 else

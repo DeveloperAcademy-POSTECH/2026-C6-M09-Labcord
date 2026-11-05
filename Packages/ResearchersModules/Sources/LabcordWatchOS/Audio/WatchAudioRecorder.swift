@@ -31,9 +31,10 @@ public final class WatchAudioRecorder {
     }
 
     public func start(
-        experimentID: UUID, recordingID: UUID = UUID()
+        experimentID: UUID, recordingID: UUID = UUID(), expiresAt: Date? = nil
     ) async throws -> AsyncStream<WatchAudioCaptureEvent> {
         guard header == nil, writer == nil, !starting else { throw WatchAudioError.conflict }
+        guard expiresAt.map({ Date.now < $0 }) ?? true else { throw WatchAudioError.interrupted }
         starting = true
         defer { starting = false }
         guard WKApplication.shared().applicationState == .active else {
@@ -46,7 +47,9 @@ public final class WatchAudioRecorder {
         try session.setCategory(.record, mode: .measurement)
         try session.setActive(true)
         do {
-            return try await begin(experimentID: experimentID, recordingID: recordingID)
+            return try await begin(
+                experimentID: experimentID, recordingID: recordingID, expiresAt: expiresAt
+            )
         } catch {
             try? session.setActive(false)
             throw error
@@ -54,7 +57,7 @@ public final class WatchAudioRecorder {
     }
 
     private func begin(
-        experimentID: UUID, recordingID: UUID
+        experimentID: UUID, recordingID: UUID, expiresAt: Date?
     ) async throws -> AsyncStream<WatchAudioCaptureEvent> {
         let input = engine.inputNode
         let format = input.outputFormat(forBus: 0)
@@ -73,6 +76,7 @@ public final class WatchAudioRecorder {
         }
         guard self.header == header else { throw CancellationError() }
         try await requireForeground(header)
+        try requireUnexpired(expiresAt)
         interrupted = false
         stopping = false
         let (stream, continuation) = AsyncThrowingStream<Data, Error>.makeStream(
@@ -110,6 +114,13 @@ public final class WatchAudioRecorder {
         guard WKApplication.shared().applicationState == .active else {
             self.header = nil
             _ = try await archive.cancel(header)
+            throw WatchAudioError.interrupted
+        }
+    }
+
+    private func requireUnexpired(_ expiresAt: Date?) throws {
+        guard expiresAt.map({ Date.now < $0 }) ?? true else {
+            header = nil
             throw WatchAudioError.interrupted
         }
     }

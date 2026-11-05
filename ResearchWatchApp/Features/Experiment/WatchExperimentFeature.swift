@@ -73,6 +73,8 @@ struct WatchExperimentFeature {
         case permissionRequested
         case permissionResult(UUID, Bool)
         case voicePermissionResult(UUID, Bool)
+        case remoteVoiceRequested(UUID, Date)
+        case remoteVoicePermissionResult(UUID, Date, Bool)
         case countdownTick(UUID)
         case cancelCountdown
         case pauseTapped

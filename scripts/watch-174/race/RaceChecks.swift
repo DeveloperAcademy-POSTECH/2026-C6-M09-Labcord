@@ -35,6 +35,11 @@ import LabcordWatchOS
       try await service.perform(.startVoice(experimentID: experiment, recordID: first))
     }
     try await waitFor({ FakeControl.startupReached }, "startup")
+    let remote = UUID()
+    let remoteStart = Task { @MainActor in
+      try await service.perform(.startRemoteVoice(
+        experimentID: experiment, recordID: remote, expiresAt: .now.addingTimeInterval(0.05)))
+    }
     var cancelDispatched = false
     let firstCancel = Task { @MainActor in
       cancelDispatched = true
@@ -42,10 +47,18 @@ import LabcordWatchOS
         .cancelActiveVoiceForPause(experimentID: experiment, recordID: first))
     }
     try await waitFor({ cancelDispatched }, "cancellation dispatch")
+    try await Task.sleep(for: .milliseconds(100))
     FakeControl.startupGate?.resume()
     FakeControl.startupGate = nil
     try await firstStart.value
     try await firstCancel.value
+    do {
+      try await remoteStart.value
+      throw NSError(domain: "RaceChecks", code: 5,
+                    userInfo: [NSLocalizedDescriptionKey: "expired remote start succeeded"])
+    } catch WatchAudioError.interrupted {}
+    try require(FakeControl.starts == 0, "expired remote request must not start recording")
+    print("PASS: remote request expiry during startup prevents recorder start")
     try require(FakeControl.starts == 0, "cancelled startup must never start recording")
     try require(service.records[first]?.phase == .cancelled, "cancelled startup must settle")
     print("PASS: cancellation before startup completes prevents recording")

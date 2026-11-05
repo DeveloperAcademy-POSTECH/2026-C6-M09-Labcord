@@ -28,6 +28,7 @@ struct WatchRecordFeature {
 
     enum Action: Equatable {
         case begin(WatchRecordPresentation.Kind, UUID)
+        case beginRemoteVoice(UUID, Date)
         case stop(UUID)
         case update(WatchRecordPresentation)
         case commandProcessed(UUID, WatchExperimentCommand.Operation)
@@ -64,6 +65,11 @@ struct WatchRecordFeature {
             switch action {
             case let .begin(kind, experimentID):
                 return begin(kind, experimentID: experimentID, state: &state)
+            case let .beginRemoteVoice(experimentID, expiresAt):
+                guard Date.now < expiresAt else { return .none }
+                return begin(
+                    .voice, experimentID: experimentID, expiresAt: expiresAt, state: &state
+                )
             case let .stop(id):
                 guard var record = state.records[id], record.phase == .capturing else {
                     return .none
@@ -175,7 +181,8 @@ struct WatchRecordFeature {
 
 private extension WatchRecordFeature {
     func begin(
-        _ kind: WatchRecordPresentation.Kind, experimentID: UUID, state: inout State
+        _ kind: WatchRecordPresentation.Kind, experimentID: UUID,
+        expiresAt: Date? = nil, state: inout State
     ) -> Effect<Action> {
         guard state.isIntegrated else {
             state.notice = "기록 기능 연결이 필요해요. iPhone에서 기록해주세요."
@@ -191,6 +198,11 @@ private extension WatchRecordFeature {
         state.records[record.id] = record
         state.focusedID = record.id
         if kind == .voice {
+            if let expiresAt {
+                return .send(.delegate(.local(.startRemoteVoice(
+                    experimentID: experimentID, recordID: record.id, expiresAt: expiresAt
+                ))))
+            }
             return .send(.delegate(.local(.startVoice(
                 experimentID: experimentID, recordID: record.id
             ))))

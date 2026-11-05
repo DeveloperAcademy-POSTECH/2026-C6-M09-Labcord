@@ -17,6 +17,7 @@ nonisolated enum WatchIntentRuntimeError: Error, LocalizedError, Equatable {
     case permissionRequired
     case contextChanged
     case interrupted
+    case photoResultPending
     case requestRejected(String)
 
     var errorDescription: String? {
@@ -29,6 +30,8 @@ nonisolated enum WatchIntentRuntimeError: Error, LocalizedError, Equatable {
         case .permissionRequired: "Watch 앱에서 마이크 권한을 먼저 허용해주세요."
         case .contextChanged: "화면이나 실험이 바뀌었어요. 현재 화면을 확인하고 다시 실행해주세요."
         case .interrupted: "요청이 중단됐어요. 앱에서 상태를 확인해주세요."
+        case .photoResultPending:
+            "사진 요청 결과를 아직 확인하지 못했어요. 다시 요청하기 전에 앱에서 상태를 확인해주세요."
         case let .requestRejected(message): message
         }
     }

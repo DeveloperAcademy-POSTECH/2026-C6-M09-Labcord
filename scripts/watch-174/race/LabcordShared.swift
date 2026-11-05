@@ -8,7 +8,7 @@ public struct WatchAudioHeader: Equatable, Sendable {
     self.recordingID = recordingID
   }
 }
-public enum WatchAudioError: Error { case conflict, incomplete }
+public enum WatchAudioError: Error { case conflict, incomplete, interrupted }
 public struct WatchAudioReceipt: Sendable {
   public let header: WatchAudioHeader
   public init(header: WatchAudioHeader) { self.header = header }

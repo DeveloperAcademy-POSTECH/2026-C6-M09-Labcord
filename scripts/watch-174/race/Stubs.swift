@@ -19,6 +19,7 @@ struct WatchRecordPresentation: Equatable, Identifiable, Sendable {
 struct WatchRecordingUIBridge: Sendable {
   enum Input: Sendable {
     case startVoice(experimentID: UUID, recordID: UUID)
+    case startRemoteVoice(experimentID: UUID, recordID: UUID, expiresAt: Date)
     case stopVoice(experimentID: UUID, recordID: UUID)
     case retry(experimentID: UUID, recordID: UUID)
     case reconcile

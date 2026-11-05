@@ -30,9 +30,12 @@ public enum WatchAudioCaptureEvent: Sendable { case event }
       await withCheckedContinuation { FakeControl.startupGate = $0 }
     }
   }
-  public func start(experimentID: UUID, recordingID: UUID) async throws -> AsyncStream<
+  public func start(
+    experimentID: UUID, recordingID: UUID, expiresAt: Date? = nil
+  ) async throws -> AsyncStream<
     WatchAudioCaptureEvent
   > {
+    guard expiresAt.map({ Date.now < $0 }) ?? true else { throw WatchAudioError.interrupted }
     FakeControl.starts += 1
     let header = WatchAudioHeader(experimentID: experimentID, recordingID: recordingID)
     activeRecording = header

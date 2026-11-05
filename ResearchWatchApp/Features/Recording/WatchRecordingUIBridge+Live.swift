@@ -81,14 +81,16 @@ final class WatchRecordingService {
         do {
             try await startup?.value
         } catch {
-            if case let .startVoice(experimentID, recordID) = input {
-                await rejectEmptyVoiceStart(experimentID: experimentID, recordID: recordID)
-            }
+            await rejectFailedStartup(input)
             throw error
         }
         switch input {
         case let .startVoice(experimentID, recordID):
             try await startVoiceUnlessCancelled(experimentID: experimentID, recordID: recordID)
+        case let .startRemoteVoice(experimentID, recordID, expiresAt):
+            try await startVoiceUnlessCancelled(
+                experimentID: experimentID, recordID: recordID, expiresAt: expiresAt
+            )
         case let .stopVoice(experimentID, recordID):
             try await stopVoice(experimentID: experimentID, recordID: recordID)
         case let .retry(experimentID, recordID):
@@ -107,17 +109,6 @@ final class WatchRecordingService {
         case let .cancelActiveVoiceForPause(experimentID, recordID):
             try await cancelActiveVoiceForPause(experimentID, recordID: recordID)
         }
-    }
-
-    private func startVoiceUnlessCancelled(experimentID: UUID, recordID: UUID) async throws {
-        guard !invalidatedVoiceStarts.contains(recordID) else { return }
-        let task = Task { @MainActor in
-            guard !self.invalidatedVoiceStarts.contains(recordID) else { return }
-            try await self.startVoice(experimentID: experimentID, recordID: recordID)
-        }
-        voiceStartTasks[recordID] = task
-        defer { voiceStartTasks[recordID] = nil }
-        try await task.value
     }
 
     private func cancelActiveVoiceForPause(_ experimentID: UUID, recordID: UUID?) async throws {
@@ -183,46 +174,6 @@ final class WatchRecordingService {
         captureTasks[recordID] = nil
     }
 
-    private func startVoice(experimentID: UUID, recordID: UUID) async throws {
-        guard records[recordID] == nil else { throw WatchAudioError.conflict }
-        let events: AsyncStream<WatchAudioCaptureEvent>
-        do {
-            events = try await recorder.start(experimentID: experimentID, recordingID: recordID)
-        } catch {
-            await rejectEmptyVoiceStart(experimentID: experimentID, recordID: recordID)
-            throw error
-        }
-        captureTasks[recordID] = Task { [weak self] in
-            for await event in events {
-                guard !Task.isCancelled else { break }
-                guard let self else { return }
-                self.capture(event, experimentID: experimentID, recordID: recordID)
-            }
-            self?.captureTasks[recordID] = nil
-        }
-    }
-
-    private func rejectEmptyVoiceStart(experimentID: UUID, recordID: UUID) async {
-        // 보관 조회 성공과 활성 녹음 부재가 모두 확인돼야 새 녹음을 허용한다.
-        guard recorder.activeRecording == nil,
-              (try? await hasNoVoiceOriginal(recordID)) == true else { return }
-        var rejected = WatchRecordPresentation(
-            id: recordID, experimentID: experimentID, kind: .voice
-        )
-        rejected.phase = .failed
-        rejected.captureRejectedBeforeStart = true
-        rejected.detail = "녹음을 시작하지 못했어요. 권한·저장 공간·앱 상태를 확인해주세요."
-        publish(rejected)
-    }
-
-    private func hasNoVoiceOriginal(_ recordID: UUID) async throws -> Bool {
-        guard let header = try await archive.headers().first(where: {
-            $0.recordingID == recordID
-        }) else { return true }
-        let status = try await archive.status(header)
-        return status.receivedSequences.isEmpty && (status.manifest?.totalSamples ?? 0) == 0
-    }
-
     private func stopVoice(experimentID: UUID, recordID: UUID) async throws {
         guard !invalidatedVoiceStarts.contains(recordID) else { return }
         if let active = recorder.activeRecording {
@@ -279,4 +230,76 @@ final class WatchRecordingService {
         records[value.id] = value
         observers.values.forEach { $0.yield(value) }
     }
+}
+
+private extension WatchRecordingService {
+    func rejectFailedStartup(_ input: WatchRecordingUIBridge.Input) async {
+        switch input {
+        case let .startVoice(experimentID, recordID),
+             let .startRemoteVoice(experimentID, recordID, _):
+            await rejectEmptyVoiceStart(experimentID: experimentID, recordID: recordID)
+        default:
+            break
+        }
+    }
+
+    private func startVoiceUnlessCancelled(
+        experimentID: UUID, recordID: UUID, expiresAt: Date? = nil
+    ) async throws {
+        guard !invalidatedVoiceStarts.contains(recordID) else { return }
+        let task = Task { @MainActor in
+            guard !self.invalidatedVoiceStarts.contains(recordID) else { return }
+            try await self.startVoice(
+                experimentID: experimentID, recordID: recordID, expiresAt: expiresAt
+            )
+        }
+        voiceStartTasks[recordID] = task
+        defer { voiceStartTasks[recordID] = nil }
+        try await task.value
+    }
+
+    private func startVoice(
+        experimentID: UUID, recordID: UUID, expiresAt: Date? = nil
+    ) async throws {
+        guard records[recordID] == nil else { throw WatchAudioError.conflict }
+        let events: AsyncStream<WatchAudioCaptureEvent>
+        do {
+            events = try await recorder.start(
+                experimentID: experimentID, recordingID: recordID, expiresAt: expiresAt
+            )
+        } catch {
+            await rejectEmptyVoiceStart(experimentID: experimentID, recordID: recordID)
+            throw error
+        }
+        captureTasks[recordID] = Task { [weak self] in
+            for await event in events {
+                guard !Task.isCancelled else { break }
+                guard let self else { return }
+                self.capture(event, experimentID: experimentID, recordID: recordID)
+            }
+            self?.captureTasks[recordID] = nil
+        }
+    }
+
+    private func rejectEmptyVoiceStart(experimentID: UUID, recordID: UUID) async {
+        // 보관 조회 성공과 활성 녹음 부재가 모두 확인돼야 새 녹음을 허용한다.
+        guard recorder.activeRecording == nil,
+              (try? await hasNoVoiceOriginal(recordID)) == true else { return }
+        var rejected = WatchRecordPresentation(
+            id: recordID, experimentID: experimentID, kind: .voice
+        )
+        rejected.phase = .failed
+        rejected.captureRejectedBeforeStart = true
+        rejected.detail = "녹음을 시작하지 못했어요. 권한·저장 공간·앱 상태를 확인해주세요."
+        publish(rejected)
+    }
+
+    private func hasNoVoiceOriginal(_ recordID: UUID) async throws -> Bool {
+        guard let header = try await archive.headers().first(where: {
+            $0.recordingID == recordID
+        }) else { return true }
+        let status = try await archive.status(header)
+        return status.receivedSequences.isEmpty && (status.manifest?.totalSamples ?? 0) == 0
+    }
+
 }

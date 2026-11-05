@@ -18,6 +18,8 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
     public let experiments = WatchExperimentTransport()
     public let records = WatchRecordTransport()
     @MainActor public private(set) var activationFailed = false
+    @MainActor public var remoteIntentHandler:
+        (@MainActor (WatchRemoteIntentRequest) async -> WatchRemoteIntentResponse)?
     private var audioReceiptObservers: [UUID: AsyncStream<WatchAudioReceipt>.Continuation] = [:]
     private var latestAudioReceipts: [UUID: WatchAudioReceipt] = [:]
 
@@ -52,6 +54,22 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         didReceiveMessage message: [String: Any],
         replyHandler: @escaping ([String: Any]) -> Void
     ) {
+        if let data = message[WatchRemoteIntentRequest.messageKey] as? Data {
+            Task { @MainActor in
+                guard data.count <= 4_096,
+                      let request = try? JSONDecoder().decode(
+                        WatchRemoteIntentRequest.self, from: data
+                      ),
+                      let handler = self.remoteIntentHandler else {
+                    replyHandler([:])
+                    return
+                }
+                let result = await handler(request)
+                let encoded = try? JSONEncoder().encode(result)
+                replyHandler(encoded.map { [WatchRemoteIntentResponse.messageKey: $0] } ?? [:])
+            }
+            return
+        }
         let data = message[WatchExperimentTransport.commandKey] as? Data
         Task { @MainActor in
             let response = data.flatMap { experiments.reply(to: $0) }
