@@ -6,6 +6,11 @@ public enum RecentProtocolAccessError: Error, Sendable {
     case notConfigured
 }
 
+public enum ExperimentCreationError: Error, Sendable {
+    case unavailable
+    case conflictingIdentifier
+}
+
 public struct ExperimentClient: Sendable {
     public var load: @MainActor @Sendable () throws -> [ExperimentListEntry]
     public var loadRecentProtocols: @MainActor @Sendable () throws -> [RecentProtocolEntry]
@@ -13,6 +18,9 @@ public struct ExperimentClient: Sendable {
     public var loadResultDetail: @MainActor @Sendable (UUID) throws -> ExperimentResultDetail?
     public var updateTitle: @MainActor @Sendable (UUID, String) throws -> ExperimentResultDetail
     public var create: @MainActor @Sendable (UUID, Date) throws -> ExperimentListEntry
+    public var createWithProtocol: @MainActor @Sendable (
+        UUID, Date, String, ExperimentProtocol
+    ) throws -> ExperimentListEntry
     public var leaveSession: @MainActor @Sendable (UUID, UUID, Date) throws -> Void
     public var saveTimer: @MainActor @Sendable (UUID, ExperimentTimer, Date?) throws -> Void
     public var savePhoto: @MainActor @Sendable (UUID, UUID, Date, Data) throws -> Void
@@ -42,6 +50,11 @@ public struct ExperimentClient: Sendable {
         delete: @escaping @MainActor @Sendable (UUID) throws -> Void,
         loadRecentProtocols: @escaping @MainActor @Sendable () throws -> [RecentProtocolEntry] = {
             throw RecentProtocolAccessError.notConfigured
+        },
+        createWithProtocol: @escaping @MainActor @Sendable (
+            UUID, Date, String, ExperimentProtocol
+        ) throws -> ExperimentListEntry = { _, _, _, _ in
+            throw ExperimentCreationError.unavailable
         }
     ) {
         self.load = load
@@ -50,6 +63,7 @@ public struct ExperimentClient: Sendable {
         self.loadResultDetail = loadResultDetail
         self.updateTitle = updateTitle
         self.create = create
+        self.createWithProtocol = createWithProtocol
         self.leaveSession = leaveSession
         self.saveTimer = saveTimer
         self.savePhoto = savePhoto
@@ -106,7 +120,12 @@ extension ExperimentClient: DependencyKey {
         },
         complete: { try ExperimentSessionRepository.shared.complete(id: $0, at: $1) },
         delete: { try ExperimentListRepository.shared.delete(id: $0) },
-        loadRecentProtocols: { try RecentProtocolRepository.load() }
+        loadRecentProtocols: { try RecentProtocolRepository.load() },
+        createWithProtocol: {
+            try ExperimentListRepository.shared.createWithProtocol(
+                id: $0, at: $1, title: $2, procedure: $3
+            )
+        }
     )
 }
 
