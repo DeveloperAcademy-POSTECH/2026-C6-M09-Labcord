@@ -16,6 +16,7 @@ struct Reduce<State, Action> {
 final class PhoneWatchExperimentCoordinator {
     static let shared = PhoneWatchExperimentCoordinator()
     var visibleExperimentID: UUID?
+    var phoneSceneIsActive = false
     var isBusy = false
     var opened: [UUID] = []
     func refresh() {}

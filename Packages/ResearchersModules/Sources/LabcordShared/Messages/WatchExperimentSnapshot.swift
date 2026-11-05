@@ -51,6 +51,8 @@ public struct WatchExperimentSnapshot: Codable, Equatable, Sendable {
     public let protocolTimerSeconds: [Int]
     public let timers: [WatchTimerSnapshot]
     public let recordedAt: Date
+    /// iPhone에서 해당 실험 진행 화면이 현재 활성 상태인지 나타낸다.
+    public let phoneSessionActive: Bool?
 
     public init(
         experiment: WatchExperimentSummary,
@@ -58,7 +60,8 @@ public struct WatchExperimentSnapshot: Codable, Equatable, Sendable {
         protocolTimerSeconds: [Int] = [],
         timers: [WatchTimerSnapshot] = [],
         recordedAt: Date = .now,
-        mode: ExperimentMode? = nil
+        mode: ExperimentMode? = nil,
+        phoneSessionActive: Bool? = nil
     ) {
         self.experiment = experiment
         self.revision = revision
@@ -66,5 +69,6 @@ public struct WatchExperimentSnapshot: Codable, Equatable, Sendable {
         self.protocolTimerSeconds = protocolTimerSeconds
         self.timers = timers
         self.recordedAt = recordedAt
+        self.phoneSessionActive = phoneSessionActive
     }
 }

@@ -28,6 +28,7 @@ struct WatchExperimentFeature {
         var practice = WatchGesturePractice()
         var selectedID: UUID?
         var snapshots: [UUID: WatchExperimentSnapshot] = [:]
+        var deferredPhoneSession: WatchExperimentSnapshot?
         var pending: PendingRequest?
         var hasRestoredPending = false
         var pendingRecoveryFailed = false
@@ -51,11 +52,6 @@ struct WatchExperimentFeature {
         var isPreparingInterruption = false
         var interruptionNeedsConfirmation = false
 
-        var snapshot: WatchExperimentSnapshot? {
-            selectedID.flatMap { snapshots[$0] }
-        }
-
-        var canResume: Bool { [.paused, .completed].contains(snapshot?.experiment.status) }
     }
 
     enum Action: Equatable {
@@ -139,6 +135,7 @@ struct WatchExperimentFeature {
             case .appeared:
                 return activate(state: &state)
             case .inactive:
+                state.deferredPhoneSession = nil
                 if state.isPreparingInterruption {
                     state.isPreparingInterruption = false
                     state.interruptionNeedsConfirmation = true

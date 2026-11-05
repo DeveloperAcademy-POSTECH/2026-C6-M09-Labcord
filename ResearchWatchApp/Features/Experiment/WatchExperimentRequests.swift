@@ -193,6 +193,7 @@ extension WatchExperimentFeature {
         state.pending = nil
         state.canRetryPendingCancellation = false
         state.clearMessageUnlessInterruptionUnconfirmed()
+        applyDeferredPhoneSession(after: pending.command.operation, state: &state)
         if pending.command.operation == .prepareStart {
             return prepared(response, state: &state)
         }
@@ -212,6 +213,15 @@ extension WatchExperimentFeature {
             return .concatenate(cancel, .send(.refresh))
         }
         return cancel
+    }
+
+    private func applyDeferredPhoneSession(
+        after operation: WatchExperimentCommand.Operation, state: inout State
+    ) {
+        guard operation == .list, let snapshot = state.deferredPhoneSession else { return }
+        state.deferredPhoneSession = nil
+        followPhoneSessionIfSafe(snapshot, state: &state)
+        accept(snapshot, state: &state)
     }
 
     private func validCompletion(
@@ -238,6 +248,7 @@ extension WatchExperimentFeature {
     func fail(
         _ error: WatchExperimentError, state: inout State, definitive: Bool = false
     ) -> Effect<Action> {
+        if state.pending?.command.operation == .list { state.deferredPhoneSession = nil }
         state.message = error.watchMessage
         let command = state.pending?.command
         let authorization = state.authorization

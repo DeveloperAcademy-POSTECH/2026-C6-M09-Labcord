@@ -4,6 +4,9 @@ import LabcordShared
 import LabcordWatchOS
 
 extension WatchExperimentFeature.State {
+    var snapshot: WatchExperimentSnapshot? { selectedID.flatMap { snapshots[$0] } }
+    var canResume: Bool { [.paused, .completed].contains(snapshot?.experiment.status) }
+
     var selectedTitle: String {
         snapshot?.experiment.title
             ?? experiments.first { $0.id == selectedID }?.title ?? "실험 선택"
@@ -61,6 +64,8 @@ extension WatchExperimentFeature {
         switch action {
         case let .snapshotReceived(id, snapshot):
             guard state.isVisible, state.streamID == id else { return .none }
+            deferPhoneSessionDuringList(snapshot, state: &state)
+            followPhoneSessionIfSafe(snapshot, state: &state)
             accept(snapshot, state: &state)
             if state.countdownID == nil { return .cancel(id: CancelID.countdown) }
             return .none
@@ -113,6 +118,7 @@ extension WatchExperimentFeature {
     }
 
     private func endObservation(state: inout State) -> Effect<Action> {
+    state.deferredPhoneSession = nil
     let interruptionPending = state.isPreparingInterruption
     state.interruptionNeedsConfirmation = state.interruptionNeedsConfirmation
         || interruptionPending
@@ -140,6 +146,51 @@ extension WatchExperimentFeature {
         .merge(CancelID.all.map { .cancel(id: $0) }),
         .send(.recording(.recoveryFailed))
     )
+    }
+
+    private func deferPhoneSessionDuringList(
+        _ snapshot: WatchExperimentSnapshot, state: inout State
+    ) {
+        guard state.pending?.command.operation == .list, snapshot.phoneSessionActive != nil,
+              abs(snapshot.recordedAt.timeIntervalSince(now)) <= 30,
+              state.deferredPhoneSession.map({ snapshot.recordedAt >= $0.recordedAt }) ?? true
+        else { return }
+        if snapshot.phoneSessionActive == true, snapshot.experiment.status == .running {
+            state.deferredPhoneSession = snapshot
+        } else if state.deferredPhoneSession?.experiment.id == snapshot.experiment.id {
+            state.deferredPhoneSession = nil
+        }
+    }
+
+    func followPhoneSessionIfSafe(
+        _ snapshot: WatchExperimentSnapshot, state: inout State
+    ) {
+        guard snapshot.phoneSessionActive == true,
+              snapshot.experiment.status == .running,
+              abs(snapshot.recordedAt.timeIntervalSince(now)) <= 30,
+              state.hasRestoredPending, !state.pendingRecoveryFailed,
+              state.pending == nil, !state.isRequestingPermission,
+              !state.isPreparingInterruption, !state.interruptionNeedsConfirmation,
+              state.cleanupRequestID == nil, state.authorization == nil,
+              state.countdownID == nil, state.recording.focusedID == nil,
+              !state.recording.records.values.contains(where: { !$0.isSettled }) else { return }
+
+        let id = snapshot.experiment.id
+        if let selectedID = state.selectedID, selectedID != id {
+            if state.screen == .experiment, state.message == nil {
+                state.message = "iPhone에서 다른 실험이 진행 중이에요."
+            }
+            return
+        }
+        guard state.selectedID == nil, state.screen == .selection,
+              WatchPresentationRules.accepts(
+                revision: snapshot.revision, previous: state.snapshots[id]?.revision
+              ) else { return }
+        state.selectedID = id
+        state.screen = .experiment
+        if !state.experiments.contains(where: { $0.id == id }) {
+            state.experiments.append(snapshot.experiment)
+        }
     }
 
     func accept(_ snapshot: WatchExperimentSnapshot, state: inout State) {

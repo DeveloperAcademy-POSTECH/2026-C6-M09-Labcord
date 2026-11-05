@@ -7,6 +7,110 @@ import XCTest
 
 @MainActor
 final class WatchIntentRuntimeTests: XCTestCase {
+    func testPhoneSessionArrivingBeforeListResponseIsReevaluated() async {
+        let date = Date(timeIntervalSince1970: 1000)
+        let streamID = UUID()
+        let experimentID = UUID()
+        let requestID = UUID()
+        let summary = WatchExperimentSummary(id: experimentID, title: "A", status: .running)
+        let snapshot = WatchExperimentSnapshot(
+            experiment: summary, revision: 1, recordedAt: date, phoneSessionActive: true
+        )
+        var state = WatchExperimentFeature.State()
+        state.isVisible = true
+        state.streamID = streamID
+        state.hasRestoredPending = true
+        state.pending = .init(
+            command: .init(requestID: requestID, operation: .list), responseID: requestID
+        )
+        let store = TestStore(initialState: state) { WatchExperimentFeature() } withDependencies: {
+            $0.date.now = date
+        }
+        store.exhaustivity = .off
+        await store.send(.snapshotReceived(streamID, snapshot))
+        XCTAssertNil(store.state.selectedID)
+        await store.send(.response(requestID, .init(
+            requestID: requestID, phase: .completed, experiments: [summary]
+        )))
+        XCTAssertEqual(store.state.selectedID, experimentID)
+        XCTAssertEqual(store.state.screen, .experiment)
+        XCTAssertEqual(store.state.snapshot, snapshot)
+        XCTAssertNil(store.state.deferredPhoneSession)
+        await store.finish()
+    }
+    func testPhoneSessionFollowsOnlyFreshExplicitRunningSnapshot() async {
+        let date = Date(timeIntervalSince1970: 1000)
+        let streamID = UUID()
+        let experimentID = UUID()
+        var state = WatchExperimentFeature.State()
+        state.isVisible = true
+        state.streamID = streamID
+        state.hasRestoredPending = true
+        let store = TestStore(initialState: state) { WatchExperimentFeature() } withDependencies: {
+            $0.date.now = date
+        }
+        store.exhaustivity = .off
+        func snapshot(_ flag: Bool?, _ offset: TimeInterval, _ status: ExperimentStatus = .running)
+            -> WatchExperimentSnapshot {
+            .init(experiment: .init(id: experimentID, title: "A", status: status),
+                  revision: 1, recordedAt: date.addingTimeInterval(offset),
+                  phoneSessionActive: flag)
+        }
+        for value in [snapshot(nil, 0), snapshot(false, 0), snapshot(true, -31),
+                      snapshot(true, 31), snapshot(true, 0, .paused)] {
+            await store.send(.snapshotReceived(streamID, value))
+            XCTAssertNil(store.state.selectedID)
+            XCTAssertEqual(store.state.screen, .selection)
+        }
+        await store.send(.snapshotReceived(streamID, snapshot(true, -30)))
+        XCTAssertEqual(store.state.selectedID, experimentID)
+        XCTAssertEqual(store.state.screen, .experiment)
+        XCTAssertEqual(store.state.snapshot?.experiment.status, .running)
+        await store.finish()
+    }
+
+    func testPhoneSessionDoesNotDisplaceOtherExperimentOrUnsettledRecord() async {
+        let date = Date(timeIntervalSince1970: 1000)
+        let streamID = UUID()
+        let experimentID = UUID()
+        let snapshot = WatchExperimentSnapshot(
+            experiment: .init(id: experimentID, title: "A", status: .running),
+            revision: 1, recordedAt: date, phoneSessionActive: true
+        )
+        var state = WatchExperimentFeature.State()
+        state.isVisible = true
+        state.streamID = streamID
+        state.hasRestoredPending = true
+        let otherID = UUID()
+        state.selectedID = otherID
+        state.screen = .experiment
+        let store = TestStore(initialState: state) { WatchExperimentFeature() } withDependencies: {
+            $0.date.now = date
+        }
+        store.exhaustivity = .off
+        await store.send(.snapshotReceived(streamID, snapshot))
+        XCTAssertEqual(store.state.selectedID, otherID)
+        XCTAssertEqual(store.state.screen, .experiment)
+        XCTAssertNotNil(store.state.message)
+        await store.finish()
+
+        state.selectedID = nil
+        state.screen = .selection
+        let recordID = UUID()
+        state.recording.records[recordID] = WatchRecordPresentation(
+            id: recordID, experimentID: otherID, kind: .voice
+        )
+        let blocked = TestStore(initialState: state) {
+            WatchExperimentFeature()
+        } withDependencies: {
+            $0.date.now = date
+        }
+        blocked.exhaustivity = .off
+        await blocked.send(.snapshotReceived(streamID, snapshot))
+        XCTAssertNil(blocked.state.selectedID)
+        XCTAssertEqual(blocked.state.screen, .selection)
+        await blocked.finish()
+    }
     func testRemoteVoiceExpiresWhileWaitingForMicrophonePermission() async {
         let id = UUID()
         let expiry = Date.now.addingTimeInterval(0.05)

@@ -83,6 +83,7 @@ extension AppFeature {
                 state.path[id: $0, case: \.session]?.experimentID
             }
             coordinator.visibleExperimentID = sessionID
+            coordinator.phoneSceneIsActive = state.watchIsActive
             coordinator.isBusy = state.reviewSaving || state.home.list.isDeleting
                 || state.home.list.pendingDeletion != nil
                 || (!state.path.isEmpty && sessionID == nil)

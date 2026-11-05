@@ -8,6 +8,7 @@ public final class PhoneWatchExperimentCoordinator {
     public static let shared = PhoneWatchExperimentCoordinator()
     public var isBusy = false
     public var visibleExperimentID: UUID?
+    public var phoneSceneIsActive = false
     private static let pendingStartKey = "labcord.watch.pendingStartID"
     public internal(set) var pendingStartID: UUID? {
         didSet { persistPendingStart() }
@@ -31,6 +32,7 @@ public final class PhoneWatchExperimentCoordinator {
     var tokens: [UUID: (UUID, ContinuousClock.Instant)] = [:]
     var states: [UUID: WatchExperimentState] = [:]
     var revisions: [UUID: UInt64] = [:]
+    var phoneSessionFlags: [UUID: Bool] = [:]
     var recordResults: [UUID: WatchRecordSnapshot] = [:]
     var recordSnapshots: [UUID: WatchRecordSnapshot] = [:]
     var completedExecutions: [UUID: WatchCompletedExecution] = [:]
@@ -109,17 +111,6 @@ public final class PhoneWatchExperimentCoordinator {
             .resume(throwing: WatchDefinitiveRejection(error: .phoneBusy))
     }
 
-    public func refresh() {
-        refreshTask?.cancel()
-        refreshTask = Task { [weak self] in
-            try? await Task.sleep(for: .milliseconds(100))
-            guard !Task.isCancelled, let self else { return }
-            for id in Array(states.keys) {
-                if let snapshot = try? snapshot(id) { publish(snapshot) }
-            }
-        }
-    }
-
     func receive(_ command: WatchExperimentCommand) -> WatchExperimentResponse {
         guard command.version == WatchExperimentCommand.schemaVersion else {
             return failure(command, .unsupportedVersion)
@@ -160,6 +151,11 @@ public final class PhoneWatchExperimentCoordinator {
             do {
                 let summaries = try client.load().compactMap { entry in
                     try client.watchState(entry.id)?.experiment
+                }
+                if phoneSceneIsActive, UIApplication.shared.applicationState == .active,
+                   let id = visibleExperimentID, let value = try? snapshot(id),
+                   value.phoneSessionActive == true {
+                    publish(value)
                 }
                 return WatchExperimentResponse(
                     requestID: command.requestID, phase: .completed, experiments: summaries
@@ -254,12 +250,18 @@ public final class PhoneWatchExperimentCoordinator {
             throw WatchExperimentError.experimentNotFound
         }
         try restoreSavedRecords(id)
-        if states[id] != state {
+        let active = WatchSnapshotPublicationPolicy.isPhoneSessionActive(
+            id: id, visible: visibleExperimentID, sceneActive: phoneSceneIsActive,
+            applicationActive: UIApplication.shared.applicationState == .active,
+            running: state.experiment.status == .running
+        )
+        if states[id] != state || phoneSessionFlags[id] != active {
             let next = try nextRevision()
             revisions[id] = next
             states[id] = state
+            phoneSessionFlags[id] = active
         }
-        return state.snapshot(revision: revisions[id] ?? 0, at: .now)
+        return state.snapshot(revision: revisions[id] ?? 0, at: .now, phoneSessionActive: active)
     }
 
     func failure(_ command: WatchExperimentCommand, _ error: WatchExperimentError)
@@ -269,6 +271,21 @@ public final class PhoneWatchExperimentCoordinator {
 }
 
 extension PhoneWatchExperimentCoordinator {
+    public func refresh() {
+        guard refreshTask == nil else { return }
+        refreshTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(100))
+            guard !Task.isCancelled, let self else { return }
+            self.refreshTask = nil
+            let ids = WatchSnapshotPublicationPolicy.orderedIDs(
+                known: Set(states.keys), visible: visibleExperimentID
+            )
+            for id in ids {
+                if let snapshot = try? snapshot(id) { publish(snapshot) }
+            }
+        }
+    }
+
     func nextRevision() throws -> UInt64 {
         var previous: UInt64 = 0
         if FileManager.default.fileExists(atPath: revisionURL.path) {
