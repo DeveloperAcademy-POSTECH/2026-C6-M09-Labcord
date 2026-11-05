@@ -17,6 +17,7 @@ struct ExperimentSessionFeature {
         var voice: VoiceRecordingFeature.State
         var capture: CameraCaptureFeature.State
         var permissionRequestGeneration = 0
+        var isPausePresented = false
         var isReturningHome = false
         var exitID: UUID?
         var exitFailed = false
@@ -57,6 +58,8 @@ struct ExperimentSessionFeature {
         case photoStartRequested
         case videoStartRequested
         case appBecameActive
+        case pauseTapped
+        case resumeTapped
         case stopTapped
         case stopCompleted
         case stopFailed
@@ -123,6 +126,14 @@ struct ExperimentSessionFeature {
             case .appBecameActive:
                 guard !state.isReady else { return .none }
                 state.permissionRequestGeneration += 1
+                return .none
+
+            case .pauseTapped:
+                state.isPausePresented = true
+                return .send(.capture(.cancelPhotoGesture))
+
+            case .resumeTapped:
+                state.isPausePresented = false
                 return .none
 
             case .stopTapped:
@@ -232,12 +243,14 @@ struct ExperimentSessionFeature {
                 return .send(.voiceStartRequested)
 
             case .capture(.delegate(.photoRequested)):
+                guard !state.isPausePresented else { return .none }
                 return .send(.photoStartRequested)
 
             case .capture(.delegate(.videoRequested)):
                 return .send(.videoStartRequested)
 
             case let .capture(.delegate(.handEvent(event))):
+                guard !state.isPausePresented else { return .none }
                 switch event {
                 case .openHandHeld:
                     guard state.voice.phase == .hidden else { return .none }
@@ -272,15 +285,18 @@ struct ExperimentSessionFeature {
                 }
 
             case .voiceStartRequested:
+                guard !state.isPausePresented else { return .none }
                 return prepareVoiceRecording(state: &state)
 
             case .photoStartRequested:
+                guard !state.isPausePresented else { return .none }
                 guard state.voice.phase == .hidden else {
                     return .send(.capture(.cancelPhotoGesture))
                 }
                 return .send(.capture(.photoCaptureRequested))
 
             case .videoStartRequested:
+                guard !state.isPausePresented else { return .none }
                 guard state.voice.phase == .hidden else { return .none }
                 return .send(.capture(.videoRecordRequested))
 
