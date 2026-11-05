@@ -6,37 +6,35 @@
 //
 
 import ComposableArchitecture
+import LabcordDesignSystem
 import SwiftUI
 
 struct PortraitSessionView: View {
+    @State private var isSidePanelExpanded = true
+
     let store: StoreOf<CameraCaptureFeature>
     let timerStore: StoreOf<SessionTimerFeature>
     let sessionStore: StoreOf<ExperimentSessionFeature>
 
     var body: some View {
-        GeometryReader { geo in
-            let screenHeight = geo.size.height
-            + geo.safeAreaInsets.top
-            + geo.safeAreaInsets.bottom
-
+        GeometryReader { _ in
             ZStack {
                 Color.clear
                     .ignoresSafeArea()
 
                 VStack {
-                    SessionHeaderView(store: sessionStore)
+                    HeaderView(store: sessionStore)
                         .padding(16)
 
                     Spacer()
-                }
 
-                PortraitSessionSheetView(
-                    store: store,
-                    timerStore: timerStore,
-                    compactHeight: screenHeight * 0.127,
-                    expandedHeight: screenHeight * 0.3890160183,
-                    bottomInset: geo.safeAreaInsets.bottom
-                )
+                    ExperimentSidePanel(
+                        layout: .portrait,
+                        isExpanded: $isSidePanelExpanded
+                    )
+                    .ignoresSafeArea()
+                    .frame(height: 398)
+                }
             }
             .foregroundStyle(.white)
         }

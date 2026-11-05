@@ -1,5 +1,5 @@
 //
-//  SessionHeaderView.swift
+//  HeaderView.swift
 //  Researchers
 //
 //  Created by 정홍섭 on 10/25/26.
@@ -10,7 +10,7 @@ import LabcordDesignSystem
 import LabcordiOS
 import SwiftUI
 
-struct SessionHeaderView: View {
+struct HeaderView: View {
     let store: StoreOf<ExperimentSessionFeature>
 
     var body: some View {
@@ -34,7 +34,7 @@ struct SessionHeaderView: View {
 }
 
 #Preview {
-    SessionHeaderView(
+    HeaderView(
         store: Store(
             initialState: ExperimentSessionFeature.State(experimentID: UUID())
         ) {
