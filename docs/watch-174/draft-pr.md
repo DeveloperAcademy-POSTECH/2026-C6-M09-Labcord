@@ -1,9 +1,9 @@
 # Watch PR 초안 안내
 
-현재 단계는 #171 Watch 진행·기록 화면·실제 연결이다.
-진행 도구·타이머·기록 View·정리 화면, 실제 recorder bridge/events, 미확정 요청 journal·재실행·취소·늦은 응답 복구를 담당한다.
+현재 단계는 #270 App Intents·공통 실행이다.
+세 Intent/Shortcuts 선언, foreground·인증·단일 Store·Runtime·연습 화면·최신 조회/context 검증을 함께 담당한다.
 
-WatchExperimentFeature/Requests/Lifecycle/Tools/View를 실제 도구와 pending 복구로 확장한다. App Store에 live bridge를 주입한다. 사진 취소 버튼·카운트다운은 실제 취소·복구와 같은 PR에 둔다.
+App entry를 Runtime.shared.store로 연결하고 Feature/Tools/View의 Intent action·연습 분기를 확장한다. Requests의 lastReadRequestID 완료 갱신 3행도 이 PR에 포함한다.
 
 7개 PR은 #173 → #174 → #268 → #269 → #170 → #171 → #270 순차 stack이다.
 첫 base는 `feat/#167-Devin-prepared`, 이후 base는 직전 `feat/#번호-Codex`다.

@@ -29,9 +29,10 @@
 - 사진·영상·기록 저장 조율: 촬영 예약·취소·영상 중지·저장 재시도·실제 저장 파일 조회·미디어 journal과 공통 기록 명령 dispatch·중단/종료 drain을 담당한다.
 - Watch 선택·준비·상태 기반: 선택·권한·준비·카운트다운·닫기·관찰 수명을 담당한다. 루트 Feature가 참조하는 WatchRecordFeature/Presentation과 오류 표시 타입을 함께 도입한다.
 - Watch 진행·기록 화면·실제 연결: 진행 도구·타이머·기록 View·정리 화면, 실제 recorder bridge/events, 미확정 요청 journal·재실행·취소·늦은 응답 복구를 담당한다.
+- App Intents·공통 실행: 세 Intent/Shortcuts 선언, foreground·인증·단일 Store·Runtime·연습 화면·최신 조회/context 검증을 함께 담당한다.
 
 Watch audio background 설정과 실제 WC/audio 서비스가 있다. Watch 영구 실험 저장은 iPhone이 담당한다.
 앱 Store에 실제 녹음 bridge·pending 복구를 연결했다.
-세 Intent와 Runtime은 #270에서 연결한다.
+Intent는 Runtime.shared.store와 foreground·인증 선언을 공유한다.
 
 계약·검증 경계는 [Watch 구현](../watch-implementation.md)과 [검증](../watch-174/integrated-validation.md)을 참고한다.

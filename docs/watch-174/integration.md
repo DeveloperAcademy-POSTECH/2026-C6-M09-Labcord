@@ -2,20 +2,16 @@
 
 현재 누적 구현과 각 단계의 연결 경계는 [Watch 구현](../watch-implementation.md)을 따른다.
 
-### #171 Watch 진행 UI·live bridge·pending 복구
+### #270 App Intents·Shortcuts·단일 Runtime
 
-실제 `WatchRecordingUIBridge+Live`와 recorder/transfer events를 앱 Store에 주입한다. 진행 도구,
-타이머·기록 View·정리 화면을 실제 서비스로 연결한다. saved/cancelled는 실제 결과 뒤에만 종결한다.
-review/canAutoSave에서 UI만 3초 저장을 관리하고, 비활성·stream 종료 때 시계를 취소한다.
-닫기는 원본 삭제가 아니다. 녹음 연결 끊김은 중지 명령이 아니며 재전송 상태를 별도로 표시한다.
+세 plain AppIntent와 AppShortcut은 foreground 실행·로컬 기기 인증을 선언한다. `AudioRecordingIntent`는
+새로 채택하지 않는다. 앱 진입과 Intent는 `WatchIntentRuntime.shared.store` 하나를 공유하며 화면 버튼의
+기존 기록/중지 Action을 사용한다. 가이드 연습은 실제 기록을 만들지 않고, 실험 없는 상태는 실행을 거절한다.
 
-변경 전에 `WatchPendingRequestJournal`에 원 ID·기록별 저장/취소 의도를 원자적으로 보관한다.
-재실행은 원 ID 상태 조회부터 수행하고 queriedRequestID·실험·revision을 대조한다. 취소 뒤 늦은 review가
-자동 저장을 재개하지 않으며 unknown 취소만 같은 ID로 명시 재전송한다. 다른 실험 복구 기록이 현재
-실험 선택을 막지 않는다. 사진 취소 버튼·예약 시각 카운트다운은 실제 취소/복구와 함께 제공한다.
-
-타이머 상태는 iPhone snapshot으로 보정하며 0초 표시만으로 완료를 선언하지 않는다. 모드·프로토콜 단계
-메타데이터를 사용하고 순서·중복 시간을 보존한다. 완료 확인/삭제는 기록 endedAt 보존과 구분한다.
+새 remote 촬영은 최신 running 조회와 context lease·실행 토큰을 확인한다. 종료 직후·다른 실험·전면 이탈
+뒤 늦은 입력을 차단한다. 녹음 중지/보관은 오프라인 상태도 구분한다. Requests의 lastReadRequestID 완료
+갱신 3행을 함께 포함한다. App Shortcut metadata와 실제 OS 목록 노출·실행은 다른 검증이다.
+AssistiveTouch의 세 제스처 직접 배정과 단축어 생성 필요 여부는 실기기 확인 전 확정하지 않는다.
 
 ## 원본·저장 경계
 

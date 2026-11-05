@@ -25,6 +25,17 @@ review/canAutoSave에서 UI만 3초 저장을 관리하고, 비활성·stream �
 타이머 상태는 iPhone snapshot으로 보정하며 0초 표시만으로 완료를 선언하지 않는다. 모드·프로토콜 단계
 메타데이터를 사용하고 순서·중복 시간을 보존한다. 완료 확인/삭제는 기록 endedAt 보존과 구분한다.
 
+### #270 App Intents·Shortcuts·단일 Runtime
+
+세 plain AppIntent와 AppShortcut은 foreground 실행·로컬 기기 인증을 선언한다. `AudioRecordingIntent`는
+새로 채택하지 않는다. 앱 진입과 Intent는 `WatchIntentRuntime.shared.store` 하나를 공유하며 화면 버튼의
+기존 기록/중지 Action을 사용한다. 가이드 연습은 실제 기록을 만들지 않고, 실험 없는 상태는 실행을 거절한다.
+
+새 remote 촬영은 최신 running 조회와 context lease·실행 토큰을 확인한다. 종료 직후·다른 실험·전면 이탈
+뒤 늦은 입력을 차단한다. 녹음 중지/보관은 오프라인 상태도 구분한다. Requests의 lastReadRequestID 완료
+갱신 3행을 함께 포함한다. App Shortcut metadata와 실제 OS 목록 노출·실행은 다른 검증이다.
+AssistiveTouch의 세 제스처 직접 배정과 단축어 생성 필요 여부는 실기기 확인 전 확정하지 않는다.
+
 ## 통신·저장 계약
 
 실제 `WatchExperimentClient`와 DTO를 사용한다. 수신 ACK·처리 결과·영구 저장 ACK를 구분한다.

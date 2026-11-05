@@ -92,6 +92,17 @@ review/canAutoSave에서 UI만 3초 저장을 관리하고, 비활성·stream �
 타이머 상태는 iPhone snapshot으로 보정하며 0초 표시만으로 완료를 선언하지 않는다. 모드·프로토콜 단계
 메타데이터를 사용하고 순서·중복 시간을 보존한다. 완료 확인/삭제는 기록 endedAt 보존과 구분한다.
 
+### #270 App Intents·Shortcuts·단일 Runtime
+
+세 plain AppIntent와 AppShortcut은 foreground 실행·로컬 기기 인증을 선언한다. `AudioRecordingIntent`는
+새로 채택하지 않는다. 앱 진입과 Intent는 `WatchIntentRuntime.shared.store` 하나를 공유하며 화면 버튼의
+기존 기록/중지 Action을 사용한다. 가이드 연습은 실제 기록을 만들지 않고, 실험 없는 상태는 실행을 거절한다.
+
+새 remote 촬영은 최신 running 조회와 context lease·실행 토큰을 확인한다. 종료 직후·다른 실험·전면 이탈
+뒤 늦은 입력을 차단한다. 녹음 중지/보관은 오프라인 상태도 구분한다. Requests의 lastReadRequestID 완료
+갱신 3행을 함께 포함한다. App Shortcut metadata와 실제 OS 목록 노출·실행은 다른 검증이다.
+AssistiveTouch의 세 제스처 직접 배정과 단축어 생성 필요 여부는 실기기 확인 전 확정하지 않는다.
+
 ## 검증 경계
 
 실제 페어링 WC·Speech·다언어 지연·카메라·권한·잠금·화면 비활성 녹음·Shortcuts OS 실행·
@@ -100,3 +111,5 @@ AssistiveTouch 직접 배정·Watch 화면 크기/Figma 렌더는 미실행이�
 
 각 새 head의 실제 명령·exit·로그는 PR 본문 검증 요약과 재구성 manifest에 연결한다.
 기존 24개 head 빌드/CI와 freeze 집중 검사 결과를 새 head 성공으로 옮기지 않는다.
+
+최종 원요구 103개 대조는 [요구사항](watch-174/requirements-status.md)을 참고한다.
