@@ -24,17 +24,21 @@ extension WatchExperimentView {
     var recordCleanup: some View {
         if store.canReviewCompletedExperiment {
             Image(systemName: "iphone")
-                .font(.largeTitle)
-            Text("실험을 종료했어요.")
-                .multilineTextAlignment(.center)
-            Text("개별 기록 저장 결과는 iPhone에서 확인해주세요.")
-                .font(.caption)
+                .font(.system(size: 38, weight: .medium))
+                .accessibilityHidden(true)
+                .padding(.top, 8)
+            Text("iPhone에서\n기록을 확인하세요.")
+                .font(.footnote.weight(.medium))
                 .multilineTextAlignment(.center)
             Button("확인") { store.send(.closeTapped) }
+                .frame(maxWidth: .infinity)
         } else if store.pending?.command.operation == .complete,
                   store.pending?.phase == .processing {
             ProgressView()
+                .controlSize(.large)
+                .padding(.top, 16)
             Text("실험 기록을\n정리중이에요.")
+                .font(.headline)
                 .multilineTextAlignment(.center)
             Text("최종 저장 결과를 확인하고 있어요.")
                 .font(.caption)
