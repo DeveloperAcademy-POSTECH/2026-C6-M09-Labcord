@@ -8,7 +8,11 @@ extension WatchExperimentFeature {
         case let .practiceRecord(kind):
             return practiceRecord(kind, state: &state)
         case .timersTapped:
-            state.screen = .timers
+            if state.screen == .timerEditor, state.snapshot?.experiment.status == .running {
+                state.screen = .experiment
+            } else {
+                state.screen = .timers
+            }
             return .none
         case .timerEditorTapped:
             state.screen = .timerEditor
@@ -48,7 +52,7 @@ extension WatchExperimentFeature {
     private func startTimer(_ seconds: Int, state: inout State) -> Effect<Action> {
         guard state.canOperate, state.snapshot?.experiment.status == .running,
               seconds > 0 else { return .none }
-        state.screen = .timers
+        state.screen = .experiment
         return request(.startTimer, seconds: seconds, state: &state)
     }
 
@@ -86,12 +90,24 @@ extension WatchExperimentFeature {
 
     private func reduceInterruption(state: inout State, action: Action) -> Effect<Action> {
         switch action {
+        case let .voicePermissionResult(id, granted):
+            guard state.isRequestingPermission else { return .none }
+            state.isRequestingPermission = false
+            guard state.isVisible, state.streamID != nil, state.selectedID == id,
+                  state.pending == nil, !state.isPreparingInterruption,
+                  !state.pendingRecoveryFailed,
+                  state.snapshot?.experiment.status == .running else { return .none }
+            guard granted else {
+                state.message = "마이크 권한이 필요해요. Watch 설정에서 권한을 확인해주세요."
+                return .none
+            }
+            return .send(.recording(.begin(.voice, id)))
         case let .interruptionPrepared(id, operation):
             guard state.selectedID == id, state.isPreparingInterruption else { return .none }
             state.isPreparingInterruption = false
             return request(operation, state: &state)
         case let .interruptionFailed(id):
-            guard state.selectedID == id else { return .none }
+            guard state.selectedID == id, state.isPreparingInterruption else { return .none }
             state.isPreparingInterruption = false
             state.message = "녹음 중단·보관을 확인하지 못했어요. 원본을 유지하고 다시 확인해주세요."
             return .none
@@ -108,6 +124,16 @@ extension WatchExperimentFeature {
               state.snapshot?.experiment.status == .running,
               let id = state.selectedID else { return .none }
         guard kind == .voice || state.isReachable else { return .none }
+        if kind == .voice {
+            guard state.streamID != nil, !state.isRequestingPermission else { return .none }
+            state.isRequestingPermission = true
+            return .run { [microphonePermission] send in
+                let granted = await microphonePermission.request()
+                guard !Task.isCancelled else { return }
+                await send(.voicePermissionResult(id, granted))
+            }
+            .cancellable(id: CancelID.permission, cancelInFlight: true)
+        }
         return .send(.recording(.begin(kind, id)))
     }
 
@@ -137,7 +163,7 @@ extension WatchExperimentFeature {
                 switch input {
                 case let .startVoice(_, recordID), let .stopVoice(_, recordID),
                      let .retry(_, recordID): id = recordID
-                case .reconcile, .stopForExperiment:
+                case .reconcile, .stopForExperiment, .cancelActiveVoiceForPause:
                     await send(.recording(.recoveryFailed))
                     return
                 }
@@ -153,10 +179,17 @@ extension WatchExperimentFeature {
     ) -> Effect<Action> {
         guard state.canOperate, let id = state.selectedID else { return .none }
         guard let bridge = recordingBridge else { return request(operation, state: &state) }
+        let activeVoiceID = state.recording.records.values.first {
+            $0.experimentID == id && $0.kind == .voice
+                && [.starting, .capturing, .stopping].contains($0.phase)
+        }?.id
         state.isPreparingInterruption = true
         return .run { send in
             do {
-                try await bridge.perform(.stopForExperiment(id))
+                let input: WatchRecordingUIBridge.Input = operation == .pause
+                    ? .cancelActiveVoiceForPause(experimentID: id, recordID: activeVoiceID)
+                    : .stopForExperiment(id)
+                try await bridge.perform(input)
                 await send(.interruptionPrepared(id, operation))
             } catch {
                 await send(.interruptionFailed(id))
@@ -168,19 +201,19 @@ extension WatchExperimentFeature {
         guard let bridge = recordingBridge else {
             return .send(.recording(.integrationAvailable(false)))
         }
-        return .merge(
-            .send(.recording(.integrationAvailable(true))),
-            .run { send in
-                let updates = await bridge.updates()
-                for await record in updates {
-                    try Task.checkCancellation()
-                    await send(.recordUpdate(streamID, record))
-                }
-                guard !Task.isCancelled else { return }
-                await send(.recordStreamEnded(streamID))
+        return .run { send in
+            let updates = await bridge.updates()
+            try Task.checkCancellation()
+            await send(.recording(.integrationAvailable(true)))
+            try Task.checkCancellation()
+            await send(.recording(.delegate(.local(.reconcile))))
+            for await record in updates {
+                try Task.checkCancellation()
+                await send(.recordUpdate(streamID, record))
             }
-            .cancellable(id: CancelID.recordStream, cancelInFlight: true),
-            .send(.recording(.delegate(.local(.reconcile))))
-        )
+            guard !Task.isCancelled else { return }
+            await send(.recordStreamEnded(streamID))
+        }
+        .cancellable(id: CancelID.recordStream, cancelInFlight: true)
     }
 }

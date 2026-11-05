@@ -13,7 +13,7 @@ extension WatchExperimentFeature {
     state.countdownID = nil
     state.authorization = nil
     state.screen = state.selectedID == nil ? .selection : .experiment
-    state.message = nil
+    state.clearMessageUnlessInterruptionUnconfirmed()
     var effects: [Effect<Action>] = [
         .cancel(id: CancelID.permission), .cancel(id: CancelID.countdown)
     ]
@@ -60,7 +60,7 @@ extension WatchExperimentFeature {
         }
         if operation == .complete { state.cleanupRequestID = command.requestID }
         state.pending = PendingRequest(command: command, responseID: command.requestID)
-        state.message = nil
+        state.clearMessageUnlessInterruptionUnconfirmed()
         return .merge(send(command), deliveryDeadline(command.requestID))
     }
 
@@ -97,6 +97,7 @@ extension WatchExperimentFeature {
             experimentID: pending.command.experimentID, targetID: pending.command.requestID
         )
         pending.responseID = command.requestID
+        pending.phase = .delivering
         state.pending = pending
         return .merge(send(command), deliveryDeadline(command.requestID))
     }
@@ -157,7 +158,7 @@ extension WatchExperimentFeature {
                state.cleanupRequestID == pending.command.requestID {
                 state.screen = .recordCleanup
             }
-            state.message = nil
+            state.clearMessageUnlessInterruptionUnconfirmed()
             return .merge(.cancel(id: CancelID.delivery), poll(pending.command.requestID))
         case .unknown:
             state.canRetryPendingCancellation = pending.command.operation == .cancelRecord
@@ -191,7 +192,7 @@ extension WatchExperimentFeature {
         if let snapshot = response.snapshot { accept(snapshot, state: &state) }
         state.pending = nil
         state.canRetryPendingCancellation = false
-        state.message = nil
+        state.clearMessageUnlessInterruptionUnconfirmed()
         if pending.command.operation == .prepareStart {
             return prepared(response, state: &state)
         }

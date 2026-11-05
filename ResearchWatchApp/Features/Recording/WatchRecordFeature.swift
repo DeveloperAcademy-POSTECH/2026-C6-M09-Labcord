@@ -206,7 +206,14 @@ private extension WatchRecordFeature {
     ) -> Effect<Action> {
         if let previous = state.records[record.id] {
             guard previous.experimentID == record.experimentID, previous.kind == record.kind,
-                  !previous.isSettled, record.revision > previous.revision else { return .none }
+                  !previous.isSettled || previous.canRecapture else { return .none }
+            if record.revision == previous.revision, record == previous,
+               previous.phase == .review, previous.canAutoSave, state.isIntegrated,
+               state.decisions[record.id] == nil, state.autoSaveSeconds[record.id] == nil {
+                state.autoSaveSeconds[record.id] = 3
+                return autoSave(id: record.id, revision: record.revision)
+            }
+            guard record.revision > previous.revision else { return .none }
         }
         var update = record
         if record.isSettled {
@@ -221,7 +228,7 @@ private extension WatchRecordFeature {
         }
         state.records[record.id] = update
         if update.phase == .review, update.canAutoSave, state.isIntegrated {
-            state.autoSaveSeconds[record.id] = 3
+            state.autoSaveSeconds[record.id] = state.autoSaveSeconds[record.id] ?? 3
             return autoSave(id: record.id, revision: record.revision)
         }
         state.autoSaveSeconds[record.id] = nil

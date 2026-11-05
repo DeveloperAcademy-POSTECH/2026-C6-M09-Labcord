@@ -55,9 +55,9 @@ enum WatchIntentRouting {
     static func localVoiceStop(
         state: WatchExperimentFeature.State
     ) -> WatchExperimentFeature.Action? {
-        guard state.screen != .gestures else { return nil }
+        guard state.screen != .gestures, let experimentID = state.selectedID else { return nil }
         let voices = state.recording.records.values.filter {
-            $0.kind == .voice && $0.phase == .capturing
+            $0.experimentID == experimentID && $0.kind == .voice && $0.phase == .capturing
         }
         guard voices.count == 1 else { return nil }
         return .recording(.stop(voices[0].id))
@@ -80,7 +80,10 @@ enum WatchIntentRouting {
             throw WatchIntentRuntimeError.noRunningExperiment
         }
         guard state.recording.isIntegrated else { throw WatchIntentRuntimeError.notReady }
-        let unsettled = state.recording.records.values.filter { !$0.isSettled }
+        let unsettled = state.recording.records.values.filter {
+            !$0.isSettled && ($0.experimentID == id || $0.phase == .starting
+                || $0.phase == .capturing || $0.phase == .stopping)
+        }
         if let record = unsettled.first {
             guard unsettled.count == 1, record.experimentID == id,
                   record.kind == kind, kind == .video, record.phase == .capturing else {

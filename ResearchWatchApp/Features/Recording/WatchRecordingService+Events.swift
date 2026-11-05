@@ -4,6 +4,8 @@ import LabcordWatchOS
 
 extension WatchRecordingService {
     func capture(_ event: WatchAudioCaptureEvent, experimentID: UUID, recordID: UUID) {
+        guard !invalidatedVoiceStarts.contains(recordID),
+              !transfer.isCancellationPending(recordingID: recordID) else { return }
         switch event {
         case let .recording(header):
             var record = voice(header)
@@ -53,7 +55,10 @@ extension WatchRecordingService {
         let remote = try await archive.remoteReceipt(header)
         var record = voice(header)
         record.originalRetained = !local.receivedSequences.isEmpty
-        if recorder.activeRecording == header {
+        if transfer.isCancellationPending(header) {
+            record.phase = .saving
+            record.detail = "녹음 취소를 확인하고 있어요."
+        } else if recorder.activeRecording == header {
             record.phase = .capturing
         } else if local.isCancelled {
             record.phase = .cancelled
@@ -64,11 +69,11 @@ extension WatchRecordingService {
             record.phase = .transferring
         } else {
             record.phase = .failed
-            if recorder.activeRecording == nil, local.receivedSequences.isEmpty,
-               local.manifest == nil,
-               remote.map({ $0.receivedSequences.isEmpty && $0.manifest == nil
-                   && $0.savedRecordID == nil && !$0.isReviewing
-                   && !$0.isCancelled && $0.failure == nil }) ?? false {
+            if WatchRecordPresentation.isEmptyVoiceCapture(
+                local: local, remote: remote, hasActiveCapture: recorder.activeRecording != nil
+            ) {
+                // A header is written before capture starts. No local or remote receipt
+                // means there are no retained samples to recover; keep the header.
                 record.captureRejectedBeforeStart = true
                 record.detail = "저장된 음성 구간이 없어요. 다시 녹음해주세요."
             } else {
@@ -91,6 +96,11 @@ extension WatchRecordingService {
     }
 
     func receiveAudio(_ receipt: WatchAudioReceipt) async {
+        if transfer.isCancellationPending(receipt.header), !receipt.isCancelled { return }
+        await processAudio(receipt)
+    }
+
+    private func processAudio(_ receipt: WatchAudioReceipt) async {
         do {
             let local = try await archive.status(receipt.header)
             var record = voice(receipt.header)
@@ -169,6 +179,7 @@ extension WatchRecordingService {
         var record = records[header.recordingID] ?? WatchRecordPresentation(
             id: header.recordingID, experimentID: header.experimentID, kind: .voice
         )
+        record.captureRejectedBeforeStart = false
         record.startedAt = header.startedAt
         return record
     }

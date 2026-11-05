@@ -26,7 +26,9 @@ public final class PhoneWatchAudioService {
         self.archive = archive
         self.connectivity = connectivity
         revisionURL = root.appending(path: "record-revision.txt")
-        receiver = WatchAudioReceiver(archive: archive, client: client) { id in
+        receiver = WatchAudioReceiver(
+            archive: archive, client: client, locale: Locale(identifier: "ko-KR")
+        ) { id in
             guard let state = try client.watchState(id) else {
                 throw WatchExperimentError.experimentNotFound
             }

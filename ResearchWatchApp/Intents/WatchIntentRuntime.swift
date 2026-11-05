@@ -71,12 +71,12 @@ final class WatchIntentRuntime {
                !WatchRequestPolicy.isReadOnly(pending.command.operation) {
                 throw WatchIntentRuntimeError.busy
             }
-            if kind == .voice, store.selectedID != nil {
+            if kind == .voice, store.selectedID != nil, !store.isReachable {
                 let action = try WatchIntentRouting.action(
                     for: kind, state: store.withState { $0 }
                 )
                 if !microphoneAllowed() { throw WatchIntentRuntimeError.permissionRequired }
-                if !store.isReachable { return try await execute(action, kind: kind) }
+                return try await execute(action, kind: kind)
             }
             try await refresh(until: deadline)
             try validateLease(practice: false, selectedID: selectedID)

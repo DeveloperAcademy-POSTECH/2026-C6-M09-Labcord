@@ -36,6 +36,7 @@ struct WatchExperimentFeature {
         var countdownID: UUID?
         var authorization: Authorization?
         var isReachable = false
+        var connectionStatus: WatchConnectionStatus = .activating
         var isVisible = false
         var streamID: UUID?
         var message: String?
@@ -48,26 +49,12 @@ struct WatchExperimentFeature {
         var timerMinutes = 1
         var timerSeconds = 0
         var isPreparingInterruption = false
+        var interruptionNeedsConfirmation = false
 
         var snapshot: WatchExperimentSnapshot? {
             selectedID.flatMap { snapshots[$0] }
         }
 
-        var selectedTitle: String {
-            snapshot?.experiment.title
-                ?? experiments.first { $0.id == selectedID }?.title ?? "실험 선택"
-        }
-
-        var canReviewCompletedExperiment: Bool {
-            cleanupRequestID != nil && recording.isIntegrated
-                && snapshot?.experiment.status == .completed && pending == nil
-                && !recording.hasUnsettledRecords(in: selectedID)
-        }
-
-        var canOperate: Bool {
-            isVisible && streamID != nil && pending == nil && isReachable
-                && snapshot != nil && !isPreparingInterruption && !pendingRecoveryFailed
-        }
         var canResume: Bool { [.paused, .completed].contains(snapshot?.experiment.status) }
     }
 
@@ -76,6 +63,8 @@ struct WatchExperimentFeature {
         case inactive
         case refresh
         case connectionChanged(UUID, Bool)
+        case connectionStatusChanged(UUID, WatchConnectionStatus)
+        case retryConnection
         case streamEnded(UUID)
         case snapshotReceived(UUID, WatchExperimentSnapshot)
         case selected(UUID)
@@ -83,6 +72,7 @@ struct WatchExperimentFeature {
         case startTapped
         case permissionRequested
         case permissionResult(UUID, Bool)
+        case voicePermissionResult(UUID, Bool)
         case countdownTick(UUID)
         case cancelCountdown
         case pauseTapped
@@ -147,6 +137,11 @@ struct WatchExperimentFeature {
             case .appeared:
                 return activate(state: &state)
             case .inactive:
+                if state.isPreparingInterruption {
+                    state.isPreparingInterruption = false
+                    state.interruptionNeedsConfirmation = true
+                    state.message = "실험 중단·종료 요청이 완료되지 않았어요. iPhone 상태를 확인해주세요."
+                }
                 state.isVisible = false
                 state.isRequestingPermission = false
                 state.cleanupRequestID = nil
@@ -183,7 +178,7 @@ struct WatchExperimentFeature {
                 state.selectedID = id
                 state.startToken = nil
                 state.screen = .experiment
-                state.message = nil
+                if !state.interruptionNeedsConfirmation { state.message = nil }
                 return request(.snapshot, state: &state)
             case .backTapped:
                 guard state.pending == nil,
@@ -236,6 +231,7 @@ struct WatchExperimentFeature {
                 case .confirmComplete: operation = .complete
                 default: return .none
                 }
+                state.interruptionNeedsConfirmation = false
                 state.screen = .experiment
                 return prepareInterruption(operation, state: &state)
             case .resumeTapped:

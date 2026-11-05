@@ -14,6 +14,39 @@ public final class WatchAudioTransferClient {
     public private(set) var lastDeliveryError: WatchExperimentError?
     private var observers: [UUID: AsyncStream<WatchAudioReceipt>.Continuation] = [:]
     private var lastReceipts: [UUID: WatchAudioReceipt] = [:]
+    private let cancellationKey = "Labcord.WatchAudio.pendingCancellations"
+    private var deferredCancellations: Set<UUID> = []
+
+    public func isCancellationPending(_ header: WatchAudioHeader) -> Bool {
+        isCancellationPending(recordingID: header.recordingID)
+    }
+
+    public func isCancellationPending(recordingID: UUID) -> Bool {
+        (UserDefaults.standard.stringArray(forKey: cancellationKey) ?? [])
+            .contains(recordingID.uuidString)
+    }
+
+    /// Persist the user's decision before stopping capture or attempting delivery.
+    public func prepareCancellation(_ header: WatchAudioHeader) {
+        deferredCancellations.insert(header.recordingID)
+        var ids = Set(UserDefaults.standard.stringArray(forKey: cancellationKey) ?? [])
+        ids.insert(header.recordingID.uuidString)
+        UserDefaults.standard.set(Array(ids), forKey: cancellationKey)
+    }
+
+    public func releaseCancellation(_ header: WatchAudioHeader) {
+        deferredCancellations.remove(header.recordingID)
+    }
+
+    private func clearCancellation(_ header: WatchAudioHeader) {
+        var ids = Set(UserDefaults.standard.stringArray(forKey: cancellationKey) ?? [])
+        ids.remove(header.recordingID.uuidString)
+        UserDefaults.standard.set(Array(ids), forKey: cancellationKey)
+    }
+
+    private func checkCancellation(_ header: WatchAudioHeader) throws {
+        if isCancellationPending(header) { throw CancellationError() }
+    }
 
     public init(archive: WatchAudioArchive, exchange: @escaping Exchange) {
         self.archive = archive
@@ -58,6 +91,11 @@ public final class WatchAudioTransferClient {
             for header in try await archive.headers() {
                 try Task.checkCancellation()
                 do {
+                    if isCancellationPending(header) {
+                        guard !deferredCancellations.contains(header.recordingID) else { continue }
+                        _ = try await cancel(header)
+                        continue
+                    }
                     try await recover(header)
                 } catch let error as WatchAudioError {
                     // A retained record with invalid data must not starve later recordings.
@@ -78,6 +116,7 @@ public final class WatchAudioTransferClient {
         guard WCSession.default.activationState == .activated else { return }
         do {
             for header in try await archive.headers() {
+                guard !isCancellationPending(header) else { continue }
                 let receipt = try await archive.status(header)
                 guard receipt.savedRecordID == nil, !receipt.isCancelled else { continue }
                 enqueueBackgroundControl(header, manifest: receipt.manifest)
@@ -108,6 +147,8 @@ public final class WatchAudioTransferClient {
 
     /// Core routes reply user-info here for background files and manifest/status messages.
     public func receive(_ receipt: WatchAudioReceipt) async throws {
+        guard !isCancellationPending(receipt.header) || receipt.isCancelled else { return }
+        if !receipt.isCancelled, try await archive.status(receipt.header).isCancelled { return }
         try await archive.rememberRemoteReceipt(receipt)
         if receipt.savedRecordID != nil { try await archive.acknowledgeSaved(receipt) }
         if receipt.isCancelled { _ = try await archive.cancel(receipt.header) }
@@ -119,9 +160,11 @@ public final class WatchAudioTransferClient {
     }
 
     private func recover(_ header: WatchAudioHeader) async throws {
+        try checkCancellation(header)
         let local = try await archive.status(header)
         guard local.savedRecordID == nil, !local.isCancelled else { return }
         var remote = try await exchange(.status(header))
+        try checkCancellation(header)
         guard remote.header == header else { throw WatchAudioError.conflict }
         lastDeliveryError = nil
         try await receive(remote)
@@ -132,12 +175,16 @@ public final class WatchAudioTransferClient {
         let received = Set(remote.receivedSequences)
         for sequence in local.receivedSequences where !received.contains(sequence) {
             try Task.checkCancellation()
+            try checkCancellation(header)
             remote = try await exchange(.chunk(archive.chunk(header, sequence)))
+            try checkCancellation(header)
             guard remote.header == header else { throw WatchAudioError.conflict }
             try await receive(remote)
         }
         if let manifest = local.manifest {
+            try checkCancellation(header)
             remote = try await exchange(.finish(manifest))
+            try checkCancellation(header)
             guard remote.header == header else { throw WatchAudioError.conflict }
             try await receive(remote)
         }
@@ -148,6 +195,7 @@ public final class WatchAudioTransferClient {
     }
 
     public func confirm(_ header: WatchAudioHeader) async throws -> WatchAudioReceipt {
+        guard !isCancellationPending(header) else { throw WatchAudioError.conflict }
         let receipt = try await exchange(.confirm(header))
         guard receipt.header == header else { throw WatchAudioError.conflict }
         try await receive(receipt)
@@ -160,6 +208,7 @@ public final class WatchAudioTransferClient {
             throw WatchAudioError.conflict
         }
         try await receive(receipt)
+        clearCancellation(header)
         return receipt
     }
 }

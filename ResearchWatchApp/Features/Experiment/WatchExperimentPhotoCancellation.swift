@@ -41,7 +41,7 @@ extension WatchExperimentFeature {
         )
         state.authorization = nil
         state.canRetryPendingCancellation = !state.isReachable
-        state.message = nil
+        state.clearMessageUnlessInterruptionUnconfirmed()
         guard state.isReachable else {
             state.message = "취소 요청을 보관했어요. 연결 후 같은 요청의 결과를 확인해주세요."
             return .merge(
@@ -74,7 +74,7 @@ extension WatchExperimentFeature {
         state.pending?.responseID = pending.command.requestID
         state.pending?.phase = .delivering
         state.canRetryPendingCancellation = false
-        state.message = nil
+        state.clearMessageUnlessInterruptionUnconfirmed()
         return .concatenate(
             cancelPhotoRequestEffects(),
             .merge(send(pending.command), deliveryDeadline(pending.command.requestID))

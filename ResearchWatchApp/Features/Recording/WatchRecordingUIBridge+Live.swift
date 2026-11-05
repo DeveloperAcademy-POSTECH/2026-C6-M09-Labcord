@@ -20,6 +20,8 @@ final class WatchRecordingService {
     var records: [UUID: WatchRecordPresentation] = [:]
     var observers: [UUID: AsyncStream<WatchRecordPresentation>.Continuation] = [:]
     var captureTasks: [UUID: Task<Void, Never>] = [:]
+    private var voiceStartTasks: [UUID: Task<Void, Error>] = [:]
+    var invalidatedVoiceStarts: Set<UUID> = []
     var receiptTask: Task<Void, Never>?
     var backgroundReceiptTask: Task<Void, Never>?
     var recordTask: Task<Void, Never>?
@@ -72,6 +74,9 @@ final class WatchRecordingService {
     }
 
     func perform(_ input: WatchRecordingUIBridge.Input) async throws {
+        if case let .cancelActiveVoiceForPause(_, recordID?) = input {
+            invalidatedVoiceStarts.insert(recordID)
+        }
         activate()
         do {
             try await startup?.value
@@ -83,7 +88,7 @@ final class WatchRecordingService {
         }
         switch input {
         case let .startVoice(experimentID, recordID):
-            try await startVoice(experimentID: experimentID, recordID: recordID)
+            try await startVoiceUnlessCancelled(experimentID: experimentID, recordID: recordID)
         case let .stopVoice(experimentID, recordID):
             try await stopVoice(experimentID: experimentID, recordID: recordID)
         case let .retry(experimentID, recordID):
@@ -99,7 +104,83 @@ final class WatchRecordingService {
             _ = try await recorder.stopForExperiment(experimentID)
             try await restoreLocalRecords()
             Task { await transfer.recover() }
+        case let .cancelActiveVoiceForPause(experimentID, recordID):
+            try await cancelActiveVoiceForPause(experimentID, recordID: recordID)
         }
+    }
+
+    private func startVoiceUnlessCancelled(experimentID: UUID, recordID: UUID) async throws {
+        guard !invalidatedVoiceStarts.contains(recordID) else { return }
+        let task = Task { @MainActor in
+            guard !self.invalidatedVoiceStarts.contains(recordID) else { return }
+            try await self.startVoice(experimentID: experimentID, recordID: recordID)
+        }
+        voiceStartTasks[recordID] = task
+        defer { voiceStartTasks[recordID] = nil }
+        try await task.value
+    }
+
+    private func cancelActiveVoiceForPause(_ experimentID: UUID, recordID: UUID?) async throws {
+        if let active = recorder.activeRecording {
+            guard active.experimentID == experimentID,
+                  recordID == nil || active.recordingID == recordID else {
+                throw WatchAudioError.conflict
+            }
+            transfer.prepareCancellation(active)
+        }
+        if let recordID, let starting = voiceStartTasks[recordID] {
+            _ = try? await starting.value
+        }
+        if let active = recorder.activeRecording {
+            guard active.experimentID == experimentID,
+                  recordID == nil || active.recordingID == recordID else {
+                throw WatchAudioError.conflict
+            }
+            transfer.prepareCancellation(active)
+            captureTasks[active.recordingID]?.cancel()
+            captureTasks[active.recordingID] = nil
+            var record = records[active.recordingID] ?? WatchRecordPresentation(
+                id: active.recordingID, experimentID: experimentID, kind: .voice
+            )
+            record.phase = .saving
+            record.canAutoSave = false
+            record.detail = "녹음 취소를 확인하고 있어요."
+            publish(record)
+            await recorder.stop()
+            transfer.releaseCancellation(active)
+        }
+        let headers = try await archive.headers().filter {
+            $0.experimentID == experimentID && (recordID == nil || $0.recordingID == recordID)
+        }
+        try await prepareInactiveVoiceCancellation(recordID, headers: headers)
+        for header in headers where transfer.isCancellationPending(header) {
+            transfer.releaseCancellation(header)
+            _ = try await transfer.cancel(header)
+        }
+        if let recordID, !headers.contains(where: { $0.recordingID == recordID }) {
+            var record = records[recordID] ?? WatchRecordPresentation(
+                id: recordID, experimentID: experimentID, kind: .voice
+            )
+            guard record.experimentID == experimentID, !record.isSettled else { return }
+            record.phase = .cancelled
+            record.canAutoSave = false
+            record.detail = "녹음을 시작하기 전에 취소했어요."
+            publish(record)
+        }
+    }
+
+    private func prepareInactiveVoiceCancellation(
+        _ recordID: UUID?, headers: [WatchAudioHeader]
+    ) async throws {
+        // Only the explicitly selected in-flight record may acquire a new cancellation intent.
+        guard let recordID, let header = headers.first(where: { $0.recordingID == recordID }),
+              !transfer.isCancellationPending(header) else { return }
+        let status = try await archive.status(header)
+        guard status.savedRecordID == nil else { throw WatchAudioError.conflict }
+        guard !status.isCancelled else { return }
+        transfer.prepareCancellation(header)
+        captureTasks[recordID]?.cancel()
+        captureTasks[recordID] = nil
     }
 
     private func startVoice(experimentID: UUID, recordID: UUID) async throws {
@@ -113,6 +194,7 @@ final class WatchRecordingService {
         }
         captureTasks[recordID] = Task { [weak self] in
             for await event in events {
+                guard !Task.isCancelled else { break }
                 guard let self else { return }
                 self.capture(event, experimentID: experimentID, recordID: recordID)
             }
@@ -142,16 +224,20 @@ final class WatchRecordingService {
     }
 
     private func stopVoice(experimentID: UUID, recordID: UUID) async throws {
+        guard !invalidatedVoiceStarts.contains(recordID) else { return }
         if let active = recorder.activeRecording {
             guard active.experimentID == experimentID, active.recordingID == recordID else {
                 throw WatchAudioError.conflict
             }
             await recorder.stop()
         }
+        guard !invalidatedVoiceStarts.contains(recordID) else { return }
         guard let header = try await archive.headers().first(where: {
             $0.experimentID == experimentID && $0.recordingID == recordID
         }) else { throw WatchAudioError.incomplete }
+        guard !invalidatedVoiceStarts.contains(recordID) else { return }
         _ = try await archive.completeManifest(header)
+        guard !invalidatedVoiceStarts.contains(recordID) else { return }
         try await restoreLocalRecords()
         Task { await transfer.recover() }
     }
@@ -183,7 +269,7 @@ final class WatchRecordingService {
         var value = value
         if let previous = records[value.id] {
             guard previous.experimentID == value.experimentID, previous.kind == value.kind,
-                  !previous.isSettled else { return }
+                  !previous.isSettled || previous.canRecapture else { return }
             value.revision = previous.revision
             guard value != previous, previous.revision < UInt64.max else { return }
             value.revision += 1

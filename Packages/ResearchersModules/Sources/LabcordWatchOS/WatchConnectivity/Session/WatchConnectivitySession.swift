@@ -17,6 +17,7 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
     public let observerStore = WatchConnectivityObserverStore()
     public let experiments = WatchExperimentTransport()
     public let records = WatchRecordTransport()
+    @MainActor public private(set) var activationFailed = false
     private var audioReceiptObservers: [UUID: AsyncStream<WatchAudioReceipt>.Continuation] = [:]
     private var latestAudioReceipts: [UUID: WatchAudioReceipt] = [:]
 
@@ -34,7 +35,16 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         activationDidCompleteWith state: WCSessionActivationState,
         error: Error?
     ) {
-        Task { @MainActor in records.resend(session: session) }
+        let failed = error != nil
+        Task { @MainActor in
+            self.activationFailed = failed
+            if state == .activated { self.records.resend(session: session) }
+        }
+    }
+
+    @MainActor public func retryActivation() {
+        activationFailed = false
+        activate()
     }
 
     public func session(

@@ -45,6 +45,17 @@ struct WatchRecordPresentation: Equatable, Identifiable, Sendable {
 
     var isSettled: Bool { phase == .saved || phase == .cancelled || canRecapture }
 
+    static func isEmptyVoiceCapture(
+        local: WatchAudioReceipt, remote: WatchAudioReceipt?, hasActiveCapture: Bool
+    ) -> Bool {
+        guard !hasActiveCapture, local.receivedSequences.isEmpty, local.manifest == nil,
+              local.savedRecordID == nil, !local.isCancelled else { return false }
+        guard let remote else { return true }
+        return remote.receivedSequences.isEmpty && remote.manifest == nil
+            && remote.savedRecordID == nil && !remote.isReviewing
+            && !remote.isCancelled && remote.failure == nil
+    }
+
     func photoCountdownRemaining(at date: Date) -> Int? {
         guard kind == .photo, phase == .starting, let startedAt else { return nil }
         let remaining = max(0, min(5, 5 - date.timeIntervalSince(startedAt)))
@@ -60,6 +71,7 @@ struct WatchRecordingUIBridge: Sendable {
         case retry(experimentID: UUID, recordID: UUID)
         case reconcile
         case stopForExperiment(UUID)
+        case cancelActiveVoiceForPause(experimentID: UUID, recordID: UUID?)
     }
 
     var perform: @Sendable (Input) async throws -> Void

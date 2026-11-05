@@ -2,19 +2,35 @@ import ComposableArchitecture
 import Foundation
 import LabcordShared
 
+public enum WatchConnectionStatus: Equatable, Sendable {
+    case activating
+    case activationFailed
+    case unsupported
+    case unreachable
+    case reachable
+}
+
 public struct WatchExperimentClient: Sendable {
     public var send: @Sendable (WatchExperimentCommand) async throws -> WatchExperimentResponse
     public var snapshots: @Sendable () async -> AsyncStream<WatchExperimentSnapshot>
     public var isReachable: @Sendable () async -> Bool
+    public var connectionStatus: @Sendable () async -> WatchConnectionStatus
+    public var retryActivation: @Sendable () async -> Void
 
     public init(
         send: @escaping @Sendable (WatchExperimentCommand) async throws -> WatchExperimentResponse,
         snapshots: @escaping @Sendable () async -> AsyncStream<WatchExperimentSnapshot>,
-        isReachable: @escaping @Sendable () async -> Bool
+        isReachable: @escaping @Sendable () async -> Bool,
+        connectionStatus: (@Sendable () async -> WatchConnectionStatus)? = nil,
+        retryActivation: @escaping @Sendable () async -> Void = {}
     ) {
         self.send = send
         self.snapshots = snapshots
         self.isReachable = isReachable
+        self.connectionStatus = connectionStatus ?? {
+            await isReachable() ? .reachable : .unreachable
+        }
+        self.retryActivation = retryActivation
     }
 }
 
@@ -49,8 +65,26 @@ extension WatchExperimentClient: DependencyKey {
             isReachable: {
                 await connectivity.activate()
                 return await connectivity.session?.isReachable ?? false
+            },
+            connectionStatus: {
+                await connectionStatus(connectivity)
+            },
+            retryActivation: {
+                await connectivity.retryActivation()
             }
         )
+    }
+
+    @MainActor
+    private static func connectionStatus(
+        _ connectivity: WatchConnectivitySession
+    ) -> WatchConnectionStatus {
+        guard let session = connectivity.session else { return .unsupported }
+        if session.activationState == .activated {
+            return session.isReachable ? .reachable : .unreachable
+        }
+        if connectivity.activationFailed { return .activationFailed }
+        return .activating
     }
 
     @MainActor
