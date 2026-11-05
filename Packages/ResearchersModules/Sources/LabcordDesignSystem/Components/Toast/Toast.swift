@@ -56,6 +56,7 @@ public struct Toast: View {
     private let message: String
     private let type: ToastType
     private let appearance: ToastAppearance
+    private let fillsWidth: Bool
     private let showLeadingIcon: Bool
     private let showDismissButton: Bool
     private let showActionButton: Bool
@@ -70,6 +71,7 @@ public struct Toast: View {
         _ message: String,
         type: ToastType = .success,
         appearance: ToastAppearance = .default,
+        fillsWidth: Bool = false,
         showLeadingIcon: Bool = true,
         actionTitle: String = "다시시도",
         onAction: (() -> Void)? = nil,
@@ -79,6 +81,7 @@ public struct Toast: View {
             message: message,
             type: type,
             appearance: appearance,
+            fillsWidth: fillsWidth,
             showLeadingIcon: showLeadingIcon,
             showDismissButton: onDismiss != nil,
             showActionButton: onAction != nil,
@@ -92,6 +95,7 @@ public struct Toast: View {
         message: String,
         type: ToastType = .success,
         appearance: ToastAppearance = .default,
+        fillsWidth: Bool = false,
         showLeadingIcon: Bool = true,
         showDismissButton: Bool = true,
         showActionButton: Bool = true,
@@ -102,6 +106,7 @@ public struct Toast: View {
         self.message = message
         self.type = type
         self.appearance = appearance
+        self.fillsWidth = fillsWidth
         self.showLeadingIcon = showLeadingIcon
         self.showDismissButton = showDismissButton
         self.showActionButton = showActionButton
@@ -112,6 +117,7 @@ public struct Toast: View {
 
     public var body: some View {
         toastContent
+        .frame(maxWidth: fillsWidth ? .infinity : nil, alignment: .leading)
         .labcordMotion(.layout, value: [showLeadingIcon, showActionButton, showDismissButton])
         .padding(.horizontal, LayoutTokens.spacing16)
         .padding(.vertical, LayoutTokens.spacing16)

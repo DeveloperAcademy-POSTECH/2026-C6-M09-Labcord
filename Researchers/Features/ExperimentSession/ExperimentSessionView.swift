@@ -6,14 +6,17 @@
 //
 
 import ComposableArchitecture
+import LabcordDesignSystem
 import LabcordiOS
 import SwiftUI
 
 struct ExperimentSessionView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.scenePhase) private var scenePhase
     @State private var isSidePanelExpanded = true
     @State private var isGestureGuidePresented = false
+    @State private var voiceToast: VoiceToastPresentation?
 
     let store: StoreOf<ExperimentSessionFeature>
 
@@ -27,6 +30,12 @@ struct ExperimentSessionView: View {
 
     private var voiceStore: StoreOf<VoiceRecordingFeature> {
         store.scope(state: \.voice, action: \.voice)
+    }
+
+    private var isPortraitVoiceActivityVisible: Bool {
+        verticalSizeClass != .compact
+            && voiceStore.saveError == nil
+            && (voiceStore.phase != .hidden || voiceStore.hasRecordingFailure)
     }
 
     var body: some View {
@@ -78,6 +87,10 @@ struct ExperimentSessionView: View {
             .ignoresSafeArea()
         }
         .navigationBarBackButtonHidden()
+        .toolbarVisibility(
+            isPortraitVoiceActivityVisible ? .hidden : .automatic,
+            for: .statusBar
+        )
         .overlay {
             if let data = captureStore.capturedPhotoData {
                 CapturedPhotoView(
@@ -103,10 +116,38 @@ struct ExperimentSessionView: View {
             }
         }
         .overlay {
-            if voiceStore.phase != .hidden {
-                VoiceRecordingView(store: voiceStore)
+            if verticalSizeClass == .compact {
+                if voiceStore.phase != .hidden {
+                    VoiceRecordingView(store: voiceStore)
+                }
+            } else if isPortraitVoiceActivityVisible {
+                GeometryReader { geometry in
+                    PortraitVoiceLiveActivityView(
+                        store: voiceStore,
+                        onRestart: { store.send(.voiceStartRequested) },
+                        onFailureAutoDismiss: {
+                            voiceToast = VoiceToastPresentation(kind: .recordingFailure)
+                        },
+                        availableWidth: geometry.size.width
+                    )
+                    .padding(.top, 14)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                }
+                .ignoresSafeArea(.container, edges: .top)
+                .transition(.opacity)
             }
         }
+        .animation(
+            reduceMotion ? nil : .spring(duration: 0.3, bounce: 0.08),
+            value: isPortraitVoiceActivityVisible
+        )
+        .modifier(
+            VoiceRecordToastOverlay(
+                voiceStore: voiceStore,
+                sessionStore: store,
+                presentation: $voiceToast
+            )
+        )
         .overlay {
             if !store.isReady {
                 ExperimentSetupView()
@@ -182,7 +223,10 @@ struct ExperimentSessionView: View {
         .alert(
             "음성 기록 오류",
             isPresented: Binding(
-                get: { voiceStore.errorMessage != nil },
+                get: {
+                    voiceStore.errorMessage != nil
+                        && (verticalSizeClass == .compact || !voiceStore.hasRecordingFailure)
+                },
                 set: { if !$0 { voiceStore.send(.errorDismissed) } }
             )
         ) {
@@ -256,6 +300,7 @@ struct ExperimentSessionView: View {
             height: min(geometry.size.height, max(0, anchoredFrame.minY + previewOverlap))
         )
     }
+
 }
 
 private struct PauseOverlay: ViewModifier {

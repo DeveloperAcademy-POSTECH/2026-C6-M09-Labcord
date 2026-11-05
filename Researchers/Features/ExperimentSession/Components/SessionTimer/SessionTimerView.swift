@@ -89,9 +89,9 @@ struct SessionTimerView: View {
                 Button {
                     isTimerSetupPresented = true
                 } label: {
-                    Image(systemName: "plus")
-                        .foregroundStyle(.white)
+                    Image(labcordIcon: .plus)
                 }
+                .buttonStyle(.labcordIcon(.plain, size: .large))
             }
 
             if isFreeMode || selectedTab == .active {
@@ -224,12 +224,10 @@ struct SessionTimerView: View {
             Button {
                 isTimerSetupPresented = false
             } label: {
-                Image(systemName: "chevron.left")
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
+                Image(labcordIcon: .caretLeft)
+                    .foregroundStyle(Color("Experiment/Label/Secondary"))
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("타이머 목록으로 돌아가기")
+            .buttonStyle(.labcordIcon(.plain, size: .large))
 
             Text("타이머")
                 .typography(Typography.bodySemiBold)
