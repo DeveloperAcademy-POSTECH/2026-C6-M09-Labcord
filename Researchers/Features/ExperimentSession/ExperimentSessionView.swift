@@ -266,6 +266,7 @@ private struct PauseOverlay: ViewModifier {
             if store.isPausePresented {
                 ExperimentPauseView(
                     store: store.scope(state: \.pause, action: \.pause),
+                    timerStore: store.scope(state: \.timer, action: \.timer),
                     canCloseSession: store.canCloseSession
                 )
             }
