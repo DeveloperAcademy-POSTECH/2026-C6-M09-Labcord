@@ -1,5 +1,6 @@
 import AVFoundation
 import Foundation
+import OSLog
 import Speech
 
 private final class SpeechRecognitionInput: @unchecked Sendable {
@@ -219,13 +220,15 @@ public final class SpeechRecordingSession {
                 if !stopContinuations.isEmpty {
                     finishRecording(keepingFile: true)
                 } else {
+                    logRecognitionEndedEarly()
                     transcriptionIncomplete = true
                     eventContinuation?.yield(.transcriptionUnavailable)
                 }
                 return
             }
         }
-        if error != nil {
+        if let error {
+            logRecognitionError(error)
             recognitionEnded = true
             recognitionInput?.stop()
             transcriptionIncomplete = true
@@ -301,6 +304,19 @@ public final class SpeechRecordingSession {
 }
 
 private extension SpeechRecordingSession {
+    func logRecognitionEndedEarly() {
+        Logger(subsystem: "Labcord", category: "PhoneSpeech")
+            .warning("Speech recognition ended before recording stopped")
+    }
+
+    func logRecognitionError(_ error: Error) {
+        let underlying = error as NSError
+        let domain = underlying.domain
+        let code = underlying.code
+        Logger(subsystem: "Labcord", category: "PhoneSpeech")
+            .error("Speech recognition error: \(domain, privacy: .public) code=\(code)")
+    }
+
     func preservePartialFile(_ original: URL) -> URL {
         let directory = URL.applicationSupportDirectory
             .appending(path: "IncompleteVoiceRecordings")
