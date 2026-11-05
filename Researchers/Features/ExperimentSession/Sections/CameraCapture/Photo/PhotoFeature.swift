@@ -11,6 +11,12 @@ struct PhotoFeature {
         var capturedData: Data?
         var isGestureArmed = false
         var errorMessage: String?
+        let experimentID: UUID
+        var recordID: UUID?
+        var recordedAt: Date?
+        var isSaving = false
+        var saveError: String?
+        var countdownEndAt: Date?
     }
 
     enum Action: Equatable {
@@ -22,6 +28,11 @@ struct PhotoFeature {
         case captured(Data)
         case captureFailed(String)
         case retakeRequested
+        case saveRequested
+        case autoSaveElapsed(UUID)
+        case saved(UUID)
+        case saveFailed(UUID, String)
+        case saveErrorDismissed
         case errorDismissed
         case delegate(Delegate)
     }
@@ -32,12 +43,17 @@ struct PhotoFeature {
 
     private nonisolated enum CancelID: Hashable, Sendable {
         case captureDelay
+        case autoSave
     }
 
     @Dependency(\.cameraSessionClient) var cameraSessionClient
+    @Dependency(\.experimentClient) var experimentClient
+    @Dependency(\.date.now) var now
+    @Dependency(\.uuid) var uuid
 
     private func cancelScheduledCapture(in state: inout State) -> Effect<Action> {
         state.isScheduled = false
+        state.countdownEndAt = nil
         return .cancel(id: CancelID.captureDelay)
     }
 
@@ -58,6 +74,7 @@ struct PhotoFeature {
                       state.capturedData == nil, wasArmed,
                       detectedAt.timeIntervalSinceNow > -0.5 else { return .none }
                 state.isScheduled = true
+                state.countdownEndAt = now.addingTimeInterval(5)
                 return .run { send in
                     try await Task.sleep(for: .seconds(5))
                     await send(.delayElapsed)
@@ -97,7 +114,15 @@ struct PhotoFeature {
             case let .captured(data):
                 state.isCapturing = false
                 state.capturedData = data
-                return .none
+                let id = uuid()
+                state.recordID = id
+                state.recordedAt = now
+                state.saveError = nil
+                return .run { send in
+                    try await Task.sleep(for: .seconds(3))
+                    await send(.autoSaveElapsed(id))
+                }
+                .cancellable(id: CancelID.autoSave, cancelInFlight: true)
 
             case let .captureFailed(message):
                 state.isCapturing = false
@@ -105,8 +130,41 @@ struct PhotoFeature {
                 return .none
 
             case .retakeRequested:
+                guard !state.isSaving else { return .none }
                 state.capturedData = nil
-                return cancelScheduledCapture(in: &state)
+                state.recordID = nil
+                state.recordedAt = nil
+                state.saveError = nil
+                return .merge(
+                    cancelScheduledCapture(in: &state),
+                    .cancel(id: CancelID.autoSave)
+                )
+
+            case .saveRequested:
+                return savePhoto(state: &state)
+
+            case let .autoSaveElapsed(id):
+                guard state.recordID == id else { return .none }
+                return savePhoto(state: &state)
+
+            case let .saved(id):
+                guard state.recordID == id else { return .none }
+                state.isSaving = false
+                state.capturedData = nil
+                state.recordID = nil
+                state.recordedAt = nil
+                state.saveError = nil
+                return .none
+
+            case let .saveFailed(id, message):
+                guard state.recordID == id else { return .none }
+                state.isSaving = false
+                state.saveError = message
+                return .none
+
+            case .saveErrorDismissed:
+                state.saveError = nil
+                return .none
 
             case .errorDismissed:
                 state.errorMessage = nil
@@ -116,5 +174,26 @@ struct PhotoFeature {
                 return .none
             }
         }
+    }
+
+    private func savePhoto(state: inout State) -> Effect<Action> {
+        guard let id = state.recordID,
+              let recordedAt = state.recordedAt,
+              let data = state.capturedData,
+              !state.isSaving else { return .none }
+        state.isSaving = true
+        state.saveError = nil
+        let experimentID = state.experimentID
+        return .concatenate(
+            .cancel(id: CancelID.autoSave),
+            .run { send in
+                do {
+                    try await experimentClient.savePhoto(experimentID, id, recordedAt, data)
+                    await send(.saved(id))
+                } catch {
+                    await send(.saveFailed(id, error.localizedDescription))
+                }
+            }
+        )
     }
 }

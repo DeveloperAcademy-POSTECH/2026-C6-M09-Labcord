@@ -8,8 +8,13 @@ struct CameraCaptureFeature {
     @ObservableState
     struct State: Equatable {
         var camera = CameraFeature.State()
-        var photo = PhotoFeature.State()
-        var video = VideoFeature.State()
+        var photo: PhotoFeature.State
+        var video: VideoFeature.State
+
+        init(experimentID: UUID) {
+            self.photo = PhotoFeature.State(experimentID: experimentID)
+            self.video = VideoFeature.State(experimentID: experimentID)
+        }
 
         var isCameraViewVisible: Bool { camera.isViewVisible }
         var previewConnector: CameraPreviewConnector? { camera.previewConnector }
@@ -40,9 +45,7 @@ struct CameraCaptureFeature {
         case photoButtonTapped
         case videoButtonTapped
         case videoRecordRequested
-        case videoRetakeRequested
         case photoCaptureRequested
-        case retakeRequested
     }
 
     enum Delegate: Equatable {
@@ -156,9 +159,6 @@ struct CameraCaptureFeature {
                     .send(.video(.recordRequested))
                 )
 
-            case .videoRetakeRequested:
-                return .send(.video(.retakeRequested))
-
             case .photoCaptureRequested:
                 guard state.camera.isViewVisible,
                       state.camera.previewConnector != nil,
@@ -166,12 +166,9 @@ struct CameraCaptureFeature {
                       state.video.phase == .idle else { return .none }
                 return .send(.photo(.captureRequested))
 
-            case .retakeRequested:
-                return .send(.photo(.retakeRequested))
-
             case .photo(.captured):
-                if !state.camera.isViewVisible { state.photo.capturedData = nil }
-                return .none
+                guard !state.camera.isViewVisible else { return .none }
+                return .send(.photo(.retakeRequested))
 
             case .camera, .photo, .video, .delegate:
                 return .none

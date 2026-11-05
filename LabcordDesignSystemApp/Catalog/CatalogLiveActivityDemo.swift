@@ -1,0 +1,97 @@
+import LabcordDesignSystem
+import SwiftUI
+
+@MainActor
+@Observable
+final class CatalogLiveActivityDemo {
+    var isPresented = false
+    var isExpanded = false
+    var state: LiveActivityContent.State = .audioRecording(transcript: "실험 내용을 기록하고 있어요.")
+    var isVideoStopComplete = false
+    var placement: LiveActivityPlacement?
+
+    private var transitionTask: Task<Void, Never>?
+    private var isDismissing = false
+    var devicePlacement: LiveActivityPlacement? {
+        LiveActivityPlacement.forDevice(identifier: Self.modelIdentifier)
+    }
+
+    func show(state: LiveActivityContent.State, isVideoStopComplete: Bool) {
+        guard let devicePlacement else { return }
+        transitionTask?.cancel()
+        isDismissing = false
+        self.state = state
+        self.isVideoStopComplete = isVideoStopComplete
+        placement = devicePlacement
+        isExpanded = false
+        isPresented = true
+        transitionTask = Task {
+            try? await Task.sleep(for: .milliseconds(180))
+            guard !Task.isCancelled else { return }
+            isExpanded = true
+        }
+    }
+
+    func dismiss() {
+        guard isPresented, !isDismissing else { return }
+        isDismissing = true
+        transitionTask?.cancel()
+        isExpanded = false
+        transitionTask = Task {
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
+            isPresented = false
+            isDismissing = false
+        }
+    }
+
+    private static var modelIdentifier: String {
+        if let simulator = ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] {
+            return simulator
+        }
+        var info = utsname()
+        uname(&info)
+        return withUnsafePointer(to: &info.machine) {
+            $0.withMemoryRebound(to: CChar.self, capacity: 1) { String(cString: $0) }
+        }
+    }
+}
+
+extension EnvironmentValues {
+    @Entry var catalogLiveActivityDemo: CatalogLiveActivityDemo?
+}
+
+struct CatalogRootView: View {
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var liveActivityDemo = CatalogLiveActivityDemo()
+
+    var body: some View {
+        NavigationStack {
+            DesignSystemCatalog()
+        }
+        .toolbarVisibility(
+            liveActivityDemo.isPresented && liveActivityDemo.placement != nil
+                && verticalSizeClass != .compact ? .hidden : .automatic,
+            for: .statusBar
+        )
+        .animation(
+            reduceMotion ? nil : .easeInOut(duration: 0.3),
+            value: liveActivityDemo.isPresented
+        )
+        .environment(\.catalogLiveActivityDemo, liveActivityDemo)
+        .liveActivityOverlay(
+            placement: liveActivityDemo.placement,
+            isPresented: liveActivityDemo.isPresented,
+            isExpanded: liveActivityDemo.isExpanded,
+            onDismiss: liveActivityDemo.dismiss
+        ) {
+            LiveActivityContent(
+                state: liveActivityDemo.state,
+                isVideoStopComplete: liveActivityDemo.isVideoStopComplete,
+                onStop: { liveActivityDemo.dismiss() },
+                onRetry: { liveActivityDemo.dismiss() }
+            )
+        }
+    }
+}

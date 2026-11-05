@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import LabcordDesignSystem
 import SwiftUI
 
 struct HomeView: View {
@@ -6,21 +7,35 @@ struct HomeView: View {
 
     var body: some View {
         ExperimentList(store: store.scope(state: \.list, action: \.list))
-            .navigationTitle("실험")
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("설정", systemImage: "gearshape") {
-                        store.send(.settingsTapped)
+            .padding(.top, 54)
+            .padding(.horizontal, 16)
+            .overlay(alignment: .bottomTrailing) {
+                VStack(spacing: LayoutTokens.spacing12) {
+                    Button {
+                        // 가이드 화면 이동 구현
+                    } label: {
+                        Image(labcordIcon: .questionmark)
                     }
-                    .accessibilityIdentifier("entry-settings")
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("새 실험 추가", systemImage: "plus") {
+                    .buttonStyle(
+                        .labcordIcon(.neutral, size: .large, isLoading: false)
+                    )
+
+                    Button {
                         store.send(.addTapped)
+                    } label: {
+                        Image(labcordIcon: .plus)
                     }
-                    .accessibilityIdentifier("entry-add")
+                    .buttonStyle(
+                        .labcordIcon(.primary, size: .large, isLoading: false)
+                    )
                 }
+                .padding(.trailing, 20)
+                .padding(.bottom, 17)
             }
+            .background(
+                Color("General/Background/Primary")
+                    .ignoresSafeArea()
+            )
     }
 }
 

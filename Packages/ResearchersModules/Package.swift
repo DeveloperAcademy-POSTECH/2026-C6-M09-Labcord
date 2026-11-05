@@ -1,14 +1,11 @@
 // swift-tools-version: 6.4
-// The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
 
 let package = Package(
     name: "labcord-package-swift",
-    platforms: [.iOS(.v26), .watchOS(.v26)],
+    platforms: [.iOS(.v27), .watchOS(.v26)],
     products: [
-        // Products define the executables and libraries a package produces,
-        // making them visible to other packages.
         .library(
             name: "LabcordKit",
             targets: ["LabcordShared", "LabcordDesignSystem"]
@@ -30,11 +27,13 @@ let package = Package(
         .package(
             url: "https://github.com/devicekit/DeviceKit",
             from: "5.9.0"
+        ),
+        .package(
+            url: "https://github.com/hellosunghyun/swift-omni-parser",
+            revision: "8403c2fc45dfa6ab946ef31bed1a509e6e35f412"
         )
     ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
         .target(
             name: "LabcordShared",
             dependencies: [
@@ -46,14 +45,21 @@ let package = Package(
         ),
         .target(
             name: "LabcordDesignSystem",
+            dependencies: ["LabcordShared"],
             resources: [.process("Recources")]
         ),
         .target(
             name: "LabcordiOS",
             dependencies: [
                 "LabcordShared",
-                .product(name: "ComposableArchitecture", package: "swift-composable-architecture")
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+                .product(
+                    name: "OmniParser",
+                    package: "swift-omni-parser",
+                    condition: .when(platforms: [.iOS])
+                )
             ],
+            resources: [.copy("Resources/ProtocolTermModel")],
             swiftSettings: [
                 .defaultIsolation(MainActor.self),
                 .swiftLanguageMode(.v5)

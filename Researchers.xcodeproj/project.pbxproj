@@ -7,13 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		8E1069BA308A776B00BF375F /* LabcordKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8E1069B9308A776B00BF375F /* LabcordKit */; };
 		8E1069BC308A7AAD00BF375F /* LabcordKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8E1069BB308A7AAD00BF375F /* LabcordKit */; };
 		8E2E27333084877E0043EEB3 /* ResearchWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8E98D1AD30884D1500E68666 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 8E98D1AC30884D1500E68666 /* ComposableArchitecture */; };
 		8E98D1AF30884D4F00E68666 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 8E98D1AE30884D4F00E68666 /* ComposableArchitecture */; };
 		A10C00103000000000000001 /* LabcordiOS in Frameworks */ = {isa = PBXBuildFile; productRef = A10C00103000000000000002 /* LabcordiOS */; };
 		A10C00103000000000000003 /* LabcordWatchOS in Frameworks */ = {isa = PBXBuildFile; productRef = A10C00103000000000000004 /* LabcordWatchOS */; };
+		D5C00000000000000000000B /* LabcordKit in Frameworks */ = {isa = PBXBuildFile; productRef = D5C00000000000000000000A /* LabcordKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -41,17 +41,36 @@
 /* Begin PBXFileReference section */
 		8E0691153080743D0081547E /* Researchers.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Researchers.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ResearchWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		D5C000000000000000000002 /* LabcordDesignSystemApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LabcordDesignSystemApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		BA1300013000000000000001 /* Exceptions for "Researchers" folder in "Researchers" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 8E0691143080743D0081547E /* Researchers */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		8E0691173080743D0081547E /* Researchers */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				BA1300013000000000000001 /* Exceptions for "Researchers" folder in "Researchers" target */,
+			);
 			path = Researchers;
 			sourceTree = "<group>";
 		};
 		8E2E272A3084877E0043EEB3 /* ResearchWatchApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = ResearchWatchApp;
+			sourceTree = "<group>";
+		};
+		D5C000000000000000000003 /* LabcordDesignSystemApp */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = LabcordDesignSystemApp;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -69,8 +88,13 @@
 			isa = PBXFrameworksBuildPhase;
 			files = (
 				8E98D1AF30884D4F00E68666 /* ComposableArchitecture in Frameworks */,
-				8E1069BA308A776B00BF375F /* LabcordKit in Frameworks */,
 				A10C00103000000000000003 /* LabcordWatchOS in Frameworks */,
+			);
+		};
+		D5C000000000000000000005 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+				D5C00000000000000000000B /* LabcordKit in Frameworks */,
 			);
 		};
 /* End PBXFrameworksBuildPhase section */
@@ -81,6 +105,7 @@
 			children = (
 				8E0691173080743D0081547E /* Researchers */,
 				8E2E272A3084877E0043EEB3 /* ResearchWatchApp */,
+				D5C000000000000000000003 /* LabcordDesignSystemApp */,
 				8E98D1AB30884D1500E68666 /* Frameworks */,
 				8E0691163080743D0081547E /* Products */,
 			);
@@ -91,6 +116,7 @@
 			children = (
 				8E0691153080743D0081547E /* Researchers.app */,
 				8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */,
+				D5C000000000000000000002 /* LabcordDesignSystemApp.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -148,11 +174,31 @@
 			name = "ResearchWatch Watch App";
 			packageProductDependencies = (
 				8E98D1AE30884D4F00E68666 /* ComposableArchitecture */,
-				8E1069B9308A776B00BF375F /* LabcordKit */,
 				A10C00103000000000000004 /* LabcordWatchOS */,
 			);
 			productName = "ResearchWatch Watch App";
 			productReference = 8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */;
+			productType = "com.apple.product-type.application";
+		};
+		D5C000000000000000000001 /* LabcordDesignSystemApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D5C000000000000000000007 /* Build configuration list for PBXNativeTarget "LabcordDesignSystemApp" */;
+			buildPhases = (
+				D5C000000000000000000004 /* Sources */,
+				D5C000000000000000000005 /* Frameworks */,
+				D5C000000000000000000006 /* Resources */,
+			);
+			buildRules = (
+			);
+			fileSystemSynchronizedGroups = (
+				D5C000000000000000000003 /* LabcordDesignSystemApp */,
+			);
+			name = LabcordDesignSystemApp;
+			packageProductDependencies = (
+				D5C00000000000000000000A /* LabcordKit */,
+			);
+			productName = LabcordDesignSystemApp;
+			productReference = D5C000000000000000000002 /* LabcordDesignSystemApp.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -169,6 +215,9 @@
 						CreatedOnToolsVersion = 27.0;
 					};
 					8E2E27283084877E0043EEB3 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					D5C000000000000000000001 = {
 						CreatedOnToolsVersion = 27.0;
 					};
 				};
@@ -193,6 +242,7 @@
 			targets = (
 				8E0691143080743D0081547E /* Researchers */,
 				8E2E27283084877E0043EEB3 /* ResearchWatch Watch App */,
+				D5C000000000000000000001 /* LabcordDesignSystemApp */,
 			);
 		};
 /* End PBXProject section */
@@ -208,6 +258,11 @@
 			files = (
 			);
 		};
+		D5C000000000000000000006 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -217,6 +272,11 @@
 			);
 		};
 		8E2E27253084877E0043EEB3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
+		D5C000000000000000000004 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			files = (
 			);
@@ -356,15 +416,17 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = LabcordIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = HJGS4LQ7XH;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Researchers/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Labcord;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				INFOPLIST_KEY_NSCameraUsageDescription = "실험 중 장면을 촬영하고 기록하기 위해 카메라 접근이 필요합니다.";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "실험 중 음성을 녹음하고 기록하기 위해 마이크 접근이 필요합니다.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "실험 중 사진과 영상을 촬영하여 기록으로 남기기 위해 카메라 접근이 필요합니다.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "실험 중 음성을 녹음하여 기록으로 남기기 위해 마이크 접근이 필요합니다.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "실험 중 녹음한 음성을 글자로 표시하기 위해 음성 인식 접근이 필요합니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -378,6 +440,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.researchers.Researchers;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -397,15 +460,17 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = LabcordIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = HJGS4LQ7XH;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Researchers/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Labcord;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				INFOPLIST_KEY_NSCameraUsageDescription = "실험 중 장면을 촬영하고 기록하기 위해 카메라 접근이 필요합니다.";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "실험 중 음성을 녹음하고 기록하기 위해 마이크 접근이 필요합니다.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "실험 중 사진과 영상을 촬영하여 기록으로 남기기 위해 카메라 접근이 필요합니다.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "실험 중 음성을 녹음하여 기록으로 남기기 위해 마이크 접근이 필요합니다.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "실험 중 녹음한 음성을 글자로 표시하기 위해 음성 인식 접근이 필요합니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -419,6 +484,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.researchers.Researchers;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -439,8 +505,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = LabcordIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
-				DEVELOPMENT_TEAM = HJGS4LQ7XH;
+				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Labcord;
@@ -473,8 +539,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = LabcordIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
-				DEVELOPMENT_TEAM = HJGS4LQ7XH;
+				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Labcord;
@@ -498,6 +564,72 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
 				WATCHOS_DEPLOYMENT_TARGET = 27.0;
+			};
+			name = Release;
+		};
+		D5C000000000000000000008 /* Debug configuration for PBXNativeTarget "LabcordDesignSystemApp" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "LabCord Design System";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.researchers.Researchers.designsystem;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D5C000000000000000000009 /* Release configuration for PBXNativeTarget "LabcordDesignSystemApp" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "LabCord Design System";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.researchers.Researchers.designsystem;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -528,6 +660,14 @@
 			);
 			defaultConfigurationName = Release;
 		};
+		D5C000000000000000000007 /* Build configuration list for PBXNativeTarget "LabcordDesignSystemApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D5C000000000000000000008 /* Debug configuration for PBXNativeTarget "LabcordDesignSystemApp" */,
+				D5C000000000000000000009 /* Release configuration for PBXNativeTarget "LabcordDesignSystemApp" */,
+			);
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -549,11 +689,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		8E1069B9308A776B00BF375F /* LabcordKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */;
-			productName = LabcordKit;
-		};
 		8E1069BB308A7AAD00BF375F /* LabcordKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */;
@@ -578,6 +713,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */;
 			productName = LabcordWatchOS;
+		};
+		D5C00000000000000000000A /* LabcordKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */;
+			productName = LabcordKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

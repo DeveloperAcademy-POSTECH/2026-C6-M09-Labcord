@@ -1,3 +1,4 @@
+import LabcordDesignSystem
 import LabcordiOS
 import SwiftUI
 
@@ -8,50 +9,61 @@ struct ExperimentListItem: View {
     var body: some View {
         Button(action: onSelect) {
             HStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: LayoutTokens.spacing4) {
                     Text(entry.title)
-                        .font(.body)
+                        .typography(Typography.body)
+                        .foregroundStyle(Color("General/Label/Primary"))
                         .lineLimit(1)
 
-                    Text(Self.dateFormatter.string(from: entry.createdAt))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    HStack(spacing: LayoutTokens.spacing10) {
+                        Text(Self.dateFormatter.string(from: entry.createdAt))
+                            .typography(Typography.subheadline)
+                            .foregroundStyle(Color("General/Label/Tertiary"))
+
+                        if let endsAt = entry.lastRunningTimerEndsAt {
+                            TimelineView(.periodic(from: .now, by: 1)) { context in
+                                if context.date < endsAt {
+                                    HStack(spacing: LayoutTokens.spacing4) {
+                                        Image(labcordIcon: .dot)
+                                            .resizable()
+                                            .frame(width: 16, height: 16)
+
+                                        Text("타이머 진행 중")
+                                            .typography(Typography.subheadline)
+                                    }
+                                    .foregroundStyle(Color("General/Timer/Identity/04"))
+                                }
+                            }
+                        }
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                Text(entry.statusTitle)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: true, vertical: false)
-
-                Image(systemName: "chevron.right")
-                    .foregroundStyle(.secondary)
-                    .accessibilityHidden(true)
+                Image(labcordIcon: .caretRight)
+                    .resizable()
+                    .foregroundStyle(Color("General/Label/Tertiary"))
+                    .frame(width: 16, height: 16)
+                    .padding(LayoutTokens.spacing8)
             }
+            .padding(LayoutTokens.spacing8)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("experiment-row-\(entry.id.uuidString)")
-        .accessibilityElement(children: .combine)
+        .background(Color("General/Background/Primary"))
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(Color("General/Border/Default"))
+                .frame(height: 0.5)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        }
     }
 
     private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ko_KR")
         formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = TimeZone(identifier: "Asia/Seoul")
         formatter.dateFormat = "yyyy.MM.dd"
         return formatter
     }()
-}
-
-extension ExperimentListEntry {
-    var statusTitle: String {
-        switch status {
-        case .preparing: "준비"
-        case .inProgress: "진행 중"
-        case .paused: "일시 정지"
-        case .completed: "종료"
-        }
-    }
-
 }
