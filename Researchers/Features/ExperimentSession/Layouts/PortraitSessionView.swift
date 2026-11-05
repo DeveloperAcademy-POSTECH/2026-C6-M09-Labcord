@@ -99,5 +99,5 @@ struct PortraitSessionView: View {
         ) {
             ExperimentSessionFeature()
         }
-    )        {}
+    ) {}
 }

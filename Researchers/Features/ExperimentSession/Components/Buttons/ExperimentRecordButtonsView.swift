@@ -18,7 +18,7 @@ struct ExperimentRecordButtonsView: View {
             RecordButton(
                 type: .audio,
                 state: isDisabled ? .disabled : .default
-            )                { store.send(.voiceButtonTapped) }
+            ) { store.send(.voiceButtonTapped) }
             .background(
                 VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
             )
@@ -27,7 +27,7 @@ struct ExperimentRecordButtonsView: View {
             RecordButton(
                 type: .capture,
                 state: isDisabled ? .disabled : .default
-            )                { store.send(.photoButtonTapped) }
+            ) { store.send(.photoButtonTapped) }
             .background(
                 VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
             )
@@ -36,7 +36,7 @@ struct ExperimentRecordButtonsView: View {
             RecordButton(
                 type: .video,
                 state: isDisabled ? .disabled : .default
-            )                { store.send(.videoButtonTapped) }
+            ) { store.send(.videoButtonTapped) }
             .background(
                 VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
             )

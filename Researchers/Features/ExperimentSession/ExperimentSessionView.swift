@@ -52,7 +52,7 @@ struct ExperimentSessionView: View {
                     store: captureStore,
                     timerStore: timerStore,
                     sessionStore: store
-                )                    { isGestureGuidePresented = true }
+                ) { isGestureGuidePresented = true }
             }
         }
         .backgroundPreferenceValue(CameraPreviewAnchorKey.self) { anchor in
