@@ -114,6 +114,7 @@ struct ExperimentSessionView: View {
                     }
             }
         }
+        .modifier(PauseOverlay(store: store))
         .task {
             await store.send(.loadDetail).finish()
         }
@@ -241,6 +242,18 @@ struct ExperimentSessionView: View {
             }
         } message: {
             Text("실험 상태를 저장하지 못했습니다.")
+        }
+    }
+}
+
+private struct PauseOverlay: ViewModifier {
+    let store: StoreOf<ExperimentSessionFeature>
+
+    func body(content: Content) -> some View {
+        content.overlay {
+            if store.isPausePresented {
+                PauseView(store: store)
+            }
         }
     }
 }
