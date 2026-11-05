@@ -48,7 +48,7 @@ struct PortraitSessionView: View {
                         Spacer()
                     }
                     .frame(maxWidth: .infinity)
-                    
+
                     VStack(spacing: 16) {
                         ExperimentSettingButtonsView(
                             onShowGestureGuide: onShowGestureGuide,
@@ -63,7 +63,7 @@ struct PortraitSessionView: View {
                                 && timerStore.timerCollection.hasRunningTimers,
                             canSwitchCamera: store.canSwitchCamera
                         )
-                        
+
                         ExperimentSidePanel(
                             layout: .portrait,
                             isExpanded: $isSidePanelExpanded
@@ -98,7 +98,6 @@ struct PortraitSessionView: View {
             initialState: ExperimentSessionFeature.State(experimentID: UUID())
         ) {
             ExperimentSessionFeature()
-        },
-        onShowGestureGuide: {}
-    )
+        }
+    )        {}
 }

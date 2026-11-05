@@ -5,8 +5,8 @@
 //  Created by 정홍섭 on 10/24/26.
 //
 
-import SwiftUI
 import LabcordDesignSystem
+import SwiftUI
 
 struct ExperimentSetupView: View {
     var body: some View {

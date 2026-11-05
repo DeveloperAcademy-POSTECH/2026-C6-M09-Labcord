@@ -12,7 +12,7 @@ private struct GestureGuide: Identifiable {
     let imageName: String
     let title: String
     let description: String
-    
+
     var id: String { imageName }
 }
 
@@ -20,14 +20,14 @@ struct ExperimentGestureGuideView: View {
     @State private var selectedGestureTab: TimerTabs.Selection = .set
 
     let onClose: () -> Void
-    
+
     private var selectedGestures: [GestureGuide] {
         switch selectedGestureTab {
         case .set: iPhoneGestures
         case .running: appleWatchGestures
         }
     }
-    
+
     private let iPhoneGestures = [
         GestureGuide(
             imageName: "gesture_iphone_audio",
@@ -45,7 +45,7 @@ struct ExperimentGestureGuideView: View {
             description: "손가락 세 개 펴기"
         )
     ]
-    
+
     private let appleWatchGestures = [
         GestureGuide(
             imageName: "gesture_watch_audio",
@@ -63,7 +63,7 @@ struct ExperimentGestureGuideView: View {
             description: "주먹 빠르게 두 번 쥐기"
         )
     ]
-    
+
     var body: some View {
         ZStack(alignment: .top) {
             Color("Experiment/Overlay/Scrim", bundle: LabcordDesignSystemResources.bundle)
@@ -71,17 +71,17 @@ struct ExperimentGestureGuideView: View {
                     VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
                 )
                 .ignoresSafeArea()
-            
+
             GeometryReader { geometry in
                 let isCompactHeight = geometry.size.height < 700
-                
+
                 VStack(spacing: 0) {
                     NavigationPageTitle(
                         "실험 기록",
                         foregroundColor: Color("Experiment/Label/Primary"),
                         onBack: onClose
                     )
-                    
+
                     VStack(spacing: 0) {
                         Text("제스처로 음성 녹음, 사진, 영상을\n빠르게 기록하세요")
                             .padding(.top, isCompactHeight ? 20 : 55)
@@ -89,7 +89,7 @@ struct ExperimentGestureGuideView: View {
                             .multilineTextAlignment(.center)
                             .typography(Typography.body)
                             .foregroundStyle(Color("Experiment/Label/Primary"))
-                        
+
                         VStack(alignment: .center, spacing: 20) {
                             TimerTabs(
                                 selection: $selectedGestureTab,
@@ -97,7 +97,7 @@ struct ExperimentGestureGuideView: View {
                                 leftTitle: "iPhone 제스처",
                                 rightTitle: "Apple Watch 제스처"
                             )
-                            
+
                             VStack(alignment: .center, spacing: 12) {
                                 ForEach(selectedGestures) { gesture in
                                     GestureGuideItem(
@@ -122,5 +122,5 @@ struct ExperimentGestureGuideView: View {
 }
 
 #Preview {
-    ExperimentGestureGuideView(onClose: {})
+    ExperimentGestureGuideView {}
 }

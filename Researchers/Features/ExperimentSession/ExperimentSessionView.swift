@@ -51,9 +51,8 @@ struct ExperimentSessionView: View {
                     isSidePanelExpanded: $isSidePanelExpanded,
                     store: captureStore,
                     timerStore: timerStore,
-                    sessionStore: store,
-                    onShowGestureGuide: { isGestureGuidePresented = true }
-                )
+                    sessionStore: store
+                )                    { isGestureGuidePresented = true }
             }
         }
         .backgroundPreferenceValue(CameraPreviewAnchorKey.self) { anchor in

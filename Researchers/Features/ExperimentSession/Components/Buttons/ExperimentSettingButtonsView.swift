@@ -5,8 +5,8 @@
 //  Created by 정홍섭 on 11/6/26.
 //
 
-import SwiftUI
 import LabcordDesignSystem
+import SwiftUI
 
 struct ExperimentSettingButtonsView: View {
     let onShowGestureGuide: () -> Void
@@ -25,9 +25,9 @@ struct ExperimentSettingButtonsView: View {
                 VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
             )
             .cornerRadius(LayoutTokens.radiusFull)
-            
+
             Spacer()
-            
+
             HStack(spacing: 20) {
                 if showsRunningTimerButton {
                     TimerControlButton(state: .running, action: onShowRunningTimers)
@@ -36,7 +36,7 @@ struct ExperimentSettingButtonsView: View {
                         )
                         .cornerRadius(LayoutTokens.radiusFull)
                 }
-                
+
                 ExperimentControlButton(
                     state: canSwitchCamera ? .default : .disabled,
                     action: onSwitchCamera
@@ -48,7 +48,7 @@ struct ExperimentSettingButtonsView: View {
                     VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
                 )
                 .cornerRadius(LayoutTokens.radiusFull)
-                
+
                 ExperimentControlButton(action: {}) {
                     Image(labcordIcon: .rectanglePortraitRotate)
                 }
