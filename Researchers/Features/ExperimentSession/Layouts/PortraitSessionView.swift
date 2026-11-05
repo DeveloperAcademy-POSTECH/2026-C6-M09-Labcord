@@ -15,6 +15,7 @@ struct PortraitSessionView: View {
     let store: StoreOf<CameraCaptureFeature>
     let timerStore: StoreOf<SessionTimerFeature>
     let sessionStore: StoreOf<ExperimentSessionFeature>
+    let onShowGestureGuide: () -> Void
 
     var body: some View {
         GeometryReader { _ in
@@ -30,10 +31,13 @@ struct PortraitSessionView: View {
                         Spacer()
                     }
                     .frame(maxWidth: .infinity)
-                    .anchorPreference(key: CameraPreviewAnchorKey.self, value: .bounds) { $0 }
                     
                     VStack(spacing: 16) {
-                        ExperimentSettingButtonsView()
+                        ExperimentSettingButtonsView(
+                            onShowGestureGuide: onShowGestureGuide,
+                            onSwitchCamera: { store.send(.cameraSwitchRequested) },
+                            canSwitchCamera: store.canSwitchCamera
+                        )
                         
                         ExperimentSidePanel(
                             layout: .portrait,
@@ -41,6 +45,7 @@ struct PortraitSessionView: View {
                         )
                         .ignoresSafeArea()
                         .frame(height: isSidePanelExpanded ? 398 : 83)
+                        .anchorPreference(key: CameraPreviewAnchorKey.self, value: .bounds) { $0 }
                     }
                 }
             }
@@ -66,6 +71,7 @@ struct PortraitSessionView: View {
             initialState: ExperimentSessionFeature.State(experimentID: UUID())
         ) {
             ExperimentSessionFeature()
-        }
+        },
+        onShowGestureGuide: {}
     )
 }

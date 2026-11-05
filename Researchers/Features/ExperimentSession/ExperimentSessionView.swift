@@ -13,6 +13,7 @@ struct ExperimentSessionView: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.scenePhase) private var scenePhase
     @State private var isSidePanelExpanded = true
+    @State private var isGestureGuidePresented = false
 
     let store: StoreOf<ExperimentSessionFeature>
 
@@ -41,7 +42,8 @@ struct ExperimentSessionView: View {
                     isSidePanelExpanded: $isSidePanelExpanded,
                     store: captureStore,
                     timerStore: timerStore,
-                    sessionStore: store
+                    sessionStore: store,
+                    onShowGestureGuide: { isGestureGuidePresented = true }
                 )
             }
         }
@@ -116,6 +118,13 @@ struct ExperimentSessionView: View {
             }
         }
         .modifier(PauseOverlay(store: store))
+        .overlay {
+            if isGestureGuidePresented {
+                ExperimentGestureGuideView {
+                    isGestureGuidePresented = false
+                }
+            }
+        }
         .task {
             await store.send(.loadDetail).finish()
         }
@@ -244,7 +253,7 @@ struct ExperimentSessionView: View {
             x: 0,
             y: 0,
             width: geometry.size.width,
-            height: min(geometry.size.height, max(0, anchoredFrame.maxY + previewOverlap))
+            height: min(geometry.size.height, max(0, anchoredFrame.minY + previewOverlap))
         )
     }
 }

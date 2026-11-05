@@ -9,11 +9,16 @@ import SwiftUI
 import LabcordDesignSystem
 
 struct ExperimentSettingButtonsView: View {
+    let onShowGestureGuide: () -> Void
+    let onSwitchCamera: () -> Void
+    let canSwitchCamera: Bool
+
     var body: some View {
         HStack {
-            ExperimentControlButton(action: {}) {
+            ExperimentControlButton(action: onShowGestureGuide) {
                 Image(labcordIcon: .questionmark)
             }
+            .accessibilityLabel("제스처 안내")
             .background(
                 VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
             )
@@ -31,9 +36,13 @@ struct ExperimentSettingButtonsView: View {
                 )
                 .cornerRadius(LayoutTokens.radiusFull)
                 
-                ExperimentControlButton(action: {}) {
+                ExperimentControlButton(
+                    state: canSwitchCamera ? .default : .disabled,
+                    action: onSwitchCamera
+                ) {
                     Image(labcordIcon: .arrowsCounterClockwise)
                 }
+                .accessibilityLabel("카메라 전환")
                 .background(
                     VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
                 )
@@ -53,6 +62,10 @@ struct ExperimentSettingButtonsView: View {
 }
 
 #Preview {
-    ExperimentSettingButtonsView()
+    ExperimentSettingButtonsView(
+        onShowGestureGuide: {},
+        onSwitchCamera: {},
+        canSwitchCamera: true
+    )
         .background(.black)
 }

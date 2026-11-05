@@ -18,6 +18,8 @@ private struct GestureGuide: Identifiable {
 
 struct ExperimentGestureGuideView: View {
     @State private var selectedGestureTab: TimerTabs.Selection = .set
+
+    let onClose: () -> Void
     
     private var selectedGestures: [GestureGuide] {
         switch selectedGestureTab {
@@ -76,10 +78,9 @@ struct ExperimentGestureGuideView: View {
                 VStack(spacing: 0) {
                     NavigationPageTitle(
                         "실험 기록",
-                        foregroundColor: Color("Experiment/Label/Primary")
-                    ) {
-                        // 오버레이 닫기 구현
-                    }
+                        foregroundColor: Color("Experiment/Label/Primary"),
+                        onBack: onClose
+                    )
                     
                     VStack(spacing: 0) {
                         Text("제스처로 음성 녹음, 사진, 영상을\n빠르게 기록하세요")
@@ -121,5 +122,5 @@ struct ExperimentGestureGuideView: View {
 }
 
 #Preview {
-    ExperimentGestureGuideView()
+    ExperimentGestureGuideView(onClose: {})
 }
