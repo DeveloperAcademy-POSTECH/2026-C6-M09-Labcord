@@ -1,24 +1,18 @@
-//
-//  ContentView.swift
-//  ResearchWatch Watch App
-//
-//  Created by 정홍섭 on 10/18/26.
-//
-
+import ComposableArchitecture
 import SwiftUI
 
 struct ContentView: View {
-    var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
-    }
-}
+    let store: StoreOf<WatchExperimentFeature>
+    @Environment(\.scenePhase) private var scenePhase
 
-#Preview {
-    ContentView()
+    var body: some View {
+        NavigationStack {
+            WatchExperimentView(store: store)
+        }
+        .task { store.send(.appeared) }
+        .onChange(of: scenePhase) { _, phase in
+            store.send(phase == .active ? .appeared : .inactive)
+        }
+        .onDisappear { store.send(.inactive) }
+    }
 }
