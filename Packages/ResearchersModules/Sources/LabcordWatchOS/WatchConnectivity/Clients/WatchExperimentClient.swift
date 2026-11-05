@@ -24,9 +24,17 @@ extension WatchExperimentClient: DependencyKey {
         return Self(
             send: { command in
                 await connectivity.activate()
-                return try await connectivity.experiments.send(
+                let response = try await connectivity.experiments.send(
                     command, session: connectivity.session
                 )
+                if let record = response.record {
+                    guard record.experimentID == command.experimentID else {
+                        throw WatchExperimentError.invalidPayload
+                    }
+                    let data = try JSONEncoder().encode(record)
+                    await connectivity.records.receive(data)
+                }
+                return response
             },
             snapshots: {
                 await connectivity.activate()
