@@ -125,34 +125,13 @@ struct SessionTimerView: View {
                                 timerItems.dropFirst(start).prefix(itemsPerPage)
                             )
 
-                            LazyVGrid(
-                                columns: Array(
-                                    repeating: GridItem(
-                                        .fixed(tileWidth),
-                                        spacing: tileSpacing
-                                    ),
-                                    count: columnCount
-                                ),
-                                alignment: .leading,
-                                spacing: tileSpacing
-                            ) {
-                                ForEach(pageItems) { item in
-                                    Button {
-                                        store.send(.timerStarted(item.id))
-                                    } label: {
-                                        let parts = TimerDurationFormatStyle()
-                                            .formattedParts(for: .seconds(item.seconds))
-                                        ProtocolTimerItem(
-                                            value: parts.value,
-                                            unit: parts.unit,
-                                            format: .long,
-                                            width: isPortrait ? tileWidth : nil
-                                        )
-                                    }
-                                    .buttonStyle(.plain)
-                                    .disabled(!canStartTimer)
-                                }
-                            }
+                            configuredTimerGrid(
+                                pageItems,
+                                columnCount: columnCount,
+                                tileWidth: tileWidth,
+                                tileSpacing: tileSpacing,
+                                canStartTimer: canStartTimer
+                            )
                             .frame(
                                 width: geometry.size.width,
                                 height: gridHeight,
@@ -169,13 +148,7 @@ struct SessionTimerView: View {
                 .clipped()
                 .frame(height: gridHeight)
 
-                HStack(spacing: 6) {
-                    ForEach(0..<pageCount, id: \.self) { page in
-                        Circle()
-                            .fill(currentPage == page ? Color.white : Color.gray)
-                            .frame(width: 6, height: 6)
-                    }
-                }
+                configuredPageIndicators(pageCount: pageCount, currentPage: currentPage)
             }
             .onChange(of: pageCount) { _, newCount in
                 if let selectedPage, selectedPage >= newCount {
@@ -184,6 +157,50 @@ struct SessionTimerView: View {
             }
         }
         .frame(height: gridHeight + 18)
+    }
+
+    private func configuredTimerGrid(
+        _ items: [TimerTileItem],
+        columnCount: Int,
+        tileWidth: CGFloat,
+        tileSpacing: CGFloat,
+        canStartTimer: Bool
+    ) -> some View {
+        LazyVGrid(
+            columns: Array(
+                repeating: GridItem(.fixed(tileWidth), spacing: tileSpacing),
+                count: columnCount
+            ),
+            alignment: .leading,
+            spacing: tileSpacing
+        ) {
+            ForEach(items) { item in
+                Button {
+                    store.send(.timerStarted(item.id))
+                } label: {
+                    let parts = TimerDurationFormatStyle()
+                        .formattedParts(for: .seconds(item.seconds))
+                    ProtocolTimerItem(
+                        value: parts.value,
+                        unit: parts.unit,
+                        format: .long,
+                        width: isPortrait ? tileWidth : nil
+                    )
+                }
+                .buttonStyle(.plain)
+                .disabled(!canStartTimer)
+            }
+        }
+    }
+
+    private func configuredPageIndicators(pageCount: Int, currentPage: Int) -> some View {
+        HStack(spacing: 6) {
+            ForEach(0..<pageCount, id: \.self) { page in
+                Circle()
+                    .fill(currentPage == page ? Color.white : Color.gray)
+                    .frame(width: 6, height: 6)
+            }
+        }
     }
 
     private var timerTabSelection: Binding<TimerTabs.Selection> {
