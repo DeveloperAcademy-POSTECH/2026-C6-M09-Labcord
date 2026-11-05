@@ -15,7 +15,9 @@ public struct ExperimentClient: Sendable {
     public var updateRecordContent: @MainActor @Sendable (
         UUID, UUID, String, String?, String?
     ) throws -> ExperimentResultDetail
-    public var deleteRecord: @MainActor @Sendable (UUID, UUID) throws -> ExperimentResultDetail
+    public var deleteRecord: @MainActor @Sendable (
+        UUID, UUID, String
+    ) throws -> ExperimentResultDetail
     public var create: @MainActor @Sendable (UUID, Date) throws -> ExperimentListEntry
     public var leaveSession: @MainActor @Sendable (UUID, UUID, Date) throws -> Void
     public var saveTimer: @MainActor @Sendable (UUID, ExperimentTimer, Date?) throws -> Void
@@ -38,7 +40,7 @@ public struct ExperimentClient: Sendable {
             UUID, UUID, String, String?, String?
         ) throws -> ExperimentResultDetail,
         deleteRecord: @escaping @MainActor @Sendable (
-            UUID, UUID
+            UUID, UUID, String
         ) throws -> ExperimentResultDetail,
         create: @escaping @MainActor @Sendable (UUID, Date) throws -> ExperimentListEntry,
         leaveSession: @escaping @MainActor @Sendable (UUID, UUID, Date) throws -> Void,
@@ -88,7 +90,9 @@ extension ExperimentClient: DependencyKey {
             )
         },
         deleteRecord: {
-            try ExperimentResultRepository.shared.deleteRecord(experimentID: $0, recordID: $1)
+            try ExperimentResultRepository.shared.deleteRecord(
+                experimentID: $0, recordID: $1, entryID: $2
+            )
         },
         create: { try ExperimentListRepository.shared.create(id: $0, at: $1) },
         leaveSession: {

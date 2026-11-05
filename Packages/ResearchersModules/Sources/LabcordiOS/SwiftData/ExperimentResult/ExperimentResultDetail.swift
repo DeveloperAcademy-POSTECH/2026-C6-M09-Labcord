@@ -59,6 +59,7 @@ public struct ExperimentResultDetail: Equatable, Sendable {
         public let filePath: String?
         public let transcript: String?
         public let timerEventNotes: [String: String]
+        public let hiddenTimerEventIDs: Set<String>
         public let timerDurationSeconds: Int?
         public let timerEndedAt: Date?
         public let timerPauses: [PauseEntry]
@@ -169,7 +170,7 @@ public struct ExperimentResultDetail: Equatable, Sendable {
                         )
                     }
                 }
-                return events
+                return events.filter { !record.hiddenTimerEventIDs.contains($0.id) }
             }
 
         let events: [TimelineEntry] =

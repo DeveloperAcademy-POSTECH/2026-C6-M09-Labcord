@@ -77,7 +77,11 @@ final class ExperimentResultRepository {
         return Self.resultDetail(experiment)
     }
 
-    func deleteRecord(experimentID: UUID, recordID: UUID) throws -> ExperimentResultDetail {
+    func deleteRecord(
+        experimentID: UUID,
+        recordID: UUID,
+        entryID: String
+    ) throws -> ExperimentResultDetail {
         let context = try store.makeContext()
         guard let experiment = try store.find(id: experimentID, in: context) else {
             throw ExperimentStore.StoreError.experimentNotFound
@@ -85,6 +89,31 @@ final class ExperimentResultRepository {
         guard let record = experiment.records.first(where: { $0.id == recordID }) else {
             throw RecordError.notFound
         }
+        if record.type == .timer {
+            let isTimerEntry = Self.resultDetail(experiment).timeline.contains { entry in
+                guard entry.id == entryID, case let .timer(entryRecord, _) = entry.kind else {
+                    return false
+                }
+                return entryRecord.id == recordID
+            }
+            guard isTimerEntry else { throw RecordError.timerEventNotFound }
+            guard var hiddenIDs = Self.hiddenTimerEventIDs(for: record),
+                  var notes = Self.timerEventNotes(for: record) else {
+                throw RecordError.invalidTimerEventNotes
+            }
+            hiddenIDs.insert(entryID)
+            record.hiddenTimerEventIDsData = try JSONEncoder().encode(hiddenIDs.sorted())
+            if entryID == "timer-start-\(recordID)" {
+                record.note = ""
+            } else {
+                notes.removeValue(forKey: entryID)
+                record.timerEventNotesData = notes.isEmpty
+                    ? nil : try JSONEncoder().encode(notes)
+            }
+            try context.save()
+            return Self.resultDetail(experiment)
+        }
+        guard entryID == "record-\(recordID)" else { throw RecordError.notFound }
         let filePath = record.filePath
         experiment.records.removeAll { $0.id == recordID }
         context.delete(record)
@@ -106,6 +135,11 @@ final class ExperimentResultRepository {
     private static func timerEventNotes(for record: ExperimentRecord) -> [String: String]? {
         guard let data = record.timerEventNotesData else { return [:] }
         return try? JSONDecoder().decode([String: String].self, from: data)
+    }
+
+    private static func hiddenTimerEventIDs(for record: ExperimentRecord) -> Set<String>? {
+        guard let data = record.hiddenTimerEventIDsData else { return [] }
+        return try? Set(JSONDecoder().decode([String].self, from: data))
     }
 
     private static func resultDetail(_ experiment: Experiment) -> ExperimentResultDetail {
@@ -153,6 +187,7 @@ final class ExperimentResultRepository {
             filePath: record.filePath,
             transcript: record.transcript,
             timerEventNotes: timerEventNotes(for: record) ?? [:],
+            hiddenTimerEventIDs: hiddenTimerEventIDs(for: record) ?? [],
             timerDurationSeconds: record.timerDurationSeconds,
             timerEndedAt: record.timerEndedAt,
             timerPauses: record.timerPauses.map {

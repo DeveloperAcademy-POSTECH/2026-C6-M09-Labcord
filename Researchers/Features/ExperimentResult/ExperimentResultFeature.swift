@@ -216,14 +216,15 @@ struct ExperimentResultFeature {
 
             case .recordDeleteConfirmed:
                 guard !state.isRecordSaving,
-                      let recordID = state.selectedRecord?.id else { return .none }
+                      let recordID = state.selectedRecord?.id,
+                      let entryID = state.selectedEntry?.id else { return .none }
                 state.isRecordDeleteConfirmationPresented = false
                 state.isRecordSaving = true
                 let experimentID = state.experimentID
                 return .run { send in
                     do {
                         let detail = try await experimentClient.deleteRecord(
-                            experimentID, recordID
+                            experimentID, recordID, entryID
                         )
                         await send(.recordMutationSucceeded(detail, recordID))
                     } catch {
