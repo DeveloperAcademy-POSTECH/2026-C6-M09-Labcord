@@ -7,6 +7,7 @@ import LabcordShared
 extension CameraCaptureFeature {
     func reduceWatch(state: inout State, action: Action) -> Effect<Action>? {
         if let effect = watchPhotoEvent(state: &state, action: action) { return effect }
+        if let effect = watchVideoDiscardEvent(state: &state, action: action) { return effect }
         if let effect = watchVideoEvent(state: &state, action: action) { return effect }
         switch action {
         case let .watchCommand(command):
@@ -98,6 +99,17 @@ extension CameraCaptureFeature {
             )
         default: return nil
         }
+    }
+
+    private func watchVideoDiscardEvent(state: inout State, action: Action) -> Effect<Action>? {
+        guard case let .video(.watchPauseDiscarded(id)) = action,
+              let command = state.watchVideoRequest,
+              id == state.video.sessionID, state.video.phase == .idle else { return nil }
+        state.watchVideoRequest = nil
+        return .merge(
+            watchReply(command, phase: .completed, kind: .video, recordPhase: .cancelled),
+            finishWatchStop(state: &state, error: .invalidState)
+        )
     }
 
     private func finishWatchStop(

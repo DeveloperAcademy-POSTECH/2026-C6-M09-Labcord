@@ -5,7 +5,9 @@ extension PhoneWatchExperimentCoordinator {
     public func configureRecordHandling() {
         guard recordHandler == nil else { return }
         recordHandler = { [weak self] command in
-            guard let self else { throw WatchExperimentError.phoneBusy }
+            guard let self else {
+                throw WatchDefinitiveRejection(error: .phoneBusy)
+            }
             if let id = command.experimentID, let targetID = command.targetID,
                [.confirmRecord, .cancelRecord].contains(command.operation),
                try await PhoneWatchAudioService.shared.containsRecord(
@@ -23,7 +25,9 @@ extension PhoneWatchExperimentCoordinator {
                 try client.applyWatchTimer(command)
                 return
             }
-            guard let commandSubscriber else { throw WatchExperimentError.phoneBusy }
+            guard let commandSubscriber else {
+                throw WatchDefinitiveRejection(error: .phoneBusy)
+            }
             try await withCheckedThrowingContinuation { continuation in
                 self.completions[command.requestID] = continuation
                 commandSubscriber.yield(.command(command))
@@ -51,6 +55,11 @@ extension PhoneWatchExperimentCoordinator {
                 try updateMediaJournal(response, record: record, experimentID: experimentID)
             }
             if let error = response.error {
+                if isPreCaptureRejection(response) {
+                    completions.removeValue(forKey: response.requestID)?
+                        .resume(throwing: WatchDefinitiveRejection(error: error))
+                    return
+                }
                 finish(response.requestID, error: error)
                 return
             }
@@ -67,6 +76,13 @@ extension PhoneWatchExperimentCoordinator {
         } catch {
             finish(response.requestID, error: error as? WatchExperimentError ?? .storageFailed)
         }
+    }
+
+    private func isPreCaptureRejection(_ response: WatchExperimentResponse) -> Bool {
+        guard response.phase == .failed, response.record == nil,
+              let error = response.error, [.permissionDenied, .cameraUnavailable].contains(error),
+              let command = requests[response.requestID]?.command else { return false }
+        return [.takePhoto, .startVideo].contains(command.operation)
     }
 
     private func shouldApplyTimerDirectly(_ command: WatchExperimentCommand) throws -> Bool {

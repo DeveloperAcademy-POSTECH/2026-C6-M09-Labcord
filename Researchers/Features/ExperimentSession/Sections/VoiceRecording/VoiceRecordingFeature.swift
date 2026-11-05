@@ -35,6 +35,7 @@ struct VoiceRecordingFeature {
         var isAutoSavePending = false
         var contextualStrings: [String] = []
         var shouldSaveOnStop = false
+        var isPauseCancellationPending = false
     }
 
     enum Action: Equatable {
@@ -47,6 +48,8 @@ struct VoiceRecordingFeature {
         case event(UUID, SpeechRecordingEvent)
         case stopRequested
         case stopAndSaveRequested
+        case discardForWatchPause
+        case watchPauseDiscarded(UUID)
         case stopped(UUID, SpeechRecording?)
         case retakeRequested
         case saveRequested
@@ -75,6 +78,32 @@ struct VoiceRecordingFeature {
         Reduce { state, action in
             if state.isSessionClosing, action.isBlockedDuringSessionClose { return .none }
             switch action {
+            case .discardForWatchPause:
+                guard state.isSessionClosing, !state.isPauseCancellationPending,
+                      !state.isSaving,
+                      [.starting, .recording, .stopping].contains(state.phase) else {
+                    return .none
+                }
+                let cancellationID = uuid()
+                state.sessionID = cancellationID
+                state.isPauseCancellationPending = true
+                state.shouldSaveOnStop = false
+                return .concatenate(
+                    .cancel(id: CancelID.voiceStream),
+                    .cancel(id: CancelID.voiceStop),
+                    .run { send in
+                        await speechRecordingClient.cancel()
+                        await send(.watchPauseDiscarded(cancellationID))
+                    }
+                )
+
+            case let .watchPauseDiscarded(id):
+                guard state.sessionID == id, state.isPauseCancellationPending else { return .none }
+                state.isPauseCancellationPending = false
+                state.phase = .hidden
+                resetReview(state: &state)
+                return .none
+
             case .stopAndSaveRequested:
                 guard state.phase != .hidden else { return .none }
                 state.shouldSaveOnStop = true

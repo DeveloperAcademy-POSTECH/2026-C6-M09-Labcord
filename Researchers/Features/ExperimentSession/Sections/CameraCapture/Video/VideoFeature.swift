@@ -29,6 +29,7 @@ struct VideoFeature {
         var shouldStopOnStart = false
         var requestedRecordID: UUID?
         var requiresExternalConfirmation = false
+        var isDiscardingForWatchPause = false
     }
 
     enum Action: Equatable {
@@ -37,6 +38,8 @@ struct VideoFeature {
         case watchRecordRequested(UUID)
         case stopRequested
         case stopAndSaveRequested
+        case discardForWatchPause
+        case watchPauseDiscarded(UUID)
         case started(UUID, Date)
         case recorded(UUID, URL)
         case recordingFailed(UUID, String)
@@ -84,6 +87,12 @@ struct VideoFeature {
                 if case .preview = state.phase { return saveVideo(state: &state) }
                 return .send(.stopRequested)
 
+            case .discardForWatchPause:
+                return discardForWatchPause(state: &state)
+
+            case let .watchPauseDiscarded(id):
+                return finishWatchPauseDiscard(id, state: &state)
+
             case .stopRequested:
                 switch state.phase {
                 case .starting:
@@ -119,7 +128,7 @@ struct VideoFeature {
                         await send(.delegate(.permissionAccessFailed(error.kind)))
                         await send(.recordingFailed(id, error.localizedDescription))
                     } catch is CancellationError {
-                        return
+                        await send(.watchPauseDiscarded(id))
                     } catch {
                         await send(.recordingFailed(id, error.localizedDescription))
                     }
@@ -127,14 +136,14 @@ struct VideoFeature {
                 .cancellable(id: CancelID.recording, cancelInFlight: true)
 
             case let .started(id, startedAt):
-                guard id == state.sessionID, state.phase == .starting else { return .none }
-                state.phase = .recording(startedAt)
-                if state.shouldStopOnStart { return .send(.stopRequested) }
-                return .none
+                return videoStarted(id, at: startedAt, state: &state)
 
             case let .recorded(id, url):
                 guard id == state.sessionID else {
                     return .run { _ in await cameraSessionClient.discardVideo(url) }
+                }
+                if state.isDiscardingForWatchPause {
+                    return discardFinishedVideo(url, id: id)
                 }
                 state.phase = .preview(url)
                 state.recordID = state.requestedRecordID ?? uuid()
@@ -274,6 +283,44 @@ struct VideoFeature {
 }
 
 private extension VideoFeature {
+    func videoStarted(_ id: UUID, at startedAt: Date, state: inout State) -> Effect<Action> {
+        guard id == state.sessionID, state.phase == .starting else { return .none }
+        state.phase = .recording(startedAt)
+        if state.isDiscardingForWatchPause {
+            return .run { _ in await cameraSessionClient.cancelVideoRecording() }
+        }
+        if state.shouldStopOnStart { return .send(.stopRequested) }
+        return .none
+    }
+
+    func finishWatchPauseDiscard(_ id: UUID, state: inout State) -> Effect<Action> {
+        guard id == state.sessionID, state.isDiscardingForWatchPause else { return .none }
+        state.phase = .idle
+        resetReview(state: &state)
+        return .none
+    }
+
+    func discardFinishedVideo(_ url: URL, id: UUID) -> Effect<Action> {
+        .run { send in
+            await cameraSessionClient.discardVideo(url)
+            await send(.watchPauseDiscarded(id))
+        }
+    }
+
+    func discardForWatchPause(state: inout State) -> Effect<Action> {
+        guard !state.isDiscardingForWatchPause else { return .none }
+        switch state.phase {
+        case .starting:
+            state.isDiscardingForWatchPause = true
+            return .none
+        case .recording:
+            state.isDiscardingForWatchPause = true
+            return .run { _ in await cameraSessionClient.cancelVideoRecording() }
+        case .idle, .preview:
+            return .none
+        }
+    }
+
     func resetReview(state: inout State) {
         state.recordID = nil
         state.recordedAt = nil
@@ -285,6 +332,7 @@ private extension VideoFeature {
         state.shouldStopOnStart = false
         state.requestedRecordID = nil
         state.requiresExternalConfirmation = false
+        state.isDiscardingForWatchPause = false
     }
 }
 

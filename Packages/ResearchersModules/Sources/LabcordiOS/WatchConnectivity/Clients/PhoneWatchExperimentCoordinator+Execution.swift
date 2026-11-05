@@ -14,12 +14,15 @@ extension PhoneWatchExperimentCoordinator {
         guard command.expectedRevision == current.revision else {
             throw WatchExperimentError.staleRevision
         }
-        if let visibleExperimentID, visibleExperimentID != id {
+        if WatchExperimentConflictPolicy.requiresMatchingVisibleExperiment(command.operation),
+           let visibleExperimentID, visibleExperimentID != id {
             throw WatchExperimentError.activeExperimentConflict
         }
-        let active = try client.load().compactMap { try client.watchState($0.id) }
-            .first { $0.experiment.status == .running && $0.experiment.id != id }
-        guard active == nil else { throw WatchExperimentError.activeExperimentConflict }
+        if WatchExperimentConflictPolicy.requiresExclusiveExperiment(command.operation) {
+            let active = try client.load().compactMap { try client.watchState($0.id) }
+                .first { $0.experiment.status == .running && $0.experiment.id != id }
+            guard active == nil else { throw WatchExperimentError.activeExperimentConflict }
+        }
         return current
     }
 
@@ -54,9 +57,23 @@ extension PhoneWatchExperimentCoordinator {
                 }
                 try consumeToken(command, experimentID: id)
             }
-            try await recordHandler(command)
+            try await executeRecordHandler(recordHandler, command: command)
         }
         return nil
+    }
+
+    private func executeRecordHandler(
+        _ handler: (WatchExperimentCommand) async throws -> Void,
+        command: WatchExperimentCommand
+    ) async throws {
+        do {
+            try await handler(command)
+        } catch let rejection as WatchDefinitiveRejection {
+            throw rejection.error
+        } catch {
+            // handler가 저장·기기 명령을 시작한 뒤 실패했을 수 있다.
+            throw WatchExecutionUncertain()
+        }
     }
 
     func start(_ command: WatchExperimentCommand, current: WatchExperimentSnapshot) throws {
@@ -73,9 +90,15 @@ extension PhoneWatchExperimentCoordinator {
                 throw WatchExperimentError.invalidState
             }
             if current.experiment.status == .completed {
-                try client.resumeCompleted(id, .now)
-            } else if try client.loadDetail(id) == nil {
-                throw WatchExperimentError.experimentNotFound
+                do { try client.resumeCompleted(id, .now) } catch {
+                    throw WatchExecutionUncertain()
+                }
+            } else {
+                let exists: Bool
+                do { exists = try client.loadDetail(id) != nil } catch {
+                    throw WatchExecutionUncertain()
+                }
+                guard exists else { throw WatchExperimentError.experimentNotFound }
             }
         }
         pendingStartID = id
@@ -98,16 +121,30 @@ extension PhoneWatchExperimentCoordinator {
             throw WatchExperimentError.invalidState
         }
         if visibleExperimentID == id {
-            try await prepareSessionClose?(command)
             guard let commandSubscriber else { throw WatchExperimentError.phoneBusy }
-            try await withCheckedThrowingContinuation { continuation in
-                completions[command.requestID] = continuation
-                commandSubscriber.yield(.command(command))
+            let prepare = prepareSessionClose
+            do {
+                try await prepare?(command)
+                try await withCheckedThrowingContinuation { continuation in
+                    completions[command.requestID] = continuation
+                    commandSubscriber.yield(.command(command))
+                }
+            } catch let rejection as WatchDefinitiveRejection {
+                guard prepare == nil else { throw WatchExecutionUncertain() }
+                throw rejection.error
+            } catch {
+                throw WatchExecutionUncertain()
             }
-        } else if command.operation == .pause {
-            try client.leaveSession(id, command.requestID, .now)
         } else {
-            try client.complete(id, .now)
+            do {
+                if command.operation == .pause {
+                    try client.leaveSession(id, command.requestID, .now)
+                } else {
+                    try client.complete(id, .now)
+                }
+            } catch {
+                throw WatchExecutionUncertain()
+            }
         }
         if pendingStartID == id { pendingStartID = nil }
     }

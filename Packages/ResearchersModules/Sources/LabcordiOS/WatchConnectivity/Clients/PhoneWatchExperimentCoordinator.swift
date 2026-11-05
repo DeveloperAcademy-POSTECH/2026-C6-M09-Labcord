@@ -33,6 +33,7 @@ public final class PhoneWatchExperimentCoordinator {
     var revisions: [UUID: UInt64] = [:]
     var recordResults: [UUID: WatchRecordSnapshot] = [:]
     var recordSnapshots: [UUID: WatchRecordSnapshot] = [:]
+    var completedExecutions: [UUID: WatchCompletedExecution] = [:]
     var executing: UUID?
     var photoCancellationID: UUID?
     var subscriberID: UUID?
@@ -103,6 +104,11 @@ public final class PhoneWatchExperimentCoordinator {
         if let error { continuation.resume(throwing: error) } else { continuation.resume() }
     }
 
+    public func rejectUndispatchedRecord(_ id: UUID) {
+        completions.removeValue(forKey: id)?
+            .resume(throwing: WatchDefinitiveRejection(error: .phoneBusy))
+    }
+
     public func refresh() {
         refreshTask?.cancel()
         refreshTask = Task { [weak self] in
@@ -143,7 +149,7 @@ public final class PhoneWatchExperimentCoordinator {
         guard entry.command == command else { return failure(command, .duplicateConflict) }
         if requests[command.requestID] == nil,
            [.received, .processing].contains(entry.response.phase) {
-            return failure(command, .resultUnknown)
+            return unknownOutcome(command)
         }
         return entry.response
     }
@@ -176,8 +182,12 @@ public final class PhoneWatchExperimentCoordinator {
         if let original = requests[id]?.command ?? journal?.entries[id]?.command,
            let experimentID = original.experimentID {
             do { try restoreSavedRecords(experimentID) } catch {
-                return failure(command, error as? WatchExperimentError ?? .storageFailed)
+                return unknownOutcome(command, queriedRequestID: id)
             }
+        }
+        if let entry = requests[id], completedExecutions[id] != nil,
+           [.unknown, .received, .processing].contains(entry.response.phase) {
+            recoverCompletedExecution(entry)
         }
         let entry = requests[id] ?? journal?.entries[id]
         guard let entry else {
@@ -186,7 +196,7 @@ public final class PhoneWatchExperimentCoordinator {
                 queriedRequestID: id
             )
         }
-        let response = latestMediaResult(entry.command, response: entry.response)
+        let response = conservativeMediaResult(entry.command, response: entry.response)
         // 조회 envelope의 ID는 조회 요청의 ID이며 targetID의 결과를 담습니다.
         let interrupted = requests[id] == nil
             && (response.phase == .received || response.phase == .processing)
@@ -200,6 +210,7 @@ public final class PhoneWatchExperimentCoordinator {
 
     func execute(_ command: WatchExperimentCommand) async {
         let response: WatchExperimentResponse
+        var didPerform = false
         do {
             try beginExecution(command)
             defer { finishExecution(command.requestID) }
@@ -209,22 +220,32 @@ public final class PhoneWatchExperimentCoordinator {
             let current = try validate(command)
             let id = current.experiment.id
             let token = try await perform(command, current: current)
+            didPerform = true
+            completedExecutions[command.requestID] = WatchCompletedExecution(
+                experimentID: id, startToken: token, record: recordResults[command.requestID]
+            )
             let updated = try snapshot(id)
             publish(updated)
             response = WatchExperimentResponse(
                 requestID: command.requestID, phase: .completed,
                 snapshot: updated, startToken: token,
-                record: recordResults.removeValue(forKey: command.requestID)
+                record: recordResults[command.requestID]
             )
         } catch {
-            response = failure(command, error as? WatchExperimentError ?? .storageFailed)
+            response = didPerform || error is WatchExecutionUncertain
+                || (error as? WatchExperimentError) == .resultUnknown ? unknownOutcome(command)
+                : failure(command, error as? WatchExperimentError ?? .storageFailed)
         }
-        let result = latestMediaResult(command, response: response)
+        let result = conservativeMediaResult(command, response: response)
         do {
             try journal?.save(command, response: result)
             requests[command.requestID]?.response = result
+            if result.phase == .completed || result.phase == .failed {
+                completedExecutions.removeValue(forKey: command.requestID)
+                recordResults.removeValue(forKey: command.requestID)
+            }
         } catch {
-            requests[command.requestID]?.response = failure(command, .resultUnknown)
+            requests[command.requestID]?.response = unknownOutcome(command)
         }
     }
 
@@ -241,6 +262,13 @@ public final class PhoneWatchExperimentCoordinator {
         return state.snapshot(revision: revisions[id] ?? 0, at: .now)
     }
 
+    func failure(_ command: WatchExperimentCommand, _ error: WatchExperimentError)
+        -> WatchExperimentResponse {
+        WatchExperimentResponse(requestID: command.requestID, phase: .failed, error: error)
+    }
+}
+
+extension PhoneWatchExperimentCoordinator {
     func nextRevision() throws -> UInt64 {
         var previous: UInt64 = 0
         if FileManager.default.fileExists(atPath: revisionURL.path) {
@@ -269,13 +297,49 @@ public final class PhoneWatchExperimentCoordinator {
         try? session.updateApplicationContext(context)
     }
 
-    func failure(_ command: WatchExperimentCommand, _ error: WatchExperimentError)
-        -> WatchExperimentResponse {
-        WatchExperimentResponse(requestID: command.requestID, phase: .failed, error: error)
+}
+
+extension PhoneWatchExperimentCoordinator {
+    func conservativeMediaResult(
+        _ command: WatchExperimentCommand, response: WatchExperimentResponse
+    ) -> WatchExperimentResponse {
+        let merged = latestMediaResult(command, response: response)
+        if response.phase == .failed {
+            return WatchExperimentResponse(
+                requestID: merged.requestID, phase: .failed, experiments: merged.experiments,
+                snapshot: merged.snapshot, error: response.error, startToken: merged.startToken,
+                record: merged.record, queriedRequestID: merged.queriedRequestID
+            )
+        }
+        guard response.phase == .unknown else { return merged }
+        if merged.phase == .completed {
+            let confirmsSaved = command.operation == .confirmRecord
+                && merged.record?.phase == .saved
+            let confirmsCancelled = command.operation == .cancelRecord
+                && merged.record?.phase == .cancelled
+            if confirmsSaved || confirmsCancelled { return merged }
+        } else if merged.phase != .failed {
+            return merged
+        }
+        return WatchExperimentResponse(
+            requestID: merged.requestID, phase: .unknown, experiments: merged.experiments,
+            snapshot: merged.snapshot, error: .resultUnknown, startToken: merged.startToken,
+            record: merged.record, queriedRequestID: merged.queriedRequestID
+        )
     }
 }
 
 private extension PhoneWatchExperimentCoordinator {
+    func unknownOutcome(
+        _ command: WatchExperimentCommand, queriedRequestID: UUID? = nil
+    ) -> WatchExperimentResponse {
+        // 실행이 끝난 뒤 조회만 실패한 경우 결과를 단정하거나 재실행하지 않는다.
+        WatchExperimentResponse(
+            requestID: command.requestID, phase: .unknown, error: .resultUnknown,
+            queriedRequestID: queriedRequestID
+        )
+    }
+
     func persistPendingStart() {
         if let pendingStartID {
             UserDefaults.standard.set(pendingStartID.uuidString, forKey: Self.pendingStartKey)

@@ -16,6 +16,18 @@ extension ExperimentSessionFeature {
             case .watchDrainProgress:
                 return drainWatchClose(state: &state)
 
+            case let .capture(.video(.watchPauseDiscarded(id))):
+                guard state.watchCommand?.operation == .pause,
+                      state.capture.video.isDiscardingForWatchPause,
+                      state.capture.video.sessionID == id else { return .none }
+                return .send(.watchDrainProgress)
+
+            case let .voice(.watchPauseDiscarded(id)):
+                guard state.watchCommand?.operation == .pause,
+                      state.voice.isPauseCancellationPending,
+                      state.voice.sessionID == id else { return .none }
+                return .send(.watchDrainProgress)
+
             case .watchResourcesReleased:
                 guard let command = state.watchCommand, state.watchClosingResources else {
                     return .none
@@ -61,10 +73,17 @@ extension ExperimentSessionFeature {
         guard state.watchCommand != nil, !state.watchClosingResources else { return .none }
         var effects: [Effect<Action>] = []
         if state.voice.phase != .hidden, !state.voice.isSaving {
-            effects.append(.send(.voice(.stopAndSaveRequested)))
+            effects.append(watchVoiceCloseEffect(state: state))
         }
         if state.capture.videoPhase != .idle, !state.capture.video.isSaving {
-            effects.append(.send(.capture(.video(.stopAndSaveRequested))))
+            switch (state.watchCommand?.operation, state.capture.videoPhase) {
+            case (.pause, .starting), (.pause, .recording):
+                if !state.capture.video.isDiscardingForWatchPause {
+                    effects.append(.send(.capture(.video(.discardForWatchPause))))
+                }
+            default:
+                effects.append(.send(.capture(.video(.stopAndSaveRequested))))
+            }
         }
         if state.capture.capturedPhotoData != nil, !state.capture.photo.isSaving {
             effects.append(.send(.capture(.photo(.saveRequested))))
@@ -86,6 +105,16 @@ extension ExperimentSessionFeature {
                 await send(.watchResourcesReleased)
             }
         )
+    }
+
+    private func watchVoiceCloseEffect(state: State) -> Effect<Action> {
+        switch (state.watchCommand?.operation, state.voice.phase) {
+        case (.pause, .starting), (.pause, .recording), (.pause, .stopping):
+            return state.voice.isPauseCancellationPending
+                ? .none : .send(.voice(.discardForWatchPause))
+        default:
+            return .send(.voice(.stopAndSaveRequested))
+        }
     }
 
     private func setWatchDrainOwnership(_ closing: Bool, state: inout State) {

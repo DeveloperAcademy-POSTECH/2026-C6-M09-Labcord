@@ -30,8 +30,8 @@ extension AppFeature {
                 guard let id = state.path.ids.last,
                       let session = state.path[id: id, case: \.session],
                       session.experimentID == command.experimentID else {
-                    PhoneWatchExperimentCoordinator.shared.finish(
-                        command.requestID, error: .phoneBusy
+                    PhoneWatchExperimentCoordinator.shared.rejectUndispatchedRecord(
+                        command.requestID
                     )
                     return .none
                 }
@@ -40,8 +40,8 @@ extension AppFeature {
                     && session.watchMediaCommand?.targetID == command.targetID
                     && command.targetID != nil
                 guard state.watchRequestID == nil || cancelsPhoto else {
-                    PhoneWatchExperimentCoordinator.shared.finish(
-                        command.requestID, error: .phoneBusy
+                    PhoneWatchExperimentCoordinator.shared.rejectUndispatchedRecord(
+                        command.requestID
                     )
                     return .none
                 }
@@ -87,6 +87,10 @@ extension AppFeature {
                 || state.home.list.pendingDeletion != nil
                 || (!state.path.isEmpty && sessionID == nil)
             coordinator.refresh()
+            if state.watchPendingStartID != nil, state.path.isEmpty,
+               !coordinator.isBusy, state.watchIsActive {
+                return openWatchSession(&state)
+            }
             return .none
         }
     }
