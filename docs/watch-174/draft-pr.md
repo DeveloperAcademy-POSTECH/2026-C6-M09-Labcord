@@ -1,9 +1,9 @@
 # Watch PR 초안 안내
 
-현재 단계는 #268 타이머 실행·동기화이다.
-타이머 mutation·저장·완료 표시 sidecar·실패 재시도와 SessionTimerFeature 명령 처리를 담당한다.
+현재 단계는 #269 사진·영상·기록 저장 조율이다.
+촬영 예약·취소·영상 중지·저장 재시도·실제 저장 파일 조회·미디어 journal과 공통 기록 명령 dispatch·중단/종료 drain을 담당한다.
 
-ExperimentClient/Repository는 타이머 조회·변경·완료 표시 확장만 포함한다. 공통 Session dispatch는 #269에서 연결한다.
+PhoneWatchExperimentCoordinator+Records, App/Session의 record handler·응답·완료 drain을 이 PR에서 연결한다. 음성 저장 명령과 타이머 dispatch도 이미 준비된 실제 서비스에 연결한다.
 
 7개 PR은 #173 → #174 → #268 → #269 → #170 → #171 → #270 순차 stack이다.
 첫 base는 `feat/#167-Devin-prepared`, 이후 base는 직전 `feat/#번호-Codex`다.

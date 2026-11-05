@@ -31,7 +31,8 @@ struct ContractChecks {
         precondition(deleted.collection.timers.isEmpty && deleted.changes[0].endedAt == date + 20)
         try checkTimerLimits(start: start, date: date)
         try checkResponseCompatibility()
-        print("PASS: timer mutation, limits, clock correction and response codec")
+        try checkMediaIdentity(experimentID: experimentID)
+        print("PASS: timer mutation, limits, clock correction, media identity and response codec")
     }
 
     static func checkTimerLimits(start: WatchExperimentCommand, date: Date) throws {
@@ -68,5 +69,20 @@ struct ContractChecks {
             WatchExperimentResponse.self, from: JSONEncoder().encode(saved)
         )
         precondition(decoded == saved)
+    }
+
+    static func checkMediaIdentity(experimentID: UUID) throws {
+        let recordID = UUID()
+        let command = WatchExperimentCommand(
+            operation: .takePhoto, experimentID: experimentID, targetID: recordID
+        )
+        let input = try WatchMediaCommandHandler.input(
+            for: command, activeExperimentID: experimentID
+        )
+        precondition(input == .takePhoto(recordID))
+        do {
+            _ = try WatchMediaCommandHandler.input(for: command, activeExperimentID: UUID())
+            fatalError("foreign experiment was accepted")
+        } catch WatchExperimentError.activeExperimentConflict {}
     }
 }

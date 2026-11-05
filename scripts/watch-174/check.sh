@@ -18,7 +18,7 @@ swiftc -emit-module -emit-library -module-name LabcordShared \
   -emit-module-path "$task_dir/LabcordShared.swiftmodule" -o "$task_dir/libLabcordShared.dylib"
 swiftc -parse-as-library -I "$task_dir" -L "$task_dir" -lLabcordShared \
   -Xlinker -rpath -Xlinker "$task_dir" "$ios/Sessions/WatchTimerMutation.swift" \
-  scripts/watch-174/ContractChecks.swift \
+  "$ios/Sessions/Camera/WatchMediaCommandHandler.swift" scripts/watch-174/ContractChecks.swift \
   -o "$task_dir/contract-checks"
 "$task_dir/contract-checks"
 

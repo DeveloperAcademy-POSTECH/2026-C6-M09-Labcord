@@ -2,15 +2,22 @@
 
 현재 누적 구현과 각 단계의 연결 경계는 [Watch 구현](../watch-implementation.md)을 따른다.
 
-### #268 타이머 실행·동기화
+### #269 사진·영상과 공통 기록 명령·저장 조율
 
-`WatchTimerMutation`은 start 요청 ID를 타이머 ID로 사용해 중복 시작을 방어한다. 양수 초·Int32 범위와
-최대 5개를 검사하고 pause/resume/delete는 targetID로 처리한다. `ExperimentClient/Repository` 및
-`SessionTimerFeature`의 기존 저장 경로를 사용한다. 저장 실패는 완료로 바꾸지 않고 재시도 상태를 유지한다.
-완료 표시 sidecar는 실험 기록 삭제와 구분한다. endedAt과 자연 완료 시각을 보존한다.
+`WatchMediaCommandHandler`가 실험/기록 ID를 검증하고 `CameraCaptureFeature+Watch`로 연결한다.
+사진 예약 수용 시각부터 5초를 표시하고 전체 Action에 예약 ID를 전달해 취소 뒤 늦은 촬영을 막는다.
+카메라 준비·권한 실패는 응답으로 안내하고 iPhone 준비 후 사용자가 명시적으로 다시 요청한다.
+`CameraSession.prepareVideoRecording`은 영상 시작 시 마이크 권한도 재검사한다.
 
-snapshot의 측정 시각으로 남은 시간을 보정하며 실험 pause와 개별 타이머 pause는 별개다.
-부모의 공통 record dispatch는 #269, Watch 타이머 View는 #171에서 연결한다.
+사진 결과 확보, 영상 실제 미리보기 종료 뒤 review/canAutoSave를 제공한다. 명령 전달 3초, 촬영 5초,
+review 후 UI 자동 저장 3초는 별개다. 정상 영상 stop과 취소를 구분하고 stop 결과와 confirm 결과 ID를
+따로 보관한다. 저장 실패는 살아 있는 같은 원본/recordID로 confirm/cancel을 재시도한다.
+`SavedRecords`는 기존 저장소의 실험·ID·type·파일을 확인한 뒤 saved를 재발행하고 journal은 늦은 결과를 보존한다.
+사진 RAM·영상 temp는 앱 수명 내 보관이며 강제 종료 뒤 원본 복구를 보장하지 않는다.
+
+App/Session에 이미 구현된 음성·타이머·미디어 명령 dispatch와 응답을 연결한다. pause/complete는
+Watch 녹음 보관 barrier와 iPhone 음성·영상 stopAndSave, 사진 예약 취소, 저장 결과를 기다린다.
+실패하면 화면 이탈/카메라 deactivate로 먼저 진행하지 않는다. 종료 시 타이머 endedAt을 저장한다.
 
 ## 원본·저장 경계
 
