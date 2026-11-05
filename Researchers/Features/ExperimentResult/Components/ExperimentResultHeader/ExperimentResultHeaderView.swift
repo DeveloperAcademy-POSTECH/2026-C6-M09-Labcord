@@ -15,6 +15,7 @@ struct ExperimentResultHeaderView: View {
             VStack(alignment: .leading) {
                 let titleText = Text(title)
                     .typography(Typography.title2Bold)
+                    .foregroundStyle(Color("General/Label/Primary"))
                 let editButton = Button("편집", action: onEdit)
                     .buttonStyle(.labcord(.plain, size: .small))
 
@@ -48,6 +49,8 @@ struct ExperimentResultHeaderView: View {
             VStack(alignment: .leading, spacing: LayoutTokens.spacing16) {
                 HStack(spacing: LayoutTokens.spacing12) {
                     Text("유형")
+                        .typography(Typography.body)
+                        .foregroundStyle(Color("General/Label/Tertiary"))
 
                     HStack(spacing: LayoutTokens.spacing16) {
                         ForEach(
@@ -69,6 +72,8 @@ struct ExperimentResultHeaderView: View {
 
                 HStack(spacing: LayoutTokens.spacing12) {
                     Text("정렬")
+                        .typography(Typography.body)
+                        .foregroundStyle(Color("General/Label/Tertiary"))
 
                     HStack(spacing: LayoutTokens.spacing16) {
                         ForEach(ExperimentResultFeature.RecordSort.allCases, id: \.self) { sort in

@@ -15,6 +15,52 @@ public enum RecordContentState: String, CaseIterable, Sendable {
     case filled
 }
 
+public enum RecordBottomSheetScrollTarget: Hashable, Sendable {
+    case transcript
+    case actions
+}
+
+public struct RecordBottomSheetHeader: View {
+    private let onDismiss: () -> Void
+    @ScaledMetric(relativeTo: .body) private var controlScale: CGFloat = 1
+
+    public init(onDismiss: @escaping () -> Void) {
+        self.onDismiss = onDismiss
+    }
+
+    public var body: some View {
+        VStack(spacing: LayoutTokens.spacing16) {
+            Capsule()
+                .fill(Color(.General.Fill.quaternary))
+                .frame(width: 36, height: 5)
+                .accessibilityHidden(true)
+
+            HStack(alignment: .center) {
+                Button(action: onDismiss) {
+                    IconArtwork(icon: .x, size: 24, relativeTo: .body)
+                        .foregroundStyle(Color(.General.Label.secondary))
+                }
+                .buttonStyle(.labcordIcon(.plain, size: .large))
+                .accessibilityLabel(Text("닫기"))
+
+                Text("기록")
+                    .typography(Typography.bodySemiBold)
+                    .foregroundStyle(Color(.General.Label.primary))
+                    .frame(maxWidth: .infinity)
+
+                Color.clear.frame(width: 50 * controlScale, height: 50 * controlScale)
+                    .accessibilityHidden(true)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .padding(.horizontal, LayoutTokens.spacing16)
+        .padding(.top, LayoutTokens.spacing16)
+        .padding(.bottom, LayoutTokens.spacing16)
+        .frame(maxWidth: .infinity)
+        .background(Color(.General.Background.Grouped.secondary))
+    }
+}
+
 public struct RecordBottomSheet: View {
     private let type: RecordType
     private let contentState: RecordContentState
@@ -30,13 +76,17 @@ public struct RecordBottomSheet: View {
     private let voiceOnEditingChanged: ((Bool) -> Void)?
     private let voiceOnToggle: (() -> Void)?
     private let voiceOnSeek: ((Double) -> Void)?
+    private let voiceContent: AnyView?
     private let mediaContent: AnyView?
     private let transcriptContent: AnyView?
     private let noteContent: AnyView?
     private let transcriptHelp: String
     private let onDismiss: (() -> Void)?
+    private let onScrollTargetChange: ((RecordBottomSheetScrollTarget?) -> Void)?
     private let onSave: () -> Void
     private let onDelete: () -> Void
+    private let showsActions: Bool
+    private let showsHeader: Bool
 
     @Binding private var note: String
     @Binding private var transcript: String
@@ -48,7 +98,6 @@ public struct RecordBottomSheet: View {
 
     @Environment(\.isPresented) private var isPresented
     @Environment(\.dismiss) private var dismiss
-    @ScaledMetric(relativeTo: .body) private var headerControlScale: CGFloat = 1
 
     public init(
         type: RecordType = .timer,
@@ -65,6 +114,7 @@ public struct RecordBottomSheet: View {
         voiceOnEditingChanged: ((Bool) -> Void)? = nil,
         voiceOnToggle: (() -> Void)? = nil,
         voiceOnSeek: ((Double) -> Void)? = nil,
+        voiceContent: AnyView? = nil,
         transcript: Binding<String> = .constant(
             "샘플 B, 반응 시작 5분 후 연한 노란색으로 변했고 침전은 없음"
         ),
@@ -74,8 +124,11 @@ public struct RecordBottomSheet: View {
         noteContent: AnyView? = nil,
         transcriptHelp: String = "잘못 인식된 용어와 수치를 확인해 주세요.",
         onDismiss: (() -> Void)? = nil,
+        onScrollTargetChange: ((RecordBottomSheetScrollTarget?) -> Void)? = nil,
         onSave: @escaping () -> Void = {},
-        onDelete: @escaping () -> Void = {}
+        onDelete: @escaping () -> Void = {},
+        showsActions: Bool = true,
+        showsHeader: Bool = true
     ) {
         self.type = type
         self.contentState = contentState
@@ -91,6 +144,7 @@ public struct RecordBottomSheet: View {
         self.voiceOnEditingChanged = voiceOnEditingChanged
         self.voiceOnToggle = voiceOnToggle
         self.voiceOnSeek = voiceOnSeek
+        self.voiceContent = voiceContent
         self._transcript = transcript
         self._note = note
         self.mediaContent = mediaContent
@@ -98,30 +152,61 @@ public struct RecordBottomSheet: View {
         self.noteContent = noteContent
         self.transcriptHelp = transcriptHelp
         self.onDismiss = onDismiss
+        self.onScrollTargetChange = onScrollTargetChange
         self.onSave = onSave
         self.onDelete = onDelete
+        self.showsActions = showsActions
+        self.showsHeader = showsHeader
     }
 
     public var body: some View {
-        VStack(alignment: .center, spacing: LayoutTokens.spacing16) {
-            grabber
-            header
-            recordContent
-            if type == .voice {
-                RecordBottomSheetTranscriptField(
-                    transcript: $transcript,
-                    content: transcriptContent,
-                    help: transcriptHelp,
-                    focus: $isTranscriptFocused,
-                    bounds: $transcriptBounds
-                )
+        VStack(spacing: 0) {
+            if showsHeader {
+                RecordBottomSheetHeader(onDismiss: close)
             }
-            noteField
-            actions
+
+            VStack(alignment: .center, spacing: LayoutTokens.spacing24) {
+                if type == .voice {
+                    VStack(alignment: .center, spacing: LayoutTokens.spacing8) {
+                        RecordBottomSheetTranscriptField(
+                            transcript: $transcript,
+                            content: transcriptContent,
+                            help: transcriptHelp,
+                            focus: $isTranscriptFocused,
+                            bounds: $transcriptBounds
+                        )
+                        .id(RecordBottomSheetScrollTarget.transcript)
+
+                        recordContent
+                    }
+                    .padding(LayoutTokens.spacing8)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        Color(.General.Background.Grouped.primary),
+                        in: RoundedRectangle(cornerRadius: 8)
+                    )
+                    .padding(.horizontal, LayoutTokens.spacing16)
+                }
+
+                VStack(alignment: .center, spacing: LayoutTokens.spacing16) {
+                    if type != .voice {
+                        recordContent
+                    }
+
+                    if type != .voice || !isTranscriptFocused {
+                        noteField
+                    }
+
+                    if showsActions {
+                        actions
+                    }
+                }
+                .padding(.horizontal, LayoutTokens.spacing16)
+                .padding(.bottom, bottomPadding)
+                .frame(maxWidth: .infinity)
+                .id(RecordBottomSheetScrollTarget.actions)
+            }
         }
-        .padding(.horizontal, LayoutTokens.spacing16)
-        .padding(.top, LayoutTokens.spacing16)
-        .padding(.bottom, bottomPadding)
         .frame(maxWidth: .infinity)
         .background(
             Color(.General.Background.Grouped.secondary),
@@ -146,6 +231,20 @@ public struct RecordBottomSheet: View {
                 }
             }
         )
+        .onChange(of: isNoteFocused) { _, isFocused in
+            if isFocused {
+                onScrollTargetChange?(.actions)
+            } else if !isTranscriptFocused {
+                onScrollTargetChange?(nil)
+            }
+        }
+        .onChange(of: isTranscriptFocused) { _, isFocused in
+            if isFocused {
+                onScrollTargetChange?(.transcript)
+            } else if !isNoteFocused {
+                onScrollTargetChange?(nil)
+            }
+        }
         #if os(iOS)
         .onReceive(
             NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)
@@ -160,33 +259,6 @@ public struct RecordBottomSheet: View {
         #endif
     }
 
-    private var grabber: some View {
-        Capsule()
-            .fill(Color(.General.Fill.quaternary))
-            .frame(width: 36, height: 5)
-            .accessibilityHidden(true)
-    }
-
-    private var header: some View {
-        HStack(alignment: .center) {
-            Button(action: close) {
-                IconArtwork(icon: .x, size: 24, relativeTo: .body)
-                    .foregroundStyle(Color(.General.Label.secondary))
-            }
-            .buttonStyle(.labcordIcon(.plain, size: .large))
-            .accessibilityLabel(Text("닫기"))
-
-            Text("기록")
-                .typography(Typography.bodySemiBold)
-                .foregroundStyle(Color(.General.Label.primary))
-                .frame(maxWidth: .infinity)
-
-            Color.clear.frame(width: 50 * headerControlScale, height: 50 * headerControlScale)
-                .accessibilityHidden(true)
-        }
-        .frame(maxWidth: .infinity)
-    }
-
     private func close() {
         if let onDismiss {
             onDismiss()
@@ -194,9 +266,11 @@ public struct RecordBottomSheet: View {
             dismiss()
         }
     }
+}
 
+private extension RecordBottomSheet {
     @ViewBuilder
-    private var recordContent: some View {
+    var recordContent: some View {
         switch type {
         case .timer:
             TimerRecord(
@@ -205,17 +279,24 @@ public struct RecordBottomSheet: View {
                 cumulativeTime: timerCumulativeTime,
                 pauseCount: timerPauseCount,
                 state: timerState,
-                identity: timerIdentity
+                identity: timerIdentity,
+                durationFollowsTitle: true
             )
         case .voice:
-            VoicePlayer(
-                isPlaying: voiceIsPlaying,
-                progress: voiceProgress,
-                duration: voiceDuration,
-                onEditingChanged: voiceOnEditingChanged,
-                onToggle: voiceOnToggle,
-                onSeek: voiceOnSeek
-            )
+            Group {
+                if let voiceContent {
+                    voiceContent
+                } else {
+                    VoicePlayer(
+                        isPlaying: voiceIsPlaying,
+                        progress: voiceProgress,
+                        duration: voiceDuration,
+                        onEditingChanged: voiceOnEditingChanged,
+                        onToggle: voiceOnToggle,
+                        onSeek: voiceOnSeek
+                    )
+                }
+            }
             .frame(maxWidth: .infinity)
             .padding(.vertical, LayoutTokens.spacing8)
         case .photo, .video:
@@ -228,12 +309,12 @@ public struct RecordBottomSheet: View {
             }
                 .aspectRatio(type == .video ? 358.0 / 201.0 : 16.0 / 9.0, contentMode: .fit)
                 .frame(maxWidth: .infinity)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
                 .padding(.horizontal, type == .video ? 6 : 0)
-                .clipped()
         }
     }
 
-    private var noteField: some View {
+    var noteField: some View {
         VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
             Text("메모")
                 .typography(Typography.calloutSemiBold)
@@ -250,8 +331,8 @@ public struct RecordBottomSheet: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var actions: some View {
-        HStack(spacing: LayoutTokens.spacing16) {
+    var actions: some View {
+        HStack(spacing: LayoutTokens.spacing12) {
             Button(role: .destructive, action: onDelete) {
                 Text("삭제")
                     .frame(maxWidth: .infinity)
@@ -269,14 +350,13 @@ public struct RecordBottomSheet: View {
             .disabled(!canSave)
         }
         .frame(maxWidth: .infinity)
+        .padding(.top, 8)
     }
 
-    private var canSave: Bool {
+    var canSave: Bool {
         contentState == .filled
     }
-}
 
-private extension RecordBottomSheet {
     var bottomPadding: CGFloat {
         let base = isPresented ? 0 : LayoutTokens.spacing32
         return base + (isKeyboardVisible ? LayoutTokens.spacing16 : 0)
@@ -287,18 +367,19 @@ private extension RecordBottomSheet {
 #if os(watchOS)
         recordSheetReadOnlyText(note)
 #else
-        TextEditor(text: $note)
-            .labcordTextEditorStyle(
-                text: note,
+        VStack(alignment: .trailing, spacing: LayoutTokens.spacing8) {
+            RecordBottomSheetTextEditor(
+                text: $note,
                 focus: $isNoteFocused,
-                placeholder: Text("내용을 입력해 주세요")
+                bounds: $noteBounds,
+                accessibilityLabel: "메모",
+                characterLimit: 300
             )
-            .onGeometryChange(for: CGRect.self) { geometry in
-                geometry.frame(in: .global)
-            } action: { bounds in
-                noteBounds = bounds
-            }
-            .accessibilityLabel(Text("메모"))
+
+            Text("\(note.count)/300")
+                .typography(Typography.subheadline)
+                .foregroundStyle(Color(.General.Label.tertiary))
+        }
 #endif
     }
 

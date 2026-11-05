@@ -101,7 +101,7 @@ public struct VoicePlayer: View {
     }
 
     private var verticalLayout: some View {
-        VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
+        VStack(alignment: .leading, spacing: LayoutTokens.spacing12) {
             HStack(alignment: .firstTextBaseline, spacing: LayoutTokens.spacing12) {
                 playButton
                 if showDuration {
@@ -119,7 +119,7 @@ public struct VoicePlayer: View {
     private var horizontalDuration: some View {
         Text(duration)
             .typography(Typography.callout)
-            .foregroundStyle(Color(.General.Label.secondary))
+            .foregroundStyle(Color(.General.Label.tertiary))
             .frame(minWidth: 44)
             .fixedSize(horizontal: true, vertical: false)
     }
@@ -143,10 +143,10 @@ public struct VoicePlayer: View {
                 .id(isPlaying)
                 .transition(.opacity)
             }
-            .foregroundStyle(Color(.General.Label.inverse))
+            .foregroundStyle(Color(.General.Action.Secondary.foreground))
             .labcordMotion(.state, value: isPlaying)
         }
-        .buttonStyle(.labcordIcon(.primary, size: .small))
+        .buttonStyle(.labcordIcon(.tinted, size: .small))
         .padding(playButtonHitInset)
         .contentShape(Rectangle())
         .padding(-playButtonHitInset)

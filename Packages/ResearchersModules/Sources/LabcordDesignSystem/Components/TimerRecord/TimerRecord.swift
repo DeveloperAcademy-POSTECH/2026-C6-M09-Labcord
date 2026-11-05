@@ -54,6 +54,7 @@ public struct TimerRecord: View {
     private let pauseCount: String
     private let state: TimerRecordState
     private let identity: TimerIdentity
+    private let durationFollowsTitle: Bool
 
     public init(
         setDuration: Duration,
@@ -61,7 +62,8 @@ public struct TimerRecord: View {
         cumulativeTime: Duration,
         pauseCount: Int,
         state: TimerRecordState,
-        identity: TimerIdentity
+        identity: TimerIdentity,
+        durationFollowsTitle: Bool = false
     ) {
         self.init(
             setDuration: setDuration.formatted(.labcordDuration),
@@ -69,7 +71,8 @@ public struct TimerRecord: View {
             cumulativeTime: cumulativeTime.formatted(.labcordDuration),
             pauseCount: "(\(pauseCount))",
             state: state,
-            identity: identity
+            identity: identity,
+            durationFollowsTitle: durationFollowsTitle
         )
     }
 
@@ -79,7 +82,8 @@ public struct TimerRecord: View {
         cumulativeTime: String = "4초",
         pauseCount: String = "(1)",
         state: TimerRecordState = .end,
-        identity: TimerIdentity = .identity01
+        identity: TimerIdentity = .identity01,
+        durationFollowsTitle: Bool = false
     ) {
         self.setDuration = setDuration
         self.elapsedTime = elapsedTime
@@ -87,6 +91,7 @@ public struct TimerRecord: View {
         self.pauseCount = pauseCount
         self.state = state
         self.identity = identity
+        self.durationFollowsTitle = durationFollowsTitle
     }
 
     public var body: some View {
@@ -106,47 +111,34 @@ public struct TimerRecord: View {
     }
 
     private var singleLineContent: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .center, spacing: LayoutTokens.spacing8) {
-                durationLabel
-                stateLabel
-            }
-            .fixedSize(horizontal: true, vertical: true)
+        HStack(alignment: .center, spacing: LayoutTokens.spacing8) {
+            stateLabel
 
-            VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
-                durationLabel
-                stateLabel
+            if !durationFollowsTitle {
+                Spacer()
             }
+
+            durationLabel
         }
         .frame(minHeight: 22, alignment: .leading)
     }
 
     private var pausedContent: some View {
         VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .firstTextBaseline, spacing: LayoutTokens.spacing8) {
-                    durationLabel
-                    pausedStatus
-                }
-                .fixedSize(horizontal: true, vertical: true)
+            HStack(alignment: .center, spacing: LayoutTokens.spacing8) {
+                pausedStatus
 
-                VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
-                    durationLabel
-                    pausedStatus
+                if !durationFollowsTitle {
+                    Spacer()
                 }
+
+                durationLabel
             }
 
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .firstTextBaseline, spacing: LayoutTokens.spacing16) {
-                    elapsedDetail
-                    cumulativeDetail
-                }
-                .fixedSize(horizontal: true, vertical: true)
+            HStack(alignment: .firstTextBaseline, spacing: LayoutTokens.spacing16) {
+                elapsedDetail
 
-                VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
-                    elapsedDetail
-                    cumulativeDetail
-                }
+                cumulativeDetail
             }
         }
     }
@@ -213,19 +205,14 @@ public struct TimerRecord: View {
 
     private var durationLabel: some View {
         Text(setDuration)
-            .typography(Typography.bodySemiBold)
-            .foregroundStyle(Color(.General.Label.primary))
+            .padding(.horizontal, 4)
+            .typography(Typography.subheadlineSemiBold)
+            .foregroundStyle(Color(.General.Label.light))
             .contentTransition(.numericText())
             .labcordMotion(.state, value: setDuration)
-            .padding(.leading, LayoutTokens.spacing4 + 3)
-            .frame(minHeight: 22, alignment: .leading)
-            .overlay(alignment: .leading) {
-                Rectangle()
-                    .fill(identity.color)
-                    .frame(width: 3)
-                    .accessibilityHidden(true)
-            }
-            .fixedSize(horizontal: false, vertical: true)
+            .frame(minHeight: 20)
+            .background(Color(identity.color))
+            .cornerRadius(4)
     }
 
     private var accessibilityText: String {

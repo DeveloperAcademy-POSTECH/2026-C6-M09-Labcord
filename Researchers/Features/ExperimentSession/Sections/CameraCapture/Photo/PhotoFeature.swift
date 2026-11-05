@@ -21,6 +21,7 @@ struct PhotoFeature {
         var requestedRecordID: UUID?
         var pendingWatchCaptureID: UUID?
         var requiresExternalConfirmation = false
+        var countdownEndAt: Date?
     }
 
     enum Action: Equatable {
@@ -61,6 +62,7 @@ struct PhotoFeature {
     private func cancelScheduledCapture(in state: inout State) -> Effect<Action> {
         state.isScheduled = false
         state.scheduledAt = nil
+        state.countdownEndAt = nil
         return .cancel(id: CancelID.captureDelay)
     }
 
@@ -75,7 +77,9 @@ struct PhotoFeature {
                 }
                 state.requestedRecordID = id
                 state.isScheduled = true
-                state.scheduledAt = now
+                let scheduledAt = now
+                state.scheduledAt = scheduledAt
+                state.countdownEndAt = scheduledAt.addingTimeInterval(5)
                 return .run { send in
                     try await Task.sleep(for: .seconds(5))
                     await send(.delayElapsed(id))
@@ -92,6 +96,7 @@ struct PhotoFeature {
                 state.isScheduled = true
                 let scheduledAt = now
                 state.scheduledAt = scheduledAt
+                state.countdownEndAt = scheduledAt.addingTimeInterval(5)
                 let delay = Effect<Action>.run { send in
                     try await Task.sleep(for: .seconds(5))
                     await send(.delayElapsed(id))
@@ -115,7 +120,9 @@ struct PhotoFeature {
                 let id = uuid()
                 state.requestedRecordID = id
                 state.isScheduled = true
-                state.scheduledAt = now
+                let scheduledAt = now
+                state.scheduledAt = scheduledAt
+                state.countdownEndAt = scheduledAt.addingTimeInterval(5)
                 return .run { send in
                     try await Task.sleep(for: .seconds(5))
                     await send(.delayElapsed(id))

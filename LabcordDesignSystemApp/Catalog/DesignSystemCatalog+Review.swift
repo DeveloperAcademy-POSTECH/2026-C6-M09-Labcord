@@ -91,25 +91,7 @@ struct DesignSystemReviewPage: View {
             .accessibilityLabel(Text("사진 기록 열기"))
             .accessibilityIdentifier("catalog.motion.timelinePhoto")
         case .video:
-            Button {
-                openMediaRecord(.video, contentState: .filled)
-            } label: {
-                CatalogSampleMedia(isVideo: true)
-                    .overlay {
-                        Image(labcordIcon: .play)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 24, height: 24)
-                            .foregroundStyle(Color("General/Label/Inverse", bundle: catalogBundle))
-                            .padding(14)
-                            .background(
-                                Color("General/Brand/Primary", bundle: catalogBundle),
-                                in: Circle()
-                            )
-                    }
-            }
-            .buttonStyle(PressFeedbackButtonStyle())
-            .accessibilityLabel(Text("영상 기록 열기"))
+            CatalogSampleMedia(isVideo: true)
         case .timer:
             TimerRecord(
                 setDuration: .seconds(30), elapsedTime: .seconds(4),

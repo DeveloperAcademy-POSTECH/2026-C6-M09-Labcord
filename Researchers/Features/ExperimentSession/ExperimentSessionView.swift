@@ -56,6 +56,11 @@ struct ExperimentSessionView: View {
                                 cornerRadius: verticalSizeClass == .compact ? 15 : 0
                             )
                         )
+                        .overlay {
+                            if let endsAt = captureStore.photo.countdownEndAt {
+                                PhotoCaptureCountdownView(endsAt: endsAt)
+                            }
+                        }
                         .overlay(alignment: .topLeading) {
                             if case let .recording(startedAt) = captureStore.videoPhase {
                                 VideoRecordingIndicator(startedAt: startedAt)
