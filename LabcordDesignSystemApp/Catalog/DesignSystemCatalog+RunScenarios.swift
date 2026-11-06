@@ -93,14 +93,23 @@ struct CatalogRunTimerScenario: View {
 }
 
 struct CatalogRunRecordButtonScenario: View {
+    @State private var isGeneral = false
     @State private var kind = RecordButton.Kind.audio
     @State private var state = RecordButton.State.default
     @State private var actionCount = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            RecordButton(type: kind, state: state) { actionCount += 1 }
+            RecordButton(
+                type: kind, state: state, appearance: isGeneral ? .general : .experiment
+            ) { actionCount += 1 }
+                .background {
+                    if isGeneral {
+                        Color("General/Background/Primary", bundle: catalogBundle)
+                    }
+                }
                 .accessibilityIdentifier("catalog.scenario.recordButton.preview")
+            Toggle("General 색상", isOn: $isGeneral)
             Picker("기록 종류", selection: $kind) {
                 catalogPickerOptions(RecordButton.Kind.allCases)
             }
@@ -118,6 +127,7 @@ struct CatalogRunRecordButtonScenario: View {
 }
 
 struct CatalogRunExperimentControlScenario: View {
+    @State private var isGeneral = false
     @State private var isDisabled = false
     @State private var icon = Icon.arrowsCounterClockwise
     @State private var actionCount = 0
@@ -126,9 +136,16 @@ struct CatalogRunExperimentControlScenario: View {
         VStack(alignment: .leading, spacing: 12) {
             ExperimentControlButton(
                 state: isDisabled ? .disabled : .default,
+                appearance: isGeneral ? .general : .experiment,
                 action: { actionCount += 1 }, icon: Image(labcordIcon: icon)
             )
+            .background {
+                    if isGeneral {
+                        Color("General/Background/Primary", bundle: catalogBundle)
+                    }
+                }
             .accessibilityIdentifier("catalog.scenario.experimentControl.preview")
+            Toggle("General 색상", isOn: $isGeneral)
             Picker("상태", selection: $isDisabled) {
                 Text("Default").tag(false)
                 Text("Disabled").tag(true)

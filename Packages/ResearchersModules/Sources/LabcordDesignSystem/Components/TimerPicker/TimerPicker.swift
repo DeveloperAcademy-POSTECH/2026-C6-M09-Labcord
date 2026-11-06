@@ -60,7 +60,14 @@ public struct TimerPicker: View {
         #if os(iOS)
         TimePickerWheel(
             title: title, selection: selection, count: count,
-            scale: textScale, color: foregroundColor
+            scale: textScale,
+            color: foregroundColor,
+            adjacentColor: Color(
+                usage == .setup ? .General.Label.tertiary : .Experiment.Label.tertiary
+            ),
+            distantColor: Color(
+                usage == .setup ? .General.Label.quaternary : .Experiment.Label.quaternary
+            )
         )
             .frame(maxWidth: .infinity)
             .frame(height: 174 * textScale)

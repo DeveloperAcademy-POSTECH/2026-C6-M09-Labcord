@@ -3,19 +3,23 @@ import SwiftUI
 @MainActor
 public struct IOSIconButtonStyle: ButtonStyle {
     public typealias Variant = IOSButtonStyle.Variant
+    public typealias ColorPalette = IOSButtonStyle.ColorPalette
 
     private let variant: Variant
     private let size: ComponentSize?
     private let isLoading: Bool
+    private let colorPalette: ColorPalette
 
     public init(
         _ variant: Variant,
         size: ComponentSize? = nil,
-        isLoading: Bool = false
+        isLoading: Bool = false,
+        colorPalette: ColorPalette = .general
     ) {
         self.variant = variant
         self.size = size
         self.isLoading = isLoading
+        self.colorPalette = colorPalette
     }
 
     public func makeBody(configuration: Configuration) -> some View {
@@ -23,7 +27,8 @@ public struct IOSIconButtonStyle: ButtonStyle {
             configuration: configuration,
             variant: variant,
             size: size,
-            isLoading: isLoading
+            isLoading: isLoading,
+            colorPalette: colorPalette
         )
     }
 
@@ -37,6 +42,7 @@ public struct IOSIconButtonStyle: ButtonStyle {
         let variant: Variant
         let size: ComponentSize?
         let isLoading: Bool
+        let colorPalette: ColorPalette
 
         private var resolvedSize: ComponentSize {
             size ?? ComponentSize(controlSize)
@@ -50,7 +56,8 @@ public struct IOSIconButtonStyle: ButtonStyle {
             labcordButtonAppearance(
                 variant: variant,
                 isDestructive: configuration.role == .destructive,
-                isDisabled: !isEnabled && !isLoading
+                isDisabled: !isEnabled && !isLoading,
+                colorPalette: colorPalette
             )
         }
 
@@ -129,9 +136,10 @@ public extension ButtonStyle where Self == IOSIconButtonStyle {
     static func labcordIcon(
         _ variant: IOSIconButtonStyle.Variant,
         size: ComponentSize? = nil,
-        isLoading: Bool = false
+        isLoading: Bool = false,
+        colorPalette: IOSIconButtonStyle.ColorPalette = .general
     ) -> IOSIconButtonStyle {
-        IOSIconButtonStyle(variant, size: size, isLoading: isLoading)
+        IOSIconButtonStyle(variant, size: size, isLoading: isLoading, colorPalette: colorPalette)
     }
 }
 

@@ -11,4 +11,6 @@ ExperimentControlButton(state: controlState, action: resetExperiment) {
 - `icon` 슬롯은 native ViewBuilder입니다. 실행 의미가 다른 버튼에는 호출부에서 접근성 이름을 지정합니다.
 - 상태는 `.default`·`.disabled` 표현이며 실제 실험 초기화·종료는 액션이 처리합니다.
 
+- 색상은 기본 `appearance: .experiment`이며 밝은 배경에서는 `.general`을 선택합니다.
+
 [구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/ExperimentControlButton/ExperimentControlButton.swift)

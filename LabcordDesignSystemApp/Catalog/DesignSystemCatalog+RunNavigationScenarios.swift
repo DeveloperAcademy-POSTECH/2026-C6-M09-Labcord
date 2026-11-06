@@ -18,6 +18,9 @@ struct CatalogRunTabsScenario: View {
                 rightTitle: style == .pill ? "Apple Watch 제스처" : "진행중인 타이머"
             )
             .accessibilityIdentifier("catalog.scenario.timerTabs.preview")
+            TimerTabs(selection: $selection, count: count, style: style, appearance: .general)
+                .background(Color("General/Background/Primary", bundle: catalogBundle))
+                .accessibilityIdentifier("catalog.scenario.timerTabs.general")
             Picker("스타일", selection: $style) {
                 Text("Plain").tag(TimerTabs.Style.plain)
                 Text("Pill").tag(TimerTabs.Style.pill)
@@ -67,6 +70,9 @@ struct CatalogRunPageControlScenario: View {
                 .accessibilityIdentifier(
                     count == 2 ? "catalog.pageControl.two" : "catalog.pageControl.three"
                 )
+            PageControl(pageCount: count, selection: $selection, appearance: .general)
+                .background(Color("General/Background/Primary", bundle: catalogBundle))
+                .accessibilityIdentifier("catalog.pageControl.general")
             Text("현재 페이지: \(selection) / \(count)")
                 .typography(Typography.subheadline)
                 .foregroundStyle(Color("Experiment/Label/Secondary", bundle: catalogBundle))
