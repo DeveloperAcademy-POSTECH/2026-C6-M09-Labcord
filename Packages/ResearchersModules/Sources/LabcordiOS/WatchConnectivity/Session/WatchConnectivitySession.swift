@@ -17,6 +17,7 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
     public let experiments = WatchExperimentTransport()
     public let records = WatchRecordTransport()
     public private(set) var lastAudioTransferError: WatchAudioError?
+    private var didRetryActivation = false
 
     func addStateObserver(_ observer: @escaping () -> Void) -> UUID {
         let id = UUID()
@@ -55,6 +56,12 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         activationDidCompleteWith state: WCSessionActivationState,
         error: Error?
     ) {
+        if error == nil {
+            didRetryActivation = false
+        } else if session.activationState != .activated, !didRetryActivation {
+            didRetryActivation = true
+            session.activate()
+        }
         notifyStateObservers()
         Task { @MainActor in records.resend(session: session) }
     }
