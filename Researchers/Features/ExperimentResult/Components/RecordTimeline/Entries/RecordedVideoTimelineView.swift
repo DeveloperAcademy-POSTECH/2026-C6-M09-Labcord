@@ -32,7 +32,7 @@ struct RecordedVideoTimelineView: View {
     }
 }
 
-private struct AspectFillVideoView: UIViewRepresentable {
+struct AspectFillVideoView: UIViewRepresentable {
     let player: AVPlayer
 
     func makeUIView(context: Context) -> UIView {

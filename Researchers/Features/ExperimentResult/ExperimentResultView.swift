@@ -57,7 +57,9 @@ struct ExperimentResultView: View {
 
                                         Separator(orientation: .horizontal)
 
-                                        RecordTimelineView(entries: store.displayedEntries)
+                                        RecordTimelineView(entries: store.displayedEntries) {
+                                            store.send(.timelineEntrySelected($0))
+                                        }
                                     }
                                 }
                             }
@@ -111,6 +113,45 @@ struct ExperimentResultView: View {
                 ) {
                     TitleEditOverlayView(store: overlayStore)
                 }
+            }
+            .overlay {
+                Overlay()
+                    .ignoresSafeArea()
+                    .opacity(store.selectedEntry == nil ? 0 : 1)
+                    .animation(.easeInOut(duration: 0.2), value: store.selectedEntry != nil)
+                    .allowsHitTesting(false)
+            }
+            .fullScreenCover(item: Binding(
+                get: { store.selectedEntry },
+                set: { if $0 == nil { store.send(.timelineSheetDismissed) } }
+            )) { entry in
+                ExperimentRecordSheetHost(
+                    entry: entry,
+                    note: Binding(
+                        get: { store.draftNote },
+                        set: { store.send(.recordNoteChanged($0)) }
+                    ),
+                    transcript: Binding(
+                        get: { store.draftTranscript },
+                        set: { store.send(.recordTranscriptChanged($0)) }
+                    ),
+                    isDeleteConfirmationPresented: Binding(
+                        get: { store.isRecordDeleteConfirmationPresented },
+                        set: {
+                            if !$0 { store.send(.recordDeleteCancelled) }
+                        }
+                    ),
+                    saveMessage: Binding(
+                        get: { store.recordSaveMessage },
+                        set: { if $0 == nil { store.send(.recordSaveMessageDismissed) } }
+                    ),
+                    canSave: store.canSaveRecord,
+                    onDismiss: { store.send(.timelineSheetDismissed) },
+                    onSave: { store.send(.recordSaveTapped) },
+                    onDelete: { store.send(.recordDeleteTapped) },
+                    onConfirmDelete: { store.send(.recordDeleteConfirmed) },
+                    onCancelDelete: { store.send(.recordDeleteCancelled) }
+                )
             }
         }
     }

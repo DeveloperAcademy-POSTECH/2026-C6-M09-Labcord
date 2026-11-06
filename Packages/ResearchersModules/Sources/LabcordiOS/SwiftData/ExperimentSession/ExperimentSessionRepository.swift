@@ -19,6 +19,11 @@ final class ExperimentSessionRepository {
         let timerSeconds = experiment.mode == .procedure
             ? experiment.procedure?.timerSeconds ?? []
             : []
+        let procedure = experiment.mode == .procedure ? experiment.procedure : nil
+        let speechContextualStrings = (procedure?.materials ?? [])
+            + (procedure?.samples ?? [])
+            + (procedure?.glossaryTerms ?? [])
+            + (procedure?.units ?? [])
         let timers = activeTimers(in: experiment, at: enteredAt)
         experiment.recordEntry(at: enteredAt)
         try context.save()
@@ -26,7 +31,8 @@ final class ExperimentSessionRepository {
             title: experiment.title,
             timerSeconds: timerSeconds,
             mode: experiment.mode,
-            timers: timers
+            timers: timers,
+            speechContextualStrings: SpeechContextualTerms.prepare(speechContextualStrings)
         )
     }
 

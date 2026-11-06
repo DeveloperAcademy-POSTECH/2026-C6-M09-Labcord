@@ -45,9 +45,11 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		BA1300013000000000000001 /* Exceptions for Researchers */ = {
+		BA1300013000000000000001 /* Exceptions for "Researchers" folder in "Researchers" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (Info.plist, );
+			membershipExceptions = (
+				Info.plist,
+			);
 			target = 8E0691143080743D0081547E /* Researchers */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -55,7 +57,9 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		8E0691173080743D0081547E /* Researchers */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (BA1300013000000000000001 /* Exceptions for Researchers */, );
+			exceptions = (
+				BA1300013000000000000001 /* Exceptions for "Researchers" folder in "Researchers" target */,
+			);
 			path = Researchers;
 			sourceTree = "<group>";
 		};
@@ -414,12 +418,12 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
-				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 4;
+				DEVELOPMENT_TEAM = HJGS4LQ7XH;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Labcord;
 				INFOPLIST_FILE = Researchers/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Labcord;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCameraUsageDescription = "실험 중 사진과 영상을 촬영하여 기록으로 남기기 위해 카메라 접근이 필요합니다.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "실험 중 음성을 녹음하여 기록으로 남기기 위해 마이크 접근이 필요합니다.";
@@ -428,7 +432,7 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -458,12 +462,12 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
-				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 4;
+				DEVELOPMENT_TEAM = HJGS4LQ7XH;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Labcord;
 				INFOPLIST_FILE = Researchers/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Labcord;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCameraUsageDescription = "실험 중 사진과 영상을 촬영하여 기록으로 남기기 위해 카메라 접근이 필요합니다.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "실험 중 음성을 녹음하여 기록으로 남기기 위해 마이크 접근이 필요합니다.";
@@ -472,7 +476,7 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -501,8 +505,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = LabcordIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
-				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = HJGS4LQ7XH;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Labcord;
@@ -535,8 +539,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = LabcordIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
-				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = HJGS4LQ7XH;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Labcord;

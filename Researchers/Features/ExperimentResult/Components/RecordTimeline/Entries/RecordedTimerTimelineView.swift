@@ -7,6 +7,7 @@ struct RecordedTimerTimelineView: View {
     let event: ExperimentResultDetail.TimelineTimerEvent
     let timestamp: String
     let date: Date
+    let note: String
 
     var body: some View {
         let state: TimerRecordState = switch event {
@@ -33,8 +34,8 @@ struct RecordedTimerTimelineView: View {
         TimelineItem(
             timestamp: timestamp,
             title: "타이머 기록",
-            memo: record.note,
-            showMemo: !record.note.isEmpty,
+            memo: note,
+            showMemo: !note.isEmpty,
             type: .timer
         ) {
             TimerRecord(

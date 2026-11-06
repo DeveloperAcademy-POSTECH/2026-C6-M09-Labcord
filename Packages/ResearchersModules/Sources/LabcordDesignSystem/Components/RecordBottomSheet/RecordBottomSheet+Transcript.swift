@@ -51,11 +51,13 @@ struct RecordBottomSheetTranscriptField: View {
                 defaultEditor
             }
 
-            Text(help)
-                .typography(Typography.subheadline)
-                .foregroundStyle(Color(.General.Label.secondary))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .fixedSize(horizontal: false, vertical: true)
+            if !help.isEmpty {
+                Text(help)
+                    .typography(Typography.subheadline)
+                    .foregroundStyle(Color(.General.Label.secondary))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -65,18 +67,13 @@ struct RecordBottomSheetTranscriptField: View {
 #if os(watchOS)
         recordSheetReadOnlyText(transcript)
 #else
-        TextEditor(text: $transcript)
-            .labcordTextEditorStyle(
-                text: transcript,
-                focus: focus,
-                placeholder: Text("내용을 입력해 주세요")
-            )
-            .onGeometryChange(for: CGRect.self) { geometry in
-                geometry.frame(in: .global)
-            } action: { frame in
-                bounds = frame
-            }
-            .accessibilityLabel(Text("음성 전사"))
+        RecordBottomSheetTextEditor(
+            text: $transcript,
+            focus: focus,
+            bounds: $bounds,
+            accessibilityLabel: "음성 전사",
+            characterLimit: nil
+        )
 #endif
     }
 }

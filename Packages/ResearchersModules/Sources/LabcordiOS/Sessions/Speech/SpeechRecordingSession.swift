@@ -27,7 +27,9 @@ public final class SpeechRecordingSession {
         self.locale = locale
     }
 
-    public func start() async throws -> AsyncStream<SpeechRecordingEvent> {
+    public func start(
+        contextualStrings: [String] = []
+    ) async throws -> AsyncStream<SpeechRecordingEvent> {
         guard startupID == nil, recordingID == nil else {
             throw SpeechRecordingError.alreadyRecording
         }
@@ -41,7 +43,9 @@ public final class SpeechRecordingSession {
         try await activateForStartup(id)
 
         do {
-            return try beginRecording(id: id, recognizer: recognizer)
+            return try beginRecording(
+                id: id, recognizer: recognizer, contextualStrings: contextualStrings
+            )
         } catch {
             finishRecording(keepingFile: false)
             discardLatestRecording()
@@ -80,7 +84,8 @@ public final class SpeechRecordingSession {
 
     private func beginRecording(
         id: UUID,
-        recognizer: SFSpeechRecognizer
+        recognizer: SFSpeechRecognizer,
+        contextualStrings: [String]
     ) throws -> AsyncStream<SpeechRecordingEvent> {
         let inputNode = audioEngine.inputNode
         let format = inputNode.outputFormat(forBus: 0)
@@ -94,6 +99,7 @@ public final class SpeechRecordingSession {
 
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
+        request.contextualStrings = contextualStrings
         recognitionRequest = request
         recordingID = id
         transcript = ""

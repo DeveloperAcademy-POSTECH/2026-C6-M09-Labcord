@@ -54,6 +54,7 @@ public struct TimerRecord: View {
     private let pauseCount: String
     private let state: TimerRecordState
     private let identity: TimerIdentity
+    private let durationFollowsTitle: Bool
 
     public init(
         setDuration: Duration,
@@ -61,7 +62,8 @@ public struct TimerRecord: View {
         cumulativeTime: Duration,
         pauseCount: Int,
         state: TimerRecordState,
-        identity: TimerIdentity
+        identity: TimerIdentity,
+        durationFollowsTitle: Bool = false
     ) {
         self.init(
             setDuration: setDuration.formatted(.labcordDuration),
@@ -69,7 +71,8 @@ public struct TimerRecord: View {
             cumulativeTime: cumulativeTime.formatted(.labcordDuration),
             pauseCount: "(\(pauseCount))",
             state: state,
-            identity: identity
+            identity: identity,
+            durationFollowsTitle: durationFollowsTitle
         )
     }
 
@@ -79,7 +82,8 @@ public struct TimerRecord: View {
         cumulativeTime: String = "4초",
         pauseCount: String = "(1)",
         state: TimerRecordState = .end,
-        identity: TimerIdentity = .identity01
+        identity: TimerIdentity = .identity01,
+        durationFollowsTitle: Bool = false
     ) {
         self.setDuration = setDuration
         self.elapsedTime = elapsedTime
@@ -87,6 +91,7 @@ public struct TimerRecord: View {
         self.pauseCount = pauseCount
         self.state = state
         self.identity = identity
+        self.durationFollowsTitle = durationFollowsTitle
     }
 
     public var body: some View {
@@ -106,10 +111,12 @@ public struct TimerRecord: View {
     }
 
     private var singleLineContent: some View {
-        HStack(alignment: .center) {
+        HStack(alignment: .center, spacing: LayoutTokens.spacing8) {
             stateLabel
 
-            Spacer()
+            if !durationFollowsTitle {
+                Spacer()
+            }
 
             durationLabel
         }
@@ -118,10 +125,12 @@ public struct TimerRecord: View {
 
     private var pausedContent: some View {
         VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
-            HStack(alignment: .center) {
+            HStack(alignment: .center, spacing: LayoutTokens.spacing8) {
                 pausedStatus
 
-                Spacer()
+                if !durationFollowsTitle {
+                    Spacer()
+                }
 
                 durationLabel
             }

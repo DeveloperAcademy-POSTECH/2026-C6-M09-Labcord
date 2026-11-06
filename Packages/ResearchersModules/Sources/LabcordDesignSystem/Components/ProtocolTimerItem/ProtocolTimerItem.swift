@@ -9,15 +9,18 @@ public struct ProtocolTimerItem: View {
     private let value: String
     private let unit: String
     private let format: Format
+    private let width: CGFloat?
 
     public init(
         value: String,
         unit: String,
-        format: Format = .short
+        format: Format = .short,
+        width: CGFloat? = nil
     ) {
         self.value = value
         self.unit = unit
         self.format = format
+        self.width = width
     }
 
     public var body: some View {
@@ -40,6 +43,7 @@ public struct ProtocolTimerItem: View {
         }
         .padding(LayoutTokens.spacing4)
         .frame(minWidth: 90, minHeight: 60)
+        .frame(width: width)
         .background(Color(.Experiment.Fill.primary), in: roundedShape)
         .clipShape(roundedShape)
         .accessibilityElement(children: .combine)

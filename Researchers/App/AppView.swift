@@ -24,6 +24,25 @@ struct AppView: View {
                         ProtocolRegistrationView(store: store)
                             .navigationSwipeBackEnabled(!store.isSaving)
 
+                    case .recent(let store):
+                        RecentProtocolView(store: store)
+
+                    case .review(let store):
+                        ProtocolReviewView(store: store)
+                            .disabled(self.store.savedReview != nil)
+                            .overlay(alignment: .bottom) {
+                                if self.store.savedReview != nil {
+                                    VStack {
+                                        Button("정리 다시 시도") { self.store.send(.retryReviewSave) }
+                                        Button("저장된 실험으로 이동") { self.store.send(.openSavedReview) }
+                                    }
+                                    .padding()
+                                    .background(.regularMaterial, in: Capsule())
+                                    .padding()
+                                }
+                            }
+                            .navigationSwipeBackEnabled(false)
+
                     case .session(let store):
                         ExperimentSessionView(store: store)
                             .navigationSwipeBackEnabled(false)
@@ -33,10 +52,42 @@ struct AppView: View {
                             .navigationSwipeBackEnabled(store.isOpenedFromHome)
                     }
                 }
+                .disabled(store.reviewSaving)
             }
         }
         .task {
             store.send(.appeared)
+        }
+        .alert("실험을 저장하거나 정리하지 못했어요", isPresented: Binding(
+            get: { store.reviewSaveFailed },
+            set: { if !$0 { store.send(.dismissReviewSaveFailure) } }
+        )) {
+            Button("재시도") { store.send(.retryReviewSave) }
+            if store.savedReview != nil {
+                Button("저장된 실험으로 이동") { store.send(.openSavedReview) }
+            }
+            Button("닫기", role: .cancel) { store.send(.dismissReviewSaveFailure) }
+        } message: {
+            Text(store.savedReview == nil
+                 ? "입력한 내용은 유지돼요. 다시 시도해 주세요."
+                 : "실험은 저장됐지만 정리되지 않은 분석 파일이 남을 수 있어요.")
+        }
+        .alert("이미 저장된 실험이에요", isPresented: Binding(
+            get: { store.reviewAlreadySaved },
+            set: { if !$0 { store.send(.confirmAlreadySaved) } }
+        )) {
+            Button("저장된 실험으로 이동") { store.send(.confirmAlreadySaved) }
+        } message: {
+            Text("이 분석으로 저장한 실험이 있어요. 이번에 편집한 내용은 반영되지 않아요.")
+        }
+        .alert("결과 편집을 종료할까요?", isPresented: Binding(
+            get: { store.reviewExitRequested },
+            set: { if !$0 { store.send(.cancelReviewExit) } }
+        )) {
+            Button("계속 편집", role: .cancel) { store.send(.cancelReviewExit) }
+            Button("종료", role: .destructive) { store.send(.confirmReviewExit) }
+        } message: {
+            Text("편집한 내용은 저장되지 않아요.")
         }
     }
 }

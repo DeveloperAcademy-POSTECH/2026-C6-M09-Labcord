@@ -4,6 +4,7 @@ import SwiftUI
 public struct FormTextAreaStyle: ViewModifier {
     public init(
         placeholder: Text? = nil,
+        height: CGFloat? = nil,
         isEmpty: Bool = true,
         isFocused: Bool = false,
         isFilled: Bool = false,
@@ -13,6 +14,7 @@ public struct FormTextAreaStyle: ViewModifier {
 
     public init(
         placeholder: LocalizedStringKey,
+        height: CGFloat? = nil,
         isEmpty: Bool = true,
         isFocused: Bool = false,
         isFilled: Bool = false,
@@ -22,6 +24,7 @@ public struct FormTextAreaStyle: ViewModifier {
 
     public init(
         placeholder: String,
+        height: CGFloat? = nil,
         isEmpty: Bool = true,
         isFocused: Bool = false,
         isFilled: Bool = false,
@@ -36,6 +39,7 @@ public struct FormTextAreaStyle: ViewModifier {
 #else
 public struct FormTextAreaStyle: ViewModifier {
     private let placeholder: Text?
+    private let height: CGFloat?
     private let isEmpty: Bool
     private let isFocused: Bool
     private let isFilled: Bool
@@ -47,8 +51,11 @@ public struct FormTextAreaStyle: ViewModifier {
     @Environment(\.isEnabled) private var isEnabled
     @ScaledMetric(relativeTo: .subheadline) private var editorHeight: CGFloat = 120
 
+    private var resolvedHeight: CGFloat { height ?? editorHeight }
+
     public init(
         placeholder: Text? = nil,
+        height: CGFloat? = nil,
         isEmpty: Bool = true,
         isFocused: Bool = false,
         isFilled: Bool = false,
@@ -56,6 +63,7 @@ public struct FormTextAreaStyle: ViewModifier {
         isDisabled: Bool = false
     ) {
         self.placeholder = placeholder
+        self.height = height
         self.isEmpty = isEmpty
         self.isFocused = isFocused
         self.isFilled = isFilled
@@ -65,6 +73,7 @@ public struct FormTextAreaStyle: ViewModifier {
 
     public init(
         placeholder: LocalizedStringKey,
+        height: CGFloat? = nil,
         isEmpty: Bool = true,
         isFocused: Bool = false,
         isFilled: Bool = false,
@@ -73,6 +82,7 @@ public struct FormTextAreaStyle: ViewModifier {
     ) {
         self.init(
             placeholder: Text(placeholder),
+            height: height,
             isEmpty: isEmpty,
             isFocused: isFocused,
             isFilled: isFilled,
@@ -83,6 +93,7 @@ public struct FormTextAreaStyle: ViewModifier {
 
     public init(
         placeholder: String,
+        height: CGFloat? = nil,
         isEmpty: Bool = true,
         isFocused: Bool = false,
         isFilled: Bool = false,
@@ -91,6 +102,7 @@ public struct FormTextAreaStyle: ViewModifier {
     ) {
         self.init(
             placeholder: Text(verbatim: placeholder),
+            height: height,
             isEmpty: isEmpty,
             isFocused: isFocused,
             isFilled: isFilled,
@@ -109,8 +121,8 @@ public struct FormTextAreaStyle: ViewModifier {
                 .padding(.vertical, LayoutTokens.spacing12 - 8)
                 .frame(
                     maxWidth: .infinity,
-                    minHeight: editorHeight,
-                    maxHeight: editorHeight,
+                    minHeight: resolvedHeight,
+                    maxHeight: resolvedHeight,
                     alignment: .topLeading
                 )
 
@@ -126,8 +138,8 @@ public struct FormTextAreaStyle: ViewModifier {
         }
             .frame(
                 maxWidth: .infinity,
-                minHeight: editorHeight,
-                maxHeight: editorHeight,
+                minHeight: resolvedHeight,
+                maxHeight: resolvedHeight,
                 alignment: .topLeading
             )
             .background((state.backgroundColor))
@@ -183,11 +195,13 @@ public extension View {
         text: String,
         focus: FocusState<Bool>.Binding,
         placeholder: Text? = nil,
+        height: CGFloat? = nil,
         isError: Bool = false
     ) -> some View {
         labcordTextEditorStyle(
             FormTextAreaStyle(
                 placeholder: placeholder,
+                height: height,
                 isEmpty: text.isEmpty,
                 isFocused: focus.wrappedValue,
                 isFilled: !text.isEmpty,
@@ -202,11 +216,13 @@ public extension View {
         focus: FocusState<Value?>.Binding,
         equals value: Value,
         placeholder: Text? = nil,
+        height: CGFloat? = nil,
         isError: Bool = false
     ) -> some View {
         labcordTextEditorStyle(
             FormTextAreaStyle(
                 placeholder: placeholder,
+                height: height,
                 isEmpty: text.isEmpty,
                 isFocused: focus.wrappedValue == value,
                 isFilled: !text.isEmpty,

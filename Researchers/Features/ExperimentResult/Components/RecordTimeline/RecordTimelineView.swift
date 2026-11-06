@@ -4,6 +4,7 @@ import SwiftUI
 
 struct RecordTimelineView: View {
     let entries: [ExperimentResultDetail.TimelineEntry]
+    let onSelectEntry: (ExperimentResultDetail.TimelineEntry) -> Void
 
     var body: some View {
         LazyVStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
@@ -22,6 +23,7 @@ struct RecordTimelineView: View {
                 }
 
                 RecordTimelineEntryView(entry: entry)
+                    .simultaneousGesture(TapGesture().onEnded { onSelectEntry(entry) })
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

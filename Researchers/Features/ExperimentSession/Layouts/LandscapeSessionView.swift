@@ -18,7 +18,7 @@ struct LandscapeSessionView: View {
             Color.clear
 
             VStack(alignment: .leading, spacing: 20) {
-                SessionHeaderView(store: sessionStore)
+                HeaderView(store: sessionStore)
 
                 HStack(alignment: .top, spacing: 20) {
                     CameraCaptureView(store: store)

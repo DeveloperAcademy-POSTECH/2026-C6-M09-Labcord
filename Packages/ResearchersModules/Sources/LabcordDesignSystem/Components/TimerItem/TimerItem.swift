@@ -77,11 +77,7 @@ public struct TimerItem<ID: Hashable>: View {
             }
         }
         .padding(LayoutTokens.spacing8)
-        .frame(
-            maxWidth: .infinity,
-            minHeight: format == .minuteSecond ? 71 : 69,
-            alignment: .leading
-        )
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background {
             Rectangle()
                 .fill(Color(.Experiment.Timer.background))
@@ -89,9 +85,10 @@ public struct TimerItem<ID: Hashable>: View {
                 .labcordMotion(.state, value: state.rawValue)
                 .allowsHitTesting(false)
         }
-        .overlay {
+        .overlay(alignment: .bottom) {
             Rectangle()
-                .strokeBorder(Color(.Experiment.Border.default), lineWidth: 1)
+                .fill(Color(.Experiment.Border.default))
+                .frame(height: 1)
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("타이머 \(String(describing: timerID))"))

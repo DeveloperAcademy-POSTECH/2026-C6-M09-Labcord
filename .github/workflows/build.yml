@@ -25,10 +25,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build
+      - name: Identify compilation cache environment
+        if: github.event_name == 'pull_request'
+        id: cache-environment
         run: |
+          echo "arch=$(uname -m)" >> "$GITHUB_OUTPUT"
+          echo "toolchain=$( { xcodebuild -version; xcrun --sdk iphonesimulator --show-sdk-build-version; xcrun --sdk watchsimulator --show-sdk-build-version; printf '%s\n%s\n' "$ImageOS" "$ImageVersion"; } | shasum -a 256 | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore compilation cache
+        if: github.event_name == 'pull_request'
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/labcord-compilation-cache
+          key: swift-compilation-v1-${{ runner.os }}-${{ steps.cache-environment.outputs.arch }}-${{ steps.cache-environment.outputs.toolchain }}-${{ hashFiles('Researchers.xcodeproj/project.pbxproj', 'Researchers.xcodeproj/xcshareddata/xcschemes/*.xcscheme', '**/Package.swift', '**/Package.resolved', '.github/workflows/build.yml') }}-pr${{ github.event.pull_request.number }}-${{ github.sha }}
+          restore-keys: |
+            swift-compilation-v1-${{ runner.os }}-${{ steps.cache-environment.outputs.arch }}-${{ steps.cache-environment.outputs.toolchain }}-${{ hashFiles('Researchers.xcodeproj/project.pbxproj', 'Researchers.xcodeproj/xcshareddata/xcschemes/*.xcscheme', '**/Package.swift', '**/Package.resolved', '.github/workflows/build.yml') }}-pr${{ github.event.pull_request.number }}-
+
+      - name: Build
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          args=()
+          if [ "$EVENT_NAME" = 'pull_request' ]; then
+            args+=(ARCHS=arm64 COMPILATION_CACHE_ENABLE_CACHING=YES "COMPILATION_CACHE_CAS_PATH=$RUNNER_TEMP/labcord-compilation-cache")
+          fi
           xcodebuild build \
             -project Researchers.xcodeproj \
             -scheme Researchers \
             -destination 'generic/platform=iOS Simulator' \
-            -skipMacroValidation
+            -skipMacroValidation "${args[@]}"
