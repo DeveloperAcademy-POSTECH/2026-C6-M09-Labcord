@@ -301,7 +301,8 @@ extension PhoneWatchExperimentCoordinator {
             at: revisionURL.deletingLastPathComponent(), withIntermediateDirectories: true
         )
         try Data(String(next).utf8).write(
-            to: revisionURL, options: [.atomic, .completeFileProtection]
+            to: revisionURL,
+            options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication]
         )
         return next
     }
