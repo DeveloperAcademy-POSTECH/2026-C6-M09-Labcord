@@ -76,14 +76,7 @@ extension ExperimentSessionFeature {
             effects.append(watchVoiceCloseEffect(state: state))
         }
         if state.capture.videoPhase != .idle, !state.capture.video.isSaving {
-            switch (state.watchCommand?.operation, state.capture.videoPhase) {
-            case (.pause, .starting), (.pause, .recording):
-                if !state.capture.video.isDiscardingForWatchPause {
-                    effects.append(.send(.capture(.video(.discardForWatchPause))))
-                }
-            default:
-                effects.append(.send(.capture(.video(.stopAndSaveRequested))))
-            }
+            effects.append(.send(.capture(.video(.stopAndSaveRequested))))
         }
         if state.capture.capturedPhotoData != nil, !state.capture.photo.isSaving {
             effects.append(.send(.capture(.photo(.saveRequested))))
@@ -108,13 +101,7 @@ extension ExperimentSessionFeature {
     }
 
     private func watchVoiceCloseEffect(state: State) -> Effect<Action> {
-        switch (state.watchCommand?.operation, state.voice.phase) {
-        case (.pause, .starting), (.pause, .recording), (.pause, .stopping):
-            return state.voice.isPauseCancellationPending
-                ? .none : .send(.voice(.discardForWatchPause))
-        default:
-            return .send(.voice(.stopAndSaveRequested))
-        }
+        .send(.voice(.stopAndSaveRequested))
     }
 
     private func setWatchDrainOwnership(_ closing: Bool, state: inout State) {
