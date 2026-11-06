@@ -16,6 +16,6 @@ struct CameraSwitchButton: View {
         .buttonStyle(.borderedProminent)
         .buttonBorderShape(.circle)
         .tint(.black.opacity(0.5))
-        .disabled(store.previewConnector == nil || store.isCameraSwitching)
+        .disabled(!store.canSwitchCamera)
     }
 }
