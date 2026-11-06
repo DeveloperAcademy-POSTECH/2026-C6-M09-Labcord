@@ -15,9 +15,12 @@ struct FirstHomeEmptyContent: View {
                 .multilineTextAlignment(.center)
                 .foregroundStyle(Color("General/Label/Secondary"))
 
-            Button("실험 등록하기", action: onRegisterTapped)
-                .buttonStyle(IOSButtonStyle(.filled, size: .medium))
-                .padding(.top, LayoutTokens.spacing8)
+            Button(action: onRegisterTapped) {
+                Text("실험 등록하기")
+                    .frame(width: 198)
+            }
+            .buttonStyle(IOSButtonStyle(.filled, size: .large))
+            .padding(.top, 18)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
