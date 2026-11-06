@@ -19,7 +19,7 @@ extension PhoneWatchExperimentCoordinator {
             throw WatchExperimentError.activeExperimentConflict
         }
         if WatchExperimentConflictPolicy.requiresExclusiveExperiment(command.operation) {
-            let active = try client.load().compactMap { try client.watchState($0.id) }
+            let active = try client.loadForWatch().compactMap { try client.watchState($0.id) }
                 .first { $0.experiment.status == .running && $0.experiment.id != id }
             guard active == nil else { throw WatchExperimentError.activeExperimentConflict }
         }
@@ -94,11 +94,9 @@ extension PhoneWatchExperimentCoordinator {
                     throw WatchExecutionUncertain()
                 }
             } else {
-                let exists: Bool
-                do { exists = try client.loadDetail(id) != nil } catch {
+                do { try client.enterSession(id, .now) } catch {
                     throw WatchExecutionUncertain()
                 }
-                guard exists else { throw WatchExperimentError.experimentNotFound }
             }
         }
         pendingStartID = id

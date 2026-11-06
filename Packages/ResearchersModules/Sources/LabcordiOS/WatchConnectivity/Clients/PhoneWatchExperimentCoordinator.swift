@@ -149,7 +149,7 @@ public final class PhoneWatchExperimentCoordinator {
         if command.operation == .requestStatus { return requestStatus(command) }
         if command.operation == .list {
             do {
-                let summaries = try client.load().compactMap { entry in
+                let summaries = try client.loadForWatch().compactMap { entry in
                     try client.watchState(entry.id)?.experiment
                 }
                 if phoneSceneIsActive, UIApplication.shared.applicationState == .active,

@@ -180,13 +180,7 @@ struct WatchExperimentFeature {
                 if !state.interruptionNeedsConfirmation { state.message = nil }
                 return request(.snapshot, state: &state)
             case .backTapped:
-                guard state.pending == nil,
-                      !state.recording.hasUnsettledRecords(in: state.selectedID),
-                      !state.isPreparingInterruption else { return .none }
-                state.screen = .selection
-                state.selectedID = nil
-                state.startToken = nil
-                return request(.list, state: &state)
+                return backToSelection(state: &state)
             case .startTapped:
                 guard state.canOperate, state.snapshot?.experiment.status == .ready else {
                     return .none

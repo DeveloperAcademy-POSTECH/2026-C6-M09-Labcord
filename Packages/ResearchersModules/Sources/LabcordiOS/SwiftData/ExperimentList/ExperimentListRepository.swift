@@ -24,6 +24,13 @@ final class ExperimentListRepository {
         return experiments.map { Self.entry($0, at: now) }
     }
 
+    func loadForWatch() throws -> [ExperimentListEntry] {
+        let context = try store.makeContext()
+        let experiments = try context.fetch(FetchDescriptor<Experiment>())
+        let now = Date.now
+        return experiments.map { Self.entry($0, at: now) }
+    }
+
     func create(id: UUID, at date: Date) throws -> ExperimentListEntry {
         let context = try store.makeContext()
         if let existing = try store.find(id: id, in: context) {

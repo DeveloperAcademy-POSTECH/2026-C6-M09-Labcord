@@ -4,6 +4,33 @@ import LabcordShared
 import LabcordWatchOS
 
 extension WatchExperimentFeature {
+    func backToSelection(state: inout State) -> Effect<Action> {
+        guard !state.recording.hasUnsettledRecords(in: state.selectedID) else {
+            state.message = "진행 중인 기록을 먼저 확인해주세요."
+            return .none
+        }
+        guard !state.isPreparingInterruption else {
+            state.message = "실험 중단·종료를 처리하고 있어요."
+            return .none
+        }
+        if let pending = state.pending {
+            guard WatchRequestPolicy.canAbandon(pending.command.operation) else {
+                state.message = "요청 상태를 먼저 확인해주세요."
+                return .none
+            }
+            state.pending = nil
+        }
+        state.screen = .selection
+        state.selectedID = nil
+        state.startToken = nil
+        state.authorization = nil
+        return .concatenate(
+            .merge(.cancel(id: CancelID.request), .cancel(id: CancelID.delivery),
+                   .cancel(id: CancelID.poll)),
+            request(.list, state: &state)
+        )
+    }
+
     func close(state: inout State) -> Effect<Action> {
     let cancellingPreparation = state.pending?.command.operation == .prepareStart
     if cancellingPreparation { state.pending = nil }

@@ -16,6 +16,7 @@ public struct ExperimentClient: Sendable {
     public var dismissWatchTimer: @MainActor @Sendable (UUID, UUID) throws -> Void
     public var watchState: @MainActor @Sendable (UUID) throws -> WatchExperimentState?
     public var load: @MainActor @Sendable () throws -> [ExperimentListEntry]
+    public var loadForWatch: @MainActor @Sendable () throws -> [ExperimentListEntry]
     public var loadRecentProtocols: @MainActor @Sendable () throws -> [RecentProtocolEntry]
     public var loadDetail: @MainActor @Sendable (UUID) throws -> ExperimentSessionDetail?
     public var loadResultDetail: @MainActor @Sendable (UUID) throws -> ExperimentResultDetail?
@@ -44,6 +45,7 @@ public struct ExperimentClient: Sendable {
 
     public init(
         load: @escaping @MainActor @Sendable () throws -> [ExperimentListEntry],
+        loadForWatch: (@MainActor @Sendable () throws -> [ExperimentListEntry])? = nil,
         loadDetail: @escaping @MainActor @Sendable (UUID) throws -> ExperimentSessionDetail?,
         loadResultDetail: @escaping @MainActor @Sendable (UUID) throws -> ExperimentResultDetail?,
         updateTitle: @escaping @MainActor @Sendable (
@@ -95,6 +97,7 @@ public struct ExperimentClient: Sendable {
         self.dismissWatchTimer = dismissWatchTimer
         self.watchState = watchState
         self.load = load
+        self.loadForWatch = loadForWatch ?? load
         self.loadRecentProtocols = loadRecentProtocols
         self.loadDetail = loadDetail
         self.loadResultDetail = loadResultDetail
@@ -120,6 +123,7 @@ public struct ExperimentClient: Sendable {
 extension ExperimentClient: DependencyKey {
     public static let liveValue = ExperimentClient(
         load: { try ExperimentListRepository.shared.load() },
+        loadForWatch: { try ExperimentListRepository.shared.loadForWatch() },
         loadDetail: {
             try ExperimentSessionRepository.shared.loadDetail(id: $0)
         },
