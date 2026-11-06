@@ -91,6 +91,14 @@ xcodebuild build \
   -scheme 'ResearchWatch Watch App' \
   -destination 'generic/platform=watchOS Simulator' \
   -skipMacroValidation
+
+# LabcordSharedTests: 패키지 전체 스킴은 watchOS 타깃까지 빌드하므로 쓰지 않습니다.
+xcodebuild test \
+  -workspace Packages/ResearchersModules/LabcordShared.xcworkspace \
+  -scheme LabcordShared \
+  -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -only-testing:LabcordSharedTests \
+  -skipMacroValidation
 ```
 
 ### Rules·Skills 문서 검사
@@ -110,8 +118,9 @@ git diff --check
 - Linux에 Swift를 설치해도 SwiftUI·WatchConnectivity 등 Apple SDK를 제공할 수 없습니다.
   도구·SDK 부재로 필요한 검증을 못 했다면 “미실행”으로 기록합니다.
 - 문서 전용 변경의 불필요한 native 검사는 “생략”입니다. 도구 부재와 혼동하지 않습니다.
-- 현재 package와 공유 스킴에는 테스트 타깃이 없습니다. 0개 테스트를 실행하고 테스트 통과로 보고하지 않습니다.
-  새 테스트가 추가되면 실제 대상·실행 개수·결과를 확인합니다.
+- 패키지 테스트 타깃은 `LabcordSharedTests`입니다. 패키지 플랫폼에 macOS가 없으므로 `swift test`로 실행하지 않습니다.
+  위의 `LabcordShared.xcworkspace` 명령으로 실행하고, 실행한 개수와 결과를 확인합니다.
+  테스트를 실행하지 않았으면 통과로 보고하지 않습니다.
 - 검사 통과를 위해 규칙을 끄거나, 잠금 파일·최소 도구 버전을 낮추거나, 무관한 코드를 수정하지 않습니다.
 - Watch 연동 변경은 빌드만으로 통신·저장 성공이 입증되지 않습니다. 연결·재전송·저장 확인 동작을 별도로 확인합니다.
 
