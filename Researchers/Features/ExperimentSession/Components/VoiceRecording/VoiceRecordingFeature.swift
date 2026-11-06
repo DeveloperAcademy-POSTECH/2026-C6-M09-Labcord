@@ -24,6 +24,7 @@ struct VoiceRecordingFeature {
         var phase: Phase = .hidden
         var sessionID = UUID()
         var transcript = ""
+        var hasRecordingFailure = false
         var recording: SpeechRecording?
         var errorMessage: String?
         let experimentID: UUID
@@ -32,6 +33,7 @@ struct VoiceRecordingFeature {
         var isSaving = false
         var saveError: String?
         var isAutoSavePending = false
+        var lastSavedRecordID: UUID?
         var contextualStrings: [String] = []
     }
 
@@ -76,6 +78,7 @@ struct VoiceRecordingFeature {
                 state.transcript = ""
                 resetReview(state: &state)
                 state.errorMessage = nil
+                state.hasRecordingFailure = false
                 state.sessionID = uuid()
                 state.phase = .starting
                 return .none
@@ -120,6 +123,7 @@ struct VoiceRecordingFeature {
                 guard id == state.sessionID, state.phase == .starting else { return .none }
                 state.phase = .hidden
                 state.errorMessage = message
+                state.hasRecordingFailure = true
                 return .none
 
             case let .event(id, event):
@@ -137,6 +141,7 @@ struct VoiceRecordingFeature {
                 case let .failed(message):
                     state.phase = .hidden
                     state.errorMessage = message
+                    state.hasRecordingFailure = true
                     resetReview(state: &state)
                     return .none
                 }
@@ -162,6 +167,7 @@ struct VoiceRecordingFeature {
                 }
                 state.phase = .hidden
                 state.errorMessage = "녹음하지 못했어요. 하단 마이크 버튼을 눌러 다시 녹음해 주세요."
+                state.hasRecordingFailure = true
                 resetReview(state: &state)
                 return .cancel(id: CancelID.voiceStream)
 
@@ -188,6 +194,7 @@ struct VoiceRecordingFeature {
 
             case let .saved(id):
                 guard state.recordID == id else { return .none }
+                state.lastSavedRecordID = id
                 state.phase = .hidden
                 resetReview(state: &state)
                 return .none
@@ -213,6 +220,7 @@ struct VoiceRecordingFeature {
                 let experimentID = state.experimentID
                 state.phase = .hidden
                 state.sessionID = uuid()
+                state.hasRecordingFailure = false
                 resetReview(state: &state)
                 return .concatenate(
                     .cancel(id: CancelID.voiceStream),
@@ -234,6 +242,7 @@ struct VoiceRecordingFeature {
 
             case .errorDismissed:
                 state.errorMessage = nil
+                state.hasRecordingFailure = false
                 return .none
             }
         }

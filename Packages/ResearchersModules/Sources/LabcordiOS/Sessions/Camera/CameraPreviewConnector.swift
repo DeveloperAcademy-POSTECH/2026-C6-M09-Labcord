@@ -145,9 +145,12 @@ nonisolated private final class CameraPreviewStorage: @unchecked Sendable {
     @MainActor
     func updateLayout(in view: UIView) {
         guard let previewLayer, previewLayer.superlayer === view.layer else { return }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
         previewLayer.frame = view.bounds
         tipLayer?.frame = view.bounds
         drawTips()
+        CATransaction.commit()
     }
 
     @MainActor

@@ -33,7 +33,10 @@ public struct GestureGuideItem<Media: View>: View {
     public var body: some View {
         arrangedContent
             .padding(LayoutTokens.spacing12)
-            .frame(idealWidth: width, maxWidth: width)
+            .frame(
+                idealWidth: layout == .portrait ? 130 : nil,
+                maxWidth: layout == .portrait ? 130 : .infinity
+            )
             .background(
                 appearance == .general
                     ? Color(.General.Background.Grouped.primary)
@@ -83,10 +86,6 @@ public struct GestureGuideItem<Media: View>: View {
         .multilineTextAlignment(layout == .portrait ? .center : .leading)
         .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: .infinity, alignment: textAlignment)
-    }
-
-    private var width: CGFloat {
-        layout == .portrait ? 130 : 321
     }
 
     private var textAlignment: Alignment {

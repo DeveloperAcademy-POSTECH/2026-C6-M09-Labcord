@@ -78,6 +78,7 @@ public struct Toast: View {
     private let type: ToastType
     private let appearance: ToastAppearance
     private let colorPalette: ToastColorPalette
+    private let fillsWidth: Bool
     private let showLeadingIcon: Bool
     private let showDismissButton: Bool
     private let showActionButton: Bool
@@ -93,6 +94,7 @@ public struct Toast: View {
         type: ToastType = .success,
         appearance: ToastAppearance = .default,
         colorPalette: ToastColorPalette = .experiment,
+        fillsWidth: Bool = false,
         showLeadingIcon: Bool = true,
         actionTitle: String = "다시시도",
         onAction: (() -> Void)? = nil,
@@ -103,6 +105,7 @@ public struct Toast: View {
             type: type,
             appearance: appearance,
             colorPalette: colorPalette,
+            fillsWidth: fillsWidth,
             showLeadingIcon: showLeadingIcon,
             showDismissButton: onDismiss != nil,
             showActionButton: onAction != nil,
@@ -117,6 +120,7 @@ public struct Toast: View {
         type: ToastType = .success,
         appearance: ToastAppearance = .default,
         colorPalette: ToastColorPalette = .experiment,
+        fillsWidth: Bool = false,
         showLeadingIcon: Bool = true,
         showDismissButton: Bool = true,
         showActionButton: Bool = true,
@@ -128,6 +132,7 @@ public struct Toast: View {
         self.type = type
         self.appearance = appearance
         self.colorPalette = colorPalette
+        self.fillsWidth = fillsWidth
         self.showLeadingIcon = showLeadingIcon
         self.showDismissButton = showDismissButton
         self.showActionButton = showActionButton
@@ -138,6 +143,7 @@ public struct Toast: View {
 
     public var body: some View {
         toastContent
+        .frame(maxWidth: fillsWidth ? .infinity : nil, alignment: .leading)
         .labcordMotion(.layout, value: [showLeadingIcon, showActionButton, showDismissButton])
         .padding(.horizontal, LayoutTokens.spacing16)
         .padding(.vertical, LayoutTokens.spacing16)

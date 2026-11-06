@@ -55,6 +55,7 @@ struct SessionTimerFeature {
         case timerStarted(Int)
         case customTimerStarted(Int)
         case timerPaused(UUID)
+        case allTimersPaused
         case timerResumed(UUID)
         case timerDeleted(UUID)
         case timerTick(Date)
@@ -107,6 +108,18 @@ struct SessionTimerFeature {
                 guard state.canModifyTimers else { return .none }
                 var collection = state.timerCollection
                 guard collection.pause(id: id, at: now) else { return .none }
+                return saveChanges(from: state.timerCollection, to: collection, state: &state)
+
+            case .allTimersPaused:
+                guard state.canModifyTimers, state.timerCollection.hasRunningTimers else {
+                    return .none
+                }
+                var collection = state.timerCollection
+                let runningIDs = collection.timers.filter { $0.status == .running }.map(\.id)
+                let pausedAt = now
+                for id in runningIDs {
+                    collection.pause(id: id, at: pausedAt)
+                }
                 return saveChanges(from: state.timerCollection, to: collection, state: &state)
 
             case let .timerResumed(id):

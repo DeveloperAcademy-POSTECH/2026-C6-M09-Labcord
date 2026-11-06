@@ -28,8 +28,10 @@ struct CapturedVideoView: View {
         self.isSaving = isSaving
         self.showAutoSaveMessage = showAutoSaveMessage
         let item = AVPlayerItem(url: videoURL)
+        let player = AVPlayer(playerItem: item)
+        player.automaticallyWaitsToMinimizeStalling = false
         _playerItem = State(initialValue: item)
-        _player = State(initialValue: AVPlayer(playerItem: item))
+        _player = State(initialValue: player)
     }
 
     var body: some View {
@@ -48,15 +50,10 @@ struct CapturedVideoView: View {
                     .foregroundStyle(.white)
             }
         }
-        .onAppear { startPlayback() }
+        .task { await startPlayback() }
         .onDisappear {
             player.pause()
             hasStartedPlayback = false
-        }
-        .onReceive(playerItem.publisher(for: \.status, options: [.initial, .new])) { status in
-            if status == .readyToPlay {
-                startPlayback()
-            }
         }
         .onReceive(
             NotificationCenter.default.publisher(
@@ -70,11 +67,27 @@ struct CapturedVideoView: View {
         }
     }
 
-    private func startPlayback() {
-        guard playerItem.status == .readyToPlay, !hasStartedPlayback else { return }
-        hasStartedPlayback = true
-        didFinishPlayback = false
-        player.seek(to: .zero)
-        player.play()
+    @MainActor
+    private func startPlayback() async {
+        guard !didFinishPlayback else { return }
+
+        while !Task.isCancelled && !hasStartedPlayback {
+            switch playerItem.status {
+            case .readyToPlay:
+                if player.timeControlStatus == .playing {
+                    hasStartedPlayback = true
+                    return
+                }
+                if player.timeControlStatus == .paused {
+                    player.play()
+                }
+            case .failed:
+                return
+            default:
+                break
+            }
+
+            try? await Task.sleep(for: .milliseconds(250))
+        }
     }
 }
