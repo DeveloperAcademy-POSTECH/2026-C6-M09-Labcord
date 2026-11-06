@@ -1,9 +1,8 @@
 import AVFoundation
 import Foundation
-import OSLog
 import Speech
 
-private final class SpeechRecognitionInput: @unchecked Sendable {
+final class SpeechRecognitionInput: @unchecked Sendable {
     private let lock = NSLock()
     private var request: SFSpeechAudioBufferRecognitionRequest?
 
@@ -22,33 +21,45 @@ private final class SpeechRecognitionInput: @unchecked Sendable {
         defer { lock.unlock() }
         request = nil
     }
+
+    func replace(_ request: SFSpeechAudioBufferRecognitionRequest) {
+        lock.lock()
+        defer { lock.unlock() }
+        self.request = request
+    }
 }
 
 @MainActor
 public final class SpeechRecordingSession {
-    private let audioEngine = AVAudioEngine()
-    private let audioSessionQueue = DispatchQueue(label: "com.researchers.speech.audio-session")
-    private let locale: Locale
+    let audioEngine = AVAudioEngine()
+    let audioSessionQueue = DispatchQueue(label: "com.researchers.speech.audio-session")
+    let locale: Locale
 
-    private var startupID: UUID?
-    private var recordingID: UUID?
-    private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
-    private var recognitionInput: SpeechRecognitionInput?
-    private var recognitionTask: SFSpeechRecognitionTask?
-    private var eventContinuation: AsyncStream<SpeechRecordingEvent>.Continuation?
-    private var stopContinuations: [CheckedContinuation<SpeechRecording?, Never>] = []
-    private var stopTimeout: Task<Void, Never>?
-    private var recordingURL: URL?
-    private var recordingFile: AVAudioFile?
-    private var latestRecording: SpeechRecording?
-    private var latestRecordingIsRecovery = false
-    private var hasInputTap = false
-    private var audioActivationPending = false
-    private var ownsAudioSession = false
-    private var transcript = ""
-    private var recognitionEnded = false
-    private var transcriptionIncomplete = false
-    private var experimentID: UUID?
+    var startupID: UUID?
+    var recordingID: UUID?
+    var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
+    var recognitionInput: SpeechRecognitionInput?
+    var recognitionTask: SFSpeechRecognitionTask?
+    var eventContinuation: AsyncStream<SpeechRecordingEvent>.Continuation?
+    var stopContinuations: [CheckedContinuation<SpeechRecording?, Never>] = []
+    var stopTimeout: Task<Void, Never>?
+    var recordingURL: URL?
+    var recordingFile: AVAudioFile?
+    var latestRecording: SpeechRecording?
+    var latestRecordingIsRecovery = false
+    var hasInputTap = false
+    var audioActivationPending = false
+    var ownsAudioSession = false
+    var transcript = ""
+    var recognitionEnded = false
+    var transcriptionIncomplete = false
+    var experimentID: UUID?
+    var recognizer: SFSpeechRecognizer?
+    var contextualStrings: [String] = []
+    var recognitionGeneration = 0
+    var committedTranscript = ""
+    var recognitionRestarts = 0
+    var audioInterruptionObserver: NSObjectProtocol?
 
     public init(locale: Locale = Locale(identifier: "ko-KR")) {
         self.locale = locale
@@ -67,13 +78,13 @@ public final class SpeechRecordingSession {
         startupID = id
         defer { if startupID == id { startupID = nil } }
 
-        let recognizer = try authorizedRecognizer()
+        recognizer = try authorizedRecognizer()
+        guard let recognizer else { throw SpeechRecordingError.recognizerUnavailable }
+        self.contextualStrings = contextualStrings
         try await activateForStartup(id)
 
         do {
-            return try beginRecording(
-                id: id, recognizer: recognizer, contextualStrings: contextualStrings
-            )
+            return try beginRecording(id: id, recognizer: recognizer)
         } catch {
             finishRecording(keepingFile: false)
             discardLatestRecording()
@@ -81,39 +92,9 @@ public final class SpeechRecordingSession {
         }
     }
 
-    private func authorizedRecognizer() throws -> SFSpeechRecognizer {
-        guard AVAudioApplication.shared.recordPermission == .granted else {
-            throw PermissionAccessError(.microphone)
-        }
-        guard SFSpeechRecognizer.authorizationStatus() == .authorized else {
-            throw PermissionAccessError(.speechRecognition)
-        }
-        guard let recognizer = SFSpeechRecognizer(locale: locale), recognizer.isAvailable else {
-            throw SpeechRecordingError.recognizerUnavailable
-        }
-        return recognizer
-    }
-
-    private func activateForStartup(_ id: UUID) async throws {
-        audioActivationPending = true
-        do {
-            try await activateAudioSession()
-        } catch {
-            if startupID == id { releaseAudioSession() }
-            throw error
-        }
-        guard startupID == id, !Task.isCancelled else {
-            if startupID == id { releaseAudioSession() }
-            throw CancellationError()
-        }
-        audioActivationPending = false
-        ownsAudioSession = true
-    }
-
-    private func beginRecording(
+    func beginRecording(
         id: UUID,
-        recognizer: SFSpeechRecognizer,
-        contextualStrings: [String]
+        recognizer: SFSpeechRecognizer
     ) throws -> AsyncStream<SpeechRecordingEvent> {
         let inputNode = audioEngine.inputNode
         let format = inputNode.outputFormat(forBus: 0)
@@ -125,37 +106,39 @@ public final class SpeechRecordingSession {
         recordingURL = url
         recordingFile = file
 
-        let request = SFSpeechAudioBufferRecognitionRequest()
-        request.shouldReportPartialResults = true
-        request.contextualStrings = contextualStrings
+        let request = makeRecognitionRequest()
         recognitionRequest = request
         let input = SpeechRecognitionInput(request)
         recognitionInput = input
         recordingID = id
         transcript = ""
+        committedTranscript = ""
+        recognitionRestarts = 0
         recognitionEnded = false
         transcriptionIncomplete = false
+        if let experimentID {
+            VoiceRecordingJournal.write(VoiceRecordingJournal.Entry(
+                experimentID: experimentID, recordingID: id,
+                filePath: url.path, startedAt: Date()
+            ))
+        }
 
         let (stream, continuation) = AsyncStream<SpeechRecordingEvent>.makeStream(
             bufferingPolicy: .bufferingNewest(1)
         )
         eventContinuation = continuation
-
-        recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
-            Task { @MainActor in
-                self?.receive(result: result, error: error, recordingID: id)
-            }
-        }
+        startRecognitionTask(id: id, recognizer: recognizer, request: request)
 
         installInputTap(on: inputNode, format: format, input: input, file: file, id: id)
         audioEngine.prepare()
         try audioEngine.start()
+        observeAudioInterruptions(recordingID: id)
         try Task.checkCancellation()
         guard recordingID == id else { throw SpeechRecordingError.recognizerUnavailable }
         return stream
     }
 
-    private func installInputTap(
+    func installInputTap(
         on inputNode: AVAudioInputNode,
         format: AVAudioFormat,
         input: SpeechRecognitionInput,
@@ -207,45 +190,44 @@ public final class SpeechRecordingSession {
         discardLatestRecording()
     }
 
-    private func receive(
+    func receive(
         result: SFSpeechRecognitionResult?,
         error: Error?,
-        recordingID id: UUID
+        recordingID id: UUID,
+        generation: Int
     ) {
-        guard recordingID == id, !recognitionEnded else { return }
-        if let result {
-            transcript = result.bestTranscription.formattedString
-            eventContinuation?.yield(.transcript(transcript))
-            if result.isFinal {
-                recognitionEnded = true
-                recognitionInput?.stop()
-                if !stopContinuations.isEmpty {
-                    finishRecording(keepingFile: true)
-                } else {
-                    logRecognitionEndedEarly()
-                    transcriptionIncomplete = true
-                    eventContinuation?.yield(.transcriptionUnavailable)
-                }
-                return
-            }
+        guard recordingID == id, generation == recognitionGeneration, !recognitionEnded else {
+            return
         }
-        if let error {
-            logRecognitionError(error)
-            recognitionEnded = true
-            recognitionInput?.stop()
+        if let result {
+            recognitionRestarts = 0
+            transcript = joinedTranscript(result.bestTranscription.formattedString)
+            eventContinuation?.yield(.transcript(transcript))
+            guard result.isFinal else { return }
+            if stopContinuations.isEmpty {
+                restartRecognition(recordingID: id)
+            } else {
+                endRecognitionAndFinish()
+            }
+            return
+        }
+        guard let error else { return }
+        logRecognitionError(error)
+        if stopContinuations.isEmpty {
+            restartRecognition(recordingID: id)
+        } else {
             transcriptionIncomplete = true
-            eventContinuation?.yield(.transcriptionUnavailable)
-            if !stopContinuations.isEmpty { finishRecording(keepingFile: true) }
+            endRecognitionAndFinish()
         }
     }
 
-    private func fail(_ error: Error, recordingID id: UUID) {
+    func fail(_ error: Error, recordingID id: UUID) {
         guard recordingID == id else { return }
         transcriptionIncomplete = true
         finishRecording(keepingFile: true, interruption: error.localizedDescription)
     }
 
-    private func stopInput() {
+    func stopInput() {
         if audioEngine.isRunning { audioEngine.stop() }
         if hasInputTap {
             audioEngine.inputNode.removeTap(onBus: 0)
@@ -253,10 +235,12 @@ public final class SpeechRecordingSession {
         }
     }
 
-    private func finishRecording(keepingFile: Bool, interruption: String? = nil) {
+    func finishRecording(keepingFile: Bool, interruption: String? = nil) {
+        let activeID = recordingID
         stopTimeout?.cancel()
         stopTimeout = nil
         stopInput()
+        removeAudioInterruptionObserver()
         audioEngine.reset()
         recognitionTask?.cancel()
         recognitionTask = nil
@@ -269,7 +253,7 @@ public final class SpeechRecordingSession {
         let result: SpeechRecording?
         if keepingFile, let recordingURL {
             let recoveredURL = interruption == nil
-                ? recordingURL : preservePartialFile(recordingURL)
+                ? recordingURL : preservePartialFile(recordingURL, recordingID: activeID)
             let completed = SpeechRecording(
                 audioURL: recoveredURL, transcript: transcript,
                 transcriptionIncomplete: transcriptionIncomplete,
@@ -284,6 +268,7 @@ public final class SpeechRecordingSession {
                 eventContinuation?.yield(.finished(completed))
             }
         } else {
+            if let activeID { VoiceRecordingJournal.remove(recordingID: activeID) }
             if let recordingURL { try? FileManager.default.removeItem(at: recordingURL) }
             result = nil
         }
@@ -296,76 +281,11 @@ public final class SpeechRecordingSession {
     }
 }
 
-private extension SpeechRecordingSession {
-    func discardLatestRecording() {
-        if let latestRecording {
-            try? FileManager.default.removeItem(at: latestRecording.audioURL)
-        }
-        latestRecording = nil
-        latestRecordingIsRecovery = false
-    }
-
-    func logRecognitionEndedEarly() {
-        Logger(subsystem: "Labcord", category: "PhoneSpeech")
-            .warning("Speech recognition ended before recording stopped")
-    }
-
-    func logRecognitionError(_ error: Error) {
-        let underlying = error as NSError
-        let domain = underlying.domain
-        let code = underlying.code
-        Logger(subsystem: "Labcord", category: "PhoneSpeech")
-            .error("Speech recognition error: \(domain, privacy: .public) code=\(code)")
-    }
-
-    func preservePartialFile(_ original: URL) -> URL {
-        let folder = experimentID.map { "IncompleteVoiceRecordings/\($0.uuidString)" }
-            ?? "IncompleteVoiceRecordings"
-        let directory = URL.applicationSupportDirectory.appending(path: folder)
-        let destination = directory.appending(path: original.lastPathComponent)
-        do {
-            try FileManager.default.createDirectory(
-                at: directory, withIntermediateDirectories: true
-            )
-            try FileManager.default.moveItem(at: original, to: destination)
-            return destination
-        } catch {
-            return original
-        }
-    }
-
-    func activateAudioSession() async throws {
-        try await withCheckedThrowingContinuation { continuation in
-            audioSessionQueue.async {
-                do {
-                    let audioSession = AVAudioSession.sharedInstance()
-                    try audioSession.setCategory(.record, mode: .measurement)
-                    try audioSession.setActive(true)
-                    continuation.resume()
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
-        }
-    }
-
-    func releaseAudioSession() {
-        guard audioActivationPending || ownsAudioSession else { return }
-        audioActivationPending = false
-        ownsAudioSession = false
-        audioSessionQueue.async {
-            try? AVAudioSession.sharedInstance().setActive(
-                false,
-                options: .notifyOthersOnDeactivation
-            )
-        }
-    }
-}
-
 public enum SpeechRecordingError: LocalizedError {
     case alreadyRecording
     case microphoneUnavailable
     case recognizerUnavailable
+    case interrupted
 
     public var errorDescription: String? {
         switch self {
@@ -375,6 +295,8 @@ public enum SpeechRecordingError: LocalizedError {
             return "마이크를 사용할 수 없습니다."
         case .recognizerUnavailable:
             return "지금은 음성 인식을 사용할 수 없습니다."
+        case .interrupted:
+            return "전화나 다른 오디오 때문에 녹음이 중단됐어요."
         }
     }
 }
