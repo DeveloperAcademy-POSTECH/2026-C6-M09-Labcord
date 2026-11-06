@@ -280,11 +280,7 @@ struct ExperimentSessionFeature {
                 return prepareVoiceRecording(state: &state)
 
             case let .photoStartRequested(id):
-                guard state.watchCommand == nil else { return .none }
-                guard state.voice.phase == .hidden else {
-                    return .send(.capture(.cancelPhotoGesture))
-                }
-                return .send(.capture(.photoCaptureRequested(id)))
+                return startPhoto(id, state: &state)
 
             case .videoStartRequested:
                 guard state.watchCommand == nil, state.voice.phase == .hidden else { return .none }
@@ -347,6 +343,16 @@ private extension ExperimentSessionFeature {
         }
     }
 
+    func startPhoto(_ id: UUID?, state: inout State) -> Effect<Action> {
+        guard state.watchCommand == nil, !state.capture.isWatchPhotoScheduled else {
+            return .none
+        }
+        guard state.voice.phase == .hidden else {
+            return .send(.capture(.cancelPhotoGesture))
+        }
+        return .send(.capture(.photoCaptureRequested(id)))
+    }
+
     func prepareVoiceRecording(state: inout State) -> Effect<Action> {
         guard state.watchCommand == nil else {
             state.voice.errorMessage = "Watch의 실험 중단 또는 종료를 처리 중이에요. 완료 후 다시 시도해주세요."
@@ -358,6 +364,10 @@ private extension ExperimentSessionFeature {
             } else {
                 state.detailLoadFailed = true
             }
+            return .none
+        }
+        guard !state.capture.isWatchPhotoScheduled else {
+            state.voice.errorMessage = "Watch 사진 촬영이 끝난 뒤 녹음해주세요."
             return .none
         }
         guard state.voice.phase == .hidden,

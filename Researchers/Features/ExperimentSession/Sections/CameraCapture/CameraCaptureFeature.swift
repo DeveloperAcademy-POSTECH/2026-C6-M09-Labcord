@@ -26,6 +26,9 @@ struct CameraCaptureFeature {
         var previewConnector: CameraPreviewConnector? { camera.previewConnector }
         var isCameraSwitching: Bool { camera.isSwitching }
         var isPhotoCaptureScheduled: Bool { photo.isScheduled }
+        var isWatchPhotoScheduled: Bool {
+            photo.isScheduled && photo.requiresExternalConfirmation
+        }
         var isCapturingPhoto: Bool { photo.isCapturing }
         var capturedPhotoData: Data? { photo.capturedData }
         var videoPhase: VideoFeature.Phase { video.phase }
@@ -102,6 +105,7 @@ struct CameraCaptureFeature {
                       !state.camera.isSwitching,
                       !state.photo.isCapturing,
                       state.photo.capturedData == nil,
+                      !state.isWatchPhotoScheduled,
                       state.video.phase == .idle else { return .none }
                 return .merge(
                     .send(.photo(.cancelGesture)),
