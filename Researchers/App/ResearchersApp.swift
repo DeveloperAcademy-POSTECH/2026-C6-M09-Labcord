@@ -25,7 +25,7 @@ struct ResearchersApp: App {
                         }
                     }
             } else {
-                AppView()
+                AppView(notificationDelegate: notificationDelegate)
             }
         }
     }

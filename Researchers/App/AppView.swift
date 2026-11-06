@@ -3,6 +3,7 @@ import LabcordiOS
 import SwiftUI
 
 struct AppView: View {
+    let notificationDelegate: ForegroundNotificationDelegate
     @State private var store = Store(initialState: AppFeature.State()) {
         AppFeature()
     }
@@ -77,6 +78,17 @@ struct AppView: View {
             Button("종료", role: .destructive) { store.send(.confirmReviewExit) }
         } message: {
             Text("편집한 내용은 저장되지 않아요.")
+        }
+        .onAppear {
+            notificationDelegate.onTimerCompletionTap = { experimentID in
+                store.send(.timerNotificationTapped(experimentID))
+            }
+            if let experimentID = notificationDelegate.takePendingExperimentID() {
+                store.send(.timerNotificationTapped(experimentID))
+            }
+        }
+        .onDisappear {
+            notificationDelegate.onTimerCompletionTap = nil
         }
     }
 }
