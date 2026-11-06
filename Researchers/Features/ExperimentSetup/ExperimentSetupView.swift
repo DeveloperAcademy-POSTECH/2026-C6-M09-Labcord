@@ -5,6 +5,7 @@
 //  Created by 정홍섭 on 10/24/26.
 //
 
+import LabcordDesignSystem
 import SwiftUI
 
 struct ExperimentSetupView: View {
@@ -16,22 +17,25 @@ struct ExperimentSetupView: View {
 
     var body: some View {
         ZStack {
-            Color(.black)
+            Color("Experiment/Background/Primary")
 
-            VStack(spacing: 20) {
+            VStack(spacing: 8) {
                 if failure == nil {
                     ProgressView()
                         .progressViewStyle(.circular)
                         .controlSize(.large)
-                        .tint(.white)
+                        .tint(Color("Experiment/Label/Brand"))
                 }
 
                 VStack(spacing: 7) {
-                    Text("실험할 위치\niPhone을 놓아주세요")
-                        .font(.title)
+                    Text("실험할 위치에 iPhone을 놓아주세요")
+                        .typography(Typography.title3SemiBold)
+                        .foregroundStyle(Color("Experiment/Label/Primary"))
                         .multilineTextAlignment(.center)
 
                     Text(message)
+                        .typography(Typography.body)
+                        .foregroundStyle(Color("Experiment/Label/Secondary"))
                         .multilineTextAlignment(.center)
                 }
 
@@ -46,7 +50,6 @@ struct ExperimentSetupView: View {
             .padding(24)
         }
         .ignoresSafeArea()
-        .foregroundStyle(.white)
         .toolbar(.hidden, for: .navigationBar)
     }
 
@@ -55,7 +58,7 @@ struct ExperimentSetupView: View {
         case let .permission(message), let .camera(message):
             return message
         case nil:
-            return "준비가 끝나면 실험이 시작돼요"
+            return "카메라가 준비되면 자동으로 시작돼요"
         }
     }
 

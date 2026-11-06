@@ -67,6 +67,7 @@ private extension ExperimentList {
                 Text(emptyMessage)
                     .typography(Typography.subheadline)
                     .foregroundStyle(Color("General/Label/Secondary"))
+                    .listRowBackground(Color("General/Background/Primary"))
             } else {
                 ForEach(entries) { entry in
                     ExperimentListItem(entry: entry) {

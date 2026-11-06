@@ -33,6 +33,36 @@ extension ExperimentSessionFeature {
         case cameraPreparation
     }
 
+    func presentPause(state: inout State) -> Effect<Action> {
+        state.isPausePresented = true
+        guard !state.capture.isWatchPhotoScheduled else { return .none }
+        return .send(.capture(.cancelPhotoGesture))
+    }
+
+    func reducePause(state: inout State, action: Action) -> Effect<Action> {
+        switch action {
+        case .pauseTapped:
+            return presentPause(state: &state)
+        case .pause(.delegate(.resumeRequested)):
+            state.isPausePresented = false
+            return .none
+        case .pause(.dismissHomeExitFailure):
+            state.exitFailed = false
+            return .none
+        case .pause(.delegate(.stopRequested)):
+            return pauseStopRequested(state: &state)
+        case .pause(.delegate(.completed)):
+            return .send(.stopCompleted)
+        case .pause(.delegate(.completionFailed)):
+            state.timer.isClosing = false
+            return .send(.timer(.timerTick(now)))
+        case .pause(.delegate(.returnHomeRequested)):
+            return pauseReturnHomeRequested(state: &state)
+        default:
+            return sessionFollowUp(state: &state, action: action)
+        }
+    }
+
     func setupLeave(state: inout State) -> Effect<Action> {
         guard state.hasEnteredSession else {
             return .merge(
@@ -302,6 +332,19 @@ extension ExperimentSessionFeature {
 }
 
 private extension ExperimentSessionFeature {
+    func pauseStopRequested(state: inout State) -> Effect<Action> {
+        guard state.canCloseSession else { return .send(.pause(.stopRejected)) }
+        return beginPhoneClose(.complete, state: &state)
+    }
+
+    func pauseReturnHomeRequested(state: inout State) -> Effect<Action> {
+        guard state.canCloseSession else { return .none }
+        return .merge(
+            .send(.pause(.homeExitStarted)),
+            beginPhoneClose(.pause, state: &state)
+        )
+    }
+
     func isPhoneCloseFailure(_ action: Action, state: State) -> Bool {
         if isVoiceCloseFailure(action, state: state) { return true }
         switch action {

@@ -2,14 +2,26 @@ import SwiftUI
 
 public struct LiveActivityContainer<Content: View>: View {
     private let content: Content
+    private let minimumContentHeight: CGFloat
+    private let maximumContentHeight: CGFloat?
 
-    public init(@ViewBuilder content: () -> Content) {
+    public init(
+        minimumContentHeight: CGFloat = 106,
+        maximumContentHeight: CGFloat? = nil,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.minimumContentHeight = minimumContentHeight
+        self.maximumContentHeight = maximumContentHeight
         self.content = content()
     }
 
     public var body: some View {
         content
-            .frame(maxWidth: .infinity, minHeight: 106)
+            .frame(
+                maxWidth: .infinity,
+                minHeight: minimumContentHeight,
+                maxHeight: maximumContentHeight
+            )
             .padding(.top, 16)
             .padding(.bottom, 16)
             .padding(.leading, 32)

@@ -6,12 +6,17 @@
 //
 
 import ComposableArchitecture
+import LabcordDesignSystem
 import LabcordiOS
 import SwiftUI
 
 struct ExperimentSessionView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.scenePhase) private var scenePhase
+    @State private var isSidePanelExpanded = true
+    @State private var isGestureGuidePresented = false
+    @State private var voiceToast: VoiceToastPresentation?
 
     let store: StoreOf<ExperimentSessionFeature>
 
@@ -27,6 +32,12 @@ struct ExperimentSessionView: View {
         store.scope(state: \.voice, action: \.voice)
     }
 
+    private var isPortraitVoiceActivityVisible: Bool {
+        verticalSizeClass != .compact
+            && voiceStore.saveError == nil
+            && (voiceStore.phase != .hidden || voiceStore.hasRecordingFailure)
+    }
+
     var body: some View {
         Group {
             if verticalSizeClass == .compact {
@@ -37,18 +48,17 @@ struct ExperimentSessionView: View {
                 )
             } else {
                 PortraitSessionView(
+                    isSidePanelExpanded: $isSidePanelExpanded,
                     store: captureStore,
                     timerStore: timerStore,
                     sessionStore: store
-                )
+                ) { isGestureGuidePresented = true }
             }
         }
         .backgroundPreferenceValue(CameraPreviewAnchorKey.self) { anchor in
             GeometryReader { geometry in
                 if let connector = captureStore.previewConnector {
-                    let frame = verticalSizeClass == .compact
-                        ? anchor.map { geometry[$0] } ?? CGRect(origin: .zero, size: geometry.size)
-                        : CGRect(origin: .zero, size: geometry.size)
+                    let frame = previewFrame(anchor: anchor, geometry: geometry)
                     CameraPreviewView(connector: connector, showsHandOverlay: false)
                         .frame(width: frame.width, height: frame.height)
                         .clipShape(
@@ -69,12 +79,17 @@ struct ExperimentSessionView: View {
                             }
                         }
                         .position(x: frame.midX, y: frame.midY)
+                        .transaction { $0.disablesAnimations = true }
                         .allowsHitTesting(false)
                 }
             }
             .ignoresSafeArea()
         }
         .navigationBarBackButtonHidden()
+        .toolbarVisibility(
+            isPortraitVoiceActivityVisible ? .hidden : .automatic,
+            for: .statusBar
+        )
         .overlay {
             if let data = captureStore.capturedPhotoData {
                 CapturedPhotoView(
@@ -100,10 +115,38 @@ struct ExperimentSessionView: View {
             }
         }
         .overlay {
-            if voiceStore.phase != .hidden {
-                VoiceRecordingView(store: voiceStore)
+            if verticalSizeClass == .compact {
+                if voiceStore.phase != .hidden {
+                    VoiceRecordingView(store: voiceStore)
+                }
+            } else if isPortraitVoiceActivityVisible {
+                GeometryReader { geometry in
+                    PortraitVoiceLiveActivityView(
+                        store: voiceStore,
+                        onRestart: { store.send(.voiceStartRequested) },
+                        onFailureAutoDismiss: {
+                            voiceToast = VoiceToastPresentation(kind: .recordingFailure)
+                        },
+                        availableWidth: geometry.size.width
+                    )
+                    .padding(.top, 14)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                }
+                .ignoresSafeArea(.container, edges: .top)
+                .transition(.opacity)
             }
         }
+        .animation(
+            reduceMotion ? nil : .spring(duration: 0.3, bounce: 0.08),
+            value: isPortraitVoiceActivityVisible
+        )
+        .modifier(
+            VoiceRecordToastOverlay(
+                voiceStore: voiceStore,
+                sessionStore: store,
+                presentation: $voiceToast
+            )
+        )
         .overlay {
             if !store.isReady {
                 ExperimentSetupView(
@@ -118,6 +161,14 @@ struct ExperimentSessionView: View {
                         guard !Task.isCancelled else { return }
                         store.send(.permissions(.request))
                     }
+            }
+        }
+        .modifier(PauseOverlay(store: store))
+        .overlay {
+            if isGestureGuidePresented {
+                ExperimentGestureGuideView {
+                    isGestureGuidePresented = false
+                }
             }
         }
         .task {
@@ -144,6 +195,54 @@ struct ExperimentSessionView: View {
             }
         }
         .background(.black)
+        .modifier(SessionAlerts(store: store))
+    }
+
+    private func previewFrame(anchor: Anchor<CGRect>?, geometry: GeometryProxy) -> CGRect {
+        let fullFrame = CGRect(origin: .zero, size: geometry.size)
+        guard let anchor else { return fullFrame }
+
+        let anchoredFrame = geometry[anchor]
+        if verticalSizeClass == .compact {
+            return anchoredFrame
+        }
+
+        let previewOverlap: CGFloat = 50 + (isSidePanelExpanded ? 0 : 30)
+        return CGRect(
+            x: 0,
+            y: 0,
+            width: geometry.size.width,
+            height: min(geometry.size.height, max(0, anchoredFrame.minY + previewOverlap))
+        )
+    }
+
+}
+
+private struct SessionAlerts: ViewModifier {
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
+    let store: StoreOf<ExperimentSessionFeature>
+
+    private var captureStore: StoreOf<CameraCaptureFeature> {
+        store.scope(state: \.capture, action: \.capture)
+    }
+
+    private var voiceStore: StoreOf<VoiceRecordingFeature> {
+        store.scope(state: \.voice, action: \.voice)
+    }
+
+    private var timerStore: StoreOf<SessionTimerFeature> {
+        store.scope(state: \.timer, action: \.timer)
+    }
+
+    func body(content: Content) -> some View {
+        let initialAlerts = permissionAndCameraAlerts(on: content)
+        let recordingAlerts = voiceAndPhotoAlerts(on: initialAlerts)
+        return videoAndTimerAlerts(on: recordingAlerts)
+    }
+
+    private func permissionAndCameraAlerts<V: View>(on content: V) -> some View {
+        content
         .alert(
             store.permissions.issue == .settingsUnavailable ? "설정 열기 실패" : "권한 안내",
             isPresented: Binding(
@@ -176,10 +275,17 @@ struct ExperimentSessionView: View {
             Text(captureStore.cameraErrorMessage ?? "")
         }
         .modifier(DetailLoadFailureAlert(store: store))
+    }
+
+    private func voiceAndPhotoAlerts<V: View>(on content: V) -> some View {
+        content
         .alert(
             "음성 기록 오류",
             isPresented: Binding(
-                get: { voiceStore.errorMessage != nil },
+                get: {
+                    voiceStore.errorMessage != nil
+                        && (verticalSizeClass == .compact || !voiceStore.hasRecordingFailure)
+                },
                 set: { if !$0 { voiceStore.send(.errorDismissed) } }
             )
         ) {
@@ -205,6 +311,10 @@ struct ExperimentSessionView: View {
         } message: {
             Text(captureStore.photo.saveError ?? "사진을 저장하지 못했습니다.")
         }
+    }
+
+    private func videoAndTimerAlerts<V: View>(on content: V) -> some View {
+        content
         .alert(
             "영상 저장 실패",
             isPresented: Binding(
@@ -237,7 +347,7 @@ struct ExperimentSessionView: View {
         .alert(
             "실험 일시정지 저장 실패",
             isPresented: Binding(
-                get: { store.exitFailed },
+                get: { store.exitFailed && !store.isPausePresented },
                 set: { if !$0 { store.send(.dismissHomeExitFailure) } }
             )
         ) {
@@ -253,30 +363,18 @@ struct ExperimentSessionView: View {
     }
 }
 
-private struct DetailLoadFailureAlert: ViewModifier {
+private struct PauseOverlay: ViewModifier {
     let store: StoreOf<ExperimentSessionFeature>
 
     func body(content: Content) -> some View {
-        content.alert("실험 정보를 불러오지 못했어요", isPresented: Binding(
-            get: { store.detailLoadFailed },
-            set: { if !$0 { store.send(.dismissDetailLoadFailure) } }
-        )) {
-            Button("다시 시도") { store.send(.loadDetail) }
-            Button("닫기", role: .cancel) { store.send(.dismissDetailLoadFailure) }
-        } message: {
-            Text("실험 정보를 불러온 뒤 녹음할 수 있어요.")
+        content.overlay {
+            if store.isPausePresented {
+                ExperimentPauseView(
+                    store: store.scope(state: \.pause, action: \.pause),
+                    timerStore: store.scope(state: \.timer, action: \.timer),
+                    canCloseSession: store.canCloseSession
+                )
+            }
         }
     }
-}
-
-#Preview {
-    ExperimentSessionView(
-        store: Store(
-            initialState: ExperimentSessionFeature.State(
-                experimentID: UUID()
-            )
-        ) {
-            ExperimentSessionFeature()
-        }
-    )
 }

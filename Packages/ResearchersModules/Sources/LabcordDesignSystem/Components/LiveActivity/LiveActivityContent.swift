@@ -29,10 +29,51 @@ public struct LiveActivityContent: View {
     }
 
     public var body: some View {
+        if case let .audioResult(_, isSaving, progress) = state {
+            ViewThatFits(in: .vertical) {
+                resultRow(isSaving: isSaving, progress: progress, stacked: false)
+                    .fixedSize(horizontal: false, vertical: true)
+                resultRow(isSaving: isSaving, progress: progress, stacked: true)
+            }
+        } else {
+            HStack(alignment: .center, spacing: LayoutTokens.spacing12) {
+                leading
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                trailing
+            }
+        }
+    }
+
+    private func resultRow(isSaving: Bool, progress: Double, stacked: Bool) -> some View {
         HStack(alignment: .center, spacing: LayoutTokens.spacing12) {
             leading
                 .frame(maxWidth: .infinity, alignment: .leading)
-            trailing
+            resultControls(isSaving: isSaving, progress: progress, stacked: stacked)
+        }
+    }
+
+    @ViewBuilder
+    private func resultControls(
+        isSaving: Bool,
+        progress: Double,
+        stacked: Bool
+    ) -> some View {
+        if stacked {
+            VStack(spacing: LayoutTokens.spacing10) {
+                LiveActivityStatusIndicator(
+                    status: isSaving ? .audioSaving : .audioSaved,
+                    progress: progress
+                )
+                LiveActivityControlButton(kind: .retry, action: onRetry)
+            }
+        } else {
+            HStack(spacing: LayoutTokens.spacing10) {
+                LiveActivityStatusIndicator(
+                    status: isSaving ? .audioSaving : .audioSaved,
+                    progress: progress
+                )
+                LiveActivityControlButton(kind: .retry, action: onRetry)
+            }
         }
     }
 
@@ -40,7 +81,13 @@ public struct LiveActivityContent: View {
     private var leading: some View {
         switch state {
         case let .audioRecording(transcript):
-            textGroup(title: "녹음 중", message: transcript, style: Typography.subheadline, lines: 1)
+            textGroup(
+                title: "녹음 중",
+                message: transcript,
+                style: Typography.subheadline,
+                lines: 4,
+                truncationMode: .head
+            )
         case let .videoRecording(elapsed, _):
             VStack(alignment: .leading, spacing: LayoutTokens.spacing2) {
                 HStack(spacing: 0) {
@@ -77,7 +124,8 @@ public struct LiveActivityContent: View {
         title: String,
         message: String,
         style: TypographyStyle,
-        lines: Int
+        lines: Int,
+        truncationMode: Text.TruncationMode = .tail
     ) -> some View {
         VStack(alignment: .leading, spacing: LayoutTokens.spacing10) {
             Text(title)
@@ -87,6 +135,7 @@ public struct LiveActivityContent: View {
                 .typography(style)
                 .foregroundStyle(Color(.General.Label.light))
                 .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : lines)
+                .truncationMode(truncationMode)
         }
     }
 
@@ -104,13 +153,7 @@ public struct LiveActivityContent: View {
         case .audioError:
             LiveActivityControlButton(kind: .retry, action: onRetry)
         case let .audioResult(_, isSaving, progress):
-            VStack(spacing: LayoutTokens.spacing10) {
-                LiveActivityStatusIndicator(
-                    status: isSaving ? .audioSaving : .audioSaved,
-                    progress: progress
-                )
-                LiveActivityControlButton(kind: .retry, action: onRetry)
-            }
+            resultControls(isSaving: isSaving, progress: progress, stacked: true)
         case .watchConnected:
             LiveActivityStatusIndicator(status: .watchConnected)
         }

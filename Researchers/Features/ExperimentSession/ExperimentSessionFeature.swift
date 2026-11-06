@@ -20,7 +20,9 @@ struct ExperimentSessionFeature {
         var permissions = SessionPermissionsFeature.State()
         var voice: VoiceRecordingFeature.State
         var capture: CameraCaptureFeature.State
+        var pause: ExperimentPauseFeature.State
         var permissionRequestGeneration = 0
+        var isPausePresented = false
         var isReturningHome = false
         var exitID: UUID?
         var exitFailed = false
@@ -37,6 +39,7 @@ struct ExperimentSessionFeature {
             self.timer = SessionTimerFeature.State(experimentID: experimentID)
             self.voice = VoiceRecordingFeature.State(experimentID: experimentID)
             self.capture = CameraCaptureFeature.State(experimentID: experimentID)
+            self.pause = ExperimentPauseFeature.State(experimentID: experimentID)
         }
 
         var isReady: Bool {
@@ -48,8 +51,8 @@ struct ExperimentSessionFeature {
         }
 
         var canCloseSession: Bool {
-            timer.isConfigured && timer.pendingSave == nil && !voice.isSaving
-                && !isCompleting && !isReturningHome
+            timer.isConfigured && timer.pendingSave == nil && !timer.isClosing && !voice.isSaving
+                && !pause.isCompleting && !isReturningHome
         }
     }
 
@@ -68,6 +71,7 @@ struct ExperimentSessionFeature {
         case permissions(SessionPermissionsFeature.Action)
         case voice(VoiceRecordingFeature.Action)
         case capture(CameraCaptureFeature.Action)
+        case pause(ExperimentPauseFeature.Action)
         case voiceStartRequested
         case photoStartRequested(UUID?)
         case videoStartRequested
@@ -79,6 +83,7 @@ struct ExperimentSessionFeature {
         case sessionEntered
         case sessionEntryFailed
         case phoneCloseProgress
+        case pauseTapped
         case stopTapped
         case stopCompleted
         case stopFailed
@@ -113,6 +118,10 @@ struct ExperimentSessionFeature {
 
         Scope(state: \.timer, action: \.timer) {
             SessionTimerFeature()
+        }
+
+        Scope(state: \.pause, action: \.pause) {
+            ExperimentPauseFeature()
         }
 
         watchCompletionReducer
@@ -167,11 +176,20 @@ struct ExperimentSessionFeature {
             case .phoneCloseProgress:
                 return drainPhoneClose(state: &state)
 
+            case .pauseTapped, .pause:
+                return reducePause(state: &state, action: action)
+
             case .stopTapped:
                 guard state.watchCommand == nil || state.watchClosingResources else {
                     return .none
                 }
                 return beginPhoneClose(.complete, state: &state)
+
+            case .returnHomeTapped:
+                guard state.watchCommand == nil || state.watchClosingResources else {
+                    return .none
+                }
+                return beginPhoneClose(.pause, state: &state)
 
             case .stopCompleted, .homeExitCompleted:
                 state.isCompleting = false
@@ -180,23 +198,23 @@ struct ExperimentSessionFeature {
                 return .none
 
             case .stopFailed:
+                state.pause.isCompleting = false
+                state.pause.isEndTriggered = false
                 return abandonPhoneClose(state: &state, completion: true)
 
             case .dismissStopFailure:
                 state.completionFailed = false
                 return .none
 
-            case .returnHomeTapped:
-                guard state.watchCommand == nil || state.watchClosingResources else {
-                    return .none
-                }
-                return beginPhoneClose(.pause, state: &state)
-
             case .homeExitFailed:
-                return abandonPhoneClose(state: &state, completion: false)
+                return .merge(
+                    abandonPhoneClose(state: &state, completion: false),
+                    .send(.pause(.homeExitFailed))
+                )
 
             case .dismissHomeExitFailure:
                 state.exitFailed = false
+                state.pause.exitFailed = false
                 return .none
 
             case .permissions(.microphoneStatusUpdated(.authorized)):
@@ -225,13 +243,14 @@ struct ExperimentSessionFeature {
                 return .send(.voiceStartRequested)
 
             case let .capture(.delegate(.photoRequested(id))):
+                guard !state.isPausePresented else { return .none }
                 return .send(.photoStartRequested(id))
 
             case .capture(.delegate(.videoRequested)):
                 return .send(.videoStartRequested)
 
             case let .capture(.delegate(.handEvent(event))):
-                guard state.watchCommand == nil else { return .none }
+                guard state.watchCommand == nil, !state.isPausePresented else { return .none }
                 switch event {
                 case .openHandHeld:
                     guard state.voice.phase == .hidden else { return .none }
@@ -266,95 +285,21 @@ struct ExperimentSessionFeature {
                 }
 
             case .voiceStartRequested:
+                guard !state.isPausePresented else { return .none }
                 return prepareVoiceRecording(state: &state)
 
             case let .photoStartRequested(id):
+                guard !state.isPausePresented else { return .none }
                 return startPhoto(id, state: &state)
 
             case .videoStartRequested:
-                guard state.watchCommand == nil, state.voice.phase == .hidden else { return .none }
+                guard !state.isPausePresented, state.watchCommand == nil,
+                      state.voice.phase == .hidden else { return .none }
                 return .send(.capture(.videoRecordRequested))
 
             case .permissions, .voice, .capture, .timer:
                 return sessionFollowUp(state: &state, action: action)
             }
         }
-    }
-}
-
-private extension ExperimentSessionFeature {
-    func configureSessionDetail(
-        _ detail: ExperimentSessionDetail, state: inout State
-    ) -> Effect<Action> {
-        state.isLoadingDetail = false
-        state.detail = detail
-        state.voice.contextualStrings = detail.speechContextualStrings
-        return .send(
-            .timer(
-                .configure(
-                    mode: detail.mode,
-                    timerSeconds: detail.timerSeconds,
-                    timers: detail.timers
-                )
-            )
-        )
-    }
-
-    func loadDetail(state: inout State) -> Effect<Action> {
-        if state.detail != nil {
-            state.sessionEntryFailed = false
-            state.detailLoadFailed = false
-            return enterSessionIfReady(state: &state)
-        }
-        guard !state.isLoadingDetail else { return .none }
-        state.isLoadingDetail = true
-        state.detailLoadFailed = false
-        let experimentID = state.experimentID
-        return .run { send in
-            await timerCompletionNotificationClient.cancelForExperiment(experimentID)
-            guard let detail = try? await experimentClient.loadDetail(experimentID) else {
-                await send(.detailLoadingFailed)
-                return
-            }
-            await send(.detailLoaded(detail))
-        }
-    }
-
-    func startPhoto(_ id: UUID?, state: inout State) -> Effect<Action> {
-        guard state.watchCommand == nil, !state.capture.isWatchPhotoScheduled else {
-            return .none
-        }
-        guard state.voice.phase == .hidden else {
-            return .send(.capture(.cancelPhotoGesture))
-        }
-        return .send(.capture(.photoCaptureRequested(id)))
-    }
-
-    func prepareVoiceRecording(state: inout State) -> Effect<Action> {
-        guard state.watchCommand == nil else {
-            state.voice.errorMessage = "Watch의 실험 중단 또는 종료를 처리 중이에요. 완료 후 다시 시도해주세요."
-            return .none
-        }
-        guard state.detail != nil else {
-            if state.isLoadingDetail {
-                state.voice.errorMessage = "실험 정보를 불러오고 있어요. 잠시 후 다시 시도해 주세요."
-            } else {
-                state.detailLoadFailed = true
-            }
-            return .none
-        }
-        guard !state.capture.isWatchPhotoScheduled else {
-            state.voice.errorMessage = "Watch 사진 촬영이 끝난 뒤 녹음해주세요."
-            return .none
-        }
-        guard state.voice.phase == .hidden,
-              state.capture.isCameraViewVisible,
-              !state.capture.isCapturingPhoto,
-              state.capture.capturedPhotoData == nil,
-              state.capture.videoPhase == .idle else { return .none }
-        return .merge(
-            .send(.capture(.cancelPhotoGesture)),
-            .send(.voice(.prepareRequested))
-        )
     }
 }
