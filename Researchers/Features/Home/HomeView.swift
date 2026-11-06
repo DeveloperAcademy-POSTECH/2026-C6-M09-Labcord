@@ -10,25 +10,15 @@ struct HomeView: View {
             .padding(.top, 54)
             .padding(.horizontal, 16)
             .overlay(alignment: .bottomTrailing) {
-                VStack(spacing: LayoutTokens.spacing12) {
-                    Button {
-                        // 가이드 화면 이동 구현
-                    } label: {
-                        Image(labcordIcon: .questionmark)
-                    }
-                    .buttonStyle(
-                        .labcordIcon(.neutral, size: .large, isLoading: false)
-                    )
-
-                    Button {
-                        store.send(.addTapped)
-                    } label: {
-                        Image(labcordIcon: .plus)
-                    }
-                    .buttonStyle(
-                        .labcordIcon(.primary, size: .large, isLoading: false)
-                    )
+                Button {
+                    store.send(.addTapped)
+                } label: {
+                    Image(labcordIcon: .plus)
                 }
+                .buttonStyle(
+                    .labcordIcon(.primary, size: .large, isLoading: false)
+                )
+                .accessibilityLabel("실험 추가")
                 .padding(.trailing, 20)
                 .padding(.bottom, 17)
             }
