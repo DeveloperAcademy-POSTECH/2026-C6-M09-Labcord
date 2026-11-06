@@ -168,7 +168,7 @@ struct PhotoFeature {
                     cancelDelay,
                     .run { send in
                         do {
-                            let data = try await cameraSessionClient.capturePhoto()
+                            let data = try await capturePhoto()
                             await send(.captured(id, data))
                         } catch {
                             await send(.captureFailed(error.localizedDescription))
@@ -183,12 +183,9 @@ struct PhotoFeature {
                 state.recordID = id
                 state.recordedAt = now
                 state.saveError = nil
-                if state.requiresExternalConfirmation { return .none }
-                return .run { send in
-                    try await Task.sleep(for: .seconds(3))
-                    await send(.autoSaveElapsed(id))
-                }
-                .cancellable(id: CancelID.autoSave, cancelInFlight: true)
+                let delay: Duration = state.requiresExternalConfirmation
+                    ? .seconds(15) : .seconds(3)
+                return scheduleAutoSave(id, after: delay)
 
             case let .captureFailed(message):
                 state.isCapturing = false
@@ -268,6 +265,35 @@ struct PhotoFeature {
                 }
             }
         )
+    }
+}
+
+private extension PhotoFeature {
+    func capturePhoto() async throws -> Data {
+        try await withThrowingTaskGroup(of: Data.self) { group in
+            group.addTask { try await cameraSessionClient.capturePhoto() }
+            group.addTask {
+                try await Task.sleep(for: .seconds(10))
+                throw PhotoCaptureTimeout()
+            }
+            guard let data = try await group.next() else { throw PhotoCaptureTimeout() }
+            group.cancelAll()
+            return data
+        }
+    }
+
+    func scheduleAutoSave(_ id: UUID, after delay: Duration) -> Effect<Action> {
+        .run { send in
+            try await Task.sleep(for: delay)
+            await send(.autoSaveElapsed(id))
+        }
+        .cancellable(id: CancelID.autoSave, cancelInFlight: true)
+    }
+}
+
+private struct PhotoCaptureTimeout: LocalizedError {
+    var errorDescription: String? {
+        "사진을 가져오지 못했어요. 다시 촬영해주세요."
     }
 }
 
