@@ -48,18 +48,20 @@ public final class SpeechRecordingSession {
     private var transcript = ""
     private var recognitionEnded = false
     private var transcriptionIncomplete = false
+    private var experimentID: UUID?
 
     public init(locale: Locale = Locale(identifier: "ko-KR")) {
         self.locale = locale
     }
 
     public func start(
-        contextualStrings: [String] = []
+        experimentID: UUID, contextualStrings: [String] = []
     ) async throws -> AsyncStream<SpeechRecordingEvent> {
         guard startupID == nil, recordingID == nil else {
             throw SpeechRecordingError.alreadyRecording
         }
         discardLatestRecording()
+        self.experimentID = experimentID
 
         let id = UUID()
         startupID = id
@@ -292,18 +294,17 @@ public final class SpeechRecordingSession {
         stopContinuations.removeAll()
         releaseAudioSession()
     }
+}
 
-    private func discardLatestRecording() {
-        if let latestRecording, !latestRecordingIsRecovery {
+private extension SpeechRecordingSession {
+    func discardLatestRecording() {
+        if let latestRecording {
             try? FileManager.default.removeItem(at: latestRecording.audioURL)
         }
         latestRecording = nil
         latestRecordingIsRecovery = false
     }
 
-}
-
-private extension SpeechRecordingSession {
     func logRecognitionEndedEarly() {
         Logger(subsystem: "Labcord", category: "PhoneSpeech")
             .warning("Speech recognition ended before recording stopped")
@@ -318,8 +319,9 @@ private extension SpeechRecordingSession {
     }
 
     func preservePartialFile(_ original: URL) -> URL {
-        let directory = URL.applicationSupportDirectory
-            .appending(path: "IncompleteVoiceRecordings")
+        let folder = experimentID.map { "IncompleteVoiceRecordings/\($0.uuidString)" }
+            ?? "IncompleteVoiceRecordings"
+        let directory = URL.applicationSupportDirectory.appending(path: folder)
         let destination = directory.appending(path: original.lastPathComponent)
         do {
             try FileManager.default.createDirectory(

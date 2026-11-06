@@ -27,12 +27,16 @@ public enum SpeechRecordingEvent: Equatable, Sendable {
 }
 
 public struct SpeechRecordingClient: Sendable {
-    public var start: @Sendable ([String]) async throws -> AsyncStream<SpeechRecordingEvent>
+    public var start: @Sendable (
+        UUID, [String]
+    ) async throws -> AsyncStream<SpeechRecordingEvent>
     public var stop: @Sendable () async -> SpeechRecording?
     public var cancel: @Sendable () async -> Void
 
     public init(
-        start: @escaping @Sendable ([String]) async throws -> AsyncStream<SpeechRecordingEvent>,
+        start: @escaping @Sendable (
+            UUID, [String]
+        ) async throws -> AsyncStream<SpeechRecordingEvent>,
         stop: @escaping @Sendable () async -> SpeechRecording?,
         cancel: @escaping @Sendable () async -> Void
     ) {
@@ -46,7 +50,11 @@ extension SpeechRecordingClient: DependencyKey {
     public static let liveValue: SpeechRecordingClient = {
         let session = SpeechRecordingSession()
         return SpeechRecordingClient(
-            start: { try await session.start(contextualStrings: $0) },
+            start: { experimentID, contextualStrings in
+                try await session.start(
+                    experimentID: experimentID, contextualStrings: contextualStrings
+                )
+            },
             stop: { await session.stop() },
             cancel: { await session.cancel() }
         )

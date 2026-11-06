@@ -126,10 +126,13 @@ struct VoiceRecordingFeature {
             case .startRequested:
                 guard state.phase == .starting else { return .none }
                 let id = state.sessionID
+                let experimentID = state.experimentID
                 let contextualStrings = state.contextualStrings
                 return .run { send in
                     do {
-                        let events = try await speechRecordingClient.start(contextualStrings)
+                        let events = try await speechRecordingClient.start(
+                            experimentID, contextualStrings
+                        )
                         await send(.started(id))
                         for await event in events {
                             await send(.event(id, event))

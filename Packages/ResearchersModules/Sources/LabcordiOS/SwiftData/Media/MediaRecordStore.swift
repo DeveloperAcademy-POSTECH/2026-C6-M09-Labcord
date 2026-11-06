@@ -203,9 +203,12 @@ final class MediaRecordStore {
             .appending(path: "Videos/\(experimentID.uuidString)")
         let audioDirectory = URL.applicationSupportDirectory
             .appending(path: "Audio/\(experimentID.uuidString)")
+        let incompleteDirectory = URL.applicationSupportDirectory
+            .appending(path: "IncompleteVoiceRecordings/\(experimentID.uuidString)")
         try removeExistingFile(at: photoDirectory)
         try removeExistingFile(at: videoDirectory)
         try removeExistingFile(at: audioDirectory)
+        try removeExistingFile(at: incompleteDirectory)
     }
 
     private func removeExistingFile(at url: URL) throws {
