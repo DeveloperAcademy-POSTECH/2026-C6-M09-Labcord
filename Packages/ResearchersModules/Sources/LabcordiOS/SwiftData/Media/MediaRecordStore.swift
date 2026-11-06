@@ -9,6 +9,7 @@ private struct MediaRecordDetails {
     let id: UUID
     let recordedAt: Date
     let transcript: String?
+    var note: String = ""
 }
 
 private struct MediaFileDetails {
@@ -64,16 +65,19 @@ final class MediaRecordStore {
         id: UUID,
         recordedAt: Date,
         sourceURL: URL,
-        transcript: String
+        transcript: String,
+        note: String = ""
     ) throws {
         try Task.checkCancellation()
         try saveRecordingFile(
             record: MediaRecordDetails(
-                experimentID: experimentID, id: id, recordedAt: recordedAt, transcript: transcript
+                experimentID: experimentID, id: id, recordedAt: recordedAt,
+                transcript: transcript, note: note
             ),
             sourceURL: sourceURL,
             file: MediaFileDetails(type: .audio, directory: "Audio", fileExtension: "caf")
         )
+        VoiceRecordingJournal.remove(filePath: sourceURL.path)
     }
 
     private func saveRecordingFile(
@@ -131,7 +135,7 @@ final class MediaRecordStore {
                     id: record.id,
                     type: file.type,
                     recordedAt: record.recordedAt,
-                    note: "",
+                    note: record.note,
                     filePath: relativePath,
                     transcript: record.transcript
                 )
