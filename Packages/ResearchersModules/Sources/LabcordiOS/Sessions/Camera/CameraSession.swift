@@ -36,6 +36,7 @@ public actor CameraSession {
     private let handDetector: CameraHandDetector
     private var activeOwners: Set<UUID> = []
     private var pendingStop: Task<Void, Never>?
+    private var interruptionObservers: [NSObjectProtocol] = []
 
     public init() {
         let hub = CameraHandEventHub()
@@ -108,6 +109,7 @@ public actor CameraSession {
             session.startRunning()
         }
         activeOwners.insert(owner)
+        startObservingInterruptions()
     }
 
     public func deactivate(owner: UUID) {
@@ -131,6 +133,7 @@ public actor CameraSession {
         if session.isRunning {
             session.stopRunning()
         }
+        stopObservingInterruptions()
         resetHandTracking()
     }
 
@@ -293,6 +296,42 @@ public actor CameraSession {
         let angle = coordinator.videoRotationAngleForHorizonLevelCapture
         guard connection.isVideoRotationAngleSupported(angle) else { return }
         connection.videoRotationAngle = angle
+    }
+}
+
+private extension CameraSession {
+    func startObservingInterruptions() {
+        guard interruptionObservers.isEmpty else { return }
+        let names = [
+            AVCaptureSession.interruptionEndedNotification,
+            AVCaptureSession.runtimeErrorNotification
+        ]
+        interruptionObservers = names.map { name in
+            NotificationCenter.default.addObserver(
+                forName: name, object: session, queue: nil
+            ) { [weak self] notification in
+                let ended = notification.name == AVCaptureSession.interruptionEndedNotification
+                let error = notification.userInfo?[AVCaptureSessionErrorKey] as? AVError
+                let reset = error?.code == .mediaServicesWereReset
+                Task {
+                    await self?.resumeCapture(
+                        afterInterruption: ended, mediaServicesReset: reset
+                    )
+                }
+            }
+        }
+    }
+
+    func resumeCapture(afterInterruption ended: Bool, mediaServicesReset: Bool) {
+        guard !activeOwners.isEmpty else { return }
+        guard ended || mediaServicesReset || !session.isRunning else { return }
+        guard !session.isRunning else { return }
+        session.startRunning()
+    }
+
+    func stopObservingInterruptions() {
+        interruptionObservers.forEach { NotificationCenter.default.removeObserver($0) }
+        interruptionObservers.removeAll()
     }
 }
 
