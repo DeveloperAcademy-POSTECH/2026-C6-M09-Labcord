@@ -106,7 +106,13 @@ struct ExperimentSessionView: View {
         }
         .overlay {
             if !store.isReady {
-                ExperimentSetupView()
+                ExperimentSetupView(
+                    failure: store.setupFailure,
+                    canOpenSettings: store.permissions.issue?.canOpenSettings == true,
+                    onLeave: { store.send(.setupLeaveTapped) },
+                    onOpenSettings: { store.send(.permissions(.openSettingsTapped)) },
+                    onRetry: { store.send(.setupRetryCameraTapped) }
+                )
                     .task(id: store.permissionRequestGeneration) {
                         try? await Task.sleep(for: .milliseconds(200))
                         guard !Task.isCancelled else { return }
@@ -133,13 +139,15 @@ struct ExperimentSessionView: View {
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 store.send(.appBecameActive)
+            } else if phase == .background {
+                store.send(.sceneBackgrounded)
             }
         }
         .background(.black)
         .alert(
             store.permissions.issue == .settingsUnavailable ? "설정 열기 실패" : "권한 안내",
             isPresented: Binding(
-                get: { store.permissions.issue != nil },
+                get: { store.isReady && store.permissions.issue != nil },
                 set: { if !$0 { store.send(.permissions(.issueDismissed)) } }
             )
         ) {
@@ -157,7 +165,7 @@ struct ExperimentSessionView: View {
         .alert(
             "카메라 오류",
             isPresented: Binding(
-                get: { captureStore.cameraErrorMessage != nil },
+                get: { store.isReady && captureStore.cameraErrorMessage != nil },
                 set: { if !$0 { captureStore.send(.cameraErrorDismissed) } }
             )
         ) {

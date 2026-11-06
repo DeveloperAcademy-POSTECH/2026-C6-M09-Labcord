@@ -26,6 +26,11 @@ struct ExperimentSessionFeature {
         var exitFailed = false
         var isCompleting = false
         var completionFailed = false
+        var hasEnteredSession = false
+        var isEnteringSession = false
+        var sessionEntryFailed = false
+        var cameraPreparationTimedOut = false
+        var phoneClose: SessionPhoneClose?
 
         init(experimentID: UUID) {
             self.experimentID = experimentID
@@ -67,6 +72,13 @@ struct ExperimentSessionFeature {
         case photoStartRequested(UUID?)
         case videoStartRequested
         case appBecameActive
+        case sceneBackgrounded
+        case setupLeaveTapped
+        case setupRetryCameraTapped
+        case cameraPreparationTimedOut
+        case sessionEntered
+        case sessionEntryFailed
+        case phoneCloseProgress
         case stopTapped
         case stopCompleted
         case stopFailed
@@ -115,7 +127,10 @@ struct ExperimentSessionFeature {
                 return loadDetail(state: &state)
 
             case let .detailLoaded(detail):
-                return configureSessionDetail(detail, state: &state)
+                return .merge(
+                    configureSessionDetail(detail, state: &state),
+                    enterSessionIfReady(state: &state)
+                )
 
             case .detailLoadingFailed:
                 state.isLoadingDetail = false
@@ -131,11 +146,32 @@ struct ExperimentSessionFeature {
                 state.permissionRequestGeneration += 1
                 return .none
 
+            case .sceneBackgrounded:
+                return sceneBackgrounded(state: &state)
+
+            case .setupLeaveTapped:
+                return setupLeave(state: &state)
+
+            case .setupRetryCameraTapped:
+                return retryCameraPreparation(state: &state)
+
+            case .cameraPreparationTimedOut:
+                return cameraPreparationTimedOut(state: &state)
+
+            case .sessionEntered:
+                return sessionEntered(state: &state)
+
+            case .sessionEntryFailed:
+                return sessionEntryFailed(state: &state)
+
+            case .phoneCloseProgress:
+                return drainPhoneClose(state: &state)
+
             case .stopTapped:
                 guard state.watchCommand == nil || state.watchClosingResources else {
                     return .none
                 }
-                return completeSession(state: &state)
+                return beginPhoneClose(.complete, state: &state)
 
             case .stopCompleted, .homeExitCompleted:
                 state.isCompleting = false
@@ -144,80 +180,33 @@ struct ExperimentSessionFeature {
                 return .none
 
             case .stopFailed:
-                state.isCompleting = false
-                state.timer.isClosing = false
-                state.completionFailed = true
-                return .merge(
-                    .send(.timer(.timerTick(now))),
-                    finishWatchClose(state: &state, error: .storageFailed)
-                )
+                return abandonPhoneClose(state: &state, completion: true)
 
             case .dismissStopFailure:
                 state.completionFailed = false
                 return .none
 
             case .returnHomeTapped:
-                guard state.canCloseSession,
-                      state.watchCommand == nil || state.watchClosingResources else {
+                guard state.watchCommand == nil || state.watchClosingResources else {
                     return .none
                 }
-                state.isReturningHome = true
-                state.timer.isClosing = true
-                state.exitFailed = false
-                let experimentID = state.experimentID
-                let exitID = state.exitID ?? uuid()
-                state.exitID = exitID
-                let exitedAt = now
-                let ownerID = state.capture.camera.ownerID
-                let title = state.detail?.title ?? "실험"
-                let runningTimers = state.timer.timerCollection.timers.filter {
-                    $0.status == .running && $0.remainingSeconds(at: exitedAt) > 0
-                }
-                return .run { send in
-                    do {
-                        try await experimentClient.leaveSession(experimentID, exitID, exitedAt)
-                    } catch {
-                        await send(.homeExitFailed)
-                        return
-                    }
-                    if !runningTimers.isEmpty,
-                       let status = try? await notificationPermissionClient.requestAccess() {
-                        switch status {
-                        case .authorized, .provisional, .ephemeral:
-                            for timer in runningTimers {
-                                try? await timerCompletionNotificationClient.schedule(
-                                    experimentID, title, timer
-                                )
-                            }
-                        case .notDetermined, .denied, .unknown:
-                            break
-                        }
-                    }
-                    await send(.voice(.closeRequested))
-                    await cameraSessionClient.cancelVideoRecording()
-                    await speechRecordingClient.cancel()
-                    await cameraSessionClient.deactivate(ownerID)
-                    await send(.homeExitCompleted)
-                }
+                return beginPhoneClose(.pause, state: &state)
 
             case .homeExitFailed:
-                state.isReturningHome = false
-                state.timer.isClosing = false
-                state.exitFailed = true
-                return .merge(
-                    .send(.timer(.timerTick(now))),
-                    finishWatchClose(state: &state, error: .storageFailed)
-                )
+                return abandonPhoneClose(state: &state, completion: false)
 
             case .dismissHomeExitFailure:
                 state.exitFailed = false
                 return .none
 
             case .permissions(.microphoneStatusUpdated(.authorized)):
-                return .send(.capture(.prepareVideoRecordingRequested))
+                return .merge(
+                    .send(.capture(.prepareVideoRecordingRequested)),
+                    enterSessionIfReady(state: &state)
+                )
 
             case .permissions(.camera(.statusUpdated(.authorized))):
-                return .send(.capture(.cameraActivationRequested))
+                return cameraAuthorized(state: &state)
 
             case .capture(.cameraViewDisappeared):
                 return .merge(
@@ -287,7 +276,7 @@ struct ExperimentSessionFeature {
                 return .send(.capture(.videoRecordRequested))
 
             case .permissions, .voice, .capture, .timer:
-                return .none
+                return sessionFollowUp(state: &state, action: action)
             }
         }
     }
@@ -311,25 +300,13 @@ private extension ExperimentSessionFeature {
         )
     }
 
-    func completeSession(state: inout State) -> Effect<Action> {
-        guard state.canCloseSession else { return .none }
-        state.isCompleting = true
-        state.timer.isClosing = true
-        state.completionFailed = false
-        let experimentID = state.experimentID
-        let completedAt = now
-        return .run { send in
-            do {
-                try await experimentClient.complete(experimentID, completedAt)
-                await send(.stopCompleted)
-            } catch {
-                await send(.stopFailed)
-            }
-        }
-    }
-
     func loadDetail(state: inout State) -> Effect<Action> {
-        guard state.detail == nil, !state.isLoadingDetail else { return .none }
+        if state.detail != nil {
+            state.sessionEntryFailed = false
+            state.detailLoadFailed = false
+            return enterSessionIfReady(state: &state)
+        }
+        guard !state.isLoadingDetail else { return .none }
         state.isLoadingDetail = true
         state.detailLoadFailed = false
         let experimentID = state.experimentID

@@ -29,6 +29,7 @@ struct SessionHeaderView: View {
             .buttonStyle(.glass)
             .buttonBorderShape(.circle)
             .disabled(!store.canCloseSession)
+            .accessibilityLabel("실험 종료")
 
             Button {
                 store.send(.returnHomeTapped)
@@ -39,6 +40,7 @@ struct SessionHeaderView: View {
             .buttonStyle(.glassProminent)
             .buttonBorderShape(.circle)
             .disabled(!store.canCloseSession)
+            .accessibilityLabel("실험 일시정지")
         }
     }
 }
