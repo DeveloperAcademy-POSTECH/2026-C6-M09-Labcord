@@ -32,6 +32,16 @@ public enum WatchAudioError: String, Error, Codable, Sendable {
     case permissionDenied
     case recognitionUnavailable
     case storageFailed
+
+    public var watchExperimentError: WatchExperimentError {
+        switch self {
+        case .permissionDenied: .permissionDenied
+        case .conflict: .duplicateConflict
+        case .invalidAudio: .invalidPayload
+        case .storageFull, .storageFailed: .storageFailed
+        case .incomplete, .interrupted, .bufferOverflow, .recognitionUnavailable: .resultUnknown
+        }
+    }
 }
 
 /// PCM signed 16-bit little-endian, mono. Sample positions are recording-relative.

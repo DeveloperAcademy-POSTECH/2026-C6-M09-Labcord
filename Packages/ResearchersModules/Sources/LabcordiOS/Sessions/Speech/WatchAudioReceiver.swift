@@ -22,6 +22,7 @@ public final class WatchAudioReceiver {
     private var pipelines: [UUID: WatchAudioPipeline] = [:]
     private var processing: [UUID: Task<Void, Never>] = [:]
     private var processIDs: [UUID: UUID] = [:]
+    private var pendingRerun: Set<UUID> = []
     private var observers: [UUID: AsyncStream<WatchAudioTranscript>.Continuation] = [:]
     private let reviewGate = WatchAudioReviewGate()
     private var latestTranscripts: [UUID: WatchAudioTranscript] = [:]
@@ -72,6 +73,7 @@ public final class WatchAudioReceiver {
             receipt = try await archive.cancel(header)
             reviewGate.resolve(header.recordingID, save: false)
             pipelines.removeValue(forKey: header.recordingID)?.transcriber.cancel()
+            releaseTranscript(header.recordingID)
         }
         schedule(receipt.header)
         return try JSONEncoder().encode(WatchAudioReceipt(
@@ -121,12 +123,16 @@ public final class WatchAudioReceiver {
         if receipt.savedRecordID == nil {
             let message: WatchAudioMessage = command.operation == .confirmRecord
                 ? .confirm(header) : .cancel(header)
-            _ = try await receive(JSONEncoder().encode(message))
+            do {
+                _ = try await receive(JSONEncoder().encode(message))
+            } catch let error as WatchAudioError {
+                throw error.watchExperimentError
+            }
             await processing[id]?.value
             receipt = try await archive.status(header)
         }
         guard receipt.savedRecordID == id || receipt.isCancelled else {
-            throw failures[id] ?? WatchAudioError.storageFailed
+            throw (failures[id] ?? .incomplete).watchExperimentError
         }
         return WatchExperimentResponse(
             requestID: command.requestID, phase: .completed,
@@ -140,89 +146,10 @@ public final class WatchAudioReceiver {
         processing.values.forEach { $0.cancel() }
         processing.removeAll()
         processIDs.removeAll()
+        pendingRerun.removeAll()
         pipelines.values.forEach { $0.transcriber.cancel() }
         pipelines.removeAll()
         reviewGate.cancelAll()
-    }
-
-    private func schedule(_ header: WatchAudioHeader) {
-        guard processing[header.recordingID] == nil else { return }
-        let processID = UUID()
-        processIDs[header.recordingID] = processID
-        processing[header.recordingID] = Task { [weak self] in
-            guard let self else { return }
-            defer {
-                if self.processIDs[header.recordingID] == processID {
-                    self.processing.removeValue(forKey: header.recordingID)
-                    self.processIDs.removeValue(forKey: header.recordingID)
-                }
-            }
-            do {
-                try await self.process(header)
-                self.failures.removeValue(forKey: header.recordingID)
-            } catch is CancellationError {
-                return
-            } catch {
-                guard self.processIDs[header.recordingID] == processID else { return }
-                self.pipelines.removeValue(forKey: header.recordingID)?.transcriber.cancel()
-                let underlying = error as NSError
-                let domain = underlying.domain
-                let code = underlying.code
-                self.logger.error("Watch audio error: \(domain, privacy: .public) code=\(code)")
-                self.failures[header.recordingID] = (error as? WatchAudioError)
-                    ?? .recognitionUnavailable
-            }
-        }
-    }
-
-    private func process(_ header: WatchAudioHeader) async throws {
-        let receipt = try await archive.status(header)
-        guard receipt.savedRecordID == nil, !receipt.isCancelled else { return }
-        // Existing records, including user-edited transcripts, are never overwritten.
-        if try await acknowledgeExistingRecord(header) { return }
-        guard !receipt.receivedSequences.isEmpty else { return }
-        try ensureWatchAudioPipeline(header)
-        guard var pipeline = pipelines[header.recordingID] else {
-            throw WatchAudioError.conflict
-        }
-        let sequences = Set(receipt.receivedSequences)
-        while sequences.contains(pipeline.nextSequence) {
-            try Task.checkCancellation()
-            try pipeline.transcriber.append(await archive.chunk(header, pipeline.nextSequence))
-            pipeline.nextSequence += 1
-        }
-        pipelines[header.recordingID] = pipeline
-        guard let manifest = receipt.manifest,
-              pipeline.nextSequence == manifest.chunkCount else { return }
-        try await finish(header, pipeline: pipeline, manifest: manifest)
-    }
-
-    private func finish(
-        _ header: WatchAudioHeader, pipeline: WatchAudioPipeline, manifest: WatchAudioManifest
-    ) async throws {
-        _ = try await archive.completeManifest(header)
-        let transcript = try await pipeline.transcriber.finish()
-        try Task.checkCancellation()
-        guard try !(await archive.status(header)).isCancelled else { return }
-        failures.removeValue(forKey: header.recordingID)
-        guard await reviewGate.wait(header.recordingID) else { return }
-        try Task.checkCancellation()
-        guard try !(await archive.status(header)).isCancelled else { return }
-        let source = try await assemble(header, manifest: manifest)
-        guard try !(await archive.status(header)).isCancelled else { return }
-        // 전사·검토 대기 중 iPhone에서 생긴 저장본도 덮어쓰지 않습니다.
-        if try await acknowledgeExistingRecord(header, comparing: transcript) {
-            pipelines.removeValue(forKey: header.recordingID)
-            return
-        }
-        // Repository moves this staging copy; the archive's original chunks remain intact.
-        do {
-            try client.saveAudio(
-                header.experimentID, header.recordingID, header.startedAt, source, transcript
-            )
-        } catch { throw WatchAudioError.storageFailed }
-        _ = try await archive.markSaved(header, recordID: header.recordingID)
-        pipelines.removeValue(forKey: header.recordingID)
     }
 
     private func ensureWatchAudioPipeline(_ header: WatchAudioHeader) throws {
@@ -277,6 +204,103 @@ public final class WatchAudioReceiver {
 }
 
 private extension WatchAudioReceiver {
+    func schedule(_ header: WatchAudioHeader) {
+        let recordingID = header.recordingID
+        if processing[recordingID] != nil {
+            pendingRerun.insert(recordingID)
+            return
+        }
+        let processID = UUID()
+        processIDs[recordingID] = processID
+        processing[recordingID] = Task { [weak self] in
+            guard let self else { return }
+            defer {
+                let current = self.processIDs[recordingID] == processID
+                if current {
+                    self.processing.removeValue(forKey: recordingID)
+                    self.processIDs.removeValue(forKey: recordingID)
+                }
+                if current, self.pendingRerun.remove(recordingID) != nil {
+                    self.schedule(header)
+                }
+            }
+            do {
+                try await self.process(header)
+                self.failures.removeValue(forKey: header.recordingID)
+            } catch is CancellationError {
+                return
+            } catch {
+                guard self.processIDs[recordingID] == processID else { return }
+                self.pipelines.removeValue(forKey: recordingID)?.transcriber.cancel()
+                let underlying = error as NSError
+                let domain = underlying.domain
+                let code = underlying.code
+                self.logger.error("Watch audio error: \(domain, privacy: .public) code=\(code)")
+                self.failures[recordingID] = (error as? WatchAudioError)
+                    ?? .recognitionUnavailable
+            }
+        }
+    }
+
+    func process(_ header: WatchAudioHeader) async throws {
+        let receipt = try await archive.status(header)
+        guard receipt.savedRecordID == nil, !receipt.isCancelled else {
+            releaseTranscript(header.recordingID)
+            return
+        }
+        // Existing records, including user-edited transcripts, are never overwritten.
+        if try await acknowledgeExistingRecord(header) { return }
+        guard !receipt.receivedSequences.isEmpty else { return }
+        try ensureWatchAudioPipeline(header)
+        guard var pipeline = pipelines[header.recordingID] else {
+            throw WatchAudioError.conflict
+        }
+        let sequences = Set(receipt.receivedSequences)
+        while sequences.contains(pipeline.nextSequence) {
+            try Task.checkCancellation()
+            try pipeline.transcriber.append(await archive.chunk(header, pipeline.nextSequence))
+            pipeline.nextSequence += 1
+        }
+        pipelines[header.recordingID] = pipeline
+        guard let manifest = receipt.manifest,
+              pipeline.nextSequence == manifest.chunkCount else { return }
+        try await finish(header, pipeline: pipeline, manifest: manifest)
+    }
+
+    func finish(
+        _ header: WatchAudioHeader, pipeline: WatchAudioPipeline, manifest: WatchAudioManifest
+    ) async throws {
+        _ = try await archive.completeManifest(header)
+        let transcript = try await pipeline.transcriber.finish()
+        try Task.checkCancellation()
+        guard try !(await archive.status(header)).isCancelled else { return }
+        failures.removeValue(forKey: header.recordingID)
+        guard await reviewGate.wait(header.recordingID) else { return }
+        try Task.checkCancellation()
+        guard try !(await archive.status(header)).isCancelled else { return }
+        let source = try await assemble(header, manifest: manifest)
+        guard try !(await archive.status(header)).isCancelled else { return }
+        // 전사·검토 대기 중 iPhone에서 생긴 저장본도 덮어쓰지 않습니다.
+        if try await acknowledgeExistingRecord(header, comparing: transcript) {
+            pipelines.removeValue(forKey: header.recordingID)
+            return
+        }
+        // Repository moves this staging copy; the archive's original chunks remain intact.
+        do {
+            try client.saveAudio(
+                header.experimentID, header.recordingID, header.startedAt, source, transcript
+            )
+        } catch { throw WatchAudioError.storageFailed }
+        _ = try await archive.markSaved(header, recordID: header.recordingID)
+        pipelines.removeValue(forKey: header.recordingID)
+        releaseTranscript(header.recordingID)
+    }
+
+    func releaseTranscript(_ id: UUID) {
+        latestTranscripts.removeValue(forKey: id)
+        transcriptConflicts.remove(id)
+    }
+
     func acknowledgeExistingRecord(
         _ header: WatchAudioHeader, comparing transcript: String? = nil
     ) async throws -> Bool {
