@@ -10,43 +10,54 @@ struct AppView: View {
     var body: some View {
         @Bindable var store = store
 
-        NavigationStack(path: $store.scope(\.path, action: \.path)) {
-            HomeView(store: store.scope(state: \.home, action: \.home))
-        } destination: { store in
-            switch store.case {
-            case .registration(let store):
-                ProtocolRegistrationView(store: store)
-                    .navigationSwipeBackEnabled(!store.isSaving)
+        Group {
+            if let onboardingStore = store.scope(state: \.onboarding, action: \.onboarding) {
+                OnboardingView(store: onboardingStore)
+            } else if let firstHomeStore = store.scope(state: \.firstHome, action: \.firstHome) {
+                FirstHomeView(store: firstHomeStore)
+            } else {
+                NavigationStack(path: $store.scope(\.path, action: \.path)) {
+                    HomeView(store: store.scope(state: \.home, action: \.home))
+                } destination: { store in
+                    switch store.case {
+                    case .registration(let store):
+                        ProtocolRegistrationView(store: store)
+                            .navigationSwipeBackEnabled(!store.isSaving)
 
-            case .recent(let store):
-                RecentProtocolView(store: store)
+                    case .recent(let store):
+                        RecentProtocolView(store: store)
 
-            case .review(let store):
-                ProtocolReviewView(store: store)
-                    .disabled(self.store.savedReview != nil)
-                    .overlay(alignment: .bottom) {
-                        if self.store.savedReview != nil {
-                            VStack {
-                                Button("정리 다시 시도") { self.store.send(.retryReviewSave) }
-                                Button("저장된 실험으로 이동") { self.store.send(.openSavedReview) }
+                    case .review(let store):
+                        ProtocolReviewView(store: store)
+                            .disabled(self.store.savedReview != nil)
+                            .overlay(alignment: .bottom) {
+                                if self.store.savedReview != nil {
+                                    VStack {
+                                        Button("정리 다시 시도") { self.store.send(.retryReviewSave) }
+                                        Button("저장된 실험으로 이동") { self.store.send(.openSavedReview) }
+                                    }
+                                    .padding()
+                                    .background(.regularMaterial, in: Capsule())
+                                    .padding()
+                                }
                             }
-                            .padding()
-                            .background(.regularMaterial, in: Capsule())
-                            .padding()
-                        }
+                            .navigationSwipeBackEnabled(false)
+
+                    case .session(let store):
+                        ExperimentSessionView(store: store)
+                            .navigationSwipeBackEnabled(false)
+
+                    case .result(let store):
+                        ExperimentResultView(store: store)
+                            .navigationSwipeBackEnabled(store.isOpenedFromHome)
                     }
-                    .navigationSwipeBackEnabled(false)
-
-            case .session(let store):
-                ExperimentSessionView(store: store)
-                    .navigationSwipeBackEnabled(false)
-
-            case .result(let store):
-                ExperimentResultView(store: store)
-                    .navigationSwipeBackEnabled(store.isOpenedFromHome)
+                }
+                .disabled(store.reviewSaving)
             }
         }
-        .disabled(store.reviewSaving)
+        .task {
+            store.send(.appeared)
+        }
         .alert("실험을 저장하거나 정리하지 못했어요", isPresented: Binding(
             get: { store.reviewSaveFailed },
             set: { if !$0 { store.send(.dismissReviewSaveFailure) } }
