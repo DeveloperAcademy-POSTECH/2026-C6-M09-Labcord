@@ -20,7 +20,7 @@ final class ExperimentSessionRepository {
         try context.save()
     }
 
-    func loadDetail(id: UUID, recordEntry: Bool = true) throws -> ExperimentSessionDetail? {
+    func loadDetail(id: UUID) throws -> ExperimentSessionDetail? {
         let context = try store.makeContext()
         guard let experiment = try store.find(id: id, in: context) else { return nil }
 
@@ -33,14 +33,7 @@ final class ExperimentSessionRepository {
             + (procedure?.samples ?? [])
             + (procedure?.glossaryTerms ?? [])
             + (procedure?.units ?? [])
-        let timers = activeTimers(in: experiment, at: enteredAt, persistExpiry: recordEntry)
-        if recordEntry {
-            if experiment.status != .completed, experiment.startedAt == nil {
-                experiment.startedAt = enteredAt
-            }
-            experiment.recordEntry(at: enteredAt)
-            try context.save()
-        }
+        let timers = activeTimers(in: experiment, at: enteredAt, persistExpiry: false)
         return ExperimentSessionDetail(
             title: experiment.title,
             timerSeconds: timerSeconds,
@@ -53,7 +46,7 @@ final class ExperimentSessionRepository {
     func watchState(id: UUID) throws -> WatchExperimentState? {
         let context = try store.makeContext()
         guard let experiment = try store.find(id: id, in: context),
-              let detail = try loadDetail(id: id, recordEntry: false) else { return nil }
+              let detail = try loadDetail(id: id) else { return nil }
         return WatchExperimentState(
             experiment: WatchExperimentSummary(
                 id: id, title: experiment.title, status: experiment.status
@@ -117,6 +110,19 @@ final class ExperimentSessionRepository {
             throw WatchExperimentError.invalidState
         }
         try timerVisibility.dismiss(experimentID: experimentID, timerID: timerID)
+    }
+
+    func enterSession(id: UUID, at date: Date) throws {
+        let context = try store.makeContext()
+        guard let experiment = try store.find(id: id, in: context) else {
+            throw ExperimentStore.StoreError.experimentNotFound
+        }
+        _ = activeTimers(in: experiment, at: date, persistExpiry: true)
+        if experiment.status != .completed, experiment.startedAt == nil {
+            experiment.startedAt = date
+        }
+        experiment.recordEntry(at: date)
+        try context.save()
     }
 
     func leaveSession(id: UUID, entryID: UUID, at date: Date) throws {

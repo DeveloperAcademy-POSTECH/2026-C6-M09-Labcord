@@ -13,9 +13,15 @@ final class ExperimentListRepository {
 
     func load() throws -> [ExperimentListEntry] {
         let context = try store.makeContext()
-        let request = FetchDescriptor<Experiment>()
+        let experiments = try context.fetch(FetchDescriptor<Experiment>())
+        let interrupted = experiments.filter { $0.status == .running }
+        for experiment in interrupted {
+            experiment.repairInterruptedRun(entryID: UUID())
+        }
+        if !interrupted.isEmpty { try context.save() }
+        recoverInterruptedVoiceRecordings()
         let now = Date.now
-        return try context.fetch(request).map { Self.entry($0, at: now) }
+        return experiments.map { Self.entry($0, at: now) }
     }
 
     func create(id: UUID, at date: Date) throws -> ExperimentListEntry {
@@ -30,7 +36,6 @@ final class ExperimentListRepository {
             id: id,
             title: "새 실험 (\(nextNumber))",
             createdAt: date,
-            startedAt: .now,
             mode: .free,
         )
 
@@ -66,7 +71,6 @@ final class ExperimentListRepository {
             id: id,
             title: title,
             createdAt: date,
-            startedAt: .now,
             mode: .procedure,
             procedure: procedure
         )
@@ -125,5 +129,32 @@ final class ExperimentListRepository {
             }
             return timer.startedAt.addingTimeInterval(TimeInterval(duration) + pausedDuration)
         }.max()
+    }
+
+    private func recoverInterruptedVoiceRecordings() {
+        for entry in VoiceRecordingJournal.entries() {
+            let url = URL(fileURLWithPath: entry.filePath)
+            guard FileManager.default.fileExists(atPath: url.path) else {
+                VoiceRecordingJournal.remove(recordingID: entry.recordingID)
+                continue
+            }
+            do {
+                try mediaStore.saveAudio(
+                    experimentID: entry.experimentID,
+                    id: entry.recordingID,
+                    recordedAt: entry.startedAt,
+                    sourceURL: url,
+                    transcript: "",
+                    note: "중단된 녹음을 복구했어요."
+                )
+                VoiceRecordingJournal.remove(recordingID: entry.recordingID)
+            } catch ExperimentStore.StoreError.experimentNotFound {
+                VoiceRecordingJournal.remove(recordingID: entry.recordingID)
+                try? FileManager.default.removeItem(at: url)
+            } catch {
+                continue
+            }
+        }
+        VoiceRecordingJournal.sweepUntrackedFiles()
     }
 }

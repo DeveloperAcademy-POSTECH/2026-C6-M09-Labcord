@@ -30,6 +30,7 @@ public struct ExperimentClient: Sendable {
     public var createWithProtocol: @MainActor @Sendable (
         UUID, Date, String, ExperimentProtocol
     ) throws -> ExperimentListEntry
+    public var enterSession: @MainActor @Sendable (UUID, Date) throws -> Void
     public var leaveSession: @MainActor @Sendable (UUID, UUID, Date) throws -> Void
     public var saveTimer: @MainActor @Sendable (UUID, ExperimentTimer, Date?) throws -> Void
     public var savePhoto: @MainActor @Sendable (UUID, UUID, Date, Data) throws -> Void
@@ -85,6 +86,9 @@ public struct ExperimentClient: Sendable {
         },
         dismissWatchTimer: @escaping @MainActor @Sendable (UUID, UUID) throws -> Void = { _, _ in
             throw ExperimentCreationError.unavailable
+        },
+        enterSession: @escaping @MainActor @Sendable (UUID, Date) throws -> Void = { _, _ in
+            throw ExperimentCreationError.unavailable
         }
     ) {
         self.applyWatchTimer = applyWatchTimer
@@ -99,6 +103,7 @@ public struct ExperimentClient: Sendable {
         self.deleteRecord = deleteRecord
         self.create = create
         self.createWithProtocol = createWithProtocol
+        self.enterSession = enterSession
         self.leaveSession = leaveSession
         self.saveTimer = saveTimer
         self.savePhoto = savePhoto
@@ -179,6 +184,9 @@ extension ExperimentClient: DependencyKey {
         },
         dismissWatchTimer: {
             try ExperimentSessionRepository.shared.dismissWatchTimer(experimentID: $0, timerID: $1)
+        },
+        enterSession: {
+            try ExperimentSessionRepository.shared.enterSession(id: $0, at: $1)
         }
     )
 }

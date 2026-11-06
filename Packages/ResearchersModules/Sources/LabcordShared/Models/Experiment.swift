@@ -79,4 +79,11 @@ public final class Experiment {
         status = .completed
         statusHistory.append(ExperimentStatusEntry(status: .completed, date: date))
     }
+
+    /// 실행 중 끊긴 실험을 마지막 상태 시각에 일시정지합니다.
+    public func repairInterruptedRun(entryID: UUID) {
+        guard status == .running else { return }
+        let date = statusHistory.map(\.date).max() ?? createdAt
+        recordExit(at: date, entryID: entryID)
+    }
 }
