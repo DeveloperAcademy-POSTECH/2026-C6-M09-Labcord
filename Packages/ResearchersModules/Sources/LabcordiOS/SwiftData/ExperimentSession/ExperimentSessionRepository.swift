@@ -74,7 +74,8 @@ final class ExperimentSessionRepository {
         guard let experiment = try store.find(id: experimentID, in: context) else {
             throw ExperimentStore.StoreError.experimentNotFound
         }
-        let timers = try watchTimers(in: experiment, at: .now)
+        let now = Date()
+        let timers = try watchTimers(in: experiment, at: now)
         if command.operation == .startTimer,
            let existing = experiment.records.first(where: { $0.id == command.requestID }) {
             guard existing.type == .timer,
@@ -93,10 +94,11 @@ final class ExperimentSessionRepository {
             }
             return
         }
-        let mutation = try WatchTimerMutation.prepare(command, timers: timers, at: .now)
+        let mutation = try WatchTimerMutation.prepare(command, timers: timers, at: now)
         for change in mutation.changes {
-            try saveTimer(experimentID: experimentID, timer: change.timer, endedAt: change.endedAt)
+            upsertTimer(change.timer, endedAt: change.endedAt, in: experiment)
         }
+        if !mutation.changes.isEmpty { try context.save() }
         if command.operation == .deleteTimer, let timerID = command.targetID {
             // 기록 저장 이후에만 숨깁니다. 표시 저장 실패는 호출자에게 전파하여 재시도합니다.
             try dismissWatchTimer(experimentID: experimentID, timerID: timerID)
@@ -132,35 +134,7 @@ final class ExperimentSessionRepository {
         guard let experiment = try store.find(id: experimentID, in: context) else {
             throw ExperimentStore.StoreError.experimentNotFound
         }
-
-        let record: ExperimentRecord
-        if let existing = experiment.records.first(where: { $0.id == timer.id }) {
-            record = existing
-        } else {
-            record = ExperimentRecord(
-                id: timer.id,
-                type: .timer,
-                recordedAt: timer.startedAt,
-                note: "",
-                timerDurationSeconds: timer.durationSeconds
-            )
-            experiment.records.append(record)
-        }
-
-        record.timerEndedAt = record.timerEndedAt ?? timer.finishedAt ?? endedAt
-        for interval in timer.pauseIntervals {
-            if let pause = record.timerPauses.first(where: { $0.id == interval.id }) {
-                pause.resumedAt = interval.resumedAt
-            } else {
-                record.timerPauses.append(
-                    Pause(
-                        id: interval.id,
-                        pausedAt: interval.pausedAt,
-                        resumedAt: interval.resumedAt
-                    )
-                )
-            }
-        }
+        upsertTimer(timer, endedAt: endedAt, in: experiment)
         try context.save()
     }
 
@@ -272,5 +246,39 @@ final class ExperimentSessionRepository {
                 return timer.status == .finished ? nil : timer
             }
             .sorted { $0.startedAt < $1.startedAt }
+    }
+}
+
+private extension ExperimentSessionRepository {
+    func upsertTimer(
+        _ timer: ExperimentTimer, endedAt: Date?, in experiment: Experiment
+    ) {
+        let record: ExperimentRecord
+        if let existing = experiment.records.first(where: { $0.id == timer.id }) {
+            record = existing
+        } else {
+            record = ExperimentRecord(
+                id: timer.id,
+                type: .timer,
+                recordedAt: timer.startedAt,
+                note: "",
+                timerDurationSeconds: timer.durationSeconds
+            )
+            experiment.records.append(record)
+        }
+        record.timerEndedAt = record.timerEndedAt ?? timer.finishedAt ?? endedAt
+        for interval in timer.pauseIntervals {
+            if let pause = record.timerPauses.first(where: { $0.id == interval.id }) {
+                pause.resumedAt = interval.resumedAt
+            } else {
+                record.timerPauses.append(
+                    Pause(
+                        id: interval.id,
+                        pausedAt: interval.pausedAt,
+                        resumedAt: interval.resumedAt
+                    )
+                )
+            }
+        }
     }
 }
