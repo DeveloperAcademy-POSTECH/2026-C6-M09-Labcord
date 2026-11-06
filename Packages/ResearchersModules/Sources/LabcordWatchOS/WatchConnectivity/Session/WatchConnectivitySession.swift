@@ -11,10 +11,10 @@ import LabcordShared
 import WatchConnectivity
 
 public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionManaging {
-    private let deliveryLock = NSLock()
-    private var handlingUserInfoCount = 0
-    private var lastHandledUserInfoAt: Date?
-    public let observerStore = WatchConnectivityObserverStore()
+    nonisolated private let deliveryLock = NSLock()
+    nonisolated(unsafe) private var handlingUserInfoCount = 0
+    nonisolated(unsafe) private var lastHandledUserInfoAt: Date?
+    nonisolated public let observerStore = WatchConnectivityObserverStore()
     public let experiments = WatchExperimentTransport()
     public let records = WatchRecordTransport()
     @MainActor public private(set) var activationFailed = false
@@ -23,7 +23,9 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
     private var audioReceiptObservers: [UUID: AsyncStream<WatchAudioReceipt>.Continuation] = [:]
     private var latestAudioReceipts: [UUID: WatchAudioReceipt] = [:]
 
-    private func deliveryState(since start: Date) -> (isHandling: Bool, handledRecently: Bool) {
+    nonisolated private func deliveryState(
+        since start: Date
+    ) -> (isHandling: Bool, handledRecently: Bool) {
         deliveryLock.lock()
         defer { deliveryLock.unlock() }
         return (
@@ -32,7 +34,7 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         )
     }
 
-    public func session(
+    nonisolated public func session(
         _ session: WCSession,
         activationDidCompleteWith state: WCSessionActivationState,
         error: Error?
@@ -49,7 +51,7 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         activate()
     }
 
-    public func session(
+    nonisolated public func session(
         _ session: WCSession,
         didReceiveMessage message: [String: Any],
         replyHandler: @escaping ([String: Any]) -> Void
@@ -77,7 +79,7 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         }
     }
 
-    public func session(
+    nonisolated public func session(
         _ session: WCSession,
         didReceiveApplicationContext applicationContext: [String: Any]
     ) {
@@ -116,7 +118,7 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         }
     }
 
-    public func session(
+    nonisolated public func session(
         _ session: WCSession,
         didReceiveUserInfo userInfo: [String: Any]
     ) {
@@ -133,13 +135,13 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         }
     }
 
-    private func beginDelivery() {
+    nonisolated private func beginDelivery() {
         deliveryLock.lock()
         handlingUserInfoCount += 1
         deliveryLock.unlock()
     }
 
-    private func finishDelivery() {
+    nonisolated private func finishDelivery() {
         deliveryLock.lock()
         handlingUserInfoCount -= 1
         lastHandledUserInfoAt = Date()

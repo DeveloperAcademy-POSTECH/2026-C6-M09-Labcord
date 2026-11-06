@@ -8,11 +8,11 @@
 import Foundation
 import WatchConnectivity
 
-@MainActor
 public protocol WatchConnectivitySessionManaging: WCSessionDelegate {
     var observerStore: WatchConnectivityObserverStore { get }
 }
 
+@MainActor
 extension WatchConnectivitySessionManaging {
     public var session: WCSession? {
         WCSession.isSupported() ? WCSession.default : nil
