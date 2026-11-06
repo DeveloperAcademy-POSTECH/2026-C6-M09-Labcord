@@ -17,6 +17,10 @@ let package = Package(
         .library(
             name: "LabcordWatchOS",
             targets: ["LabcordWatchOS"]
+        ),
+        .library(
+            name: "LabcordShared",
+            targets: ["LabcordShared"]
         )
     ],
     dependencies: [
@@ -76,6 +80,10 @@ let package = Package(
                 .defaultIsolation(MainActor.self),
                 .swiftLanguageMode(.v5)
             ]
+        ),
+        .testTarget(
+            name: "LabcordSharedTests",
+            dependencies: ["LabcordShared"]
         )
     ]
 )
