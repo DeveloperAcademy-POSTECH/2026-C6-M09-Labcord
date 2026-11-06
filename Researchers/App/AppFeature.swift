@@ -26,6 +26,7 @@ struct AppFeature {
         var reviewAnalysisJobID: UUID?
         var recentRegistrationID: StackElementID?
         var savedReview: ExperimentListEntry?
+        var pendingNotificationExperimentID: UUID?
     }
 
     enum Action {
@@ -46,6 +47,8 @@ struct AppFeature {
         case dismissReviewSaveFailure
         case confirmReviewExit
         case cancelReviewExit
+        case timerNotificationTapped(UUID)
+        case timerNotificationLoaded(UUID, ExperimentListEntry?)
     }
 
     @Dependency(\.experimentClient) var experimentClient
@@ -58,6 +61,32 @@ struct AppFeature {
 
         Reduce { state, action in
             switch action {
+            case let .timerNotificationTapped(experimentID):
+                state.pendingNotificationExperimentID = experimentID
+                return .run { send in
+                    let entry = try? await experimentClient.load().first { $0.id == experimentID }
+                    await send(.timerNotificationLoaded(experimentID, entry))
+                }
+
+            case let .timerNotificationLoaded(experimentID, entry):
+                guard state.pendingNotificationExperimentID == experimentID else { return .none }
+                state.pendingNotificationExperimentID = nil
+                guard let entry, !state.reviewSaving else { return .none }
+                if entry.status == .completed {
+                    if state.path.ids.last.flatMap({ state.path[id: $0, case: \.result] })?
+                        .experimentID == experimentID { return .none }
+                    state.path.removeAll()
+                    state.path.append(.result(.init(
+                        experimentID: experimentID, isOpenedFromHome: true
+                    )))
+                } else {
+                    if state.path.ids.last.flatMap({ state.path[id: $0, case: \.session] })?
+                        .experimentID == experimentID { return .none }
+                    state.path.removeAll()
+                    state.path.append(.session(.init(experimentID: experimentID)))
+                }
+                return .send(.home(.list(.cancelLoad)))
+
             case .home(.addTapped):
                 guard state.path.isEmpty, !state.home.list.isDeleting,
                       state.home.list.pendingDeletion == nil else { return .none }
