@@ -291,9 +291,14 @@ struct AppFeature {
 
 private extension AppFeature {
     func openResumedSession(_ state: inout State, id: StackElementID) -> Effect<Action> {
-        guard state.path.ids.last == id,
-              let result = state.path[id: id, case: \.result],
-              result.isResuming else { return .none }
+        guard var result = state.path[id: id, case: \.result], result.isResuming else {
+            return .none
+        }
+        guard state.path.ids.last == id else {
+            result.isResuming = false
+            state.path[id: id, case: \.result] = result
+            return .none
+        }
         let experimentID = result.experimentID
         state.path.removeAll()
         state.path.append(.session(.init(experimentID: experimentID)))
