@@ -70,6 +70,7 @@ struct VideoFeature {
     @Dependency(\.cameraSessionClient) var cameraSessionClient
     @Dependency(\.experimentClient) var experimentClient
     @Dependency(\.date.now) var now
+    @Dependency(\.date) var date
     @Dependency(\.uuid) var uuid
 
     var body: some Reducer<State, Action> {
@@ -266,15 +267,36 @@ struct VideoFeature {
 }
 
 private extension VideoFeature {
+    func recordVideo(
+        clock: DateGenerator, onStarted: @escaping @Sendable (Date) async -> Void
+    ) async throws -> URL {
+        let started = AsyncStream<Date>.makeStream()
+        return try await withThrowingTaskGroup(of: URL.self) { group in
+            group.addTask {
+                defer { started.continuation.finish() }
+                return try await cameraSessionClient.recordVideo {
+                    started.continuation.yield(clock.now)
+                }
+            }
+            if let startedAt = await started.stream.first { _ in true } {
+                await onStarted(startedAt)
+            }
+            guard let url = try await group.next() else { throw CancellationError() }
+            group.cancelAll()
+            return url
+        }
+    }
+
     func startRecording(state: inout State) -> Effect<Action> {
         guard state.phase == .idle else { return .none }
         state.sessionID = UUID()
         state.phase = .starting
         let id = state.sessionID
+        let clock = date
         return .run { send in
             do {
-                let url = try await cameraSessionClient.recordVideo {
-                    Task { await send(.started(id, .now)) }
+                let url = try await recordVideo(clock: clock) { startedAt in
+                    await send(.started(id, startedAt))
                 }
                 guard !Task.isCancelled else {
                     await cameraSessionClient.discardVideo(url)
