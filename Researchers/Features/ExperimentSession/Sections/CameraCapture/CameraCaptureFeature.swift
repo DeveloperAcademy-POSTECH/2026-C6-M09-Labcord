@@ -14,6 +14,8 @@ struct CameraCaptureFeature {
         var watchVideoRequest: WatchExperimentCommand?
         var watchReviewRequest: WatchExperimentCommand?
         var watchStopRequest: WatchExperimentCommand?
+        /// 촬영 요청보다 먼저 도착한 취소를 기억해 늦은 촬영을 거절합니다.
+        var rejectedWatchPhotoIDs: Set<UUID> = []
 
         init(experimentID: UUID) {
             self.photo = PhotoFeature.State(experimentID: experimentID)
