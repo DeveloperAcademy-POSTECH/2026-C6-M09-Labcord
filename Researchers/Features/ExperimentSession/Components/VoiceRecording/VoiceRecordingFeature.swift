@@ -22,6 +22,7 @@ struct VoiceRecordingFeature {
     @ObservableState
     struct State: Equatable {
         var phase: Phase = .hidden
+        var isStarting = false
         var sessionID = UUID()
         var transcript = ""
         var hasRecordingFailure = false
@@ -91,6 +92,7 @@ struct VoiceRecordingFeature {
 
             case .prepareRequested:
                 guard state.phase == .hidden else { return .none }
+                state.isStarting = false
                 state.transcript = ""
                 resetReview(state: &state)
                 state.errorMessage = nil
@@ -98,13 +100,12 @@ struct VoiceRecordingFeature {
                 state.sessionID = uuid()
                 state.phase = .starting
                 return .none
-
             case .overlayAppeared:
                 guard state.phase == .starting else { return .none }
                 return .send(.startRequested)
-
             case .startRequested:
-                guard state.phase == .starting else { return .none }
+                guard state.phase == .starting, !state.isStarting else { return .none }
+                state.isStarting = true
                 let id = state.sessionID
                 let experimentID = state.experimentID
                 let contextualStrings = state.contextualStrings
@@ -126,26 +127,25 @@ struct VoiceRecordingFeature {
                     }
                 }
                 .cancellable(id: CancelID.voiceStream, cancelInFlight: true)
-
             case let .started(id):
                 guard id == state.sessionID, state.phase == .starting else { return .none }
+                state.isStarting = false
                 state.phase = .recording
                 state.recordedAt = now
                 if state.shouldSaveOnStop { return .send(.stopRequested) }
                 return .none
-
             case let .startPermissionFailed(id, _):
                 guard id == state.sessionID, state.phase == .starting else { return .none }
+                state.isStarting = false
                 state.phase = .hidden
                 return .none
-
             case let .startFailed(id, message):
                 guard id == state.sessionID, state.phase == .starting else { return .none }
+                state.isStarting = false
                 state.phase = .hidden
                 state.errorMessage = message
                 state.hasRecordingFailure = true
                 return .none
-
             case let .event(id, event):
                 guard id == state.sessionID else { return .none }
                 switch event {
@@ -170,7 +170,6 @@ struct VoiceRecordingFeature {
                     return .none
                 }
                 return .none
-
             case .stopRequested:
                 guard state.phase == .recording else { return .none }
                 state.phase = .stopping
@@ -180,7 +179,6 @@ struct VoiceRecordingFeature {
                     await send(.stopped(id, recording))
                 }
                 .cancellable(id: CancelID.voiceStop, cancelInFlight: true)
-
             case let .stopped(id, recording):
                 guard id == state.sessionID, state.phase == .stopping else { return .none }
                 if let recording {
@@ -241,6 +239,7 @@ struct VoiceRecordingFeature {
                 let experimentID = state.experimentID
                 state.phase = .hidden
                 state.sessionID = uuid()
+                state.isStarting = false
                 state.hasRecordingFailure = false
                 resetReview(state: &state)
                 return .concatenate(
@@ -278,6 +277,7 @@ private extension VoiceRecordingFeature {
                   [.starting, .recording, .stopping].contains(state.phase) else { return .none }
             let cancellationID = uuid()
             state.sessionID = cancellationID
+            state.isStarting = false
             state.isPauseCancellationPending = true
             state.shouldSaveOnStop = false
             return .concatenate(

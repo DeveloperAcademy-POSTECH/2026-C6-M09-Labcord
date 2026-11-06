@@ -68,7 +68,7 @@ extension ExperimentSessionFeature {
             state.voice.errorMessage = "Watch 사진 촬영이 끝난 뒤 녹음해주세요."
             return .none
         }
-        guard state.voice.phase == .hidden,
+        guard state.voice.phase == .hidden, !state.voice.hasRecordingFailure,
               state.capture.isCameraViewVisible,
               !state.capture.isCapturingPhoto,
               state.capture.capturedPhotoData == nil,
