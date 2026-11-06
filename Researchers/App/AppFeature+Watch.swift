@@ -49,12 +49,22 @@ extension AppFeature {
                 let action: ExperimentSessionFeature.Action =
                     [.pause, .complete].contains(command.operation)
                     ? .watchControl(command) : .watchRecordControl(command)
-                return .send(.path(.element(id: id, action: .session(action))))
+                let dispatched = Effect<Action>.send(
+                    .path(.element(id: id, action: .session(action)))
+                )
+                guard !cancelsPhoto else { return dispatched }
+                return .merge(dispatched, watchRequestTimeout(command))
+
+            case let .watchRequestTimedOut(id):
+                guard state.watchRequestID == id else { return .none }
+                state.watchRequestID = nil
+                PhoneWatchExperimentCoordinator.shared.finish(id, error: .resultUnknown)
+                return .none
 
             case let .path(.element(_, action: .session(.watchControlFinished(id, error)))):
                 state.watchRequestID = nil
                 PhoneWatchExperimentCoordinator.shared.finish(id, error: error)
-                return .none
+                return .cancel(id: CancelID.watchRequest(id))
 
             case let .path(.element(id, action: .session(.watchRecordResponse(response)))):
                 guard let experimentID = state.path[id: id, case: \.session]?.experimentID else {
@@ -68,7 +78,7 @@ extension AppFeature {
                     || response.record != nil {
                     state.watchRequestID = nil
                 }
-                return .none
+                return .cancel(id: CancelID.watchRequest(response.requestID))
 
             default:
                 return .none
@@ -132,4 +142,23 @@ extension AppFeature {
         return .send(.home(.list(.cancelLoad)))
     }
 
+    func watchRequestTimeout(_ command: WatchExperimentCommand) -> Effect<Action> {
+        let id = command.requestID
+        // 저장이 끝난 뒤에야 응답하는 명령은 짧은 제한으로 결과를 덮어쓰지 않습니다.
+        let waitsForSavedMedia: Set<WatchExperimentCommand.Operation> = [
+            .pause, .complete, .stopVideo, .confirmRecord
+        ]
+        let delay: Duration = waitsForSavedMedia.contains(command.operation)
+            ? .seconds(60) : .seconds(8)
+        return .run { send in
+            try await Task.sleep(for: delay)
+            await send(.watchRequestTimedOut(id))
+        }
+        .cancellable(id: CancelID.watchRequest(id), cancelInFlight: true)
+    }
+
+}
+
+private nonisolated enum CancelID: Hashable, Sendable {
+    case watchRequest(UUID)
 }

@@ -34,6 +34,7 @@ struct AppFeature {
     enum Action {
         case watchTask
         case watchEvent(PhoneWatchExperimentCoordinator.Event)
+        case watchRequestTimedOut(UUID)
         case watchSceneChanged(Bool)
         case home(HomeFeature.Action)
         case path(StackActionOf<Path>)
@@ -65,7 +66,7 @@ struct AppFeature {
 
         Reduce { state, action in
             switch action {
-            case .watchTask, .watchEvent, .watchSceneChanged:
+            case .watchTask, .watchEvent, .watchSceneChanged, .watchRequestTimedOut:
                 return .none
 
             case .home(.addTapped):
