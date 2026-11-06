@@ -6,6 +6,8 @@ public struct AnimatedLiveActivityContainer<Content: View>: View {
     private let isExpanded: Bool
     private let collapsedSize: CGSize
     private let expandedWidth: CGFloat
+    private let minimumContentHeight: CGFloat
+    private let maximumContentHeight: CGFloat?
     private let content: Content
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -15,11 +17,15 @@ public struct AnimatedLiveActivityContainer<Content: View>: View {
         isExpanded: Bool,
         collapsedSize: CGSize,
         expandedWidth: CGFloat,
+        minimumContentHeight: CGFloat = 106,
+        maximumContentHeight: CGFloat? = nil,
         @ViewBuilder content: () -> Content
     ) {
         self.isExpanded = isExpanded
         self.collapsedSize = collapsedSize
         self.expandedWidth = expandedWidth
+        self.minimumContentHeight = minimumContentHeight
+        self.maximumContentHeight = maximumContentHeight
         self.content = content()
     }
 
@@ -27,7 +33,10 @@ public struct AnimatedLiveActivityContainer<Content: View>: View {
         ZStack {
             Color(.General.Fill.liveActivity)
 
-            LiveActivityContainer { content }
+            LiveActivityContainer(
+                minimumContentHeight: minimumContentHeight,
+                maximumContentHeight: maximumContentHeight
+            ) { content }
                 .frame(width: expandedWidth)
                 .fixedSize(horizontal: false, vertical: true)
                 .background {
@@ -52,6 +61,7 @@ public struct AnimatedLiveActivityContainer<Content: View>: View {
             )
         )
         .animation(reduceMotion ? nil : .spring(duration: 0.45, bounce: 0.08), value: isExpanded)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: expandedHeight)
         .onPreferenceChange(ExpandedHeightKey.self) { height in
             if height > 0 {
                 expandedHeight = height

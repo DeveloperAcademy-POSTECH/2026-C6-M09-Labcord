@@ -2,10 +2,12 @@ import SwiftUI
 
 public struct NavigationPageTitle: View {
     private let title: String
+    private let foregroundColor: Color?
     private let onBack: (() -> Void)?
 
-    public init(_ title: String, onBack: (() -> Void)? = nil) {
+    public init(_ title: String, foregroundColor: Color? = nil, onBack: (() -> Void)? = nil) {
         self.title = title
+        self.foregroundColor = foregroundColor
         self.onBack = onBack
     }
 
@@ -14,7 +16,7 @@ public struct NavigationPageTitle: View {
             if let onBack {
                 Button(action: onBack) {
                     IconArtwork(icon: .caretLeft, size: 24)
-                        .foregroundStyle(Color(.General.Label.secondary))
+                        .foregroundStyle(foregroundColor ?? Color(.General.Label.secondary))
                         .frame(width: 50, height: 50)
                         .contentShape(Rectangle())
                 }
@@ -24,7 +26,7 @@ public struct NavigationPageTitle: View {
 
             Text(title)
                 .typography(Typography.headline)
-                .foregroundStyle(Color(.General.Label.primary))
+                .foregroundStyle(foregroundColor ?? Color(.General.Label.primary))
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity, alignment: .center)
 
@@ -43,5 +45,7 @@ public struct NavigationPageTitle: View {
     VStack {
         NavigationPageTitle("실험 등록") { }
         NavigationPageTitle("실험 등록")
+        NavigationPageTitle("실험 기록", foregroundColor: .white) { }
+            .background(.black)
     }
 }

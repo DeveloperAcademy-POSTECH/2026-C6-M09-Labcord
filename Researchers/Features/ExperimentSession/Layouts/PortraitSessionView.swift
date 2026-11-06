@@ -6,37 +6,77 @@
 //
 
 import ComposableArchitecture
+import LabcordDesignSystem
+import LabcordShared
 import SwiftUI
 
 struct PortraitSessionView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Binding var isSidePanelExpanded: Bool
+
     let store: StoreOf<CameraCaptureFeature>
     let timerStore: StoreOf<SessionTimerFeature>
     let sessionStore: StoreOf<ExperimentSessionFeature>
+    let onShowGestureGuide: () -> Void
+
+    private var areRecordButtonsDisabled: Bool {
+        sessionStore.voice.phase != .hidden
+            || store.previewConnector == nil
+            || store.isCameraSwitching
+            || store.isPhotoCaptureScheduled
+            || store.isCapturingPhoto
+            || store.capturedPhotoData != nil
+            || store.videoPhase != .idle
+    }
 
     var body: some View {
-        GeometryReader { geo in
-            let screenHeight = geo.size.height
-            + geo.safeAreaInsets.top
-            + geo.safeAreaInsets.bottom
-
+        GeometryReader { _ in
             ZStack {
                 Color.clear
                     .ignoresSafeArea()
 
-                VStack {
-                    SessionHeaderView(store: sessionStore)
-                        .padding(16)
+                VStack(spacing: 0) {
+                    VStack(alignment: .trailing, spacing: 18) {
+                        HeaderView(store: sessionStore)
+                            .padding(16)
 
-                    Spacer()
+                        ExperimentRecordButtonsView(
+                            store: store,
+                            isDisabled: areRecordButtonsDisabled
+                        )
+
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity)
+
+                    VStack(spacing: 16) {
+                        ExperimentSettingButtonsView(
+                            onShowGestureGuide: onShowGestureGuide,
+                            onShowRunningTimers: {
+                                timerStore.send(.timerTabSelected(.active))
+                                withAnimation(
+                                    reduceMotion ? nil : LabcordMotion.layout.animation
+                                ) {
+                                    isSidePanelExpanded = true
+                                }
+                            },
+                            onSwitchCamera: { store.send(.cameraSwitchRequested) },
+                            showsRunningTimerButton: !isSidePanelExpanded
+                                && timerStore.timerCollection.hasRunningTimers,
+                            canSwitchCamera: store.canSwitchCamera
+                        )
+
+                        ExperimentSidePanel(
+                            layout: .portrait,
+                            isExpanded: $isSidePanelExpanded
+                        ) {
+                            SessionTimerView(store: timerStore, isPortrait: true)
+                        }
+                        .ignoresSafeArea()
+                        .frame(height: isSidePanelExpanded ? 398 : 83)
+                        .anchorPreference(key: CameraPreviewAnchorKey.self, value: .bounds) { $0 }
+                    }
                 }
-
-                PortraitSessionSheetView(
-                    store: store,
-                    timerStore: timerStore,
-                    compactHeight: screenHeight * 0.127,
-                    expandedHeight: screenHeight * 0.3890160183,
-                    bottomInset: geo.safeAreaInsets.bottom
-                )
             }
             .foregroundStyle(.white)
         }
@@ -44,7 +84,10 @@ struct PortraitSessionView: View {
 }
 
 #Preview {
+    @Previewable @State var isSidePanelExpanded = true
+
     PortraitSessionView(
+        isSidePanelExpanded: $isSidePanelExpanded,
         store: Store(
             initialState: CameraCaptureFeature.State(experimentID: UUID())
         ) {
@@ -58,5 +101,5 @@ struct PortraitSessionView: View {
         ) {
             ExperimentSessionFeature()
         }
-    )
+    ) {}
 }
