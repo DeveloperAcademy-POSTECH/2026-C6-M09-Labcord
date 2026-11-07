@@ -480,7 +480,7 @@ private struct RegistrationAttachmentScrollView<Content: View>: View {
 }
 
 #Preview("실험 등록") {
-    let _ = FontRegistration.register()
+    _ = FontRegistration.register()
     NavigationStack {
         ProtocolRegistrationView(
             store: Store(initialState: ProtocolRegistrationFeature.State()) {
@@ -493,7 +493,7 @@ private struct RegistrationAttachmentScrollView<Content: View>: View {
 }
 
 #Preview("실험 등록 · 여러 사진") {
-    let _ = FontRegistration.register()
+    _ = FontRegistration.register()
     var state = ProtocolRegistrationFeature.State()
     state.inputAnalysis.importedPhotos = (0..<8).map { index in
         ImportedProtocolInput.recovered(
@@ -513,7 +513,7 @@ private struct RegistrationAttachmentScrollView<Content: View>: View {
 }
 
 #Preview("분석 완료 · 종료 확인") {
-    let _ = FontRegistration.register()
+    _ = FontRegistration.register()
     var state = ProtocolRegistrationFeature.State()
     state.inputAnalysis.showsAnalysisCompletion = true
     return NavigationStack {

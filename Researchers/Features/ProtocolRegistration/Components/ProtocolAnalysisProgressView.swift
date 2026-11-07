@@ -139,14 +139,13 @@ struct ProtocolAnalysisProgressView: View {
 }
 
 #Preview("프로토콜 분석 중") {
-    let _ = FontRegistration.register()
+    _ = FontRegistration.register()
     ProtocolAnalysisProgressView(
         phase: .reading,
         inputName: "실험 프로토콜.pdf",
         inputNumber: 1,
         inputCount: 1,
         startedAt: nil,
-        isCancelling: false,
-        onCancel: {}
-    )
+        isCancelling: false
+    )        {}
 }

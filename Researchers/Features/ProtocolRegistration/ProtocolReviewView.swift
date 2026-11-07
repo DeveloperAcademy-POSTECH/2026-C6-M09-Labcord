@@ -259,7 +259,7 @@ private struct TermFlowLayout: Layout {
 }
 
 #Preview("프로토콜 분석 결과") {
-    let _ = FontRegistration.register()
+    _ = FontRegistration.register()
     let terms: [ProtocolTermCategory: [ProtocolReviewTerm]] = [
         .materials: [
             ProtocolReviewTerm(id: UUID(), value: "시약"),
@@ -282,7 +282,7 @@ private struct TermFlowLayout: Layout {
 }
 
 #Preview("프로토콜 분석 결과 · 빈 입력") {
-    let _ = FontRegistration.register()
+    _ = FontRegistration.register()
     NavigationStack {
         ProtocolReviewView(
             store: Store(initialState: ProtocolReviewFeature.State(

@@ -34,6 +34,6 @@ struct ProtocolAnalysisCompletionView: View {
 }
 
 #Preview("프로토콜 분석 완료") {
-    let _ = FontRegistration.register()
-    ProtocolAnalysisCompletionView(onReview: {})
+    _ = FontRegistration.register()
+    ProtocolAnalysisCompletionView {}
 }
