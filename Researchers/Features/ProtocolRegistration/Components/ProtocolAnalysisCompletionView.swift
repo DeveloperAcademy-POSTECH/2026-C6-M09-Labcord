@@ -32,3 +32,8 @@ struct ProtocolAnalysisCompletionView: View {
         .accessibilityIdentifier("protocol-analysis-completed")
     }
 }
+
+#Preview("프로토콜 분석 완료") {
+    let _ = FontRegistration.register()
+    ProtocolAnalysisCompletionView(onReview: {})
+}

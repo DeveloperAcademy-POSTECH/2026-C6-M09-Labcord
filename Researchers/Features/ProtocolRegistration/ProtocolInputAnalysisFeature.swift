@@ -150,7 +150,8 @@ struct ProtocolInputAnalysisFeature {
 
             case .backTapped:
                 guard !state.restoringAnalysis, !state.isSaving, !state.importing,
-                      state.analysisID == nil, state.invalidatingJobID == nil else { return .none }
+                      state.invalidatingJobID == nil,
+                      !state.analysisCancellationRequested else { return .none }
                 return invalidateAnalysis(into: &state, then: .back)
 
             case .skipTapped:

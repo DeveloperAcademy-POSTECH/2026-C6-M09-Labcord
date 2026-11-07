@@ -3,32 +3,49 @@ import LabcordiOS
 import SwiftUI
 
 struct RecentProtocolDetailView: View {
-    let entry: RecentProtocolEntry
-    let select: () -> Void
+    private let title: String
+    private let timerSeconds: [Int]
+    private let groups: [(String, [String])]
+    private let select: () -> Void
     @State private var expandedGroups: Set<String> = []
 
-    private var groups: [(String, [String])] {
-        [
-            ("시약·재료", entry.materials), ("샘플·분석 대상", entry.samples),
-            ("실험 용어", entry.glossaryTerms), ("단위", entry.units)
-        ]
+    init(entry: RecentProtocolEntry, select: @escaping () -> Void) {
+        self.init(
+            title: entry.title,
+            timerSeconds: entry.timerSeconds,
+            groups: [
+                ("시약·재료", entry.materials), ("샘플·분석 대상", entry.samples),
+                ("실험 용어", entry.glossaryTerms), ("단위", entry.units)
+            ],
+            select: select
+        )
+    }
+
+    fileprivate init(
+        title: String, timerSeconds: [Int], groups: [(String, [String])],
+        select: @escaping () -> Void
+    ) {
+        self.title = title
+        self.timerSeconds = timerSeconds
+        self.groups = groups
+        self.select = select
     }
 
     var body: some View {
         ScrollView {
                 VStack(alignment: .leading, spacing: 32) {
-                    Text(entry.title).typography(Typography.title3)
+                    Text(title).typography(Typography.title2Bold)
                     VStack(alignment: .leading, spacing: 8) {
                         HStack(spacing: 12) {
                             Text("타이머").typography(Typography.calloutSemiBold)
-                            Text("\(entry.timerSeconds.count)")
+                            Text("\(timerSeconds.count)")
                                 .typography(Typography.subheadline)
                                 .foregroundStyle(Color(
                                     "General/Label/Tertiary",
                                     bundle: LabcordDesignSystemResources.bundle
                                 ))
                         }
-                        if entry.timerSeconds.isEmpty {
+                        if timerSeconds.isEmpty {
                             Text("타이머가 없어요")
                         } else {
                             LazyVGrid(
@@ -38,21 +55,13 @@ struct RecentProtocolDetailView: View {
                                 spacing: 12
                             ) {
                                 ForEach(
-                                    Array(entry.timerSeconds.enumerated()), id: \.offset
+                                    Array(timerSeconds.enumerated()), id: \.offset
                                 ) { item in
-                                    Text(Duration.seconds(item.element), format: .labcordDuration)
-                                        .typography(Typography.body)
-                                        .padding(.horizontal, 8)
-                                        .frame(
-                                            maxWidth: .infinity, minHeight: 56, alignment: .leading
-                                        )
-                                        .background(
-                                            Color(
-                                                "General/Fill/Primary",
-                                                bundle: LabcordDesignSystemResources.bundle
-                                            ),
-                                            in: RoundedRectangle(cornerRadius: 8)
-                                        )
+                                    ProtocolTimerRow(
+                                        duration: .seconds(item.element),
+                                        rows: item.element >= 3_600 ? .two : .one,
+                                        showEditButton: false
+                                    )
                                 }
                             }
                         }
@@ -118,6 +127,7 @@ struct RecentProtocolDetailView: View {
             }
             .navigationTitle("프로토콜 상세")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.visible, for: .navigationBar)
     }
 }
 
@@ -173,5 +183,22 @@ private struct RecentTermFlow: Layout {
         }
         if !indices.isEmpty { result.append((indices, height)) }
         return result
+    }
+}
+
+#Preview("최근 프로토콜 상세") {
+    let _ = FontRegistration.register()
+    NavigationStack {
+        RecentProtocolDetailView(
+            title: "촉매 반응 조건 비교 실험",
+            timerSeconds: [600, 30, 60, 86_399],
+            groups: [
+                ("시약·재료", ["시약", "완충액"]),
+                ("샘플·분석 대상", ["샘플"]),
+                ("실험 용어", ["촉매"]),
+                ("단위", ["mL"])
+            ],
+            select: {}
+        )
     }
 }

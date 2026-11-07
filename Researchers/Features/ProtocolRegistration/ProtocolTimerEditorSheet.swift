@@ -145,3 +145,33 @@ private struct TimerEditorSheet: View {
         }
     }
 }
+
+#Preview("타이머 추가") {
+    let _ = FontRegistration.register()
+    ProtocolTimerEditorSheet(
+        editor: TimerEditor(index: nil, duration: .zero),
+        onConfirm: { _, _ in },
+        onDelete: { _ in },
+        onCancel: {}
+    )
+}
+
+#Preview("타이머 수정") {
+    let _ = FontRegistration.register()
+    ProtocolTimerEditorSheet(
+        editor: TimerEditor(index: 0, duration: .seconds(600)),
+        onConfirm: { _, _ in },
+        onDelete: { _ in },
+        onCancel: {}
+    )
+}
+
+#Preview("긴 타이머 수정") {
+    let _ = FontRegistration.register()
+    ProtocolTimerEditorSheet(
+        editor: TimerEditor(index: 0, duration: .seconds(90_000)),
+        onConfirm: { _, _ in },
+        onDelete: { _ in },
+        onCancel: {}
+    )
+}
