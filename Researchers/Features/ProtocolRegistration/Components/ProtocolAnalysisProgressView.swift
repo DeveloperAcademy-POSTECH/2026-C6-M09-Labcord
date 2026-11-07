@@ -137,3 +137,15 @@ struct ProtocolAnalysisProgressView: View {
         .accessibilityIdentifier("protocol-analysis-progress")
     }
 }
+
+#Preview("프로토콜 분석 중") {
+    _ = FontRegistration.register()
+    ProtocolAnalysisProgressView(
+        phase: .reading,
+        inputName: "실험 프로토콜.pdf",
+        inputNumber: 1,
+        inputCount: 1,
+        startedAt: nil,
+        isCancelling: false
+    )        {}
+}

@@ -51,3 +51,15 @@ struct InvalidationRetryView: View {
         Button("입력을 버리고 나가기", role: .destructive, action: discard)
     }
 }
+
+#Preview("등록 버튼과 진행 상태") {
+    _ = FontRegistration.register()
+    VStack(spacing: 16) {
+        EntryLoadingIndicator()
+        EntryNextButton(enabled: true, retry: false) {}
+        EntryNextButton(enabled: false, retry: false) {}
+        EntryNextButton(enabled: true, retry: true) {}
+        InvalidationRetryView(retry: {}, discard: {})
+    }
+    .padding(16)
+}

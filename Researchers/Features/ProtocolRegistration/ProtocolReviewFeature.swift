@@ -16,7 +16,6 @@ struct ProtocolReviewFeature {
         var termInput = ""
         var termError: String?
         var attemptedRegistration = false
-        var titleEdited = false
 
         var titleValid: Bool {
             !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -30,14 +29,19 @@ struct ProtocolReviewFeature {
         }
 
         var hasUncommittedTerm: Bool {
-            !termInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            !trimmedTermInput.isEmpty
+        }
+
+        var trimmedTermInput: String {
+            termInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        var termCharacterCount: Int {
+            trimmedTermInput.filter { !$0.isWhitespace }.count
         }
 
         var titleError: String? {
-            if titleEdited && title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                return "실험 이름을 입력해 주세요."
-            }
-            return nil
+            title.count > 60 ? "최대 60자까지 입력할 수 있습니다." : nil
         }
     }
 
@@ -48,6 +52,7 @@ struct ProtocolReviewFeature {
         case termChanged(String)
         case addTerm
         case endTermEditing
+        case cancelTermEditing
         case removeTerm(ProtocolTermCategory, UUID)
         case saveTimer(Int?, Int)
         case deleteTimer(Int)
@@ -61,8 +66,7 @@ struct ProtocolReviewFeature {
         Reduce { state, action in
             switch action {
             case let .titleChanged(title):
-                state.titleEdited = true
-                state.title = String(title.prefix(60))
+                state.title = title
             case let .expandedChanged(category, isExpanded):
                 if isExpanded {
                     state.expanded.insert(category)
@@ -79,12 +83,30 @@ struct ProtocolReviewFeature {
                 state.termInput = ""
                 state.termError = nil
             case let .termChanged(input):
-                state.termInput = String(input.prefix(22))
-                state.termError = nil
+                state.termInput = input
+                let value = state.trimmedTermInput
+                if state.termCharacterCount > 22 {
+                    state.termError = "최대 22자까지 입력할 수 있습니다."
+                } else if !value.isEmpty, let category = state.inputCategory,
+                          state.terms[category, default: []].contains(where: {
+                              ProtocolReviewTerm.comparisonKey($0.value)
+                                  == ProtocolReviewTerm.comparisonKey(value)
+                          }) {
+                    state.termError = "이미 추가된 항목이에요."
+                } else {
+                    state.termError = nil
+                }
             case .addTerm:
                 guard let category = state.inputCategory else { return .none }
-                let value = state.termInput.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !value.isEmpty else { return .none }
+                let value = state.trimmedTermInput
+                guard !value.isEmpty else {
+                    state.termError = "용어를 입력해 주세요."
+                    return .none
+                }
+                guard state.termCharacterCount <= 22 else {
+                    state.termError = "최대 22자까지 입력할 수 있습니다."
+                    return .none
+                }
                 let key = ProtocolReviewTerm.comparisonKey(value)
                 let existing = state.terms[category, default: []].contains {
                     ProtocolReviewTerm.comparisonKey($0.value) == key
@@ -98,6 +120,10 @@ struct ProtocolReviewFeature {
                 state.termError = nil
             case .endTermEditing:
                 guard !state.hasUncommittedTerm else { return .none }
+                state.inputCategory = nil
+                state.termInput = ""
+                state.termError = nil
+            case .cancelTermEditing:
                 state.inputCategory = nil
                 state.termInput = ""
                 state.termError = nil

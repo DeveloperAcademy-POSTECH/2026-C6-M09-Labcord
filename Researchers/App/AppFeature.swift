@@ -172,7 +172,17 @@ struct AppFeature {
                       state.path[id: id, case: \.review] != nil else { return .none }
                 state.reviewPendingID = nil
                 state.path.pop(from: id)
-                return .none
+                state.reviewAnalysisJobID = nil
+                guard let registrationID = state.path.ids.first(where: {
+                    state.path[id: $0, case: \.registration] != nil
+                }) else { return .none }
+                if let lastID = state.path.ids.last, lastID != registrationID {
+                    state.path.pop(from: lastID)
+                }
+                state.recentRegistrationID = nil
+                return .send(.path(.element(
+                    id: registrationID, action: .registration(.inputAnalysis(.backTapped))
+                )))
 
             case .cancelReviewExit:
                 state.reviewExitRequested = false
