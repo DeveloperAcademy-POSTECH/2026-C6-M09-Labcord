@@ -198,6 +198,6 @@ private struct RecentTermFlow: Layout {
                 ("실험 용어", ["촉매"]),
                 ("단위", ["mL"])
             ]
-        )            {}
+        ) {}
     }
 }
