@@ -1,6 +1,5 @@
 import Foundation
 
-/// Coordinates notification loads while a Watch command owns the visible session.
 struct WatchNotificationGate: Equatable {
     enum Decision: Equatable {
         case ignore

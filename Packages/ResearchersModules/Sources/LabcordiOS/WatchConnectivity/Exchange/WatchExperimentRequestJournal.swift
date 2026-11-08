@@ -1,7 +1,6 @@
 import Foundation
 import LabcordShared
 
-/// 실행 전에 요청을 저장합니다. 재기동 시 처리 중이던 요청은 재실행하지 않습니다.
 struct WatchExperimentRequestJournal {
     struct Entry: Codable {
         let command: WatchExperimentCommand

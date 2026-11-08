@@ -14,9 +14,9 @@ public final class PhoneWatchExperimentCoordinator {
         case command(WatchExperimentCommand)
         case started(UUID)
     }
-    /// #174는 실제 저장까지 기다리고 실패를 throw하는 handler를 등록합니다.
+
     public var recordHandler: ((WatchExperimentCommand) async throws -> Void)?
-    /// 진행 중인 기록의 중지·저장을 기존 자식 Feature로 전달하고 완료를 기다립니다.
+
     public var prepareSessionClose: ((WatchExperimentCommand) async throws -> Void)?
 
     let connectivity: WatchConnectivitySession
@@ -177,7 +177,7 @@ public final class PhoneWatchExperimentCoordinator {
                 queriedRequestID: id
             )
         }
-        // 조회 envelope의 ID는 조회 요청의 ID이며 targetID의 결과를 담습니다.
+
         let interrupted = requests[id] == nil
             && (response.phase == .received || response.phase == .processing)
         return WatchExperimentResponse(
