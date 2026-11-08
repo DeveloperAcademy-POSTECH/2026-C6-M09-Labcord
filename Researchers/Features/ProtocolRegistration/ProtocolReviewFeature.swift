@@ -52,7 +52,6 @@ struct ProtocolReviewFeature {
         case termChanged(String)
         case addTerm
         case endTermEditing
-        case cancelTermEditing
         case removeTerm(ProtocolTermCategory, UUID)
         case saveTimer(Int?, Int)
         case deleteTimer(Int)
@@ -120,10 +119,6 @@ struct ProtocolReviewFeature {
                 state.termError = nil
             case .endTermEditing:
                 guard !state.hasUncommittedTerm else { return .none }
-                state.inputCategory = nil
-                state.termInput = ""
-                state.termError = nil
-            case .cancelTermEditing:
                 state.inputCategory = nil
                 state.termInput = ""
                 state.termError = nil

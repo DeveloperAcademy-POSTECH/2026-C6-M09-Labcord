@@ -24,11 +24,10 @@ struct ProtocolRegistrationView: View {
         Group {
             if input.analysisID != nil {
                 ProtocolAnalysisProgressView(
-                    phase: input.analysisPhase,
-                    inputName: input.analysisInput?.name,
-                    inputNumber: input.analysisInputNumber,
-                    inputCount: input.selectedInputs.count,
-                    startedAt: input.analysisStartedAt,
+                    scanCompleted: !input.selectedInputs.isEmpty
+                        && input.pendingParsingInputs.isEmpty,
+                    extractionCompleted: !input.selectedInputs.isEmpty
+                        && input.pendingInputs.isEmpty,
                     isCancelling: input.analysisCancellationRequested,
                     notice: input.analysisMessage
                 ) {

@@ -1,45 +1,81 @@
 import ComposableArchitecture
 import LabcordDesignSystem
 import SwiftUI
+import UIKit
 
 struct ProtocolReviewView: View {
     @Bindable var store: StoreOf<ProtocolReviewFeature>
     @State private var timerEditor: TimerEditor?
+    @State private var keyboardVisible = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @FocusState private var titleFocused: Bool
     @FocusState private var termFocused: Bool
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 32) {
-                titleField
-                timerSection
-                termSection
+        ScrollViewReader { scroll in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 32) {
+                    titleField
+                    timerSection
+                    termSection
+                }
+                .padding(16)
             }
-            .padding(16)
+            .onReceive(NotificationCenter.default.publisher(
+                for: UIResponder.keyboardDidShowNotification
+            )) { _ in
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    guard termFocused, keyboardVisible else { return }
+                    withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) {
+                        scroll.scrollTo("protocol-term-input", anchor: .bottom)
+                    }
+                }
+            }
+            .onChange(of: termFocused) { _, focused in
+                guard focused, keyboardVisible else { return }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    guard termFocused, keyboardVisible else { return }
+                    withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) {
+                        scroll.scrollTo("protocol-term-input", anchor: .bottom)
+                    }
+                }
+            }
         }
         .labcordDismissKeyboardOnTapOutside()
         .onChange(of: termFocused) { _, focused in
             if !focused { store.send(.endTermEditing) }
         }
+        .onReceive(NotificationCenter.default.publisher(
+            for: UIResponder.keyboardWillShowNotification
+        )) { _ in
+            keyboardVisible = true
+        }
+        .onReceive(NotificationCenter.default.publisher(
+            for: UIResponder.keyboardWillHideNotification
+        )) { _ in
+            keyboardVisible = false
+        }
         .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 8) {
-                if !store.timersValid {
-                    Text("시간이 너무 긴 타이머를 수정하거나 삭제해 주세요.")
-                        .typography(Typography.subheadline)
+            if !keyboardVisible {
+                VStack(spacing: 8) {
+                    if !store.timersValid {
+                        Text("시간이 너무 긴 타이머를 수정하거나 삭제해 주세요.")
+                            .typography(Typography.subheadline)
+                    }
+                    Button {
+                        store.send(.registerTapped)
+                    } label: {
+                        Text("실험 등록").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.labcord(.primary, size: .large))
+                    .disabled(!store.titleValid || !store.timersValid || store.hasUncommittedTerm)
                 }
-                Button {
-                    store.send(.registerTapped)
-                } label: {
-                    Text("실험 등록").frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.labcord(.primary, size: .large))
-                .disabled(!store.titleValid || !store.timersValid || store.hasUncommittedTerm)
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
+                .background(Color(
+                    "General/Background/Primary", bundle: LabcordDesignSystemResources.bundle
+                ))
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
-            .background(Color(
-                "General/Background/Primary", bundle: LabcordDesignSystemResources.bundle
-            ))
         }
         .navigationBarBackButtonHidden()
         .toolbar(.hidden, for: .navigationBar)
@@ -52,18 +88,40 @@ struct ProtocolReviewView: View {
                     .ignoresSafeArea(edges: .top)
             }
         }
-        .sheet(item: $timerEditor) { editor in
-            ProtocolTimerEditorSheet(editor: editor) { index, seconds in
-                store.send(.saveTimer(index, seconds))
-                timerEditor = nil
-            } onDelete: { index in
-                if let index { store.send(.deleteTimer(index)) }
-                timerEditor = nil
-            } onCancel: {
-                timerEditor = nil
+        .accessibilityHidden(timerEditor != nil)
+        .overlay {
+            GeometryReader { geometry in
+                ZStack(alignment: .bottom) {
+                    if let editor = timerEditor {
+                        Overlay()
+                            .ignoresSafeArea()
+                            .transition(.opacity)
+
+                        ProtocolTimerEditorSheet(editor: editor) { index, seconds in
+                            store.send(.saveTimer(index, seconds))
+                            timerEditor = nil
+                        } onDelete: { index in
+                            if let index { store.send(.deleteTimer(index)) }
+                            timerEditor = nil
+                        } onCancel: {
+                            timerEditor = nil
+                        }
+                        .id(editor.id)
+                        .padding(.bottom, geometry.safeAreaInsets.bottom)
+                        .frame(maxWidth: .infinity)
+                        .background(Color(
+                            "General/Background/Grouped/Secondary",
+                            bundle: LabcordDesignSystemResources.bundle
+                        ))
+                        .clipShape(UnevenRoundedRectangle(
+                            topLeadingRadius: 28, topTrailingRadius: 28
+                        ))
+                        .ignoresSafeArea(edges: .bottom)
+                        .transition(reduceMotion ? .opacity : .move(edge: .bottom))
+                    }
+                }
             }
-            .id(editor.id)
-            .presentationDetents([.height(370)])
+            .animation(.easeInOut(duration: 0.3), value: timerEditor?.id)
         }
     }
 
@@ -170,6 +228,8 @@ struct ProtocolReviewView: View {
                         }
                         if store.inputCategory == category {
                             termInput
+                                .padding(.bottom, keyboardVisible ? 24 : 0)
+                                .id("protocol-term-input")
                         }
                     }
                 }
@@ -233,7 +293,9 @@ private struct TermFlowLayout: Layout {
         }
     }
 
-    private func arrange(_ subviews: Subviews, width: CGFloat) -> (size: CGSize, frames: [CGRect]) {
+    private func arrange(
+        _ subviews: Subviews, width: CGFloat
+    ) -> (size: CGSize, frames: [CGRect]) {
         guard !subviews.isEmpty else { return (.zero, []) }
         let availableWidth = max(0, width)
         var frames: [CGRect] = []

@@ -51,7 +51,7 @@ private struct LongTimerEditorSheet: View {
             HStack {
                 Button("취소", action: onCancel)
                 Spacer()
-                Text("타이머").typography(Typography.bodySemiBold)
+                Text("타이머 수정").typography(Typography.bodySemiBold)
                 Spacer()
                 Button("삭제") { onDelete(editor.index) }
             }
@@ -62,6 +62,7 @@ private struct LongTimerEditorSheet: View {
             }
             Button("저장", action: save)
                 .buttonStyle(.labcord(.primary, size: .large))
+                .disabled(isUnchanged)
         }
         .padding(16)
         .alert("타이머 시간을 확인해 주세요", isPresented: $invalidDuration) {
@@ -78,6 +79,14 @@ private struct LongTimerEditorSheet: View {
                 .keyboardType(.numberPad)
                 .textFieldStyle(.roundedBorder)
         }
+    }
+
+    private var isUnchanged: Bool {
+        guard let hours = Int(hours), let minutes = Int(minutes), let seconds = Int(seconds),
+              (0...59).contains(minutes), (0...59).contains(seconds) else { return false }
+        let (hourSeconds, overflow) = hours.multipliedReportingOverflow(by: 3_600)
+        let (total, sumOverflow) = hourSeconds.addingReportingOverflow(minutes * 60 + seconds)
+        return !overflow && !sumOverflow && total == editor.duration.components.seconds
     }
 
     private func save() {
@@ -111,6 +120,7 @@ private struct TimerEditorSheet: View {
     let onCancel: () -> Void
     @State private var duration: Duration
     @State private var invalidDuration = false
+    @ScaledMetric(relativeTo: .body) private var headerControlScale: CGFloat = 1
 
     init(
         editor: TimerEditor,
@@ -126,18 +136,51 @@ private struct TimerEditorSheet: View {
     }
 
     var body: some View {
-        TimerSettingSheet(duration: $duration) {
-            onCancel()
-        } onDelete: {
-            onDelete(editor.index)
-        } onConfirm: {
-            let seconds = Int(duration.components.seconds)
-            guard (1...86_399).contains(seconds) else {
-                invalidDuration = true
-                return
+        VStack(spacing: 16) {
+            Capsule()
+                .fill(Color(
+                    "General/Timer/Sheet/Grabber", bundle: LabcordDesignSystemResources.bundle
+                ))
+                .frame(width: 36, height: 5)
+                .accessibilityHidden(true)
+            HStack {
+                Button(action: onCancel) {
+                    Image(labcordIcon: .x)
+                        .resizable()
+                        .frame(width: 24, height: 24)
+                }
+                .buttonStyle(.labcordIcon(.plain, size: .large))
+                .accessibilityLabel("닫기")
+                Text(editor.index == nil ? "타이머 추가" : "타이머 수정")
+                    .typography(Typography.bodySemiBold)
+                    .frame(maxWidth: .infinity)
+                Color.clear
+                    .frame(width: 50 * headerControlScale, height: 50 * headerControlScale)
+                    .accessibilityHidden(true)
             }
-            onConfirm(editor.index, seconds)
+            TimerPicker(duration: $duration, usage: .setup)
+            HStack(spacing: 16) {
+                Button(role: .destructive) { onDelete(editor.index) } label: {
+                    Text("삭제").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.labcord(.quaternary, size: .large))
+                Button {
+                    let seconds = Int(duration.components.seconds)
+                    guard (1...86_399).contains(seconds) else {
+                        invalidDuration = true
+                        return
+                    }
+                    onConfirm(editor.index, seconds)
+                } label: {
+                    Text("저장").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.labcord(.primary, size: .large))
+                .disabled(editor.index != nil && duration == editor.duration)
+            }
         }
+        .padding(.top, 16)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 32)
         .alert("타이머 시간을 확인해 주세요", isPresented: $invalidDuration) {
             Button("확인", role: .cancel) {}
         } message: {
