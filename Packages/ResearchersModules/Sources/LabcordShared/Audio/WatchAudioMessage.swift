@@ -34,7 +34,6 @@ public enum WatchAudioError: String, Error, Codable, Sendable {
     case storageFailed
 }
 
-/// PCM signed 16-bit little-endian, mono. Sample positions are recording-relative.
 public struct WatchAudioHeader: Codable, Equatable, Sendable {
     public let version: Int
     public let experimentID: UUID
@@ -100,13 +99,13 @@ public struct WatchAudioReceipt: Codable, Equatable, Sendable {
     public let header: WatchAudioHeader
     public let receivedSequences: [Int]
     public let manifest: WatchAudioManifest?
-    /// Set only after both the original file and transcript have been durably saved on iPhone.
+
     public let savedRecordID: UUID?
     public let isCancelled: Bool
     public let isReviewing: Bool
     public let failure: WatchAudioError?
     public let transcript: WatchAudioTranscript?
-    /// 실제 전사 결과와 기존 저장 전사가 다를 때만 설정합니다.
+
     public let hasTranscriptConflict: Bool?
 
     public init(

@@ -1,7 +1,6 @@
 import Foundation
 import WatchConnectivity
 
-/// 기록 표시 상태만 전달한다. 수신·전송 완료를 영구 저장 완료로 승격하지 않는다.
 @MainActor
 public final class WatchRecordTransport {
     public static let snapshotKey = "record.snapshot.v1"

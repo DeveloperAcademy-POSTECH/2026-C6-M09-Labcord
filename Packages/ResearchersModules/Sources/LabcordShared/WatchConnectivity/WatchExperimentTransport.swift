@@ -1,7 +1,6 @@
 import Foundation
 import WatchConnectivity
 
-/// 즉시 명령은 sendMessage로만 전송하며 지연 큐에 보관하지 않습니다.
 @MainActor
 public final class WatchExperimentTransport {
     public static let commandKey = "experiment.command.v1"

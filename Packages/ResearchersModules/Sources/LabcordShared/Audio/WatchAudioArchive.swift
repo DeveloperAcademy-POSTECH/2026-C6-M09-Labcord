@@ -1,6 +1,5 @@
 import Foundation
 
-/// Both devices retain their own copy. Transport completion never removes originals.
 public actor WatchAudioArchive {
     private let root: URL
     private let maximumBytes: Int
@@ -153,7 +152,6 @@ public actor WatchAudioArchive {
         return manifest
     }
 
-    /// Launch recovery only, before a new capture starts. Never seals a live recording.
     public func sealInterrupted(_ header: WatchAudioHeader) throws -> WatchAudioReceipt {
         let receipt = try status(header)
         guard receipt.manifest == nil else { return receipt }
@@ -186,7 +184,6 @@ public actor WatchAudioArchive {
         return try status(header)
     }
 
-    /// Call only with a final iPhone save ACK, never a chunk receipt or transfer completion.
     public func acknowledgeSaved(_ receipt: WatchAudioReceipt) throws {
         let manifest = try completeManifest(receipt.header)
         guard receipt.savedRecordID == receipt.header.recordingID,
@@ -194,9 +191,9 @@ public actor WatchAudioArchive {
               receipt.receivedSequences == Array(0..<manifest.chunkCount) else {
             throw WatchAudioError.incomplete
         }
-        // Retain a small durable receipt so duplicate save ACKs remain idempotent.
+
         _ = try markSaved(receipt.header, recordID: receipt.header.recordingID)
-        // Original cleanup is deliberately explicit; no automatic retention policy is assumed.
+
     }
 
     private func directory(_ header: WatchAudioHeader) -> URL {
