@@ -18,6 +18,7 @@ struct SessionTimerFeature {
     struct PendingSave: Equatable {
         let changes: [TimerChange]
         let collection: ExperimentTimerCollection
+        var dismissedTimerID: UUID?
     }
 
     @ObservableState
@@ -94,7 +95,9 @@ struct SessionTimerFeature {
                     return persist(PendingSave(
                         changes: mutation.changes.map {
                             TimerChange(timer: $0.timer, endedAt: $0.endedAt)
-                        }, collection: mutation.collection
+                        }, collection: mutation.collection,
+                        dismissedTimerID: command.operation == .deleteTimer
+                            ? command.targetID : nil
                     ), state: &state)
                 } catch {
                     return .send(.delegate(WatchExperimentResponse(
@@ -161,7 +164,8 @@ struct SessionTimerFeature {
                 return persist(
                     PendingSave(
                         changes: [TimerChange(timer: timer, endedAt: now)],
-                        collection: collection
+                        collection: collection,
+                        dismissedTimerID: id
                     ),
                     state: &state
                 )
@@ -255,6 +259,9 @@ struct SessionTimerFeature {
                             change.timer,
                             change.endedAt
                         )
+                    }
+                    if let timerID = pendingSave.dismissedTimerID {
+                        try await experimentClient.dismissWatchTimer(experimentID, timerID)
                     }
                     await send(.timerSaved)
                 } catch {
