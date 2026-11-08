@@ -35,6 +35,10 @@ nonisolated struct WatchDrainGate: Equatable {
 
     var isReady: Bool { voiceSession == nil && videoSession == nil && photoRecord == nil }
 
+    static func canDrainVoice(isStarting: Bool, captureStartRequested: Bool) -> Bool {
+        !isStarting || captureStartRequested
+    }
+
     mutating func apply(_ signal: Signal) -> Outcome {
         switch signal {
         case let .voiceRecorded(session, record):

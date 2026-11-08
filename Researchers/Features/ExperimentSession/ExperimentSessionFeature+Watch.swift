@@ -44,7 +44,11 @@ extension ExperimentSessionFeature {
         guard state.watchCommand == nil, state.watchMediaCommand == nil,
               state.timer.isConfigured, state.timer.pendingSave == nil, !state.timer.isClosing,
               !state.pause.isCompleting, !state.isReturningHome,
-              !state.voice.hasRecordingFailure else {
+              !state.voice.hasRecordingFailure,
+              WatchDrainGate.canDrainVoice(
+                isStarting: state.voice.phase == .starting,
+                captureStartRequested: state.voice.captureStartRequested
+              ) else {
             return .send(.watchControlFinished(command.requestID, .phoneBusy))
         }
         let photo = state.capture.photo
