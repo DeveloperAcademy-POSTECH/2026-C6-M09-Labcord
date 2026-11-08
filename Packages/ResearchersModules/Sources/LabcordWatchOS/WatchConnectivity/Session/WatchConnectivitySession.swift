@@ -15,6 +15,7 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
     private var handlingUserInfoCount = 0
     private var lastHandledUserInfoAt: Date?
     public let observerStore = WatchConnectivityObserverStore()
+    public let experiments = WatchExperimentTransport()
 
     private func deliveryState(since start: Date) -> (isHandling: Bool, handledRecently: Bool) {
         deliveryLock.lock()
@@ -30,6 +31,27 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         activationDidCompleteWith state: WCSessionActivationState,
         error: Error?
     ) {}
+
+    public func session(
+        _ session: WCSession,
+        didReceiveMessage message: [String: Any],
+        replyHandler: @escaping ([String: Any]) -> Void
+    ) {
+        let data = message[WatchExperimentTransport.commandKey] as? Data
+        Task { @MainActor in
+            let response = data.flatMap { experiments.reply(to: $0) }
+            replyHandler(response.map { [WatchExperimentTransport.responseKey: $0] } ?? [:])
+        }
+    }
+
+    public func session(
+        _ session: WCSession,
+        didReceiveApplicationContext applicationContext: [String: Any]
+    ) {
+        guard let data = applicationContext[WatchExperimentTransport.snapshotKey] as? Data
+        else { return }
+        Task { @MainActor in experiments.receiveSnapshot(data) }
+    }
 
     public func session(
         _ session: WCSession,
