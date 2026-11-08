@@ -122,10 +122,20 @@ extension CameraCaptureFeature {
         let review = state.watchReviewRequest
         state.watchReviewRequest = nil
         return .merge(
-            watchReply(command, phase: .failed, error: .resultUnknown),
-            review.map { watchReply($0, phase: .failed, error: .resultUnknown) } ?? .none,
+            watchUnknownVideo(command),
+            review.map { watchUnknownVideo($0) } ?? .none,
             finishWatchStop(state: &state, error: .resultUnknown)
         )
+    }
+
+    private func watchUnknownVideo(_ command: WatchExperimentCommand) -> Effect<Action> {
+        .send(.delegate(.watchResponse(.init(
+            requestID: command.requestID, phase: .failed, error: .resultUnknown,
+            record: .init(
+                id: recordID(command), kind: .video, phase: .failed,
+                originalRetained: nil, error: .resultUnknown
+            )
+        ))))
     }
 
     private func matchesPhotoEvent(
