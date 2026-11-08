@@ -16,6 +16,7 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
     private var lastHandledUserInfoAt: Date?
     public let observerStore = WatchConnectivityObserverStore()
     public let experiments = WatchExperimentTransport()
+    @MainActor public private(set) var activationFailed = false
 
     private func deliveryState(since start: Date) -> (isHandling: Bool, handledRecently: Bool) {
         deliveryLock.lock()
@@ -30,7 +31,15 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         _ session: WCSession,
         activationDidCompleteWith state: WCSessionActivationState,
         error: Error?
-    ) {}
+    ) {
+        let failed = error != nil
+        Task { @MainActor in self.activationFailed = failed }
+    }
+
+    @MainActor public func retryActivation() {
+        activationFailed = false
+        activate()
+    }
 
     public func session(
         _ session: WCSession,

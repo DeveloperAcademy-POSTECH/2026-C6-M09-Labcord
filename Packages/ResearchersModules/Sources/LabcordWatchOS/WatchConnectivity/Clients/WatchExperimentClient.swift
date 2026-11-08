@@ -2,19 +2,33 @@ import ComposableArchitecture
 import Foundation
 import LabcordShared
 
+public enum WatchConnectionStatus: Equatable, Sendable {
+    case activating
+    case activationFailed
+    case unsupported
+    case unreachable
+    case reachable
+}
+
 public struct WatchExperimentClient: Sendable {
     public var send: @Sendable (WatchExperimentCommand) async throws -> WatchExperimentResponse
     public var snapshots: @Sendable () async -> AsyncStream<WatchExperimentSnapshot>
     public var isReachable: @Sendable () async -> Bool
+    public var connectionStatus: @Sendable () async -> WatchConnectionStatus
+    public var retryActivation: @Sendable () async -> Void
 
     public init(
         send: @escaping @Sendable (WatchExperimentCommand) async throws -> WatchExperimentResponse,
         snapshots: @escaping @Sendable () async -> AsyncStream<WatchExperimentSnapshot>,
-        isReachable: @escaping @Sendable () async -> Bool
+        isReachable: @escaping @Sendable () async -> Bool,
+        connectionStatus: @escaping @Sendable () async -> WatchConnectionStatus,
+        retryActivation: @escaping @Sendable () async -> Void
     ) {
         self.send = send
         self.snapshots = snapshots
         self.isReachable = isReachable
+        self.connectionStatus = connectionStatus
+        self.retryActivation = retryActivation
     }
 }
 
@@ -41,8 +55,26 @@ extension WatchExperimentClient: DependencyKey {
             isReachable: {
                 await connectivity.activate()
                 return await connectivity.session?.isReachable ?? false
+            },
+            connectionStatus: {
+                await connectionStatus(connectivity)
+            },
+            retryActivation: {
+                await connectivity.retryActivation()
             }
         )
+    }
+
+    @MainActor
+    private static func connectionStatus(
+        _ connectivity: WatchConnectivitySession
+    ) -> WatchConnectionStatus {
+        guard let session = connectivity.session else { return .unsupported }
+        if session.activationState == .activated {
+            return session.isReachable ? .reachable : .unreachable
+        }
+        if connectivity.activationFailed { return .activationFailed }
+        return .activating
     }
 
     @MainActor
@@ -64,7 +96,11 @@ extension WatchExperimentClient: DependencyKey {
         snapshots: unimplemented(
             "WatchExperimentClient.snapshots", placeholder: AsyncStream { $0.finish() }
         ),
-        isReachable: unimplemented("WatchExperimentClient.isReachable", placeholder: false)
+        isReachable: unimplemented("WatchExperimentClient.isReachable", placeholder: false),
+        connectionStatus: unimplemented(
+            "WatchExperimentClient.connectionStatus", placeholder: .unsupported
+        ),
+        retryActivation: unimplemented("WatchExperimentClient.retryActivation")
     )
 }
 
