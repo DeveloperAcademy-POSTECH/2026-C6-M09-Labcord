@@ -8,7 +8,6 @@ import OSLog
 import WatchKit
 #endif
 
-/// 화면과 App Shortcut은 이 Store 하나를 사용한다. Intent마다 Store를 만들지 않는다.
 @MainActor
 final class WatchIntentRuntime {
     static let shared = WatchIntentRuntime(
