@@ -1,6 +1,5 @@
 import Foundation
 
-/// Watch 목록의 명시적 닫기만 보관합니다. 실험 기록은 삭제하지 않습니다.
 struct WatchTimerVisibilityStore {
     private struct Contents: Codable {
         var version = 1

@@ -82,7 +82,7 @@ final class ExperimentSessionRepository {
                   existing.timerDurationSeconds == command.durationSeconds else {
                 throw WatchExperimentError.duplicateConflict
             }
-            // 닫힌 타이머의 시작 재전송도 원본을 다시 만들거나 목록에 복원하지 않습니다.
+
             return
         }
         if command.operation == .deleteTimer, let timerID = command.targetID,
@@ -100,7 +100,7 @@ final class ExperimentSessionRepository {
         }
         if !mutation.changes.isEmpty { try context.save() }
         if command.operation == .deleteTimer, let timerID = command.targetID {
-            // 기록 저장 이후에만 숨깁니다. 표시 저장 실패는 호출자에게 전파하여 재시도합니다.
+
             try dismissWatchTimer(experimentID: experimentID, timerID: timerID)
         }
     }

@@ -10,7 +10,6 @@ public struct WatchTimerMutation: Equatable, Sendable {
     public let collection: ExperimentTimerCollection
     public let changes: [Change]
 
-    /// Core validates the active experiment, request lifetime and revision before dispatch.
     public static func prepare(
         _ command: WatchExperimentCommand, timers: [ExperimentTimer], at date: Date
     ) throws -> WatchTimerMutation {

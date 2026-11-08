@@ -1,10 +1,3 @@
-//
-//  SessionTimerFeature.swift
-//  Researchers
-//
-//  Created by 정홍섭 on 10/28/26.
-//
-
 import ComposableArchitecture
 import Foundation
 import LabcordiOS
