@@ -11,6 +11,8 @@ struct ExperimentSessionFeature {
         var watchCommand: WatchExperimentCommand?
         var watchMediaCommand: WatchExperimentCommand?
         var watchCameraWasVisible = false
+        var watchClosingResources = false
+        var watchDrainGate: WatchDrainGate?
         var detail: ExperimentSessionDetail?
         var isLoadingDetail = false
         var detailLoadFailed = false
@@ -24,6 +26,8 @@ struct ExperimentSessionFeature {
         var isPausePresented = false
         var isReturningHome = false
         var exitID: UUID?
+        var homeExitAttempt = WatchCloseAttemptGate()
+        var lastStopCompletionID: UUID?
 
         init(experimentID: UUID) {
             self.experimentID = experimentID
@@ -51,7 +55,8 @@ struct ExperimentSessionFeature {
         case watchControl(WatchExperimentCommand)
         case watchRecordControl(WatchExperimentCommand)
         case watchRecordResponse(WatchExperimentResponse)
-        case watchResourcesReleased
+        case watchDrainProgress(UUID)
+        case watchResourcesReleased(UUID)
         case watchControlFinished(UUID, WatchExperimentError?)
         case loadDetail
         case detailLoaded(ExperimentSessionDetail)
@@ -67,9 +72,9 @@ struct ExperimentSessionFeature {
         case videoStartRequested
         case appBecameActive
         case pauseTapped
-        case stopCompleted
-        case homeExitCompleted
-        case homeExitFailed
+        case stopCompleted(UUID, UUID?)
+        case homeExitCompleted(UUID, UUID?)
+        case homeExitFailed(UUID, UUID?)
     }
 
     @Dependency(\.experimentClient) var experimentClient
@@ -103,6 +108,7 @@ struct ExperimentSessionFeature {
         }
 
         watchRecordReducer
+        watchDrainEventsReducer
         sessionReducer
     }
 }
@@ -112,7 +118,7 @@ private extension ExperimentSessionFeature {
         Reduce { state, action in
             switch action {
             case .watchControl, .watchResourcesReleased, .watchControlFinished,
-                 .watchRecordControl, .watchRecordResponse: return .none
+                 .watchRecordControl, .watchRecordResponse, .watchDrainProgress: return .none
 
             case .loadDetail: return loadDetail(state: &state)
 
@@ -153,6 +159,7 @@ private extension ExperimentSessionFeature {
                 return .none
 
             case .pauseTapped:
+                guard state.watchCommand == nil else { return .none }
                 state.isPausePresented = true
                 return .send(.capture(.cancelPhotoGesture))
 
@@ -161,17 +168,29 @@ private extension ExperimentSessionFeature {
                 return .none
 
             case .pause(.delegate(.stopRequested)):
-                guard state.canCloseSession else { return .send(.pause(.stopRejected)) }
+                guard state.watchCommand == nil, state.canCloseSession else {
+                    return .send(.pause(.stopRejected))
+                }
                 state.timer.isClosing = true
-                return .send(.pause(.completeRequested))
+                return .send(.pause(.completeRequested(nil)))
 
-            case .pause(.delegate(.completed)): return .send(.stopCompleted)
+            case let .pause(.delegate(.completed(attemptID, requestID))):
+                guard state.pause.completionAttempt.lastAcceptedID == attemptID,
+                      !state.pause.isCompleting,
+                      requestID == state.watchCommand?.requestID else { return .none }
+                return .send(.stopCompleted(attemptID, requestID))
 
-            case .stopCompleted:
-                state.watchCommand = nil
+            case let .stopCompleted(attemptID, requestID):
+                guard state.pause.completionAttempt.lastAcceptedID == attemptID,
+                      !state.pause.isCompleting,
+                      requestID == state.watchCommand?.requestID else { return .none }
+                state.lastStopCompletionID = attemptID
+                clearWatchDrain(state: &state)
+                state.watchCameraWasVisible = false
                 return .none
 
-            case .pause(.delegate(.completionFailed)):
+            case let .pause(.delegate(.completionFailed(requestID))):
+                guard requestID == state.watchCommand?.requestID else { return .none }
                 state.timer.isClosing = false
                 return .merge(
                     .send(.timer(.timerTick(now))),
@@ -179,12 +198,16 @@ private extension ExperimentSessionFeature {
                 )
 
             case .pause(.delegate(.returnHomeRequested)):
-                guard state.canCloseSession else { return .none }
+                guard state.watchCommand == nil || state.watchClosingResources,
+                      state.canCloseSession else { return .none }
                 state.isReturningHome = true
                 state.timer.isClosing = true
                 let experimentID = state.experimentID
                 let exitID = state.exitID ?? uuid()
                 state.exitID = exitID
+                let attemptID = uuid()
+                let requestID = state.watchCommand?.requestID
+                state.homeExitAttempt.begin(attemptID)
                 let exitedAt = now
                 let ownerID = state.capture.camera.ownerID
                 let title = state.detail?.title ?? "실험"
@@ -197,7 +220,7 @@ private extension ExperimentSessionFeature {
                         do {
                             try await experimentClient.leaveSession(experimentID, exitID, exitedAt)
                         } catch {
-                            await send(.homeExitFailed)
+                            await send(.homeExitFailed(attemptID, requestID))
                             return
                         }
                         if !runningTimers.isEmpty,
@@ -217,22 +240,15 @@ private extension ExperimentSessionFeature {
                         await cameraSessionClient.cancelVideoRecording()
                         await speechRecordingClient.cancel()
                         await cameraSessionClient.deactivate(ownerID)
-                        await send(.homeExitCompleted)
+                        await send(.homeExitCompleted(attemptID, requestID))
                     }
                 )
 
-            case .homeExitCompleted:
-                state.watchCommand = nil
-                return .none
+            case let .homeExitCompleted(attemptID, requestID):
+                return acceptHomeExit(attemptID, requestID: requestID, state: &state)
 
-            case .homeExitFailed:
-                state.isReturningHome = false
-                state.timer.isClosing = false
-                return .merge(
-                    .send(.timer(.timerTick(now))),
-                    .send(.pause(.homeExitFailed)),
-                    finishWatchClose(state: &state, error: .storageFailed)
-                )
+            case let .homeExitFailed(attemptID, requestID):
+                return failHomeExit(attemptID, requestID: requestID, state: &state)
 
             case .permissions(.microphoneStatusUpdated(.authorized)):
                 return .send(.capture(.prepareVideoRecordingRequested))

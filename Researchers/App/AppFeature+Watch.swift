@@ -53,7 +53,21 @@ extension AppFeature {
                     )
                     return .none
                 }
-                if !cancelsPhoto { state.watchRequestID = command.requestID }
+                if !cancelsPhoto {
+                    state.watchRequestID = command.requestID
+                    switch command.operation {
+                    case .pause:
+                        state.watchCloseGate = .init(
+                            requestID: command.requestID, sessionID: id, kind: .pause
+                        )
+                    case .complete:
+                        state.watchCloseGate = .init(
+                            requestID: command.requestID, sessionID: id, kind: .complete
+                        )
+                    default:
+                        state.watchCloseGate = nil
+                    }
+                }
                 let action: ExperimentSessionFeature.Action =
                     [.pause, .complete].contains(command.operation)
                     ? .watchControl(command) : .watchRecordControl(command)
@@ -63,6 +77,7 @@ extension AppFeature {
                 PhoneWatchExperimentCoordinator.shared.finish(id, error: error)
                 guard state.watchRequestID == id else { return .none }
                 state.watchRequestID = nil
+                state.watchCloseGate = nil
                 return replayWatchNotification(&state)
 
             case let .path(.element(id, action: .session(.watchRecordResponse(response)))):
@@ -118,10 +133,56 @@ extension AppFeature {
         return loadNotificationExperiment(&state, experimentID: id)
     }
 
-    func finishWatchRequest(_ state: inout State) {
-        guard let id = state.watchRequestID else { return }
+    var watchCompletionNavigationReducer: some Reducer<State, Action> {
+        Reduce { state, action in
+            switch action {
+            case let .path(.element(
+                id: id, action: .session(.stopCompleted(attemptID, requestID))
+            )):
+                return finishSessionNavigation(
+                    &state, sessionID: id, attemptID: attemptID,
+                    requestID: requestID, kind: .complete
+                )
+            case let .path(.element(
+                id: id, action: .session(.homeExitCompleted(attemptID, requestID))
+            )):
+                return finishSessionNavigation(
+                    &state, sessionID: id, attemptID: attemptID,
+                    requestID: requestID, kind: .pause
+                )
+            default:
+                return .none
+            }
+        }
+    }
+
+    func finishSessionNavigation(
+        _ state: inout State, sessionID: StackElementID, attemptID: UUID, requestID: UUID?,
+        kind: WatchCloseCompletionGate<StackElementID>.Kind
+    ) -> Effect<Action> {
+        guard let session = state.path[id: sessionID, case: \.session] else { return .none }
+        let acceptedID = kind == .complete
+            ? session.lastStopCompletionID : session.homeExitAttempt.lastAcceptedID
+        guard acceptedID == attemptID else { return .none }
+        finishWatchRequest(&state, requestID: requestID, sessionID: sessionID, kind: kind)
+        let navigation: Action = kind == .complete
+            ? .showResult(sessionID) : .returnHome(sessionID)
+        return .concatenate(.send(navigation), replayWatchNotification(&state))
+    }
+
+    func finishWatchRequest(
+        _ state: inout State, requestID: UUID?, sessionID: StackElementID,
+        kind: WatchCloseCompletionGate<StackElementID>.Kind
+    ) {
+        guard let gate = state.watchCloseGate,
+              gate.matches(
+                requestID: requestID, sessionID: sessionID, kind: kind
+              ), state.watchRequestID == requestID else {
+            return
+        }
         state.watchRequestID = nil
-        PhoneWatchExperimentCoordinator.shared.finish(id)
+        state.watchCloseGate = nil
+        PhoneWatchExperimentCoordinator.shared.finish(gate.requestID)
     }
 
     func openWatchSession(_ state: inout State) -> Effect<Action> {
