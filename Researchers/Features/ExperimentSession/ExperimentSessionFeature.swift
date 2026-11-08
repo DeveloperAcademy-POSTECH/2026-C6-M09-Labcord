@@ -60,7 +60,7 @@ struct ExperimentSessionFeature {
         case capture(CameraCaptureFeature.Action)
         case pause(ExperimentPauseFeature.Action)
         case voiceStartRequested
-        case photoStartRequested
+        case photoStartRequested(UUID?)
         case videoStartRequested
         case appBecameActive
         case pauseTapped
@@ -250,57 +250,25 @@ private extension ExperimentSessionFeature {
 
             case .capture(.delegate(.voiceRequested)): return .send(.voiceStartRequested)
 
-            case .capture(.delegate(.photoRequested)):
+            case let .capture(.delegate(.photoRequested(id))):
                 guard !state.isPausePresented else { return .none }
-                return .send(.photoStartRequested)
+                return .send(.photoStartRequested(id))
 
             case .capture(.delegate(.videoRequested)): return .send(.videoStartRequested)
 
             case let .capture(.delegate(.handEvent(event))):
-                guard !state.isPausePresented, state.watchCommand == nil else { return .none }
-                switch event {
-                case .openHandHeld:
-                    guard state.voice.phase == .hidden else { return .none }
-                    return .send(.capture(.photoGestureEvent(event)))
-
-                case .fistHeld:
-                    guard state.voice.phase == .hidden else {
-                        return .send(.capture(.cancelPhotoGesture))
-                    }
-                    return .send(.capture(.photoGestureEvent(event)))
-
-                case let .oneFingerHeld(detectedAt):
-                    guard state.capture.isCameraViewVisible,
-                          state.capture.previewConnector != nil,
-                          !state.capture.isCameraSwitching,
-                          !state.capture.isPhotoCaptureScheduled,
-                          !state.capture.isCapturingPhoto,
-                          state.capture.capturedPhotoData == nil,
-                          state.capture.videoPhase == .idle,
-                          detectedAt.timeIntervalSinceNow > -0.5 else { return .none }
-                    switch state.voice.phase {
-                    case .hidden: return .send(.voiceStartRequested)
-                    case .recording: return .send(.voice(.stopRequested))
-                    case .starting, .stopping, .finished: return .none
-                    }
-
-                case let .threeFingersHeld(detectedAt):
-                    guard !state.capture.isPhotoCaptureScheduled,
-                          !state.capture.isCapturingPhoto,
-                          detectedAt.timeIntervalSinceNow > -0.5 else { return .none }
-                    return .send(.videoStartRequested)
-                }
+                return handleCameraHandEvent(event, state: &state)
 
             case .voiceStartRequested:
                 guard !state.isPausePresented else { return .none }
                 return prepareVoiceRecording(state: &state)
 
-            case .photoStartRequested:
+            case let .photoStartRequested(id):
                 guard !state.isPausePresented, state.watchCommand == nil else { return .none }
                 guard state.voice.phase == .hidden else {
                     return .send(.capture(.cancelPhotoGesture))
                 }
-                return .send(.capture(.photoCaptureRequested))
+                return .send(.capture(.photoCaptureRequested(id)))
 
             case .videoStartRequested:
                 guard !state.isPausePresented, state.watchCommand == nil,
@@ -310,6 +278,48 @@ private extension ExperimentSessionFeature {
             case .permissions, .voice, .capture, .timer, .pause: return .none
             }
         }
+    }
+
+    func handleCameraHandEvent(_ event: CameraHandEvent, state: inout State) -> Effect<Action> {
+            guard !state.isPausePresented, state.watchCommand == nil else { return .none }
+            switch event {
+            case .openHandHeld:
+                guard state.voice.phase == .hidden else { return .none }
+                return .send(.capture(.photoGestureEvent(event)))
+
+            case .fistHeld:
+                guard state.voice.phase == .hidden else {
+                    return .send(.capture(.cancelPhotoGesture))
+                }
+                return .send(.capture(.photoGestureEvent(event)))
+
+            case let .oneFingerHeld(detectedAt):
+                return handleVoiceGesture(detectedAt, state: &state)
+
+            case let .threeFingersHeld(detectedAt):
+                guard !state.capture.isPhotoCaptureScheduled,
+                      !state.capture.isCapturingPhoto,
+                      detectedAt.timeIntervalSinceNow > -0.5 else { return .none }
+                return .send(.videoStartRequested)
+            }
+
+    }
+
+    func handleVoiceGesture(_ detectedAt: Date, state: inout State) -> Effect<Action> {
+        guard state.capture.isCameraViewVisible,
+              state.capture.previewConnector != nil,
+              !state.capture.isCameraSwitching,
+              !state.capture.isPhotoCaptureScheduled,
+              !state.capture.isCapturingPhoto,
+              state.capture.capturedPhotoData == nil,
+              state.capture.videoPhase == .idle,
+              detectedAt.timeIntervalSinceNow > -0.5 else { return .none }
+        switch state.voice.phase {
+        case .hidden: return .send(.voiceStartRequested)
+        case .recording: return .send(.voice(.stopRequested))
+        case .starting, .stopping, .finished: return .none
+        }
+
     }
 
     func loadDetail(state: inout State) -> Effect<Action> {

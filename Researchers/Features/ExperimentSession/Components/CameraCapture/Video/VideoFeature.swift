@@ -21,14 +21,22 @@ struct VideoFeature {
         var recordID: UUID?
         var recordedAt: Date?
         var isSaving = false
+        var isSessionClosing = false
         var saveError: String?
         var hasPlaybackFinished = false
         var isAutoSavePending = false
+        var shouldSaveOnStop = false
+        var shouldStopOnStart = false
+        var requestedRecordID: UUID?
+        var requiresExternalConfirmation = false
     }
 
     enum Action: Equatable {
         case prepareRequested
         case recordRequested
+        case watchRecordRequested(UUID)
+        case stopRequested
+        case stopAndSaveRequested
         case started(UUID, Date)
         case recorded(UUID, URL)
         case recordingFailed(UUID, String)
@@ -62,7 +70,31 @@ struct VideoFeature {
 
     var body: some Reducer<State, Action> {
         Reduce { state, action in
+            if state.isSessionClosing, action.isBlockedDuringSessionClose { return .none }
             switch action {
+            case let .watchRecordRequested(id):
+                guard state.phase == .idle else { return .none }
+                state.requestedRecordID = id
+                state.requiresExternalConfirmation = true
+                return .send(.recordRequested)
+
+            case .stopAndSaveRequested:
+                guard state.phase != .idle else { return .none }
+                state.shouldSaveOnStop = true
+                if case .preview = state.phase { return saveVideo(state: &state) }
+                return .send(.stopRequested)
+
+            case .stopRequested:
+                switch state.phase {
+                case .starting:
+                    state.shouldStopOnStart = true
+                    return .none
+                case .recording:
+                    return .run { _ in await cameraSessionClient.stopVideoRecording() }
+                case .idle, .preview:
+                    return .none
+                }
+
             case .prepareRequested:
                 return .run { _ in
                     try? await cameraSessionClient.prepareVideoRecording()
@@ -97,6 +129,7 @@ struct VideoFeature {
             case let .started(id, startedAt):
                 guard id == state.sessionID, state.phase == .starting else { return .none }
                 state.phase = .recording(startedAt)
+                if state.shouldStopOnStart { return .send(.stopRequested) }
                 return .none
 
             case let .recorded(id, url):
@@ -104,17 +137,19 @@ struct VideoFeature {
                     return .run { _ in await cameraSessionClient.discardVideo(url) }
                 }
                 state.phase = .preview(url)
-                state.recordID = uuid()
+                state.recordID = state.requestedRecordID ?? uuid()
                 state.recordedAt = now
                 state.saveError = nil
                 state.hasPlaybackFinished = false
                 state.isAutoSavePending = false
+                if state.shouldSaveOnStop { return saveVideo(state: &state) }
                 return .none
 
             case let .recordingFailed(id, message):
                 guard id == state.sessionID else { return .none }
                 state.phase = .idle
                 state.errorMessage = message
+                resetReview(state: &state)
                 return .none
 
             case .retakeRequested:
@@ -134,6 +169,7 @@ struct VideoFeature {
                       !state.hasPlaybackFinished,
                       !state.isSaving else { return .none }
                 state.hasPlaybackFinished = true
+                if state.requiresExternalConfirmation { return .none }
                 state.isAutoSavePending = true
                 return .run { send in
                     try await Task.sleep(for: .seconds(3))
@@ -235,12 +271,32 @@ struct VideoFeature {
         )
     }
 
-    private func resetReview(state: inout State) {
+}
+
+private extension VideoFeature {
+    func resetReview(state: inout State) {
         state.recordID = nil
         state.recordedAt = nil
         state.isSaving = false
         state.saveError = nil
         state.hasPlaybackFinished = false
         state.isAutoSavePending = false
+        state.shouldSaveOnStop = false
+        state.shouldStopOnStart = false
+        state.requestedRecordID = nil
+        state.requiresExternalConfirmation = false
+    }
+}
+
+private extension VideoFeature.Action {
+    var isBlockedDuringSessionClose: Bool {
+        switch self {
+        case .prepareRequested,
+                 .recordRequested,
+                 .watchRecordRequested,
+                 .retakeRequested,
+                 .cancelRequested: true
+        default: false
+        }
     }
 }
