@@ -9,6 +9,7 @@ struct ResearchersApp: App {
     private let notificationDelegate = ForegroundNotificationDelegate()
 
     init() {
+        PhoneWatchExperimentCoordinator.shared.activate()
         FontRegistration.register()
         UNUserNotificationCenter.current().delegate = notificationDelegate
     }
