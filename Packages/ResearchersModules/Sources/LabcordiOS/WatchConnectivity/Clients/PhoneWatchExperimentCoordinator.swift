@@ -173,7 +173,8 @@ public final class PhoneWatchExperimentCoordinator {
         let response = requests[id]?.response ?? journal?.entries[id]?.response
         guard let response else {
             return WatchExperimentResponse(
-                requestID: command.requestID, phase: .unknown, error: .resultUnknown
+                requestID: command.requestID, phase: .unknown, error: .resultUnknown,
+                queriedRequestID: id
             )
         }
         // 조회 envelope의 ID는 조회 요청의 ID이며 targetID의 결과를 담습니다.
@@ -183,7 +184,7 @@ public final class PhoneWatchExperimentCoordinator {
             requestID: command.requestID, phase: interrupted ? .unknown : response.phase,
             experiments: response.experiments, snapshot: response.snapshot,
             error: interrupted ? .resultUnknown : response.error,
-            startToken: response.startToken
+            startToken: response.startToken, record: response.record, queriedRequestID: id
         )
     }
 
