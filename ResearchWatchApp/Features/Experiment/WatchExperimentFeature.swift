@@ -86,7 +86,7 @@ struct WatchExperimentFeature {
         case tick(Date)
     }
 
-    enum CancelID: Hashable, Sendable {
+    nonisolated enum CancelID: Hashable, Sendable {
         case stream
         case connection
         case request

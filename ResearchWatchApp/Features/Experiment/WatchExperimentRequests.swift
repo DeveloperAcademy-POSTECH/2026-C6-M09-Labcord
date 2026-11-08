@@ -1,6 +1,7 @@
 import ComposableArchitecture
 import Foundation
 import LabcordShared
+import LabcordWatchOS
 
 extension WatchExperimentFeature {
     func request(
