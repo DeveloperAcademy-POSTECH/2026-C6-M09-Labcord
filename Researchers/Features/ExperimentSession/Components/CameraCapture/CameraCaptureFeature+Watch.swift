@@ -6,6 +6,7 @@ import LabcordShared
 
 extension CameraCaptureFeature {
     func reduceWatch(state: inout State, action: Action) -> Effect<Action>? {
+        if let effect = watchPhotoRetake(state: &state, action: action) { return effect }
         if let effect = watchPhotoEvent(state: &state, action: action) { return effect }
         if let effect = watchVideoEvent(state: &state, action: action) { return effect }
         switch action {
@@ -23,8 +24,17 @@ extension CameraCaptureFeature {
         }
     }
 
+    private func watchPhotoRetake(state: inout State, action: Action) -> Effect<Action>? {
+        guard case .photo(.retakeRequested) = action,
+              let command = state.watchPhotoRequest,
+              !state.photo.isSaving, state.photo.capturedData == nil else { return nil }
+        state.watchPhotoRequest = nil
+        return watchReply(command, phase: .completed, kind: .photo, recordPhase: .cancelled)
+    }
+
     private func watchPhotoEvent(state: inout State, action: Action) -> Effect<Action>? {
-        guard let command = state.watchPhotoRequest else { return nil }
+        guard let command = state.watchPhotoRequest,
+              matchesPhotoEvent(action, command: command) else { return nil }
         switch action {
         case let .photo(.delegate(.captureScheduled(id, date))):
             guard recordID(command) == id, state.photo.isScheduled else { return nil }
@@ -57,7 +67,10 @@ extension CameraCaptureFeature {
     }
 
     private func watchVideoEvent(state: inout State, action: Action) -> Effect<Action>? {
-        guard let command = state.watchVideoRequest else { return nil }
+        guard let command = state.watchVideoRequest,
+              matchesVideoEvent(
+                action, command: command, sessionID: state.video.sessionID
+              ) else { return nil }
         switch action {
         case let .video(.started(_, date)):
             return watchReply(
@@ -86,6 +99,8 @@ extension CameraCaptureFeature {
                 ),
                 finishWatchStop(state: &state, error: .cameraUnavailable)
             )
+        case .video(.cancelCleanupFinished):
+            return finishUnexpectedCancellation(command, state: &state)
         case let .video(.delegate(.permissionAccessFailed(kind))):
             state.watchVideoRequest = nil
             return .merge(
@@ -97,6 +112,44 @@ extension CameraCaptureFeature {
                 .send(.delegate(.permissionAccessFailed(kind)))
             )
         default: return nil
+        }
+    }
+
+    private func finishUnexpectedCancellation(
+        _ command: WatchExperimentCommand, state: inout State
+    ) -> Effect<Action> {
+        state.watchVideoRequest = nil
+        let review = state.watchReviewRequest
+        state.watchReviewRequest = nil
+        return .merge(
+            watchReply(command, phase: .failed, error: .resultUnknown),
+            review.map { watchReply($0, phase: .failed, error: .resultUnknown) } ?? .none,
+            finishWatchStop(state: &state, error: .resultUnknown)
+        )
+    }
+
+    private func matchesPhotoEvent(
+        _ action: Action, command: WatchExperimentCommand
+    ) -> Bool {
+        switch action {
+        case let .photo(.captured(id, _)), let .photo(.saved(id)),
+             let .photo(.saveFailed(id, _)), let .photo(.captureFailed(id, _)):
+            return recordID(command) == id
+        default: return true
+        }
+    }
+
+    private func matchesVideoEvent(
+        _ action: Action, command: WatchExperimentCommand, sessionID: UUID
+    ) -> Bool {
+        switch action {
+        case let .video(.started(id, _)), let .video(.recorded(id, _)),
+             let .video(.recordingFailed(id, _)):
+            return sessionID == id
+        case let .video(.playbackFinished(id)), let .video(.saved(id)),
+             let .video(.saveFailed(id, _)), let .video(.cancelCleanupFinished(id)):
+            return recordID(command) == id
+        default: return true
         }
     }
 

@@ -32,7 +32,7 @@ struct PhotoFeature {
         case captureRequested(UUID?)
         case watchCaptureRequested(UUID)
         case captured(UUID, Data)
-        case captureFailed(String)
+        case captureFailed(UUID, String)
         case retakeRequested
         case saveRequested
         case autoSaveElapsed(UUID)
@@ -152,7 +152,7 @@ struct PhotoFeature {
                             let data = try await cameraSessionClient.capturePhoto()
                             await send(.captured(id, data))
                         } catch {
-                            await send(.captureFailed(error.localizedDescription))
+                            await send(.captureFailed(id, error.localizedDescription))
                         }
                     }
                 )
@@ -171,7 +171,8 @@ struct PhotoFeature {
                 }
                 .cancellable(id: CancelID.autoSave, cancelInFlight: true)
 
-            case let .captureFailed(message):
+            case let .captureFailed(id, message):
+                guard state.requestedRecordID == id else { return .none }
                 state.isCapturing = false
                 state.requestedRecordID = nil
                 state.requiresExternalConfirmation = false

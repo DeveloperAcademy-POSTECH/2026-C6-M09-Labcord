@@ -307,7 +307,7 @@ extension AppFeature {
     ) -> Effect<Action> {
         guard state.watchNotificationGate.receive(
             experimentID: experimentID, token: token,
-            watchRequestPending: state.watchRequestID != nil
+            watchRequestPending: watchWorkPending(state)
         ) == .open else { return .none }
         guard let entry, !state.reviewSaving else { return .none }
         if entry.status == .completed {

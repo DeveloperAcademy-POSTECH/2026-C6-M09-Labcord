@@ -60,8 +60,9 @@ extension AppFeature {
                 return .send(.path(.element(id: id, action: .session(action))))
 
             case let .path(.element(_, action: .session(.watchControlFinished(id, error)))):
-                state.watchRequestID = nil
                 PhoneWatchExperimentCoordinator.shared.finish(id, error: error)
+                guard state.watchRequestID == id else { return .none }
+                state.watchRequestID = nil
                 return replayWatchNotification(&state)
 
             case let .path(.element(id, action: .session(.watchRecordResponse(response)))):
@@ -72,8 +73,11 @@ extension AppFeature {
                     response, experimentID: experimentID
                 )
                 if state.watchRequestID == response.requestID,
-                   response.phase == .completed || response.phase == .failed {
+                   response.phase == .completed || response.phase == .failed
+                    || response.record != nil {
                     state.watchRequestID = nil
+                }
+                if response.phase == .completed || response.phase == .failed {
                     return replayWatchNotification(&state)
                 }
                 return .none
@@ -99,8 +103,18 @@ extension AppFeature {
         }
     }
 
+    func watchWorkPending(_ state: State) -> Bool {
+        if state.watchRequestID != nil { return true }
+        guard let id = state.path.ids.last,
+              let session = state.path[id: id, case: \.session] else { return false }
+        let capture = session.capture
+        return capture.watchPhotoRequest != nil || capture.watchVideoRequest != nil
+            || capture.watchReviewRequest != nil || capture.watchStopRequest != nil
+    }
+
     func replayWatchNotification(_ state: inout State) -> Effect<Action> {
-        guard let id = state.watchNotificationGate.takeDeferredExperiment() else { return .none }
+        guard !watchWorkPending(state),
+              let id = state.watchNotificationGate.takeDeferredExperiment() else { return .none }
         return loadNotificationExperiment(&state, experimentID: id)
     }
 

@@ -48,6 +48,7 @@ struct VideoFeature {
         case saveFailed(UUID, String)
         case saveErrorDismissed
         case cancelCleanupFailed(String)
+        case cancelCleanupFinished(UUID)
         case cancelRequested
         case errorDismissed
         case delegate(Delegate)
@@ -153,13 +154,7 @@ struct VideoFeature {
                 return .none
 
             case .retakeRequested:
-                guard case let .preview(url) = state.phase, !state.isSaving else { return .none }
-                state.phase = .idle
-                resetReview(state: &state)
-                return .merge(
-                    .cancel(id: CancelID.autoSave),
-                    .run { _ in await cameraSessionClient.discardVideo(url) }
-                )
+                return retakeVideo(state: &state)
 
             case .saveRequested:
                 return saveVideo(state: &state)
@@ -201,7 +196,11 @@ struct VideoFeature {
                 state.errorMessage = message
                 return .none
 
+            case .cancelCleanupFinished:
+                return .none
+
             case .cancelRequested:
+                let cancelledRecordID = state.requestedRecordID ?? state.recordID
                 let videoURL: URL?
                 if case let .preview(url) = state.phase {
                     videoURL = url
@@ -219,17 +218,21 @@ struct VideoFeature {
                     .cancel(id: CancelID.save),
                     .run { send in
                         await cameraSessionClient.cancelVideoRecording()
-                        guard let videoURL else { return }
-                        if let savingRecordID {
-                            do {
-                                try await experimentClient.cancelVideoSave(
-                                    experimentID, savingRecordID, videoURL
-                                )
-                            } catch {
-                                await send(.cancelCleanupFailed(error.localizedDescription))
+                        if let videoURL {
+                            if let savingRecordID {
+                                do {
+                                    try await experimentClient.cancelVideoSave(
+                                        experimentID, savingRecordID, videoURL
+                                    )
+                                } catch {
+                                    await send(.cancelCleanupFailed(error.localizedDescription))
+                                }
+                            } else {
+                                await cameraSessionClient.discardVideo(videoURL)
                             }
-                        } else {
-                            await cameraSessionClient.discardVideo(videoURL)
+                        }
+                        if let cancelledRecordID {
+                            await send(.cancelCleanupFinished(cancelledRecordID))
                         }
                     }
                 )
@@ -274,6 +277,23 @@ struct VideoFeature {
 }
 
 private extension VideoFeature {
+    func retakeVideo(state: inout State) -> Effect<Action> {
+        guard case let .preview(url) = state.phase, !state.isSaving else { return .none }
+        let discardedRecordID = state.requestedRecordID ?? state.recordID
+        state.phase = .idle
+        resetReview(state: &state)
+        return .merge(
+            .cancel(id: CancelID.autoSave),
+            .run { send in
+                await cameraSessionClient.discardVideo(url)
+                if let discardedRecordID {
+                    await send(.cancelCleanupFinished(discardedRecordID))
+                }
+            }
+        )
+
+    }
+
     func resetReview(state: inout State) {
         state.recordID = nil
         state.recordedAt = nil
