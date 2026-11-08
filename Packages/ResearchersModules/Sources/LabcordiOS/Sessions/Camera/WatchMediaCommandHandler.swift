@@ -1,7 +1,6 @@
 import Foundation
 import LabcordShared
 
-/// Core's media dispatch contract. UI reducers execute these using their existing clients.
 public enum WatchMediaCommandHandler {
     public enum Input: Equatable, Sendable {
         case takePhoto(UUID)

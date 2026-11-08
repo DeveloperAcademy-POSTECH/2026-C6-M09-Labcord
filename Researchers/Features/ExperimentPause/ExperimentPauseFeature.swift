@@ -1,10 +1,3 @@
-//
-//  ExperimentPauseFeature.swift
-//  Researchers
-//
-//  Created by 정홍섭 on 11/5/26.
-//
-
 import ComposableArchitecture
 import Foundation
 import LabcordiOS

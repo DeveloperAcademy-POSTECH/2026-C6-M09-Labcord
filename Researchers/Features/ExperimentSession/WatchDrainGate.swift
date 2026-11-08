@@ -1,6 +1,5 @@
 import Foundation
 
-/// Identifies the exact child operations whose durable saves must precede a Watch close.
 nonisolated struct WatchDrainGate: Equatable {
     enum Signal: Equatable {
         case voiceRecorded(session: UUID, record: UUID?)
@@ -97,7 +96,6 @@ nonisolated struct WatchDrainGate: Equatable {
     }
 }
 
-/// A session exit can settle only the matching Watch close, never an unrelated record request.
 nonisolated struct WatchCloseCompletionGate<SessionID: Equatable>: Equatable {
     enum Kind: Equatable { case pause, complete }
 
@@ -110,7 +108,6 @@ nonisolated struct WatchCloseCompletionGate<SessionID: Equatable>: Equatable {
     }
 }
 
-/// Distinguishes separate asynchronous exits even when their session or request is the same.
 nonisolated struct WatchCloseAttemptGate: Equatable {
     private(set) var activeID: UUID?
     private(set) var lastAcceptedID: UUID?

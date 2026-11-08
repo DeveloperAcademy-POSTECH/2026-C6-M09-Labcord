@@ -1,10 +1,3 @@
-//
-//  CameraSession.swift
-//  labcord-package-swift
-//
-//  Created by 정홍섭 on 10/26/26.
-//
-
 import AVFoundation
 import Dispatch
 import Foundation
@@ -101,7 +94,7 @@ public actor CameraSession {
         }
 
         if activeOwners.isEmpty {
-            // Clear a held pose before a returning view subscribes to hand events.
+
             handTrackingQueue.sync { [handDetector] in handDetector.reset() }
         }
         if !session.isRunning {
@@ -241,7 +234,6 @@ public actor CameraSession {
         try? FileManager.default.removeItem(at: url)
     }
 
-    /// A normal stop preserves the delegate result; cancellation deliberately discards it.
     public func stopVideoRecording() {
         if movieOutput.isRecording { movieOutput.stopRecording() }
     }

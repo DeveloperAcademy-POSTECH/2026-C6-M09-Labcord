@@ -2,7 +2,7 @@ import Foundation
 import LabcordShared
 
 extension PhoneWatchExperimentCoordinator {
-    /// 영구 저장된 사진·영상만 재구성하고 미저장 촬영은 다시 실행하지 않는다.
+
     func restoreSavedRecords(_ experimentID: UUID) throws {
         guard let detail = try client.loadResultDetail(experimentID) else {
             try restoreMediaJournal(experimentID, savedIDs: [])

@@ -81,7 +81,7 @@ extension PhoneWatchExperimentCoordinator {
            active.requestID != command.requestID,
            [.takePhoto, .startVideo, .stopVideo].contains(active.operation),
            active.experimentID == experimentID, active.targetID == targetID { return false }
-        // 이미 저장된 기록인지 직전에 다시 확인한다. 원본 파일은 정리하지 않는다.
+
         if try savedRecord(command) != nil { throw WatchExperimentError.invalidState }
         let cancelled = WatchRecordSnapshot(
             id: targetID, kind: record.kind, phase: .cancelled, startedAt: record.startedAt,
