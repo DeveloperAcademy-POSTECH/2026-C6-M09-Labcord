@@ -96,6 +96,7 @@ extension WatchExperimentFeature {
         switch response.phase {
         case .received, .processing:
             state.pending?.phase = .processing
+            state.message = nil
             return .merge(.cancel(id: CancelID.delivery), poll(pending.command.requestID))
         case .unknown:
             state.pending?.phase = .uncertain
