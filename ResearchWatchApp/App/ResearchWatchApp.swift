@@ -10,6 +10,10 @@ struct ResearchWatchApp: App {
     @Dependency(\.watchConnectivitySession) var connectivity
 
     init() {
+        connectivity.remoteIntentHandler = { request in
+            await WatchRemoteIntentReceiver.shared.receive(request)
+        }
+        WatchRecordingService.shared.activate()
         batteryClient.start()
         deviceNameClient.start()
     }
