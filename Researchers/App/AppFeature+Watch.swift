@@ -35,22 +35,48 @@ extension AppFeature {
                 return active ? openWatchSession(&state) : .none
 
             case let .watchEvent(.command(command)):
-                guard state.watchRequestID == nil,
-                      let id = state.path.ids.last,
-                      state.path[id: id, case: \.session]?.experimentID == command.experimentID
-                else {
+                guard let id = state.path.ids.last,
+                      let session = state.path[id: id, case: \.session],
+                      session.experimentID == command.experimentID else {
                     PhoneWatchExperimentCoordinator.shared.finish(
                         command.requestID, error: .phoneBusy
                     )
                     return .none
                 }
-                state.watchRequestID = command.requestID
-                return .send(.path(.element(id: id, action: .session(.watchControl(command)))))
+                let cancelsPhoto = command.operation == .cancelRecord
+                    && session.watchMediaCommand?.operation == .takePhoto
+                    && session.watchMediaCommand?.targetID == command.targetID
+                    && command.targetID != nil
+                guard state.watchRequestID == nil || cancelsPhoto else {
+                    PhoneWatchExperimentCoordinator.shared.finish(
+                        command.requestID, error: .phoneBusy
+                    )
+                    return .none
+                }
+                if !cancelsPhoto { state.watchRequestID = command.requestID }
+                let action: ExperimentSessionFeature.Action =
+                    [.pause, .complete].contains(command.operation)
+                    ? .watchControl(command) : .watchRecordControl(command)
+                return .send(.path(.element(id: id, action: .session(action))))
 
             case let .path(.element(_, action: .session(.watchControlFinished(id, error)))):
                 state.watchRequestID = nil
                 PhoneWatchExperimentCoordinator.shared.finish(id, error: error)
                 return replayWatchNotification(&state)
+
+            case let .path(.element(id, action: .session(.watchRecordResponse(response)))):
+                guard let experimentID = state.path[id: id, case: \.session]?.experimentID else {
+                    return .none
+                }
+                PhoneWatchExperimentCoordinator.shared.finishRecord(
+                    response, experimentID: experimentID
+                )
+                if state.watchRequestID == response.requestID,
+                   response.phase == .completed || response.phase == .failed {
+                    state.watchRequestID = nil
+                    return replayWatchNotification(&state)
+                }
+                return .none
 
             default:
                 return .none

@@ -9,6 +9,7 @@ struct ExperimentSessionFeature {
     struct State: Equatable {
         let experimentID: UUID
         var watchCommand: WatchExperimentCommand?
+        var watchMediaCommand: WatchExperimentCommand?
         var watchCameraWasVisible = false
         var detail: ExperimentSessionDetail?
         var isLoadingDetail = false
@@ -48,6 +49,8 @@ struct ExperimentSessionFeature {
 
     enum Action: Equatable {
         case watchControl(WatchExperimentCommand)
+        case watchRecordControl(WatchExperimentCommand)
+        case watchRecordResponse(WatchExperimentResponse)
         case watchResourcesReleased
         case watchControlFinished(UUID, WatchExperimentError?)
         case loadDetail
@@ -99,6 +102,7 @@ struct ExperimentSessionFeature {
             ExperimentPauseFeature()
         }
 
+        watchRecordReducer
         sessionReducer
     }
 }
@@ -107,7 +111,8 @@ private extension ExperimentSessionFeature {
     var sessionReducer: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case .watchControl, .watchResourcesReleased, .watchControlFinished: return .none
+            case .watchControl, .watchResourcesReleased, .watchControlFinished,
+                 .watchRecordControl, .watchRecordResponse: return .none
 
             case .loadDetail: return loadDetail(state: &state)
 
