@@ -59,6 +59,7 @@ extension WatchExperimentFeature {
             experimentID: pending.command.experimentID, targetID: pending.command.requestID
         )
         pending.responseID = command.requestID
+        pending.phase = .delivering
         state.pending = pending
         return .merge(send(command), deliveryDeadline(command.requestID))
     }
