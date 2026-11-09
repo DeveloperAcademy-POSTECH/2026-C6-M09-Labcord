@@ -57,7 +57,7 @@ extension PhoneWatchExperimentCoordinator {
             guard response.phase == .completed || record != nil else { return }
             if let command = requests[response.requestID]?.command,
                command.operation == .deleteTimer, let id = command.targetID {
-                try client.dismissWatchTimer(experimentID, id)
+                try client.dismissWatchTimer(experimentID: experimentID, timerID: id)
             }
             if completions[response.requestID] != nil {
                 recordResults[response.requestID] = record
