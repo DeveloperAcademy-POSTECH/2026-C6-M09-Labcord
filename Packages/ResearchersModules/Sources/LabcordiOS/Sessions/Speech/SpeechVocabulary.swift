@@ -52,7 +52,7 @@ nonisolated enum SpeechVocabulary {
         var readings: [String] = []
         let ruleBased = EnglishKoreanPhonetic.transliterate(term).flatMap(hangulOnly)
         if let ruleBased { readings.append(ruleBased) }
-        if let spelled = spelledOut(term) { readings.append(spelled) }
+        readings.append(contentsOf: spelledOut(term))
         if let ruleBased, let model = modelReading.flatMap(hangulOnly),
            soundsAlike(model, ruleBased) {
             readings.append(model)
@@ -127,23 +127,19 @@ nonisolated enum SpeechVocabulary {
         token.range(of: "^(?:[A-Z][a-z]?[0-9]*)+$", options: .regularExpression) != nil
     }
 
-    private static func spelledOut(_ term: String) -> String? {
+    private static func spelledOut(_ term: String) -> [String] {
         let tokens = term.split(separator: " ")
         guard tokens.count == 1, let token = tokens.first, (2...6).contains(token.count),
               token.allSatisfy({ $0.isASCII && ($0.isLetter || $0.isNumber) }),
               token.contains(where: \.isUppercase),
               token.filter(\.isUppercase).count >= 2 || isFormula(String(token)) else {
-            return nil
+            return []
         }
-        var output = ""
-        for character in token.lowercased() {
-            if let name = EnglishKoreanPhonetic.letterNames[character] {
-                output += name
-            } else if let digit = digitNames[character] {
-                output += digit
-            }
-        }
-        return output.isEmpty ? nil : output
+        return digitNames.map { names in
+            token.lowercased().compactMap { character in
+                EnglishKoreanPhonetic.letterNames[character] ?? names[character]
+            }.joined()
+        }.filter { !$0.isEmpty }
     }
 
     private static func hangulOnly(_ value: String) -> String? {
@@ -165,8 +161,10 @@ nonisolated enum SpeechVocabulary {
         character.unicodeScalars.contains { (0xAC00...0xD7A3).contains($0.value) }
     }
 
-    private static let digitNames: [Character: String] = [
-        "0": "영", "1": "일", "2": "투", "3": "쓰리", "4": "포", "5": "파이브",
-        "6": "식스", "7": "세븐", "8": "에잇", "9": "나인"
+    private static let digitNames: [[Character: String]] = [
+        ["0": "영", "1": "일", "2": "이", "3": "삼", "4": "사", "5": "오",
+         "6": "육", "7": "칠", "8": "팔", "9": "구"],
+        ["0": "제로", "1": "원", "2": "투", "3": "쓰리", "4": "포", "5": "파이브",
+         "6": "식스", "7": "세븐", "8": "에잇", "9": "나인"]
     ]
 }

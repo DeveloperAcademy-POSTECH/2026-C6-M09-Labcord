@@ -7,6 +7,7 @@ nonisolated struct SpeechUnitNormalizer {
     ]
     private static let bases: [(String, String)] = [
         ("리터", "L"), ("그램", "g"), ("몰", "mol"), ("몰라", "M"),
+        ("씨에프유", "CFU"), ("셀", "cells"), ("카피", "copies"),
         ("미터", "m"), ("초", "s"), ("파스칼", "Pa"), ("헤르츠", "Hz"),
         ("달톤", "Da"), ("볼트", "V"), ("암페어", "A"), ("와트", "W"),
         ("줄", "J"), ("뉴턴", "N"), ("옴", "Ω"), ("지멘스", "S"),
@@ -23,12 +24,13 @@ nonisolated struct SpeechUnitNormalizer {
             ("몰퍼리터", "mol/L"), ("밀리몰퍼리터", "mmol/L"),
             ("퍼센트", "%"), ("도씨", "°C"), ("섭씨", "°C"), ("화씨", "°F"),
             ("켈빈", "K"), ("몰", "M"), ("알피엠", "rpm"), ("피피엠", "ppm"), ("피피비", "ppb"),
-            ("시간", "h"), ("분", "min"), ("시", "h"), ("유닛", "U"),
+            ("시간", "h"), ("분", "min"), ("시", "h"), ("일", "d"), ("유닛", "U"),
             ("인터내셔널유닛", "IU"), ("염기쌍", "bp"), ("킬로베이스", "kb"),
             ("뉴클레오타이드", "nt"), ("바", "bar"), ("기압", "atm"),
             ("피에스아이", "psi"), ("밀리미터수은주", "mmHg"),
             ("센티미터물기둥", "cmH2O"), ("뉴턴", "N"), ("제곱미터", "m²"),
-            ("세제곱미터", "m³"), ("곱하기지", "×g"), ("배지", "×g"),
+            ("세제곱미터", "m³"), ("제곱센티미터", "cm²"), ("제곱밀리미터", "mm²"),
+            ("세제곱센티미터", "cm³"), ("세제곱밀리미터", "mm³"), ("곱하기지", "×g"), ("배지", "×g"),
             ("볼륨퍼볼륨", "v/v"), ("웨이트퍼볼륨", "w/v"), ("웨이트퍼웨이트", "w/w"),
             ("피에이치", "pH"), ("오디", "OD"), ("상대습도", "RH")
         ]
@@ -103,7 +105,7 @@ nonisolated struct SpeechUnitNormalizer {
                 continue
             }
             let reading = output[unitRange].filter { !$0.isWhitespace }
-            if reading == "분" {
+            if reading == "분" || reading == "일" {
                 let suffix = String(output[range.upperBound...])
                 let suffixRange = NSRange(suffix.startIndex..., in: suffix)
                 guard Self.minuteContext?.firstMatch(in: suffix, range: suffixRange) != nil else {
