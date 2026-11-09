@@ -28,7 +28,8 @@ struct TakePhoneExperimentPhotoIntent: AppIntent {
     }
 }
 
-struct TogglePhoneExperimentVideoIntent: AppIntent {
+struct StartPhoneExperimentVideoIntent: AppIntent {
+    static let persistentIdentifier = "TogglePhoneExperimentVideoIntent"
     static let title: LocalizedStringResource = "iPhone 실험 영상 녹화 시작"
     static let description = IntentDescription("현재 실험에서 카메라로 영상 녹화를 시작합니다.")
     static let supportedModes: IntentModes = .foreground(.immediate)
@@ -55,7 +56,7 @@ struct PhoneAppShortcuts: AppShortcutsProvider {
             shortTitle: "iPhone 사진 촬영", systemImageName: "camera.fill"
         )
         AppShortcut(
-            intent: TogglePhoneExperimentVideoIntent(),
+            intent: StartPhoneExperimentVideoIntent(),
             phrases: ["\(.applicationName)에서 아이폰으로 실험 영상 촬영"],
             shortTitle: "iPhone 영상 촬영", systemImageName: "video.fill"
         )

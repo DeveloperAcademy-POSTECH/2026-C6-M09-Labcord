@@ -95,7 +95,6 @@ final class PhoneIntentRuntime {
             }
             let cameraNeeded = kind != .voice
             let readiness = PhoneIntentReadiness.decide(.init(
-                contextMatches: true,
                 active: UIApplication.shared.applicationState == .active && store.watchIsActive,
                 detailReady: session.detail != nil,
                 cameraNeeded: cameraNeeded,
@@ -108,7 +107,6 @@ final class PhoneIntentRuntime {
             ))
             switch readiness {
             case .ready: return session
-            case .contextChanged: throw PhoneIntentError.contextChanged
             case .busy: throw PhoneIntentError.busy
             case .failed: throw PhoneIntentError.cameraBusy
             case .wait: try await Task.sleep(for: .milliseconds(50))
