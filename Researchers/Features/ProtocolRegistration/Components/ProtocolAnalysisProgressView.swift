@@ -36,7 +36,7 @@ struct ProtocolAnalysisProgressView: View {
                             ))
                     }
                     .multilineTextAlignment(.center)
-                    .padding(.top, 32)
+                    .padding(.top, 48)
 
                     VStack(spacing: 11) {
                         StatusPill("프로토콜 스캔 중...", appearance: .general,
@@ -57,7 +57,7 @@ struct ProtocolAnalysisProgressView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, 16)
-                .padding(.top, 32)
+                .padding(.top, 16)
             }
 
             VStack(spacing: 12) {
