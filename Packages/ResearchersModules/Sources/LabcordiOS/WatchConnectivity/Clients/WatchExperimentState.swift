@@ -19,13 +19,20 @@ public struct WatchExperimentState: Equatable, Sendable {
                 WatchTimerSnapshot(
                     id: timer.id, durationSeconds: timer.durationSeconds,
                     remainingSeconds: timer.remainingSeconds(at: date),
-                    status: timer.status == .running ? .running
-                        : timer.status == .paused ? .paused : .finished,
+                    status: watchTimerStatus(timer.status),
                     measuredAt: date
                 )
             },
             recordedAt: date,
             mode: detail.mode
         )
+    }
+}
+
+private func watchTimerStatus(_ status: ExperimentTimer.Status) -> WatchTimerSnapshot.Status {
+    switch status {
+    case .running: .running
+    case .paused: .paused
+    case .finished: .finished
     }
 }

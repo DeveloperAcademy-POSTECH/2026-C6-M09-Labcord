@@ -11,7 +11,11 @@ final class ExperimentSessionRepository {
 
     private init() {}
 
-    func loadDetail(id: UUID, recordEntry: Bool = true) throws -> ExperimentSessionDetail? {
+    func enterSessionAndLoadDetail(id: UUID) throws -> ExperimentSessionDetail? {
+        try loadDetail(id: id, recordEntry: true)
+    }
+
+    private func loadDetail(id: UUID, recordEntry: Bool) throws -> ExperimentSessionDetail? {
         let context = try store.makeContext()
         guard let experiment = try store.find(id: id, in: context) else { return nil }
 

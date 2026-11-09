@@ -15,7 +15,9 @@ public struct ExperimentClient: Sendable {
     public var watchState: @MainActor @Sendable (UUID) throws -> WatchExperimentState?
     public var load: @MainActor @Sendable () throws -> [ExperimentListEntry]
     public var loadRecentProtocols: @MainActor @Sendable () throws -> [RecentProtocolEntry]
-    public var loadDetail: @MainActor @Sendable (UUID) throws -> ExperimentSessionDetail?
+    public var enterSessionAndLoadDetail: @MainActor @Sendable (
+        UUID
+    ) throws -> ExperimentSessionDetail?
     public var loadResultDetail: @MainActor @Sendable (UUID) throws -> ExperimentResultDetail?
     public var updateTitle: @MainActor @Sendable (UUID, String) throws -> ExperimentResultDetail
     public var updateRecordContent: @MainActor @Sendable (
@@ -40,7 +42,9 @@ public struct ExperimentClient: Sendable {
 
     public init(
         load: @escaping @MainActor @Sendable () throws -> [ExperimentListEntry],
-        loadDetail: @escaping @MainActor @Sendable (UUID) throws -> ExperimentSessionDetail?,
+        enterSessionAndLoadDetail: @escaping @MainActor @Sendable (
+            UUID
+        ) throws -> ExperimentSessionDetail?,
         loadResultDetail: @escaping @MainActor @Sendable (UUID) throws -> ExperimentResultDetail?,
         updateTitle: @escaping @MainActor @Sendable (
             UUID, String
@@ -76,7 +80,7 @@ public struct ExperimentClient: Sendable {
         self.watchState = watchState
         self.load = load
         self.loadRecentProtocols = loadRecentProtocols
-        self.loadDetail = loadDetail
+        self.enterSessionAndLoadDetail = enterSessionAndLoadDetail
         self.loadResultDetail = loadResultDetail
         self.updateTitle = updateTitle
         self.updateRecordContent = updateRecordContent
@@ -98,8 +102,8 @@ public struct ExperimentClient: Sendable {
 extension ExperimentClient: DependencyKey {
     public static let liveValue = ExperimentClient(
         load: { try ExperimentListRepository.shared.load() },
-        loadDetail: {
-            try ExperimentSessionRepository.shared.loadDetail(id: $0)
+        enterSessionAndLoadDetail: {
+            try ExperimentSessionRepository.shared.enterSessionAndLoadDetail(id: $0)
         },
         loadResultDetail: { try ExperimentResultRepository.shared.loadResultDetail(id: $0) },
         updateTitle: { try ExperimentResultRepository.shared.updateTitle(id: $0, title: $1) },

@@ -36,7 +36,7 @@ extension PhoneWatchExperimentCoordinator {
                     || AVAudioApplication.shared.recordPermission == .granted else {
                 throw WatchExperimentError.permissionDenied
             }
-            tokens = tokens.filter { $0.value.1 > .now }
+            tokens = tokens.filter { $0.value.expiresAt > .now }
             let issued = UUID()
             tokens[issued] = (id, .now.advanced(by: .seconds(3)))
             return issued
@@ -72,7 +72,7 @@ extension PhoneWatchExperimentCoordinator {
             guard [.ready, .paused].contains(current.experiment.status) else {
                 throw WatchExperimentError.invalidState
             }
-            guard try client.loadDetail(id) != nil else {
+            guard try client.enterSessionAndLoadDetail(id) != nil else {
                 throw WatchExperimentError.experimentNotFound
             }
         }
@@ -83,7 +83,7 @@ extension PhoneWatchExperimentCoordinator {
     func consumeToken(_ command: WatchExperimentCommand, experimentID: UUID) throws {
         guard let token = command.startToken,
               let prepared = tokens.removeValue(forKey: token),
-              prepared.0 == experimentID, prepared.1 > .now else {
+              prepared.experimentID == experimentID, prepared.expiresAt > .now else {
             throw WatchExperimentError.requestExpired
         }
     }

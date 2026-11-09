@@ -25,7 +25,7 @@ public final class PhoneWatchExperimentCoordinator {
         .appendingPathComponent("WatchExperiment/revision.txt")
     var journal: WatchExperimentRequestJournal?
     var requests: [UUID: WatchExperimentRequestJournal.Entry] = [:]
-    var tokens: [UUID: (UUID, ContinuousClock.Instant)] = [:]
+    var tokens: [UUID: (experimentID: UUID, expiresAt: ContinuousClock.Instant)] = [:]
     var states: [UUID: WatchExperimentState] = [:]
     var revisions: [UUID: UInt64] = [:]
     var executing: UUID?

@@ -307,7 +307,9 @@ private extension ExperimentSessionFeature {
         let experimentID = state.experimentID
         return .run { send in
             await timerCompletionNotificationClient.cancelForExperiment(experimentID)
-            guard let detail = try? await experimentClient.loadDetail(experimentID) else {
+            guard let detail = try? await experimentClient.enterSessionAndLoadDetail(
+                experimentID
+            ) else {
                 await send(.detailLoadingFailed)
                 return
             }
