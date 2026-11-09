@@ -261,7 +261,9 @@ struct SessionTimerFeature {
                         )
                     }
                     if let timerID = pendingSave.dismissedTimerID {
-                        try await experimentClient.dismissWatchTimer(experimentID, timerID)
+                        try await experimentClient.dismissWatchTimer(
+                            experimentID: experimentID, timerID: timerID
+                        )
                     }
                     await send(.timerSaved)
                 } catch {

@@ -11,9 +11,13 @@ public enum ExperimentCreationError: Error, Sendable {
     case conflictingIdentifier
 }
 
+public enum WatchTimerAccessError: Error, Sendable {
+    case notConfigured
+}
+
 public struct ExperimentClient: Sendable {
     public var applyWatchTimer: @MainActor @Sendable (WatchExperimentCommand) throws -> Void
-    public var dismissWatchTimer: @MainActor @Sendable (UUID, UUID) throws -> Void
+    private var dismissWatchTimerOperation: @MainActor @Sendable (UUID, UUID) throws -> Void
     public var watchState: @MainActor @Sendable (UUID) throws -> WatchExperimentState?
     public var load: @MainActor @Sendable () throws -> [ExperimentListEntry]
     public var loadRecentProtocols: @MainActor @Sendable () throws -> [RecentProtocolEntry]
@@ -81,14 +85,14 @@ public struct ExperimentClient: Sendable {
         applyWatchTimer: @escaping @MainActor @Sendable (
             WatchExperimentCommand
         ) throws -> Void = { _ in
-            throw ExperimentCreationError.unavailable
+            throw WatchTimerAccessError.notConfigured
         },
         dismissWatchTimer: @escaping @MainActor @Sendable (UUID, UUID) throws -> Void = { _, _ in
-            throw ExperimentCreationError.unavailable
+            throw WatchTimerAccessError.notConfigured
         }
     ) {
         self.applyWatchTimer = applyWatchTimer
-        self.dismissWatchTimer = dismissWatchTimer
+        self.dismissWatchTimerOperation = dismissWatchTimer
         self.watchState = watchState
         self.load = load
         self.loadRecentProtocols = loadRecentProtocols
@@ -108,6 +112,10 @@ public struct ExperimentClient: Sendable {
         self.cancelAudioSave = cancelAudioSave
         self.complete = complete
         self.delete = delete
+    }
+    @MainActor
+    public func dismissWatchTimer(experimentID: UUID, timerID: UUID) throws {
+        try dismissWatchTimerOperation(experimentID, timerID)
     }
 }
 
