@@ -70,4 +70,3 @@ struct RegistrationAttachmentScrollView<Content: View>: View {
     }
     .padding(16)
 }
-
