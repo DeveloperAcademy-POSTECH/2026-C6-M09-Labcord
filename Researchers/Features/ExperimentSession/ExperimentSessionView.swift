@@ -147,7 +147,7 @@ struct ExperimentSessionView: View {
             if !store.isReady {
                 ExperimentSetupView(
                     failureMessage: store.setupFailureMessage
-                )                    { store.send(.setupRetryCameraTapped) }
+                ) { store.send(.setupRetryCameraTapped) }
                     .task(id: store.permissionRequestGeneration) {
                         try? await Task.sleep(for: .milliseconds(200))
                         guard !Task.isCancelled else { return }
