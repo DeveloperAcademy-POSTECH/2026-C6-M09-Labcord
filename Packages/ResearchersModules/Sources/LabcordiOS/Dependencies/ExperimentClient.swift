@@ -11,7 +11,14 @@ public enum ExperimentCreationError: Error, Sendable {
     case conflictingIdentifier
 }
 
+public enum WatchTimerAccessError: Error, Sendable {
+    case notConfigured
+}
+
 public struct ExperimentClient: Sendable {
+    public var applyWatchTimer: @MainActor @Sendable (WatchExperimentCommand) throws -> Void
+    public var beginTimerDeletion: @MainActor @Sendable (UUID, UUID, Date) throws -> Void
+    private var dismissWatchTimerOperation: @MainActor @Sendable (UUID, UUID) throws -> Void
     public var watchState: @MainActor @Sendable (UUID) throws -> WatchExperimentState?
     public var load: @MainActor @Sendable () throws -> [ExperimentListEntry]
     public var loadRecentProtocols: @MainActor @Sendable () throws -> [RecentProtocolEntry]
@@ -75,8 +82,24 @@ public struct ExperimentClient: Sendable {
         },
         watchState: @escaping @MainActor @Sendable (UUID) throws -> WatchExperimentState? = { _ in
             throw ExperimentCreationError.unavailable
+        },
+        applyWatchTimer: @escaping @MainActor @Sendable (
+            WatchExperimentCommand
+        ) throws -> Void = { _ in
+            throw WatchTimerAccessError.notConfigured
+        },
+        beginTimerDeletion: @escaping @MainActor @Sendable (
+            UUID, UUID, Date
+        ) throws -> Void = { _, _, _ in
+            throw WatchTimerAccessError.notConfigured
+        },
+        dismissWatchTimer: @escaping @MainActor @Sendable (UUID, UUID) throws -> Void = { _, _ in
+            throw WatchTimerAccessError.notConfigured
         }
     ) {
+        self.applyWatchTimer = applyWatchTimer
+        self.beginTimerDeletion = beginTimerDeletion
+        self.dismissWatchTimerOperation = dismissWatchTimer
         self.watchState = watchState
         self.load = load
         self.loadRecentProtocols = loadRecentProtocols
@@ -96,6 +119,10 @@ public struct ExperimentClient: Sendable {
         self.cancelAudioSave = cancelAudioSave
         self.complete = complete
         self.delete = delete
+    }
+    @MainActor
+    public func dismissWatchTimer(experimentID: UUID, timerID: UUID) throws {
+        try dismissWatchTimerOperation(experimentID, timerID)
     }
 }
 
@@ -159,7 +186,16 @@ extension ExperimentClient: DependencyKey {
                 id: $0, at: $1, title: $2, procedure: $3
             )
         },
-        watchState: { try ExperimentSessionRepository.shared.watchState(id: $0) }
+        watchState: { try ExperimentSessionRepository.shared.watchState(id: $0) },
+        applyWatchTimer: { try ExperimentSessionRepository.shared.applyWatchTimer($0) },
+        beginTimerDeletion: {
+            try ExperimentSessionRepository.shared.beginTimerDeletion(
+                experimentID: $0, timerID: $1, endedAt: $2
+            )
+        },
+        dismissWatchTimer: {
+            try ExperimentSessionRepository.shared.dismissWatchTimer(experimentID: $0, timerID: $1)
+        }
     )
 }
 
