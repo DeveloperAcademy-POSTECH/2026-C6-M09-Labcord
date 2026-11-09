@@ -35,6 +35,7 @@ struct VideoFeature {
         case prepareRequested
         case recordRequested
         case watchRecordRequested(UUID)
+        case shortcutRecordRequested(UUID)
         case stopRequested
         case stopAndSaveRequested
         case started(UUID, Date)
@@ -77,6 +78,11 @@ struct VideoFeature {
                 guard state.phase == .idle else { return .none }
                 state.requestedRecordID = id
                 state.requiresExternalConfirmation = true
+                return .send(.recordRequested)
+
+            case let .shortcutRecordRequested(id):
+                guard state.phase == .idle, state.requestedRecordID == nil else { return .none }
+                state.requestedRecordID = id
                 return .send(.recordRequested)
 
             case .stopAndSaveRequested:
@@ -314,6 +320,7 @@ private extension VideoFeature.Action {
         case .prepareRequested,
                  .recordRequested,
                  .watchRecordRequested,
+                 .shortcutRecordRequested,
                  .retakeRequested,
                  .cancelRequested: true
         default: false

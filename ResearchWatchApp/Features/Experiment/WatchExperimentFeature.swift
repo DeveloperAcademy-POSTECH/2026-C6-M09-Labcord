@@ -25,6 +25,7 @@ struct WatchExperimentFeature {
         var screen: Screen = .selection
         var experiments: [WatchExperimentSummary] = []
         var lastReadRequestID: UUID?
+        var practice = WatchGesturePractice()
         var selectedID: UUID?
         var snapshots: [UUID: WatchExperimentSnapshot] = [:]
         var deferredPhoneSession: WatchExperimentSnapshot?
@@ -100,6 +101,7 @@ struct WatchExperimentFeature {
         case timerDeleted(UUID)
         case recording(WatchRecordFeature.Action)
         case recordTapped(WatchRecordPresentation.Kind)
+        case practiceRecord(WatchRecordPresentation.Kind)
         case recordUpdate(UUID, WatchRecordPresentation)
         case recordReconnect
         case recordStreamEnded(UUID)
@@ -136,28 +138,7 @@ struct WatchExperimentFeature {
             case .appeared:
                 return activate(state: &state)
             case .inactive:
-                state.deferredPhoneSession = nil
-                if state.isPreparingInterruption {
-                    state.isPreparingInterruption = false
-                    state.interruptionAttemptID = nil
-                    state.interruptionNeedsConfirmation = true
-                    state.message = "실험 중단·종료 요청이 완료되지 않았어요. iPhone 상태를 확인해주세요."
-                }
-                state.isVisible = false
-                state.isRequestingPermission = false
-                state.cleanupRequestID = nil
-                state.streamID = nil
-                state.authorization = nil
-                state.countdownID = nil
-                if case .countdown = state.screen {
-                    state.screen = .experiment
-                    state.startToken = nil
-                }
-                suspendPendingRequest(state: &state)
-                return .merge(
-                    .merge(CancelID.all.map { .cancel(id: $0) }),
-                    .send(.recording(.interrupted))
-                )
+                return deactivate(state: &state)
             case .refresh:
                 guard state.isVisible, restorePending(state: &state) else { return .none }
                 if state.pending != nil { return checkStatus(state: &state) }

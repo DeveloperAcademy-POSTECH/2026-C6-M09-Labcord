@@ -210,3 +210,30 @@ extension WatchExperimentFeature {
         }
     }
 }
+
+extension WatchExperimentFeature {
+    func deactivate(state: inout State) -> Effect<Action> {
+        state.deferredPhoneSession = nil
+        if state.isPreparingInterruption {
+            state.isPreparingInterruption = false
+            state.interruptionAttemptID = nil
+            state.interruptionNeedsConfirmation = true
+            state.message = "실험 중단·종료 요청이 완료되지 않았어요. iPhone 상태를 확인해주세요."
+        }
+        state.isVisible = false
+        state.isRequestingPermission = false
+        state.cleanupRequestID = nil
+        state.streamID = nil
+        state.authorization = nil
+        state.countdownID = nil
+        if case .countdown = state.screen {
+            state.screen = .experiment
+            state.startToken = nil
+        }
+        suspendPendingRequest(state: &state)
+        return .merge(
+            .merge(CancelID.all.map { .cancel(id: $0) }),
+            .send(.recording(.interrupted))
+        )
+    }
+}

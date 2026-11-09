@@ -156,10 +156,7 @@ struct WatchExperimentView: View {
         case .timerEditor:
             WatchTimerEditorView(store: store)
         case .gestures:
-            Text("Watch 설정 → 손쉬운 사용 → AssistiveTouch에서 손 제스처 연결 방식을 확인해주세요.")
-            Text("현재는 아래 화면 버튼으로 기록할 수 있어요. 제스처의 단축어 연결·실행 지원은 별도 확인이 필요해요.")
-                .font(.caption)
-            Button("닫기") { store.send(.closeTapped) }
+            WatchGesturePracticeView(store: store)
         }
     }
 
