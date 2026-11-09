@@ -12,8 +12,8 @@ extension ExperimentSessionFeature {
             switch action {
             case let .voice(.saved(id)):
                 signal = .voiceSaved(
-                    session: state.voice.sessionID, record: id,
-                    accepted: state.voice.lastSavedRecordID
+                    sessionID: state.voice.sessionID, recordID: id,
+                    acceptedRecordID: state.voice.lastSavedRecordID
                 )
             case let .voice(.saveFailed(id, _)):
                 guard state.voice.recordID == id else { return .none }

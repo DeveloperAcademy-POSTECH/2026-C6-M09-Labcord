@@ -214,14 +214,14 @@ extension CameraCaptureFeature {
     private func confirmWatch(
         _ id: UUID, command: WatchExperimentCommand, state: inout State
     ) throws -> Effect<Action> {
-            guard !state.photo.isSaving, !state.video.isSaving else {
-                throw WatchExperimentError.phoneBusy
-            }
-            state.watchReviewRequest = command
-            if state.photo.recordID == id { return .send(.photo(.saveRequested)) }
-            if state.video.recordID == id { return .send(.video(.saveRequested)) }
-            state.watchReviewRequest = nil
-            throw WatchExperimentError.invalidState
+        guard !state.photo.isSaving, !state.video.isSaving else {
+            throw WatchExperimentError.phoneBusy
+        }
+        state.watchReviewRequest = command
+        if state.photo.recordID == id { return .send(.photo(.saveRequested)) }
+        if state.video.recordID == id { return .send(.video(.saveRequested)) }
+        state.watchReviewRequest = nil
+        throw WatchExperimentError.invalidState
     }
 
     private func cancelWatch(

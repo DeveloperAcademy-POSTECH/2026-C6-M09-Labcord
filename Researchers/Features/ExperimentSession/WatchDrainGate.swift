@@ -3,7 +3,7 @@ import Foundation
 nonisolated struct WatchDrainGate: Equatable {
     enum Signal: Equatable {
         case voiceRecorded(session: UUID, record: UUID?)
-        case voiceSaved(session: UUID, record: UUID, accepted: UUID?)
+        case voiceSaved(sessionID: UUID, recordID: UUID, acceptedRecordID: UUID?)
         case voiceFailed(session: UUID)
         case videoRecorded(session: UUID, record: UUID?)
         case videoSaved(session: UUID, record: UUID)
@@ -43,7 +43,7 @@ nonisolated struct WatchDrainGate: Equatable {
         case let .voiceRecorded(session, record):
             return voiceRecorded(session: session, record: record)
         case let .voiceSaved(session, record, accepted):
-            return voiceSaved(session: session, record: record, accepted: accepted)
+            return voiceSaved(sessionID: session, recordID: record, acceptedRecordID: accepted)
         case let .voiceFailed(session):
             return voiceSession == session ? .failed : .ignored
         case let .videoRecorded(session, record):
@@ -72,8 +72,11 @@ nonisolated struct WatchDrainGate: Equatable {
         return outcomeAfterSave
     }
 
-    private mutating func voiceSaved(session: UUID, record: UUID, accepted: UUID?) -> Outcome {
-        guard voiceSession == session, voiceRecord == record, accepted == record else {
+    private mutating func voiceSaved(
+        sessionID: UUID, recordID: UUID, acceptedRecordID: UUID?
+    ) -> Outcome {
+        guard voiceSession == sessionID, voiceRecord == recordID,
+              acceptedRecordID == recordID else {
             return .ignored
         }
         voiceSession = nil

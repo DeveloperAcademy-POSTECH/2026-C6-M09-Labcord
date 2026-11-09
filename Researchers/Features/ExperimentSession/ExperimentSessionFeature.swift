@@ -302,28 +302,27 @@ private extension ExperimentSessionFeature {
     }
 
     func handleCameraHandEvent(_ event: CameraHandEvent, state: inout State) -> Effect<Action> {
-            guard !state.isPausePresented, state.watchCommand == nil else { return .none }
-            switch event {
-            case .openHandHeld:
-                guard state.voice.phase == .hidden else { return .none }
-                return .send(.capture(.photoGestureEvent(event)))
+        guard !state.isPausePresented, state.watchCommand == nil else { return .none }
+        switch event {
+        case .openHandHeld:
+            guard state.voice.phase == .hidden else { return .none }
+            return .send(.capture(.photoGestureEvent(event)))
 
-            case .fistHeld:
-                guard state.voice.phase == .hidden else {
-                    return .send(.capture(.cancelPhotoGesture))
-                }
-                return .send(.capture(.photoGestureEvent(event)))
-
-            case let .oneFingerHeld(detectedAt):
-                return handleVoiceGesture(detectedAt, state: &state)
-
-            case let .threeFingersHeld(detectedAt):
-                guard !state.capture.isPhotoCaptureScheduled,
-                      !state.capture.isCapturingPhoto,
-                      detectedAt.timeIntervalSinceNow > -0.5 else { return .none }
-                return .send(.videoStartRequested)
+        case .fistHeld:
+            guard state.voice.phase == .hidden else {
+                return .send(.capture(.cancelPhotoGesture))
             }
+            return .send(.capture(.photoGestureEvent(event)))
 
+        case let .oneFingerHeld(detectedAt):
+            return handleVoiceGesture(detectedAt, state: &state)
+
+        case let .threeFingersHeld(detectedAt):
+            guard !state.capture.isPhotoCaptureScheduled,
+                  !state.capture.isCapturingPhoto,
+                  detectedAt.timeIntervalSinceNow > -0.5 else { return .none }
+            return .send(.videoStartRequested)
+        }
     }
 
     func handleVoiceGesture(_ detectedAt: Date, state: inout State) -> Effect<Action> {
