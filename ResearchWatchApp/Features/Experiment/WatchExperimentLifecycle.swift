@@ -37,7 +37,7 @@ extension WatchExperimentFeature {
         case let .snapshotReceived(id, snapshot):
             guard state.isVisible, state.streamID == id else { return .none }
             accept(snapshot, state: &state)
-            if state.startToken == nil { return .cancel(id: CancelID.countdown) }
+            if state.countdownID == nil { return .cancel(id: CancelID.countdown) }
             return .none
         case let .streamEnded(id):
             guard state.streamID == id else { return .none }
@@ -67,7 +67,7 @@ extension WatchExperimentFeature {
         ) else { return }
         state.snapshots[id] = snapshot
         if snapshot.experiment.status != .ready, case .countdown = state.screen {
-            state.startToken = nil
+            state.countdownID = nil
             state.screen = .experiment
         }
         if let index = state.experiments.firstIndex(where: { $0.id == id }) {

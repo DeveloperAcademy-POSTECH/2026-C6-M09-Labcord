@@ -35,7 +35,8 @@ struct WatchExperimentFeature {
         var selectedID: UUID?
         var snapshots: [UUID: WatchExperimentSnapshot] = [:]
         var pending: PendingRequest?
-        var startToken: UUID?
+        var countdownID: UUID?
+        var startOperation: WatchExperimentCommand.Operation?
         var isReachable = false
         var isVisible = false
         var streamID: UUID?
@@ -108,11 +109,12 @@ struct WatchExperimentFeature {
             case .appeared:
                 return activate(state: &state)
             case .inactive:
+                state.startOperation = nil
                 state.isVisible = false
                 state.streamID = nil
                 if case .countdown = state.screen {
                     state.screen = .experiment
-                    state.startToken = nil
+                    state.countdownID = nil
                 }
                 if state.pending != nil { state.pending?.phase = .uncertain }
                 return .merge(CancelID.all.map { .cancel(id: $0) })
@@ -128,7 +130,7 @@ struct WatchExperimentFeature {
                     return .none
                 }
                 state.selectedID = id
-                state.startToken = nil
+                state.countdownID = nil
                 state.screen = .experiment
                 state.message = nil
                 return request(.snapshot, state: &state)
@@ -136,7 +138,7 @@ struct WatchExperimentFeature {
                 guard state.pending == nil else { return .none }
                 state.screen = .selection
                 state.selectedID = nil
-                state.startToken = nil
+                state.countdownID = nil
                 return request(.list, state: &state)
             case .startTapped:
                 guard state.canOperate, state.snapshot?.experiment.status == .ready else {
@@ -158,20 +160,26 @@ struct WatchExperimentFeature {
                 }
                 state.permissionDenied = !granted
                 guard granted else { return .none }
-                state.screen = .experiment
-                return request(.prepareStart, state: &state)
+                let countdownID = uuid()
+                state.countdownID = countdownID
+                state.startOperation = .start
+                state.screen = .countdown(3)
+                return countdown(token: countdownID)
             case let .countdownTick(token):
-                guard state.startToken == token, case let .countdown(seconds) = state.screen else {
+                guard state.countdownID == token,
+                      case let .countdown(seconds) = state.screen else {
                     return .none
                 }
                 guard seconds > 1 else {
                     state.screen = .experiment
-                    return request(.start, token: token, state: &state)
+                    state.countdownID = nil
+                    return request(.prepareStart, state: &state)
                 }
                 state.screen = .countdown(seconds - 1)
                 return countdown(token: token)
             case .cancelCountdown:
-                state.startToken = nil
+                state.startOperation = nil
+                state.countdownID = nil
                 state.screen = .experiment
                 return .cancel(id: CancelID.countdown)
             case .pauseTapped:
@@ -194,8 +202,11 @@ struct WatchExperimentFeature {
                 state.screen = .experiment
                 return request(operation, state: &state)
             case .resumeTapped:
-                guard state.snapshot?.experiment.status == .paused else { return .none }
-                return request(.resume, state: &state)
+                guard state.canOperate, state.snapshot?.experiment.status == .paused else {
+                    return .none
+                }
+                state.startOperation = .resume
+                return request(.prepareStart, state: &state)
             case .connectionTapped:
                 state.screen = .connection
                 return .none
@@ -203,7 +214,8 @@ struct WatchExperimentFeature {
                 state.screen = .gestures
                 return .none
             case .closeTapped:
-                state.startToken = nil
+                state.startOperation = nil
+                state.countdownID = nil
                 state.screen = state.selectedID == nil ? .selection : .experiment
                 state.message = nil
                 return .merge(

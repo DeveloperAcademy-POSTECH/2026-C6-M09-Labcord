@@ -128,7 +128,7 @@ extension WatchExperimentFeature {
         if pending.command.operation == .prepareStart {
             return handlePreparedStart(response, state: &state)
         }
-        state.startToken = nil
+        state.countdownID = nil
         if pending.command.operation == .pause || pending.command.operation == .complete {
             state.message = "실험 상태가 반영됐어요. 기록 저장 결과는 별도로 확인해주세요."
         }
@@ -145,14 +145,17 @@ extension WatchExperimentFeature {
     func handlePreparedStart(
         _ response: WatchExperimentResponse, state: inout State
     ) -> Effect<Action> {
-        guard let token = response.startToken,
-              state.snapshot?.experiment.status == .ready else {
+        guard let token = response.startToken, let operation = state.startOperation,
+              (operation == .start && state.snapshot?.experiment.status == .ready)
+                || (operation == .resume && state.snapshot?.experiment.status == .paused) else {
+            state.startOperation = nil
             state.message = "시작 준비를 확인하지 못했어요. 상태를 새로 확인해주세요."
             return .cancel(id: CancelID.delivery)
         }
-        state.startToken = token
-        state.screen = .countdown(3)
-        return .merge(.cancel(id: CancelID.delivery), countdown(token: token))
+        state.startOperation = nil
+        return .concatenate(
+            .cancel(id: CancelID.delivery), request(operation, token: token, state: &state)
+        )
     }
 
     func fail(
@@ -165,7 +168,8 @@ extension WatchExperimentFeature {
             state.pending?.phase = .uncertain
         } else {
             state.pending = nil
-            state.startToken = nil
+            state.countdownID = nil
+            state.startOperation = nil
         }
         return .merge(.cancel(id: CancelID.delivery), .cancel(id: CancelID.poll))
     }
