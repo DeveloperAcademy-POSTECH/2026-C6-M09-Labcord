@@ -100,7 +100,12 @@ public actor CameraSession {
         if !session.isRunning {
             session.startRunning()
         }
+        guard session.isRunning else { throw CameraSessionError.cameraUnavailable }
         activeOwners.insert(owner)
+    }
+
+    public func isRunning() -> Bool {
+        session.isRunning
     }
 
     public func deactivate(owner: UUID) {
