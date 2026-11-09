@@ -5,6 +5,7 @@ struct WatchTimerVisibilityStore {
         var version = 1
         var dismissed: [String: Set<UUID>] = [:]
         var pending: [String: [String: Date]]?
+        var pendingEndTimes: [String: [String: Date]]?
     }
 
     private let fileURL: URL
@@ -18,14 +19,23 @@ struct WatchTimerVisibilityStore {
         try load().dismissed[experimentID.uuidString] ?? []
     }
 
-    func pendingDeletions(experimentID: UUID) throws -> [UUID: Date] {
-        let pending = try load().pending?[experimentID.uuidString] ?? [:]
-        var result: [UUID: Date] = [:]
-        for (key, date) in pending {
-            guard let timerID = UUID(uuidString: key), result[timerID] == nil else {
+    struct PendingDeletion {
+        let date: Date
+        let effectiveEndTime: Date?
+    }
+
+    func pendingDeletions(experimentID: UUID) throws -> [UUID: PendingDeletion] {
+        let contents = try load()
+        let key = experimentID.uuidString
+        let pending = contents.pending?[key] ?? [:]
+        var result: [UUID: PendingDeletion] = [:]
+        for (timerKey, date) in pending {
+            guard let timerID = UUID(uuidString: timerKey), result[timerID] == nil else {
                 throw CocoaError(.coderReadCorrupt)
             }
-            result[timerID] = date
+            result[timerID] = PendingDeletion(
+                date: date, effectiveEndTime: contents.pendingEndTimes?[key]?[timerID.uuidString]
+            )
         }
         return result
     }
@@ -38,6 +48,9 @@ struct WatchTimerVisibilityStore {
         if pending[experimentKey]?[timerID.uuidString] == nil {
             pending[experimentKey, default: [:]][timerID.uuidString] = endedAt
             contents.pending = pending
+            var endTimes = contents.pendingEndTimes ?? [:]
+            endTimes[experimentKey, default: [:]][timerID.uuidString] = endedAt
+            contents.pendingEndTimes = endTimes
             try write(contents)
         }
     }
@@ -49,6 +62,8 @@ struct WatchTimerVisibilityStore {
            contents.pending?[key]?[timerID.uuidString] == nil { return }
         contents.dismissed[key, default: []].insert(timerID)
         contents.pending?[key]?[timerID.uuidString] = nil
+        contents.pendingEndTimes?[key]?[timerID.uuidString] = nil
+        if contents.pendingEndTimes?[key]?.isEmpty == true { contents.pendingEndTimes?[key] = nil }
         if contents.pending?[key]?.isEmpty == true { contents.pending?[key] = nil }
         try write(contents)
     }
@@ -74,6 +89,10 @@ struct WatchTimerVisibilityStore {
         let contents = try JSONDecoder().decode(Contents.self, from: data)
         guard contents.version == 1,
               contents.dismissed.keys.allSatisfy({ UUID(uuidString: $0) != nil }),
+              (contents.pendingEndTimes ?? [:]).allSatisfy({ key, timers in
+                  UUID(uuidString: key) != nil
+                      && timers.keys.allSatisfy { UUID(uuidString: $0) != nil }
+              }),
               (contents.pending ?? [:]).allSatisfy({ key, timers in
                   UUID(uuidString: key) != nil
                       && timers.keys.allSatisfy { UUID(uuidString: $0) != nil }

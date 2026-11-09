@@ -99,9 +99,7 @@ final class ExperimentSessionRepository {
         }
         let mutation = try WatchTimerMutation.prepare(command, timers: timers, at: now)
         if command.operation == .deleteTimer, let timerID = command.targetID {
-            try timerVisibility.beginDeletion(
-                experimentID: experimentID, timerID: timerID, endedAt: now
-            )
+            try beginDeletion(experimentID: experimentID, timerID: timerID, mutation: mutation)
         }
         for change in mutation.changes {
             upsertTimer(change.timer, endedAt: change.endedAt, in: experiment)
@@ -292,6 +290,17 @@ private extension ExperimentSessionRepository {
 }
 
 extension ExperimentSessionRepository {
+    private func beginDeletion(
+        experimentID: UUID, timerID: UUID, mutation: WatchTimerMutation
+    ) throws {
+        guard let change = mutation.changes.first(where: { $0.timer.id == timerID }),
+              let endedAt = change.endedAt else { throw WatchExperimentError.invalidState }
+        try timerVisibility.beginDeletion(
+            experimentID: experimentID, timerID: timerID,
+            endedAt: change.timer.finishedAt ?? endedAt
+        )
+    }
+
     func beginTimerDeletion(experimentID: UUID, timerID: UUID, endedAt: Date) throws {
         let context = try store.makeContext()
         guard let experiment = try store.find(id: experimentID, in: context),
@@ -303,6 +312,24 @@ extension ExperimentSessionRepository {
         )
     }
 
+    private func legacyEndTime(for record: ExperimentRecord, at date: Date) throws -> Date {
+        guard let duration = record.timerDurationSeconds,
+              duration > 0, duration <= Int(Int32.max) else {
+            throw WatchExperimentError.invalidPayload
+        }
+        var timer = ExperimentTimer(
+            id: record.id, durationSeconds: duration, startedAt: record.recordedAt,
+            pauseIntervals: record.timerPauses.sorted { $0.pausedAt < $1.pausedAt }.map {
+                ExperimentTimer.PauseInterval(
+                    id: $0.id, pausedAt: $0.pausedAt, resumedAt: $0.resumedAt
+                )
+            },
+            finishedAt: record.timerEndedAt
+        )
+        timer.finishIfNeeded(at: date)
+        return timer.finishedAt ?? date
+    }
+
     private func recoverTimerDeletions(experimentID: UUID) throws {
         let pending = try timerVisibility.pendingDeletions(experimentID: experimentID)
         guard !pending.isEmpty else { return }
@@ -310,11 +337,16 @@ extension ExperimentSessionRepository {
         guard let experiment = try store.find(id: experimentID, in: context) else {
             throw ExperimentStore.StoreError.experimentNotFound
         }
-        for (id, endedAt) in pending {
+        for (id, deletion) in pending {
             guard let record = experiment.records.first(where: {
                 $0.id == id && $0.type == .timer
             }) else { throw WatchExperimentError.invalidState }
-            record.timerEndedAt = record.timerEndedAt ?? endedAt
+            if record.timerEndedAt == nil {
+                let endTime = try deletion.effectiveEndTime ?? legacyEndTime(
+                    for: record, at: deletion.date
+                )
+                record.timerEndedAt = endTime
+            }
         }
         try context.save()
         for id in pending.keys {

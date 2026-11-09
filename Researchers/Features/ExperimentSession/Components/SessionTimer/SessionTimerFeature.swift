@@ -254,11 +254,11 @@ struct SessionTimerFeature {
             .run { send in
                 do {
                     if let timerID = pendingSave.dismissedTimerID,
-                       let endedAt = pendingSave.changes.first(where: {
+                       let change = pendingSave.changes.first(where: {
                            $0.timer.id == timerID
-                       })?.endedAt {
+                       }), let endedAt = change.endedAt {
                         try await experimentClient.beginTimerDeletion(
-                            experimentID, timerID, endedAt
+                            experimentID, timerID, change.timer.finishedAt ?? endedAt
                         )
                     }
                     for change in pendingSave.changes {
