@@ -12,52 +12,46 @@ struct WatchExperimentFeature {
         case countdown(Int)
         case confirmPause
         case confirmComplete
+        case confirmResume
+        case recordCleanup
         case connection
         case gestures
-    }
-
-    enum RequestPhase: Equatable {
-        case delivering
-        case processing
-        case uncertain
-    }
-
-    struct PendingRequest: Equatable {
-        let command: WatchExperimentCommand
-        var responseID: UUID
-        var phase: RequestPhase = .delivering
+        case timers
+        case timerEditor
     }
 
     @ObservableState
     struct State: Equatable {
         var screen: Screen = .selection
         var experiments: [WatchExperimentSummary] = []
+        var lastReadRequestID: UUID?
         var selectedID: UUID?
         var snapshots: [UUID: WatchExperimentSnapshot] = [:]
+        var deferredPhoneSession: WatchExperimentSnapshot?
         var pending: PendingRequest?
         var hasRestoredPending = false
         var pendingRecoveryFailed = false
+        var canRetryPendingCancellation = false
+        var startToken: UUID?
         var countdownID: UUID?
-        var startOperation: WatchExperimentCommand.Operation?
+        var authorization: Authorization?
         var isReachable = false
+        var connectionStatus: WatchConnectionStatus = .activating
         var isVisible = false
         var streamID: UUID?
         var message: String?
         var permissionDenied = false
+        var isRequestingPermission = false
+        var cleanupRequestID: UUID?
         var currentTime = Date.now
+        var recording = WatchRecordFeature.State()
+        var timerHours = 0
+        var timerMinutes = 1
+        var timerSeconds = 0
+        var isPreparingInterruption = false
+        var interruptionAttemptID: UUID?
+        var interruptionNeedsConfirmation = false
 
-        var snapshot: WatchExperimentSnapshot? {
-            selectedID.flatMap { snapshots[$0] }
-        }
-
-        var selectedTitle: String {
-            snapshot?.experiment.title
-                ?? experiments.first { $0.id == selectedID }?.title ?? "실험 선택"
-        }
-
-        var canOperate: Bool {
-            pending == nil && isReachable && snapshot != nil
-        }
     }
 
     enum Action: Equatable {
@@ -65,6 +59,8 @@ struct WatchExperimentFeature {
         case inactive
         case refresh
         case connectionChanged(UUID, Bool)
+        case connectionStatusChanged(UUID, WatchConnectionStatus)
+        case retryConnection
         case streamEnded(UUID)
         case snapshotReceived(UUID, WatchExperimentSnapshot)
         case selected(UUID)
@@ -72,21 +68,43 @@ struct WatchExperimentFeature {
         case startTapped
         case permissionRequested
         case permissionResult(UUID, Bool)
+        case voicePermissionResult(UUID, Bool)
+        case remoteVoiceRequested(UUID, Date)
+        case remoteVoicePermissionResult(UUID, Date, Bool)
         case countdownTick(UUID)
         case cancelCountdown
         case pauseTapped
         case completeTapped
         case confirmed
         case resumeTapped
+        case resumeConfirmed
         case connectionTapped
         case gesturesTapped
         case closeTapped
         case checkRequest
+        case retryPendingCancellation
         case response(UUID, WatchExperimentResponse)
         case requestFailed(UUID, WatchExperimentError)
         case deliveryExpired(UUID)
         case pollRequest(UUID)
         case tick(Date)
+        case timersTapped
+        case timerEditorTapped
+        case timerHoursChanged(Int)
+        case timerMinutesChanged(Int)
+        case timerSecondsChanged(Int)
+        case timerStarted(Int)
+        case customTimerStarted
+        case timerPaused(UUID)
+        case timerResumed(UUID)
+        case timerDeleted(UUID)
+        case recording(WatchRecordFeature.Action)
+        case recordTapped(WatchRecordPresentation.Kind)
+        case recordUpdate(UUID, WatchRecordPresentation)
+        case recordReconnect
+        case recordStreamEnded(UUID)
+        case interruptionPrepared(UUID, UUID, WatchExperimentCommand.Operation)
+        case interruptionFailed(UUID, UUID), cancelInterruptionPreparation
     }
 
     nonisolated enum CancelID: Hashable, Sendable {
@@ -97,8 +115,12 @@ struct WatchExperimentFeature {
         case poll
         case countdown
         case permission
+        case recordStream
+        case interruptionTimeout
+        case interruptionWork
     }
 
+    var recordingBridge: WatchRecordingUIBridge?
     var pendingJournal: WatchPendingRequestJournal = .live
 
     @Dependency(\.watchExperimentClient) var client
@@ -108,20 +130,34 @@ struct WatchExperimentFeature {
     @Dependency(\.date.now) var now
 
     var body: some Reducer<State, Action> {
+        Scope(state: \.recording, action: \.recording) { WatchRecordFeature() }
         Reduce { state, action in
             switch action {
             case .appeared:
                 return activate(state: &state)
             case .inactive:
-                state.startOperation = nil
+                state.deferredPhoneSession = nil
+                if state.isPreparingInterruption {
+                    state.isPreparingInterruption = false
+                    state.interruptionAttemptID = nil
+                    state.interruptionNeedsConfirmation = true
+                    state.message = "실험 중단·종료 요청이 완료되지 않았어요. iPhone 상태를 확인해주세요."
+                }
                 state.isVisible = false
+                state.isRequestingPermission = false
+                state.cleanupRequestID = nil
                 state.streamID = nil
+                state.authorization = nil
+                state.countdownID = nil
                 if case .countdown = state.screen {
                     state.screen = .experiment
-                    state.countdownID = nil
+                    state.startToken = nil
                 }
                 suspendPendingRequest(state: &state)
-                return .merge(CancelID.all.map { .cancel(id: $0) })
+                return .merge(
+                    .merge(CancelID.all.map { .cancel(id: $0) }),
+                    .send(.recording(.interrupted))
+                )
             case .refresh:
                 guard state.isVisible, restorePending(state: &state) else { return .none }
                 if state.pending != nil { return checkStatus(state: &state) }
@@ -130,19 +166,23 @@ struct WatchExperimentFeature {
                 return request(operation, state: &state)
             case let .selected(id):
                 guard state.pending == nil,
+                      !state.recording.hasUnsettledRecords(in: state.selectedID),
+                      !state.isPreparingInterruption,
                       state.experiments.contains(where: { $0.id == id }) else {
                     return .none
                 }
                 state.selectedID = id
-                state.countdownID = nil
+                state.startToken = nil
                 state.screen = .experiment
-                state.message = nil
+                if !state.interruptionNeedsConfirmation { state.message = nil }
                 return request(.snapshot, state: &state)
             case .backTapped:
-                guard state.pending == nil else { return .none }
+                guard state.pending == nil,
+                      !state.recording.hasUnsettledRecords(in: state.selectedID),
+                      !state.isPreparingInterruption else { return .none }
                 state.screen = .selection
                 state.selectedID = nil
-                state.countdownID = nil
+                state.startToken = nil
                 return request(.list, state: &state)
             case .startTapped:
                 guard state.canOperate, state.snapshot?.experiment.status == .ready else {
@@ -150,40 +190,23 @@ struct WatchExperimentFeature {
                 }
                 state.screen = .permission
                 return .none
-            case .permissionRequested:
-                guard state.screen == .permission, let id = state.selectedID else { return .none }
-                return .run { [microphonePermission] send in
-                    let granted = await microphonePermission.request()
-                    guard !Task.isCancelled else { return }
-                    await send(.permissionResult(id, granted))
-                }
-                .cancellable(id: CancelID.permission, cancelInFlight: true)
-            case let .permissionResult(id, granted):
-                guard state.isVisible, state.selectedID == id, state.screen == .permission else {
-                    return .none
-                }
-                state.permissionDenied = !granted
-                guard granted else { return .none }
-                let countdownID = uuid()
-                state.countdownID = countdownID
-                state.startOperation = .start
-                state.screen = .countdown(3)
-                return countdown(token: countdownID)
+            case .permissionRequested, .permissionResult:
+                return reduceStart(state: &state, action: action)
             case let .countdownTick(token):
-                guard state.countdownID == token,
+                guard state.isVisible, state.streamID != nil, state.countdownID == token,
                       case let .countdown(seconds) = state.screen else {
                     return .none
                 }
                 guard seconds > 1 else {
                     state.screen = .experiment
                     state.countdownID = nil
-                    return request(.prepareStart, state: &state)
+                    return request(.start, state: &state)
                 }
                 state.screen = .countdown(seconds - 1)
                 return countdown(token: token)
             case .cancelCountdown:
-                state.startOperation = nil
                 state.countdownID = nil
+                state.startToken = nil
                 state.screen = .experiment
                 return .cancel(id: CancelID.countdown)
             case .pauseTapped:
@@ -193,7 +216,8 @@ struct WatchExperimentFeature {
                 state.screen = .confirmPause
                 return .none
             case .completeTapped:
-                guard state.canOperate else { return .none }
+                guard state.canOperate, state.snapshot?.experiment.status != .ready,
+                      state.snapshot?.experiment.status != .completed else { return .none }
                 state.screen = .confirmComplete
                 return .none
             case .confirmed:
@@ -203,14 +227,19 @@ struct WatchExperimentFeature {
                 case .confirmComplete: operation = .complete
                 default: return .none
                 }
+                state.interruptionNeedsConfirmation = false
                 state.screen = .experiment
-                return request(operation, state: &state)
+                return prepareInterruption(operation, state: &state)
             case .resumeTapped:
-                guard state.canOperate, state.snapshot?.experiment.status == .paused else {
+                guard state.canOperate, state.canResume else { return .none }
+                state.screen = .confirmResume
+                return .none
+            case .resumeConfirmed:
+                guard state.screen == .confirmResume, state.canOperate, state.canResume else {
                     return .none
                 }
-                state.startOperation = .resume
-                return request(.prepareStart, state: &state)
+                state.screen = .experiment
+                return request(.resume, state: &state)
             case .connectionTapped:
                 state.screen = .connection
                 return .none
@@ -218,33 +247,21 @@ struct WatchExperimentFeature {
                 state.screen = .gestures
                 return .none
             case .closeTapped:
-                state.startOperation = nil
-                state.countdownID = nil
-                state.screen = state.selectedID == nil ? .selection : .experiment
-                state.message = nil
-                return .merge(
-                    .cancel(id: CancelID.permission), .cancel(id: CancelID.countdown)
-                )
+                return close(state: &state)
             case .checkRequest:
                 return checkStatus(state: &state)
-            case .response, .requestFailed, .deliveryExpired, .pollRequest,
-                 .snapshotReceived, .streamEnded, .connectionChanged, .tick:
-                return reduceResponse(state: &state, action: action)
+            case .retryPendingCancellation:
+                return retryPendingCancellation(state: &state)
+            default:
+                return reduceTools(state: &state, action: action)
             }
         }
-    }
-
-    func countdown(token: UUID) -> Effect<Action> {
-        .run { [clock] send in
-            try await clock.sleep(for: .seconds(1))
-            await send(.countdownTick(token))
-        }
-        .cancellable(id: CancelID.countdown, cancelInFlight: true)
     }
 }
 
 extension WatchExperimentFeature.CancelID {
     static let all: [Self] = [
-        .stream, .connection, .request, .delivery, .poll, .countdown, .permission
+        .stream, .connection, .request, .delivery, .poll, .countdown, .permission, .recordStream,
+        .interruptionTimeout, .interruptionWork
     ]
 }

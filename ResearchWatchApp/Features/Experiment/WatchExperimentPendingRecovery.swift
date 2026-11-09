@@ -3,6 +3,18 @@ import Foundation
 import LabcordShared
 
 extension WatchExperimentFeature {
+    struct PendingRequest: Equatable {
+        let command: WatchExperimentCommand
+        var responseID: UUID
+        var phase: RequestPhase = .delivering
+    }
+
+    enum RequestPhase: Equatable {
+        case delivering
+        case processing
+        case uncertain
+    }
+
     func suspendPendingRequest(state: inout State) {
         guard let pending = state.pending else { return }
         if WatchRequestPolicy.canAbandon(pending.command.operation) {
@@ -15,6 +27,11 @@ extension WatchExperimentFeature {
     func restorePending(state: inout State) -> Bool {
         guard !state.hasRestoredPending else { return true }
         do {
+            for decision in try pendingJournal.loadDecisions() {
+                state.recording.decisions[decision.recordID] =
+                    decision.kind == .cancel ? .cancel : .save
+                if decision.failed { state.recording.failedDecisions.insert(decision.recordID) }
+            }
             if let command = try pendingJournal.load() {
                 state.selectedID = command.experimentID
                 state.screen = .experiment
@@ -55,6 +72,21 @@ extension WatchExperimentFeature {
             return false
         }
     }
+    func receiveRecordUpdate(
+        _ record: WatchRecordPresentation, state: inout State
+    ) -> Effect<Action> {
+        if record.phase == .saved || record.phase == .cancelled {
+            do {
+                try pendingJournal.clearDecision(
+                    experimentID: record.experimentID, recordID: record.id
+                )
+            } catch {
+                state.message = "기록 결과는 확인했지만 저장·취소 의도 정리가 필요해요. 원본은 유지해요."
+            }
+        }
+        return .send(.recording(.update(record)))
+    }
+
     func rejectUnverifiedResponse(
         _ response: WatchExperimentResponse, pending: PendingRequest, state: inout State
     ) -> Effect<Action>? {

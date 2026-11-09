@@ -15,7 +15,7 @@ struct ResearchWatchApp: App {
     }
 
     private let store = Store(initialState: WatchExperimentFeature.State()) {
-        WatchExperimentFeature()
+        WatchExperimentFeature(recordingBridge: .live)
     }
 
     var body: some Scene {
