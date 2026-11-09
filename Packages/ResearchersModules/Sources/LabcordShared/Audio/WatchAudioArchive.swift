@@ -33,13 +33,13 @@ public actor WatchAudioArchive {
     public func accept(_ chunk: WatchAudioChunk) throws -> WatchAudioReceipt {
         guard chunk.isValid else { throw WatchAudioError.invalidAudio }
         try begin(chunk.header)
-        let url = chunkURL(chunk.header, chunk.sequence)
+        let url = chunkURL(chunk.header, sequence: chunk.sequence)
         if files.fileExists(atPath: url.path) {
             guard try read(WatchAudioChunk.self, at: url) == chunk else {
                 throw WatchAudioError.conflict
             }
         } else {
-            let receipt = try status(chunk.header)
+            let receipt = try statusEnsuringArchive(chunk.header)
             guard receipt.savedRecordID == nil, !receipt.isCancelled else {
                 throw WatchAudioError.conflict
             }
@@ -57,7 +57,7 @@ public actor WatchAudioArchive {
             }
             try write(chunk, to: url)
         }
-        return try status(chunk.header)
+        return try statusEnsuringArchive(chunk.header)
     }
 
     public func finish(_ manifest: WatchAudioManifest) throws -> WatchAudioReceipt {
@@ -72,7 +72,7 @@ public actor WatchAudioArchive {
                 throw WatchAudioError.conflict
             }
         } else {
-            let receipt = try status(manifest.header)
+            let receipt = try statusEnsuringArchive(manifest.header)
             for sequence in receipt.receivedSequences {
                 let chunk = try self.chunk(manifest.header, sequence)
                 guard sequence < manifest.chunkCount,
@@ -82,10 +82,10 @@ public actor WatchAudioArchive {
             }
             try write(manifest, to: url)
         }
-        return try status(manifest.header)
+        return try statusEnsuringArchive(manifest.header)
     }
 
-    public func status(_ header: WatchAudioHeader) throws -> WatchAudioReceipt {
+    public func statusEnsuringArchive(_ header: WatchAudioHeader) throws -> WatchAudioReceipt {
         try begin(header)
         let directory = directory(header)
         let sequences = try files.contentsOfDirectory(
@@ -109,7 +109,7 @@ public actor WatchAudioArchive {
 
     public func chunk(_ header: WatchAudioHeader, _ sequence: Int) throws -> WatchAudioChunk {
         guard sequence >= 0 else { throw WatchAudioError.invalidAudio }
-        let chunk = try read(WatchAudioChunk.self, at: chunkURL(header, sequence))
+        let chunk = try read(WatchAudioChunk.self, at: chunkURL(header, sequence: sequence))
         guard chunk.header == header, chunk.sequence == sequence, chunk.isValid else {
             throw WatchAudioError.invalidAudio
         }
@@ -118,12 +118,12 @@ public actor WatchAudioArchive {
 
     public func retainedChunkURL(_ header: WatchAudioHeader, sequence: Int) throws -> URL {
         _ = try chunk(header, sequence)
-        return chunkURL(header, sequence)
+        return chunkURL(header, sequence: sequence)
     }
 
     public func rememberRemoteReceipt(_ receipt: WatchAudioReceipt) throws {
         try begin(receipt.header)
-        let local = try status(receipt.header)
+        let local = try statusEnsuringArchive(receipt.header)
         guard Set(receipt.receivedSequences).isSubset(of: Set(local.receivedSequences)) else {
             throw WatchAudioError.conflict
         }
@@ -137,7 +137,7 @@ public actor WatchAudioArchive {
     }
 
     public func completeManifest(_ header: WatchAudioHeader) throws -> WatchAudioManifest {
-        let receipt = try status(header)
+        let receipt = try statusEnsuringArchive(header)
         guard let manifest = receipt.manifest,
               receipt.receivedSequences == Array(0..<manifest.chunkCount) else {
             throw WatchAudioError.incomplete
@@ -153,7 +153,7 @@ public actor WatchAudioArchive {
     }
 
     public func sealInterrupted(_ header: WatchAudioHeader) throws -> WatchAudioReceipt {
-        let receipt = try status(header)
+        let receipt = try statusEnsuringArchive(header)
         guard receipt.manifest == nil else { return receipt }
         guard !receipt.receivedSequences.isEmpty else { throw WatchAudioError.incomplete }
         var sample: Int64 = 0
@@ -172,16 +172,20 @@ public actor WatchAudioArchive {
 
     public func markSaved(_ header: WatchAudioHeader, recordID: UUID) throws -> WatchAudioReceipt {
         guard recordID == header.recordingID else { throw WatchAudioError.conflict }
-        guard try !status(header).isCancelled else { throw WatchAudioError.conflict }
+        guard try !statusEnsuringArchive(header).isCancelled else {
+            throw WatchAudioError.conflict
+        }
         _ = try completeManifest(header)
         try write(recordID, to: directory(header).appendingPathComponent("saved.json"))
-        return try status(header)
+        return try statusEnsuringArchive(header)
     }
 
     public func cancel(_ header: WatchAudioHeader) throws -> WatchAudioReceipt {
-        guard try status(header).savedRecordID == nil else { throw WatchAudioError.conflict }
+        guard try statusEnsuringArchive(header).savedRecordID == nil else {
+            throw WatchAudioError.conflict
+        }
         try write(true, to: directory(header).appendingPathComponent("cancelled.json"))
-        return try status(header)
+        return try statusEnsuringArchive(header)
     }
 
     public func acknowledgeSaved(_ receipt: WatchAudioReceipt) throws {
@@ -200,7 +204,7 @@ public actor WatchAudioArchive {
         root.appendingPathComponent(header.recordingID.uuidString, isDirectory: true)
     }
 
-    private func chunkURL(_ header: WatchAudioHeader, _ sequence: Int) -> URL {
+    private func chunkURL(_ header: WatchAudioHeader, sequence: Int) -> URL {
         directory(header).appendingPathComponent("\(sequence).chunk")
     }
 
