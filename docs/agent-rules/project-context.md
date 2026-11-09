@@ -16,6 +16,7 @@
 | 줄 길이 | warning 99·error 150이고 `--strict`는 warning도 실패 처리 |
 | 도구·SDK | Package의 iOS/watchOS 최소 26, 프로젝트 배포 대상 27.0, CI runner `xcode-27`, Swift tools 6.4 |
 | TCA API | 잠긴 버전은 1.26.2. 사용하는 API의 지원 여부를 확인 |
+| 실험 권한·설정 복귀 | 권한 확인과 alert 문구, 설정 복귀 ID 저장은 `LabcordiOS/Permissions`가 담당. iPhone 화면 복귀 경로와 준비 overlay는 `Researchers`가 담당 |
 
 현재 경로·버전·설정 등 확인 가능한 사실은 실제 저장소와 일치하도록 유지합니다.
 기존 팀 규칙과 충돌하는 동작이나 새 정책의 결정이 필요하면 팀에 확인합니다.
