@@ -211,7 +211,8 @@ struct WatchExperimentFeature {
                 )
             case .checkRequest:
                 return checkStatus(state: &state)
-            default:
+            case .response, .requestFailed, .deliveryExpired, .pollRequest,
+                 .snapshotReceived, .streamEnded, .connectionChanged, .tick:
                 return reduceResponse(state: &state, action: action)
             }
         }

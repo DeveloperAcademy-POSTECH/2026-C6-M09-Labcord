@@ -81,7 +81,7 @@ enum WatchPresentationRules {
         previous.map { revision > $0 } ?? true
     }
 
-    static func time(_ seconds: Int) -> String {
+    static func formatDuration(_ seconds: Int) -> String {
         let value = max(0, seconds)
         return String(format: "%02d:%02d:%02d", value / 3600, value / 60 % 60, value % 60)
     }

@@ -24,7 +24,7 @@ extension WatchExperimentFeature {
         )
         state.pending = PendingRequest(command: command, responseID: command.requestID)
         state.message = nil
-        return .merge(send(command), deliveryDeadline(command.requestID))
+        return .merge(send(command), scheduleDeliveryTimeout(for: command.requestID))
     }
 
     func send(_ command: WatchExperimentCommand) -> Effect<Action> {
@@ -44,7 +44,7 @@ extension WatchExperimentFeature {
         .cancellable(id: CancelID.request, cancelInFlight: true)
     }
 
-    func deliveryDeadline(_ id: UUID) -> Effect<Action> {
+    func scheduleDeliveryTimeout(for id: UUID) -> Effect<Action> {
         .run { [clock] send in
             try await clock.sleep(for: .seconds(3))
             await send(.deliveryExpired(id))
@@ -61,13 +61,13 @@ extension WatchExperimentFeature {
         pending.responseID = command.requestID
         pending.phase = .delivering
         state.pending = pending
-        return .merge(send(command), deliveryDeadline(command.requestID))
+        return .merge(send(command), scheduleDeliveryTimeout(for: command.requestID))
     }
 
     func reduceResponse(state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case let .response(id, response):
-            return received(id, response: response, state: &state)
+            return handleResponse(id, response: response, state: &state)
         case let .requestFailed(id, error):
             guard state.pending?.responseID == id else { return .none }
             return fail(error, state: &state)
@@ -80,12 +80,14 @@ extension WatchExperimentFeature {
         case let .pollRequest(id):
             guard state.pending?.command.requestID == id else { return .none }
             return checkStatus(state: &state)
-        default:
+        case .snapshotReceived, .streamEnded, .connectionChanged, .tick:
             return reduceLifecycle(state: &state, action: action)
+        default:
+            return .none
         }
     }
 
-    func received(
+    func handleResponse(
         _ id: UUID, response: WatchExperimentResponse, state: inout State
     ) -> Effect<Action> {
         guard let pending = state.pending, pending.responseID == id,
@@ -106,11 +108,11 @@ extension WatchExperimentFeature {
         case .failed:
             return fail(.resultUnknown, state: &state, definitive: true)
         case .completed:
-            return completed(response, pending: pending, state: &state)
+            return handleCompletion(response, pending: pending, state: &state)
         }
     }
 
-    func completed(
+    func handleCompletion(
         _ response: WatchExperimentResponse, pending: PendingRequest, state: inout State
     ) -> Effect<Action> {
         guard response.snapshot == nil
@@ -124,7 +126,7 @@ extension WatchExperimentFeature {
         state.pending = nil
         state.message = nil
         if pending.command.operation == .prepareStart {
-            return prepared(response, state: &state)
+            return handlePreparedStart(response, state: &state)
         }
         state.startToken = nil
         if pending.command.operation == .pause || pending.command.operation == .complete {
@@ -140,7 +142,9 @@ extension WatchExperimentFeature {
         return cancel
     }
 
-    func prepared(_ response: WatchExperimentResponse, state: inout State) -> Effect<Action> {
+    func handlePreparedStart(
+        _ response: WatchExperimentResponse, state: inout State
+    ) -> Effect<Action> {
         guard let token = response.startToken,
               state.snapshot?.experiment.status == .ready else {
             state.message = "시작 준비를 확인하지 못했어요. 상태를 새로 확인해주세요."
