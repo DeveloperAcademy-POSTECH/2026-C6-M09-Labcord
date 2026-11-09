@@ -14,14 +14,34 @@ public enum TimerDurationFormatter {
         let hours = totalSeconds / 3_600
         let minutes = (totalSeconds % 3_600) / 60
         let seconds = totalSeconds % 60
-        let parts: [(UInt64, String)] = [
-            (hours, "시간"), (minutes, "분"), (seconds, "초")
-        ].filter { $0.0 > 0 }
-        let last = parts.last ?? (0, "초")
-        let prefix = parts.dropLast().map { "\($0.0)\($0.1)" }
-        return Components(
-            value: (prefix + [String(last.0)]).joined(separator: " "),
-            unit: last.1
-        )
+
+        if hours > 0 {
+            if minutes == 0 && seconds == 0 {
+                return Components(value: String(hours), unit: "시간")
+            }
+            if seconds == 0 {
+                return Components(
+                    value: "\(twoDigits(hours)):\(twoDigits(minutes))",
+                    unit: "시간"
+                )
+            }
+            return Components(
+                value: "\(twoDigits(hours)):\(twoDigits(minutes)):\(twoDigits(seconds))",
+                unit: "시간"
+            )
+        }
+
+        if minutes > 0 {
+            if seconds == 0 {
+                return Components(value: String(minutes), unit: "분")
+            }
+            return Components(value: "\(twoDigits(minutes)):\(twoDigits(seconds))", unit: "분")
+        }
+
+        return Components(value: String(seconds), unit: "초")
+    }
+
+    private static func twoDigits(_ value: UInt64) -> String {
+        value < 10 ? "0\(value)" : String(value)
     }
 }

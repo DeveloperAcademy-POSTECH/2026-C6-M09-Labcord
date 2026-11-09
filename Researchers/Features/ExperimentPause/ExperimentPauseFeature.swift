@@ -1,10 +1,3 @@
-//
-//  ExperimentPauseFeature.swift
-//  Researchers
-//
-//  Created by 정홍섭 on 11/5/26.
-//
-
 import ComposableArchitecture
 import Foundation
 import LabcordiOS
@@ -16,6 +9,7 @@ struct ExperimentPauseFeature {
         let experimentID: UUID
         var isEndTriggered = false
         var isCompleting = false
+        var completionAttempt = WatchCloseAttemptGate()
         var exitFailed = false
 
         init(experimentID: UUID) {
@@ -29,9 +23,9 @@ struct ExperimentPauseFeature {
         case endTriggerChanged(Bool)
         case stopTapped
         case stopRejected
-        case completeRequested
-        case completionSucceeded
-        case completionFailed
+        case completeRequested(UUID?)
+        case completionSucceeded(UUID, UUID?)
+        case completionFailed(UUID, UUID?)
         case homeExitStarted
         case homeExitFailed
         case dismissHomeExitFailure
@@ -42,12 +36,13 @@ struct ExperimentPauseFeature {
         case resumeRequested
         case returnHomeRequested
         case stopRequested
-        case completed
-        case completionFailed
+        case completed(UUID, UUID?)
+        case completionFailed(UUID?)
     }
 
     @Dependency(\.experimentClient) var experimentClient
     @Dependency(\.date.now) var now
+    @Dependency(\.uuid) var uuid
 
     var body: some Reducer<State, Action> {
         Reduce { state, action in
@@ -70,28 +65,32 @@ struct ExperimentPauseFeature {
                 state.isEndTriggered = false
                 return .none
 
-            case .completeRequested:
+            case let .completeRequested(requestID):
                 guard !state.isCompleting else { return .none }
                 state.isCompleting = true
+                let attemptID = uuid()
+                state.completionAttempt.begin(attemptID)
                 let experimentID = state.experimentID
                 let completedAt = now
                 return .run { send in
                     do {
                         try await experimentClient.complete(experimentID, completedAt)
-                        await send(.completionSucceeded)
+                        await send(.completionSucceeded(attemptID, requestID))
                     } catch {
-                        await send(.completionFailed)
+                        await send(.completionFailed(attemptID, requestID))
                     }
                 }
 
-            case .completionSucceeded:
+            case let .completionSucceeded(attemptID, requestID):
+                guard state.completionAttempt.accept(attemptID) else { return .none }
                 state.isCompleting = false
-                return .send(.delegate(.completed))
+                return .send(.delegate(.completed(attemptID, requestID)))
 
-            case .completionFailed:
+            case let .completionFailed(attemptID, requestID):
+                guard state.completionAttempt.accept(attemptID) else { return .none }
                 state.isCompleting = false
                 state.isEndTriggered = false
-                return .send(.delegate(.completionFailed))
+                return .send(.delegate(.completionFailed(requestID)))
 
             case .homeExitStarted:
                 state.exitFailed = false

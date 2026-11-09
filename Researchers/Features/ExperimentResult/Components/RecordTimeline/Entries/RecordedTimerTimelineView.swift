@@ -1,10 +1,12 @@
 import LabcordDesignSystem
 import LabcordiOS
+import LabcordShared
 import SwiftUI
 
 struct RecordedTimerTimelineView: View {
     let record: ExperimentResultDetail.Record
     let event: ExperimentResultDetail.TimelineTimerEvent
+    let identity: TimerIdentity
     let timestamp: String
     let date: Date
     let note: String
@@ -39,11 +41,14 @@ struct RecordedTimerTimelineView: View {
             type: .timer
         ) {
             TimerRecord(
-                setDuration: record.timerDurationSeconds.map { "\($0)초" } ?? "타이머",
-                elapsedTime: "\(elapsedSeconds)초 실행",
-                cumulativeTime: "\(cumulativeSeconds)초",
+                setDuration: record.timerDurationSeconds.map {
+                    TimerDurationFormatter.string(from: $0)
+                } ?? "타이머",
+                elapsedTime: "\(TimerDurationFormatter.string(from: elapsedSeconds)) 실행",
+                cumulativeTime: TimerDurationFormatter.string(from: cumulativeSeconds),
                 pauseCount: "(\(pauseCount))",
-                state: state
+                state: state,
+                identity: identity
             )
         }
     }

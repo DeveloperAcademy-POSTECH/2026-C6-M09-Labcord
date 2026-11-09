@@ -16,6 +16,10 @@ struct AppFeature {
 
     @ObservableState
     struct State: Equatable {
+        var watchPendingStartID: UUID?
+        var watchIsActive = false
+        var watchRequestID: UUID?
+        var watchCloseGate: WatchCloseCompletionGate<StackElementID>?
         var home = HomeFeature.State()
         var path = StackState<Path.State>()
         var reviewSaving = false
@@ -26,10 +30,13 @@ struct AppFeature {
         var reviewAnalysisJobID: UUID?
         var recentRegistrationID: StackElementID?
         var savedReview: ExperimentListEntry?
-        var pendingNotificationExperimentID: UUID?
+        var watchNotificationGate = WatchNotificationGate()
     }
 
     enum Action {
+        case watchTask
+        case watchEvent(PhoneWatchExperimentCoordinator.Event)
+        case watchSceneChanged(Bool)
         case home(HomeFeature.Action)
         case path(StackActionOf<Path>)
         case closeRegistration(StackElementID)
@@ -47,7 +54,7 @@ struct AppFeature {
         case confirmReviewExit
         case cancelReviewExit
         case timerNotificationTapped(UUID)
-        case timerNotificationLoaded(UUID, ExperimentListEntry?)
+        case timerNotificationLoaded(UUID, UUID, ExperimentListEntry?)
     }
 
     @Dependency(\.experimentClient) var experimentClient
@@ -57,14 +64,12 @@ struct AppFeature {
 
     var body: some Reducer<State, Action> {
         Scope(state: \.home, action: \.home) { HomeFeature() }
+        watchReducer
 
         Reduce { state, action in
             switch action {
-            case let .timerNotificationTapped(experimentID):
-                return loadNotificationExperiment(&state, experimentID: experimentID)
-
-            case let .timerNotificationLoaded(experimentID, entry):
-                return openNotificationExperiment(&state, experimentID: experimentID, entry: entry)
+            case .timerNotificationTapped, .timerNotificationLoaded,
+                 .watchTask, .watchEvent, .watchSceneChanged: return .none
 
             case .home(.addTapped):
                 guard state.path.isEmpty, !state.home.list.isDeleting,
@@ -163,23 +168,7 @@ struct AppFeature {
                 return .none
 
             case .confirmReviewExit:
-                state.reviewExitRequested = false
-                guard !state.reviewSaving, state.savedReview == nil,
-                      let id = state.path.ids.last,
-                      state.path[id: id, case: \.review] != nil else { return .none }
-                state.reviewPendingID = nil
-                state.path.pop(from: id)
-                state.reviewAnalysisJobID = nil
-                guard let registrationID = state.path.ids.first(where: {
-                    state.path[id: $0, case: \.registration] != nil
-                }) else { return .none }
-                if let lastID = state.path.ids.last, lastID != registrationID {
-                    state.path.pop(from: lastID)
-                }
-                state.recentRegistrationID = nil
-                return .send(.path(.element(
-                    id: registrationID, action: .registration(.inputAnalysis(.backTapped))
-                )))
+                return confirmReviewExit(&state)
 
             case .cancelReviewExit:
                 state.reviewExitRequested = false
@@ -257,12 +246,6 @@ struct AppFeature {
                 state.path.append(.session(ExperimentSessionFeature.State(experimentID: entry.id)))
                 return .send(.home(.list(.created(entry))))
 
-            case let .path(.element(id: id, action: .session(.stopCompleted))):
-                return .send(.showResult(id))
-
-            case let .path(.element(id: id, action: .session(.homeExitCompleted))):
-                return .send(.returnHome(id))
-
             case let .showResult(id):
                 guard state.path.ids.last == id,
                       let experimentID = state.path[id: id, case: \.session]?.experimentID else {
@@ -281,33 +264,38 @@ struct AppFeature {
                 state.path.removeAll()
                 return .send(.home(.list(.load)))
 
-            case .home, .path:
-                return .none
+            case .home, .path: return .none
             }
         }
         .forEach(\.path, action: \.path)
+        watchCompletionNavigationReducer
+        watchContextReducer
     }
 }
 
-private extension AppFeature {
+extension AppFeature {
     func loadNotificationExperiment(
         _ state: inout State,
         experimentID: UUID
     ) -> Effect<Action> {
-        state.pendingNotificationExperimentID = experimentID
+        let token = uuid()
+        state.watchNotificationGate.begin(experimentID: experimentID, token: token)
         return .run { send in
             let entry = try? await experimentClient.load().first { $0.id == experimentID }
-            await send(.timerNotificationLoaded(experimentID, entry))
+            await send(.timerNotificationLoaded(experimentID, token, entry))
         }
     }
 
     func openNotificationExperiment(
         _ state: inout State,
         experimentID: UUID,
+        token: UUID,
         entry: ExperimentListEntry?
     ) -> Effect<Action> {
-        guard state.pendingNotificationExperimentID == experimentID else { return .none }
-        state.pendingNotificationExperimentID = nil
+        guard state.watchNotificationGate.receive(
+            experimentID: experimentID, token: token,
+            watchRequestPending: watchWorkPending(state)
+        ) == .open else { return .none }
         guard let entry, !state.reviewSaving else { return .none }
         if entry.status == .completed {
             if state.path.ids.last.flatMap({ state.path[id: $0, case: \.result] })?
@@ -323,6 +311,29 @@ private extension AppFeature {
             state.path.append(.session(.init(experimentID: experimentID)))
         }
         return .send(.home(.list(.cancelLoad)))
+    }
+
+}
+
+private extension AppFeature {
+    func confirmReviewExit(_ state: inout State) -> Effect<Action> {
+        state.reviewExitRequested = false
+        guard !state.reviewSaving, state.savedReview == nil,
+              let id = state.path.ids.last,
+              state.path[id: id, case: \.review] != nil else { return .none }
+        state.reviewPendingID = nil
+        state.path.pop(from: id)
+        state.reviewAnalysisJobID = nil
+        guard let registrationID = state.path.ids.first(where: {
+            state.path[id: $0, case: \.registration] != nil
+        }) else { return .none }
+        if let lastID = state.path.ids.last, lastID != registrationID {
+            state.path.pop(from: lastID)
+        }
+        state.recentRegistrationID = nil
+        return .send(.path(.element(
+            id: registrationID, action: .registration(.inputAnalysis(.backTapped))
+        )))
     }
 
     func registerReview(_ state: inout State, id: StackElementID) -> Effect<Action> {
