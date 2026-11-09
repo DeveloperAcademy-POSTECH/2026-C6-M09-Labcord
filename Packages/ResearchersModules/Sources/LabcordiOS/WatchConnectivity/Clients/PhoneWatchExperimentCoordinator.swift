@@ -25,6 +25,7 @@ public final class PhoneWatchExperimentCoordinator {
         .appendingPathComponent("WatchExperiment/revision.txt")
     var journal: WatchExperimentRequestJournal?
     var requests: [UUID: WatchExperimentRequestJournal.Entry] = [:]
+    private var recentQueries = WatchExperimentQueryCache()
     var tokens: [UUID: (experimentID: UUID, expiresAt: ContinuousClock.Instant)] = [:]
     var states: [UUID: WatchExperimentState] = [:]
     var revisions: [UUID: UInt64] = [:]
@@ -121,7 +122,7 @@ public final class PhoneWatchExperimentCoordinator {
         loadJournal()
         if let response = existingResponse(command) { return response }
         if let response = query(command) {
-            requests[command.requestID] = .init(command: command, response: response)
+            recentQueries.store(command, response: response)
             return response
         }
         guard journal != nil else { return failure(command, .storageFailed) }
@@ -135,6 +136,7 @@ public final class PhoneWatchExperimentCoordinator {
     }
 
     func existingResponse(_ command: WatchExperimentCommand) -> WatchExperimentResponse? {
+        if let response = recentQueries.response(for: command) { return response }
         guard let entry = requests[command.requestID] ?? journal?.entries[command.requestID]
         else { return nil }
         guard entry.command == command else { return failure(command, .duplicateConflict) }
@@ -171,6 +173,7 @@ public final class PhoneWatchExperimentCoordinator {
     func requestStatus(_ command: WatchExperimentCommand) -> WatchExperimentResponse {
         guard let id = command.targetID else { return failure(command, .invalidPayload) }
         let response = requests[id]?.response ?? journal?.entries[id]?.response
+            ?? recentQueries.response(for: id)
         guard let response else {
             return WatchExperimentResponse(
                 requestID: command.requestID, phase: .unknown, error: .resultUnknown,
@@ -178,7 +181,7 @@ public final class PhoneWatchExperimentCoordinator {
             )
         }
 
-        let interrupted = requests[id] == nil
+        let interrupted = requests[id] == nil && recentQueries.response(for: id) == nil
             && (response.phase == .received || response.phase == .processing)
         return WatchExperimentResponse(
             requestID: command.requestID, phase: interrupted ? .unknown : response.phase,
