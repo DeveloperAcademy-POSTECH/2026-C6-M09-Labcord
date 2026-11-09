@@ -15,6 +15,7 @@ struct VoiceRecordingFeature {
     @ObservableState
     struct State: Equatable {
         var phase: Phase = .hidden
+        var captureStartRequested = false
         var sessionID = UUID()
         var transcript = ""
         var hasRecordingFailure = false
@@ -88,21 +89,15 @@ struct VoiceRecordingFeature {
                 return .send(.stopRequested)
 
             case .prepareRequested:
-                guard state.phase == .hidden else { return .none }
-                state.transcript = ""
-                resetReview(state: &state)
-                state.errorMessage = nil
-                state.hasRecordingFailure = false
-                state.sessionID = uuid()
-                state.phase = .starting
-                return .none
+                return prepareRecording(state: &state)
 
             case .overlayAppeared:
                 guard state.phase == .starting else { return .none }
                 return .send(.startRequested)
 
             case .startRequested:
-                guard state.phase == .starting else { return .none }
+                guard state.phase == .starting, !state.captureStartRequested else { return .none }
+                state.captureStartRequested = true
                 let id = state.sessionID
                 let experimentID = state.experimentID
                 let speechUnits = state.speechUnits
@@ -200,6 +195,7 @@ struct VoiceRecordingFeature {
                 resetReview(state: &state)
                 state.errorMessage = nil
                 state.sessionID = uuid()
+                state.captureStartRequested = false
                 state.phase = .starting
                 return .concatenate(
                     .cancel(id: CancelID.autoSave),

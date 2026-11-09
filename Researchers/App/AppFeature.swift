@@ -19,6 +19,7 @@ struct AppFeature {
         var watchPendingStartID: UUID?
         var watchIsActive = false
         var watchRequestID: UUID?
+        var watchCloseGate: WatchCloseCompletionGate<StackElementID>?
         var home = HomeFeature.State()
         var path = StackState<Path.State>()
         var reviewSaving = false
@@ -252,14 +253,6 @@ struct AppFeature {
                 state.path.append(.session(ExperimentSessionFeature.State(experimentID: entry.id)))
                 return .send(.home(.list(.created(entry))))
 
-            case let .path(.element(id: id, action: .session(.stopCompleted))):
-                finishWatchRequest(&state)
-                return .concatenate(.send(.showResult(id)), replayWatchNotification(&state))
-
-            case let .path(.element(id: id, action: .session(.homeExitCompleted))):
-                finishWatchRequest(&state)
-                return .concatenate(.send(.returnHome(id)), replayWatchNotification(&state))
-
             case let .showResult(id):
                 guard state.path.ids.last == id,
                       let experimentID = state.path[id: id, case: \.session]?.experimentID else {
@@ -282,6 +275,7 @@ struct AppFeature {
             }
         }
         .forEach(\.path, action: \.path)
+        watchCompletionNavigationReducer
         watchContextReducer
     }
 }
@@ -307,7 +301,7 @@ extension AppFeature {
     ) -> Effect<Action> {
         guard state.watchNotificationGate.receive(
             experimentID: experimentID, token: token,
-            watchRequestPending: state.watchRequestID != nil
+            watchRequestPending: watchWorkPending(state)
         ) == .open else { return .none }
         guard let entry, !state.reviewSaving else { return .none }
         if entry.status == .completed {

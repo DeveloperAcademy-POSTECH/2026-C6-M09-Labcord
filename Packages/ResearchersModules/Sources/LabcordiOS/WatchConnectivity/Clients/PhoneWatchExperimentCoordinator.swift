@@ -28,6 +28,8 @@ public final class PhoneWatchExperimentCoordinator {
     private var recentQueries = WatchExperimentQueryCache()
     var tokens: [UUID: (experimentID: UUID, expiresAt: ContinuousClock.Instant)] = [:]
     var states: [UUID: WatchExperimentState] = [:]
+    var recordResults: [UUID: WatchRecordSnapshot] = [:]
+    var recordSnapshots: [UUID: WatchRecordSnapshot] = [:]
     var revisions: [UUID: UInt64] = [:]
     var executing: UUID?
     var photoCancellationID: UUID?
@@ -35,6 +37,7 @@ public final class PhoneWatchExperimentCoordinator {
     var commandSubscriber: AsyncStream<Event>.Continuation?
     var completions: [UUID: CheckedContinuation<Void, Error>] = [:]
     var refreshTask: Task<Void, Never>?
+    var timerNotificationTask: Task<Void, Error>?
 
     public init() {
         @Dependency(\.watchConnectivitySession) var connectivity
@@ -60,6 +63,7 @@ public final class PhoneWatchExperimentCoordinator {
         journal = try? WatchExperimentRequestJournal(
             url: directory.appendingPathComponent("requests.json")
         )
+        reconcileJournalTimerNotifications()
         pendingStartID = journal?.entries.values
             .compactMap { $0.response.snapshot }
             .max { $0.recordedAt < $1.recordedAt }
@@ -172,16 +176,22 @@ public final class PhoneWatchExperimentCoordinator {
 
     func requestStatus(_ command: WatchExperimentCommand) -> WatchExperimentResponse {
         guard let id = command.targetID else { return failure(command, .invalidPayload) }
-        let response = requests[id]?.response ?? journal?.entries[id]?.response
-            ?? recentQueries.response(for: id)
+        if let original = requests[id]?.command ?? journal?.entries[id]?.command,
+           let experimentID = original.experimentID {
+            do { try restoreSavedRecords(experimentID) } catch {
+                return failure(command, error as? WatchExperimentError ?? .storageFailed)
+            }
+        }
+        let entry = requests[id] ?? journal?.entries[id]
+        let cached = recentQueries.response(for: id)
+        let response = entry.map { latestMediaResult($0.command, response: $0.response) } ?? cached
         guard let response else {
             return WatchExperimentResponse(
                 requestID: command.requestID, phase: .unknown, error: .resultUnknown,
                 queriedRequestID: id
             )
         }
-
-        let interrupted = requests[id] == nil && recentQueries.response(for: id) == nil
+        let interrupted = requests[id] == nil && cached == nil
             && (response.phase == .received || response.phase == .processing)
         return WatchExperimentResponse(
             requestID: command.requestID, phase: interrupted ? .unknown : response.phase,
@@ -206,14 +216,15 @@ public final class PhoneWatchExperimentCoordinator {
             publish(updated)
             response = WatchExperimentResponse(
                 requestID: command.requestID, phase: .completed,
-                snapshot: updated, startToken: token
+                snapshot: updated, startToken: token, record: recordResults[command.requestID]
             )
         } catch {
             response = failure(command, error as? WatchExperimentError ?? .storageFailed)
         }
+        let result = latestMediaResult(command, response: response)
         do {
-            try journal?.save(command, response: response)
-            requests[command.requestID]?.response = response
+            try journal?.save(command, response: result)
+            requests[command.requestID]?.response = result
         } catch {
             requests[command.requestID]?.response = failure(command, .resultUnknown)
         }
@@ -223,6 +234,7 @@ public final class PhoneWatchExperimentCoordinator {
         guard let state = try client.watchState(id) else {
             throw WatchExperimentError.experimentNotFound
         }
+        try restoreSavedRecords(id)
         if states[id] != state {
             let next = try nextRevision()
             revisions[id] = next

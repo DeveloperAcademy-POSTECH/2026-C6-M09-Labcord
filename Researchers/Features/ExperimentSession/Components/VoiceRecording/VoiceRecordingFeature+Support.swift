@@ -3,6 +3,18 @@ import Foundation
 import LabcordiOS
 
 extension VoiceRecordingFeature {
+    func prepareRecording(state: inout State) -> Effect<Action> {
+        guard state.phase == .hidden else { return .none }
+        state.transcript = ""
+        resetReview(state: &state)
+        state.errorMessage = nil
+        state.hasRecordingFailure = false
+        state.sessionID = uuid()
+        state.captureStartRequested = false
+        state.phase = .starting
+        return .none
+    }
+
     func reduceWatchPause(state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case .discardForWatchPause:
