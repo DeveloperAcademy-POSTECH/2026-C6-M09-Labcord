@@ -69,7 +69,8 @@ struct CameraFeature {
                 }
 
             case let .resumeChecked(ownerID, isRunning):
-                guard state.isViewVisible, ownerID == state.ownerID, !isRunning else { return .none }
+                guard state.isViewVisible, ownerID == state.ownerID,
+                      !isRunning else { return .none }
                 return .send(.activationRequested)
 
             case .activationRequested:

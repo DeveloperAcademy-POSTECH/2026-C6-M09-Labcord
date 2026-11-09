@@ -104,10 +104,6 @@ public actor CameraSession {
         activeOwners.insert(owner)
     }
 
-    public func isRunning() -> Bool {
-        session.isRunning
-    }
-
     public func deactivate(owner: UUID) {
         activeOwners.remove(owner)
         guard activeOwners.isEmpty else { return }
@@ -294,6 +290,10 @@ public actor CameraSession {
 }
 
 extension CameraSession {
+    public func isRunning() -> Bool {
+        session.isRunning
+    }
+
     public func previewConnector() -> CameraPreviewConnector {
         if let cachedPreviewConnector {
             return cachedPreviewConnector
