@@ -35,6 +35,8 @@ struct WatchExperimentFeature {
         var selectedID: UUID?
         var snapshots: [UUID: WatchExperimentSnapshot] = [:]
         var pending: PendingRequest?
+        var hasRestoredPending = false
+        var pendingRecoveryFailed = false
         var countdownID: UUID?
         var startOperation: WatchExperimentCommand.Operation?
         var isReachable = false
@@ -97,6 +99,8 @@ struct WatchExperimentFeature {
         case permission
     }
 
+    var pendingJournal: WatchPendingRequestJournal = .live
+
     @Dependency(\.watchExperimentClient) var client
     @Dependency(\.watchMicrophonePermission) var microphonePermission
     @Dependency(\.continuousClock) var clock
@@ -116,10 +120,10 @@ struct WatchExperimentFeature {
                     state.screen = .experiment
                     state.countdownID = nil
                 }
-                if state.pending != nil { state.pending?.phase = .uncertain }
+                suspendPendingRequest(state: &state)
                 return .merge(CancelID.all.map { .cancel(id: $0) })
             case .refresh:
-                guard state.isVisible else { return .none }
+                guard state.isVisible, restorePending(state: &state) else { return .none }
                 if state.pending != nil { return checkStatus(state: &state) }
                 let operation: WatchExperimentCommand.Operation =
                     state.selectedID == nil ? .list : .snapshot

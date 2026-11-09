@@ -6,6 +6,7 @@ import LabcordWatchOS
 extension WatchExperimentFeature {
     func activate(state: inout State) -> Effect<Action> {
         guard !state.isVisible else { return .none }
+        _ = restorePending(state: &state)
         state.isVisible = true
         state.isReachable = false
         let streamID = uuid()
