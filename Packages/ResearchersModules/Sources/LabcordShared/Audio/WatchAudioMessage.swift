@@ -32,6 +32,16 @@ public enum WatchAudioError: String, Error, Codable, Sendable {
     case permissionDenied
     case recognitionUnavailable
     case storageFailed
+
+    public var watchExperimentError: WatchExperimentError {
+        switch self {
+        case .permissionDenied: .permissionDenied
+        case .conflict: .duplicateConflict
+        case .invalidAudio: .invalidPayload
+        case .storageFull, .storageFailed: .storageFailed
+        case .incomplete, .interrupted, .bufferOverflow, .recognitionUnavailable: .resultUnknown
+        }
+    }
 }
 
 public struct WatchAudioHeader: Codable, Equatable, Sendable {
@@ -101,6 +111,12 @@ public struct WatchAudioReceipt: Codable, Equatable, Sendable {
     public let manifest: WatchAudioManifest?
 
     public let savedRecordID: UUID?
+
+    public let contentDigest: String?
+
+    public let verificationID: UUID?
+
+    public let verificationProgress: Int64?
     public let isCancelled: Bool
     public let isReviewing: Bool
     public let failure: WatchAudioError?
@@ -110,7 +126,9 @@ public struct WatchAudioReceipt: Codable, Equatable, Sendable {
 
     public init(
         header: WatchAudioHeader, receivedSequences: [Int], manifest: WatchAudioManifest?,
-        savedRecordID: UUID? = nil, isCancelled: Bool = false,
+        savedRecordID: UUID? = nil, contentDigest: String? = nil, verificationID: UUID? = nil,
+        verificationProgress: Int64? = nil,
+        isCancelled: Bool = false,
         isReviewing: Bool = false, failure: WatchAudioError? = nil,
         transcript: WatchAudioTranscript? = nil, hasTranscriptConflict: Bool? = nil
     ) {
@@ -118,6 +136,9 @@ public struct WatchAudioReceipt: Codable, Equatable, Sendable {
         self.receivedSequences = receivedSequences
         self.manifest = manifest
         self.savedRecordID = savedRecordID
+        self.contentDigest = contentDigest
+        self.verificationID = verificationID
+        self.verificationProgress = verificationProgress
         self.isCancelled = isCancelled
         self.isReviewing = isReviewing
         self.failure = failure
@@ -130,6 +151,9 @@ public enum WatchAudioMessage: Codable, Equatable, Sendable {
     case chunk(WatchAudioChunk)
     case finish(WatchAudioManifest)
     case status(WatchAudioHeader)
+    case verifySaved(WatchAudioHeader, UUID)
+    case beginSavedVerification(WatchAudioHeader, UUID)
+    case savedVerificationResult(WatchAudioHeader, UUID)
     case confirm(WatchAudioHeader)
     case cancel(WatchAudioHeader)
 }
