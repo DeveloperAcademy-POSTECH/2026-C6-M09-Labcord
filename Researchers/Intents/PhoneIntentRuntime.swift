@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import Foundation
+import LabcordiOS
 import LabcordShared
 import Observation
 import OSLog
@@ -128,7 +129,11 @@ final class PhoneIntentRuntime {
                 cameraReady: session.capture.isCameraViewVisible
                     && session.capture.previewConnector != nil,
                 cameraFailed: cameraNeeded && session.capture.cameraErrorMessage != nil,
-                busy: session.pause.isCompleting || session.isReturningHome
+                busy: session.isRemotePreview || session.pause.isCompleting
+                    || session.isReturningHome
+                    || (cameraNeeded && PhoneWatchAudioService.shared.hasUnsettledRecording(
+                        in: session.experimentID
+                    ))
                     || store.watchRequestID != nil || session.watchCommand != nil
                     || session.watchMediaCommand != nil
             ))

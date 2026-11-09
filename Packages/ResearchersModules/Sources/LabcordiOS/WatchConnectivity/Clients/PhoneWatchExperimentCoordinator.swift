@@ -9,10 +9,14 @@ public final class PhoneWatchExperimentCoordinator {
     public var isBusy = false
     public var visibleExperimentID: UUID?
     public internal(set) var pendingStartID: UUID?
+    public internal(set) var currentScreen = WatchScreenSnapshot(destination: .home)
+    public internal(set) var lastScreenError: WatchExperimentError?
 
     public enum Event: Sendable {
         case command(WatchExperimentCommand)
         case started(UUID)
+        case navigation(WatchExperimentCommand)
+        case recordChanged(UUID)
     }
 
     public var recordHandler: ((WatchExperimentCommand) async throws -> Void)?
@@ -31,6 +35,7 @@ public final class PhoneWatchExperimentCoordinator {
     var recordResults: [UUID: WatchRecordSnapshot] = [:]
     var recordSnapshots: [UUID: WatchRecordSnapshot] = [:]
     var revisions: [UUID: UInt64] = [:]
+    var sessionVisibility: [UUID: Bool] = [:]
     var executing: UUID?
     var photoCancellationID: UUID?
     var subscriberID: UUID?
@@ -105,17 +110,6 @@ public final class PhoneWatchExperimentCoordinator {
         if let error { continuation.resume(throwing: error) } else { continuation.resume() }
     }
 
-    public func refresh() {
-        refreshTask?.cancel()
-        refreshTask = Task { [weak self] in
-            try? await Task.sleep(for: .milliseconds(100))
-            guard !Task.isCancelled, let self else { return }
-            for id in Array(states.keys) {
-                if let snapshot = try? snapshot(id) { publish(snapshot) }
-            }
-        }
-    }
-
     func receive(_ command: WatchExperimentCommand) -> WatchExperimentResponse {
         guard command.version == WatchExperimentCommand.schemaVersion else {
             return failure(command, .unsupportedVersion)
@@ -153,13 +147,19 @@ public final class PhoneWatchExperimentCoordinator {
 
     func query(_ command: WatchExperimentCommand) -> WatchExperimentResponse? {
         if command.operation == .requestStatus { return requestStatus(command) }
+        if command.operation == .screen {
+            return WatchExperimentResponse(
+                requestID: command.requestID, phase: .completed, screen: refreshedScreen()
+            )
+        }
         if command.operation == .list {
             do {
                 let summaries = try client.load().compactMap { entry in
                     try client.watchState(entry.id)?.experiment
                 }
                 return WatchExperimentResponse(
-                    requestID: command.requestID, phase: .completed, experiments: summaries
+                    requestID: command.requestID, phase: .completed, experiments: summaries,
+                    screen: refreshedScreen()
                 )
             } catch { return failure(command, .storageFailed) }
         }
@@ -177,7 +177,7 @@ public final class PhoneWatchExperimentCoordinator {
     func requestStatus(_ command: WatchExperimentCommand) -> WatchExperimentResponse {
         guard let id = command.targetID else { return failure(command, .invalidPayload) }
         if let original = requests[id]?.command ?? journal?.entries[id]?.command,
-           let experimentID = original.experimentID {
+           original.operation != .navigate, let experimentID = original.experimentID {
             do { try restoreSavedRecords(experimentID) } catch {
                 return failure(command, error as? WatchExperimentError ?? .storageFailed)
             }
@@ -197,7 +197,8 @@ public final class PhoneWatchExperimentCoordinator {
             requestID: command.requestID, phase: interrupted ? .unknown : response.phase,
             experiments: response.experiments, snapshot: response.snapshot,
             error: interrupted ? .resultUnknown : response.error,
-            startToken: response.startToken, record: response.record, queriedRequestID: id
+            startToken: response.startToken, record: response.record, queriedRequestID: id,
+            screen: response.screen
         )
     }
 
@@ -209,15 +210,7 @@ public final class PhoneWatchExperimentCoordinator {
             requests[command.requestID]?.response = WatchExperimentResponse(
                 requestID: command.requestID, phase: .processing
             )
-            let current = try validate(command)
-            let id = current.experiment.id
-            let token = try await perform(command, current: current)
-            let updated = try snapshot(id)
-            publish(updated)
-            response = WatchExperimentResponse(
-                requestID: command.requestID, phase: .completed,
-                snapshot: updated, startToken: token, record: recordResults[command.requestID]
-            )
+            response = try await executionResponse(command)
         } catch {
             response = failure(command, error as? WatchExperimentError ?? .storageFailed)
         }
@@ -235,12 +228,16 @@ public final class PhoneWatchExperimentCoordinator {
             throw WatchExperimentError.experimentNotFound
         }
         try restoreSavedRecords(id)
-        if states[id] != state {
+        let active = visibleExperimentID == id
+        if states[id] != state || sessionVisibility[id] != active {
             let next = try nextRevision()
             revisions[id] = next
             states[id] = state
+            sessionVisibility[id] = active
         }
-        return state.snapshot(revision: revisions[id] ?? 0, at: .now)
+        return state.snapshot(
+            revision: revisions[id] ?? 0, at: .now, phoneSessionActive: active
+        )
     }
 
     func nextRevision() throws -> UInt64 {
@@ -273,6 +270,8 @@ public final class PhoneWatchExperimentCoordinator {
 
     func failure(_ command: WatchExperimentCommand, _ error: WatchExperimentError)
         -> WatchExperimentResponse {
-        WatchExperimentResponse(requestID: command.requestID, phase: .failed, error: error)
+        WatchExperimentResponse(
+            requestID: command.requestID, phase: .failed, error: error, screen: refreshedScreen()
+        )
     }
 }

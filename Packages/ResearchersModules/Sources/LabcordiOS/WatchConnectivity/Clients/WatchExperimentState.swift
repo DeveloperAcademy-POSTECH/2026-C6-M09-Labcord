@@ -10,7 +10,9 @@ public struct WatchExperimentState: Equatable, Sendable {
         self.detail = detail
     }
 
-    func snapshot(revision: UInt64, at date: Date) -> WatchExperimentSnapshot {
+    func snapshot(
+        revision: UInt64, at date: Date, phoneSessionActive: Bool? = nil
+    ) -> WatchExperimentSnapshot {
         WatchExperimentSnapshot(
             experiment: experiment,
             revision: revision,
@@ -20,11 +22,11 @@ public struct WatchExperimentState: Equatable, Sendable {
                     id: timer.id, durationSeconds: timer.durationSeconds,
                     remainingSeconds: timer.remainingSeconds(at: date),
                     status: watchTimerStatus(timer.status),
-                    measuredAt: date
+                    measuredAt: timerMeasurementDate(timer, at: date)
                 )
             },
             recordedAt: date,
-            mode: detail.mode
+            mode: detail.mode, phoneSessionActive: phoneSessionActive
         )
     }
 }
@@ -35,4 +37,13 @@ private func watchTimerStatus(_ status: ExperimentTimer.Status) -> WatchTimerSna
     case .paused: .paused
     case .finished: .finished
     }
+}
+
+private func timerMeasurementDate(_ timer: ExperimentTimer, at date: Date) -> Date {
+    guard timer.status == .running else { return date }
+    let pauseDuration = timer.pauseIntervals.reduce(0.0) { total, pause in
+        total + max(0, (pause.resumedAt ?? pause.pausedAt).timeIntervalSince(pause.pausedAt))
+    }
+    let end = timer.startedAt.addingTimeInterval(Double(timer.durationSeconds) + pauseDuration)
+    return end.addingTimeInterval(-Double(timer.remainingSeconds(at: date)))
 }

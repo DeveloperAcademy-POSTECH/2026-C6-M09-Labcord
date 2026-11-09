@@ -17,6 +17,7 @@ struct AppFeature {
     @ObservableState
     struct State: Equatable {
         var watchPendingStartID: UUID?
+        var screenNavigation: WatchExperimentCommand?
         var watchIsActive = false
         var watchRequestID: UUID?
         var watchCloseGate: WatchCloseCompletionGate<StackElementID>?
@@ -34,6 +35,7 @@ struct AppFeature {
     }
 
     enum Action {
+        case screenNavigationLoaded(UUID, WatchExperimentState?, WatchExperimentError?)
         case watchTask
         case watchEvent(PhoneWatchExperimentCoordinator.Event)
         case watchSceneChanged(Bool)
@@ -66,10 +68,11 @@ struct AppFeature {
     var body: some Reducer<State, Action> {
         Scope(state: \.home, action: \.home) { HomeFeature() }
         watchReducer
+        screenNavigationReducer
 
         Reduce { state, action in
             switch action {
-            case .timerNotificationTapped, .timerNotificationLoaded,
+            case .screenNavigationLoaded, .timerNotificationTapped, .timerNotificationLoaded,
                  .watchTask, .watchEvent, .watchSceneChanged: return .none
 
             case .home(.addTapped):

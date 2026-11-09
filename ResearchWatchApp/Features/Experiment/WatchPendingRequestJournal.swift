@@ -133,7 +133,8 @@ struct WatchPendingRequestJournal: Sendable {
             ?? Entry(command: JSONDecoder().decode(WatchExperimentCommand.self, from: data))
         if let command = entry.command {
             guard command.version == WatchExperimentCommand.schemaVersion,
-                  command.experimentID != nil,
+                  command.experimentID != nil || command.operation == .navigate,
+                  command.operation != .navigate || command.screen?.isValid == true,
                   !WatchRequestPolicy.canAbandon(command.operation),
                   command.operation != .requestStatus else {
                 throw WatchExperimentError.invalidPayload

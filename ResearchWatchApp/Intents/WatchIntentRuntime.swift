@@ -207,11 +207,7 @@ final class WatchIntentRuntime {
             throw WatchIntentRuntimeError.selectExperiment
         }
         store.send(.selected(candidates[0].id))
-        guard store.selectedID == candidates[0].id,
-              let requestID = store.pending?.command.requestID else {
-            throw WatchIntentRuntimeError.notReady
-        }
-        try await waitForRead(requestID, until: deadline, remote: nil)
+        try await waitForSelection(candidates[0].id, until: deadline)
         guard store.selectedID == candidates[0].id else {
             throw WatchIntentRuntimeError.contextChanged
         }
@@ -265,6 +261,22 @@ final class WatchIntentRuntime {
             return record.phase == .capturing
         }
         return true
+    }
+}
+
+private extension WatchIntentRuntime {
+    func waitForSelection(_ id: UUID, until deadline: ContinuousClock.Instant) async throws {
+        while store.selectedID != id || store.pending != nil {
+            guard isActive(), store.isVisible, store.streamID != nil else {
+                throw WatchIntentRuntimeError.contextChanged
+            }
+            guard let pending = store.pending,
+                  pending.command.operation == .navigate
+                    || WatchRequestPolicy.isReadOnly(pending.command.operation) else {
+                throw WatchIntentRuntimeError.notReady
+            }
+            try await pause(until: deadline)
+        }
     }
 }
 
