@@ -21,6 +21,12 @@ extension AppFeature {
                 return receiveNavigation(command, state: &state)
             case let .screenNavigationLoaded(id, detail, error):
                 return finishNavigation(id, detail: detail, error: error, state: &state)
+            case let .watchEvent(.recordChanged(experimentID)):
+                guard let id = state.path.ids.last,
+                      state.path[id: id, case: \.result]?.experimentID == experimentID else {
+                    return .none
+                }
+                return .send(.path(.element(id: id, action: .result(.externalRecordsChanged))))
             default:
                 return .none
             }
@@ -48,7 +54,10 @@ extension AppFeature {
     func screenSnapshot(_ state: State) -> WatchScreenSnapshot {
         guard let id = state.path.ids.last else { return .init(destination: .home) }
         if let session = state.path[id: id, case: \.session] {
-            return session.screenSnapshot()
+            let remote = PhoneWatchAudioService.shared.screenRecording
+            return session.screenSnapshot(
+                watchRecording: remote?.experimentID == session.experimentID ? remote : nil
+            )
         }
         if let result = state.path[id: id, case: \.result] {
             return .init(
@@ -176,6 +185,7 @@ extension AppFeature {
 
     private func completeNavigation(_ requestID: UUID, state: State) {
         let coordinator = PhoneWatchExperimentCoordinator.shared
+        PhoneWatchAudioService.shared.dismissFinishedScreenRecording()
         coordinator.updateScreen(screenSnapshot(state))
         coordinator.finish(requestID, error: coordinator.lastScreenError)
     }

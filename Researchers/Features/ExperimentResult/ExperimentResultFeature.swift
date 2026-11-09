@@ -30,6 +30,8 @@ struct ExperimentResultFeature {
         let experimentID: UUID
         let isOpenedFromHome: Bool
         var isInitialLoadPending = false
+        var needsExternalReload = false
+        var externalReloadID: UUID?
         var recordTimeline: RecordTimelineFeature.State?
         var loadMessage: String?
         var isResuming = false
@@ -60,6 +62,8 @@ struct ExperimentResultFeature {
     }
 
     enum Action: Equatable {
+        case externalRecordsChanged
+        case externalDetailLoaded(UUID, ExperimentResultDetail?)
         case loadResultDetail
         case resultDetailLoaded(ExperimentResultDetail?)
         case resultDetailLoadFailed
@@ -92,6 +96,8 @@ struct ExperimentResultFeature {
     var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
+            case .externalRecordsChanged, .externalDetailLoaded:
+                return .none
             case .loadResultDetail:
                 state.isInitialLoadPending = true
                 state.recordTimeline = nil
@@ -287,6 +293,7 @@ struct ExperimentResultFeature {
         .ifLet(\.recordTimeline, action: \.recordTimeline) {
             RecordTimelineFeature()
         }
+        externalRecordReducer
     }
 }
 

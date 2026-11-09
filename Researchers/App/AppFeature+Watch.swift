@@ -116,7 +116,14 @@ extension AppFeature {
             coordinator.isBusy = state.reviewSaving || state.home.list.isDeleting
                 || state.home.list.pendingDeletion != nil
                 || (!state.path.isEmpty && sessionID == nil && !canResumeResult)
-            coordinator.updateScreen(screenSnapshot(state))
+            let current = coordinator.currentScreen
+            var screen = screenSnapshot(state)
+            if current.destination != screen.destination
+                || current.experimentID != screen.experimentID || current.stage != screen.stage {
+                PhoneWatchAudioService.shared.dismissFinishedScreenRecording()
+                screen = screenSnapshot(state)
+            }
+            coordinator.updateScreen(screen)
             coordinator.refresh()
             return .none
         }

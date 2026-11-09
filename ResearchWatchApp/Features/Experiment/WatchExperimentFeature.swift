@@ -35,6 +35,7 @@ struct WatchExperimentFeature {
         var queuedNavigation: WatchScreenSnapshot?
         var queuedNavigationRequestID: UUID?
         var queuedNavigationDiscardsTimerDraft = false
+        var mirroredRecording: WatchScreenRecording?
         var localCountdownEndsAt: Date?
         var screenRecoveryNeeded = false
         var pending: PendingRequest?

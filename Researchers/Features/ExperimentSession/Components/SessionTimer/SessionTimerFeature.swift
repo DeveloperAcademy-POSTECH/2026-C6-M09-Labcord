@@ -60,6 +60,7 @@ struct SessionTimerFeature {
         case timerSaveFailed
         case retrySaveTapped
         case watchCommand(WatchExperimentCommand)
+        case watchTimerRemovalFinished(UUID, WatchExperimentError?)
         case delegate(WatchExperimentResponse)
     }
 
@@ -81,6 +82,7 @@ struct SessionTimerFeature {
                         requestID: command.requestID, phase: .failed, error: .invalidState
                     )))
                 }
+                if let effect = removeUnlistedWatchTimer(command, state: &state) { return effect }
                 do {
                     let mutation = try WatchTimerMutation.prepare(
                         command, timers: state.timerCollection.timers, at: now
@@ -101,6 +103,9 @@ struct SessionTimerFeature {
                         error: (error as? WatchExperimentError) ?? .invalidState
                     )))
                 }
+
+            case let .watchTimerRemovalFinished(id, error):
+                return finishUnlistedWatchTimer(id, error: error, state: &state)
 
             case .delegate:
                 return .none

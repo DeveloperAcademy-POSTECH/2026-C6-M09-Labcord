@@ -52,6 +52,11 @@ extension PhoneWatchExperimentCoordinator {
         return id
     }
 
+    public func recordDidChange(_ record: WatchRecordSnapshot) {
+        guard let experimentID = record.experimentID else { return }
+        commandSubscriber?.yield(.recordChanged(experimentID))
+    }
+
     func refreshedScreen() -> WatchScreenSnapshot {
         if currentScreen.revision == 0 { updateScreen(currentScreen) }
         return currentScreen.withRevision(currentScreen.revision)

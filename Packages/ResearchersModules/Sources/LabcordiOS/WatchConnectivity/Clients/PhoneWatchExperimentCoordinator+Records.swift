@@ -19,7 +19,7 @@ extension PhoneWatchExperimentCoordinator {
             if try handleSavedRecord(command) { return }
             if try cancelUnavailableMedia(command) { return }
             if [.startTimer, .pauseTimer, .resumeTimer, .deleteTimer].contains(command.operation),
-               try shouldApplyTimerDirectly(command) {
+               visibleExperimentID != command.experimentID {
                 try client.applyWatchTimer(command)
                 do {
                     try await enqueueTimerNotificationSync(command)?.value
@@ -74,16 +74,6 @@ extension PhoneWatchExperimentCoordinator {
         }
     }
 
-    private func shouldApplyTimerDirectly(_ command: WatchExperimentCommand) throws -> Bool {
-        guard visibleExperimentID == command.experimentID else { return true }
-        guard command.operation == .deleteTimer, let id = command.experimentID else {
-            return false
-        }
-        return try client.watchState(id)?.detail.timers.contains {
-            $0.id == command.targetID && $0.status == .finished
-        } == true
-    }
-
     func publishRecord(
         _ record: WatchRecordSnapshot, experimentID: UUID
     ) throws -> WatchRecordSnapshot {
@@ -114,6 +104,7 @@ extension PhoneWatchExperimentCoordinator {
         }
         recordSnapshots[record.id] = identified
         connectivity.records.publish(identified, session: connectivity.session)
+        recordDidChange(identified)
         return identified
     }
 }
