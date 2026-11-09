@@ -90,7 +90,7 @@ struct ProtocolReviewView: View {
         }
         .accessibilityHidden(timerEditor != nil)
         .overlay {
-            GeometryReader { geometry in
+            GeometryReader { _ in
                 ZStack(alignment: .bottom) {
                     if let editor = timerEditor {
                         Overlay()
@@ -107,7 +107,6 @@ struct ProtocolReviewView: View {
                             timerEditor = nil
                         }
                         .id(editor.id)
-                        .padding(.bottom, geometry.safeAreaInsets.bottom)
                         .frame(maxWidth: .infinity)
                         .background(Color(
                             "General/Background/Grouped/Secondary",
