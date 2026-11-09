@@ -4,10 +4,14 @@ import SwiftUI
 struct CatalogRunGestureScenario: View {
     @State private var isPortrait = false
     @State private var showsMedia = true
+    @State private var isGeneral = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            GestureGuideItem(layout: isPortrait ? .portrait : .landscape) {
+            GestureGuideItem(
+                layout: isPortrait ? .portrait : .landscape,
+                appearance: isGeneral ? .general : .experiment
+            ) {
                 if showsMedia {
                     Image(
                         "catalog-gesture-\(isPortrait ? "portrait" : "landscape")",
@@ -24,6 +28,7 @@ struct CatalogRunGestureScenario: View {
                 Text("Portrait").tag(true)
             }
             .accessibilityIdentifier("catalog.scenario.gesture.layout")
+            Toggle("General 색상", isOn: $isGeneral)
             Toggle("제스처 이미지 표시", isOn: $showsMedia)
                 .accessibilityIdentifier("catalog.scenario.gesture.showMedia")
         }

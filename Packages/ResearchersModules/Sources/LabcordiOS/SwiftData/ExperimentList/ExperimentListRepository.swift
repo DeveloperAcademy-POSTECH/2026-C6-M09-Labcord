@@ -12,10 +12,44 @@ final class ExperimentListRepository {
     private init() {}
 
     func load() throws -> [ExperimentListEntry] {
+        recoverInterruptedVoiceRecordings()
         let context = try store.makeContext()
         let request = FetchDescriptor<Experiment>()
         let now = Date.now
         return try context.fetch(request).map { Self.entry($0, at: now) }
+    }
+
+    private func recoverInterruptedVoiceRecordings() {
+        let journal = VoiceRecordingJournal.scan()
+        if journal.directoryUnavailable || journal.unreadableCount > 0 {
+            SpeechDebugLog.write(
+                "voice journal scan failed for \(journal.unreadableCount) entries"
+            )
+        }
+        for entry in VoiceRecordingJournal.recoverableEntries(in: journal.entries) {
+            let recordedURL = URL(fileURLWithPath: entry.filePath)
+            let relocatedURL = URL.applicationSupportDirectory
+                .appending(path: "IncompleteVoiceRecordings/\(entry.experimentID.uuidString)")
+                .appending(path: recordedURL.lastPathComponent)
+            let original = FileManager.default.fileExists(atPath: recordedURL.path)
+                ? recordedURL : relocatedURL
+            let recovered = VoiceRecordingRecovery.recover(original: original) { copy in
+                try mediaStore.saveAudio(
+                    experimentID: entry.experimentID, id: entry.recordingID,
+                    recordedAt: entry.startedAt, sourceURL: copy, transcript: ""
+                )
+                let context = try store.makeContext()
+                guard let experiment = try store.find(id: entry.experimentID, in: context),
+                      let record = experiment.records.first(where: {
+                          $0.id == entry.recordingID && $0.type == .audio
+                      }),
+                      let path = record.filePath else { return false }
+                return FileManager.default.fileExists(
+                    atPath: URL.applicationSupportDirectory.appending(path: path).path
+                )
+            }
+            if recovered { VoiceRecordingJournal.remove(recordingID: entry.recordingID) }
+        }
     }
 
     func create(id: UUID, at date: Date) throws -> ExperimentListEntry {

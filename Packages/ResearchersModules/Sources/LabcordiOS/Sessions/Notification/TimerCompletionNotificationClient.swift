@@ -5,16 +5,19 @@ import UserNotifications
 
 public struct TimerCompletionNotificationClient: Sendable {
     public var schedule: @MainActor @Sendable (UUID, String, ExperimentTimer) async throws -> Void
+    public var cancelTimer: @MainActor @Sendable (UUID, UUID) async -> Void
     public var cancelForExperiment: @MainActor @Sendable (UUID) async -> Void
 
     public init(
         schedule: @escaping @MainActor @Sendable (
             UUID, String, ExperimentTimer
         ) async throws -> Void,
-        cancelForExperiment: @escaping @MainActor @Sendable (UUID) async -> Void
+        cancelForExperiment: @escaping @MainActor @Sendable (UUID) async -> Void,
+        cancelTimer: @escaping @MainActor @Sendable (UUID, UUID) async -> Void
     ) {
         self.schedule = schedule
         self.cancelForExperiment = cancelForExperiment
+        self.cancelTimer = cancelTimer
     }
 }
 
@@ -51,6 +54,11 @@ extension TimerCompletionNotificationClient: DependencyKey {
             let requests = await center.pendingNotificationRequests()
             let identifiers = requests.map(\.identifier).filter { $0.hasPrefix(prefix) }
             center.removePendingNotificationRequests(withIdentifiers: identifiers)
+        },
+        cancelTimer: { experimentID, timerID in
+            UNUserNotificationCenter.current().removePendingNotificationRequests(
+                withIdentifiers: [notificationID(experimentID: experimentID, timerID: timerID)]
+            )
         }
     )
 

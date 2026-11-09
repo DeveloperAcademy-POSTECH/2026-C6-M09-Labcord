@@ -31,6 +31,8 @@ struct ExperimentResultFeature {
         let isOpenedFromHome: Bool
         var recordTimeline: RecordTimelineFeature.State?
         var loadMessage: String?
+        var isResuming = false
+        var resumeMessage: String?
         var selectedType: RecordFilter = .all
         var selectedSort: RecordSort = .oldest
         var selectedEntry: ExperimentResultDetail.TimelineEntry?
@@ -69,12 +71,6 @@ struct ExperimentResultFeature {
                 && draftNote.count <= 300
         }
 
-        mutating func clearRecordDraft() {
-            selectedEntry = nil
-            draftNote = ""
-            draftTranscript = ""
-        }
-
         init(experimentID: UUID, isOpenedFromHome: Bool = false) {
             self.experimentID = experimentID
             self.isOpenedFromHome = isOpenedFromHome
@@ -102,9 +98,13 @@ struct ExperimentResultFeature {
         case editTapped
         case titleEditOverlay(TitleEditOverlayFeature.Action)
         case homeTapped
+        case resumeTapped
+        case resumeFinished(Bool)
+        case resumeReady
     }
 
     @Dependency(\.experimentClient) var experimentClient
+    @Dependency(\.date.now) var now
 
     var body: some Reducer<State, Action> {
         Reduce { state, action in
@@ -279,6 +279,15 @@ struct ExperimentResultFeature {
 
             case .homeTapped:
                 return .none
+
+            case .resumeTapped:
+                return resumeExperiment(state: &state)
+
+            case let .resumeFinished(success):
+                return finishResume(success, state: &state)
+
+            case .resumeReady:
+                return .none
             }
         }
         .ifLet(\.titleEditOverlay, action: \.titleEditOverlay) {
@@ -290,7 +299,42 @@ struct ExperimentResultFeature {
     }
 }
 
+private extension ExperimentResultFeature {
+    func resumeExperiment(state: inout State) -> Effect<Action> {
+        guard state.recordTimeline?.detail.status == .completed,
+              !state.isResuming else { return .none }
+        state.isResuming = true
+        state.resumeMessage = nil
+        let id = state.experimentID
+        let date = now
+        return .run { send in
+            do {
+                try await experimentClient.resumeCompleted(id, date)
+                await send(.resumeFinished(true))
+            } catch {
+                await send(.resumeFinished(false))
+            }
+        }
+    }
+
+    func finishResume(_ success: Bool, state: inout State) -> Effect<Action> {
+        guard state.isResuming else { return .none }
+        guard success else {
+            state.isResuming = false
+            state.resumeMessage = "실험을 재개하지 못했어요. 다시 시도해주세요."
+            return .none
+        }
+        return .send(.resumeReady)
+    }
+}
+
 extension ExperimentResultFeature.State {
+    mutating func clearRecordDraft() {
+        selectedEntry = nil
+        draftNote = ""
+        draftTranscript = ""
+    }
+
     var displayedEntries: [ExperimentResultDetail.TimelineEntry] {
         guard let entries = recordTimeline?.entries else { return [] }
 

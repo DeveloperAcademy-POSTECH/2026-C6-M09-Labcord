@@ -82,6 +82,7 @@ struct SessionTimerView: View {
                     isTimerSetupPresented = true
                 } label: {
                     Image(labcordIcon: .plus)
+                        .foregroundStyle(Color("Experiment/Label/Secondary"))
                 }
                 .buttonStyle(.labcordIcon(.plain, size: .large))
             }

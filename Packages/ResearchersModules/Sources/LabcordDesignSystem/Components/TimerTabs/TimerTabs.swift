@@ -1,6 +1,11 @@
 import SwiftUI
 
 public struct TimerTabs: View {
+    public enum Appearance: Sendable {
+        case general
+        case experiment
+    }
+
     public enum Selection: String, CaseIterable, Sendable {
         case set
         case running
@@ -15,6 +20,7 @@ public struct TimerTabs: View {
     private let count: String?
     private let showCount: Bool
     private let style: Style
+    private let appearance: Appearance
     private let leftTitle: String
     private let rightTitle: String
 
@@ -23,6 +29,7 @@ public struct TimerTabs: View {
         count: String? = nil,
         showCount: Bool = true,
         style: Style = .plain,
+        appearance: Appearance = .experiment,
         leftTitle: String = "세팅된 타이머",
         rightTitle: String = "진행중인 타이머"
     ) {
@@ -30,6 +37,7 @@ public struct TimerTabs: View {
         self.count = count
         self.showCount = showCount
         self.style = style
+        self.appearance = appearance
         self.leftTitle = leftTitle
         self.rightTitle = rightTitle
     }
@@ -39,6 +47,7 @@ public struct TimerTabs: View {
         count: Int?,
         showCount: Bool = true,
         style: Style = .plain,
+        appearance: Appearance = .experiment,
         leftTitle: String = "세팅된 타이머",
         rightTitle: String = "진행중인 타이머"
     ) {
@@ -47,9 +56,17 @@ public struct TimerTabs: View {
             count: count.map(String.init),
             showCount: showCount,
             style: style,
+            appearance: appearance,
             leftTitle: leftTitle,
             rightTitle: rightTitle
         )
+    }
+
+    private var countColor: Color {
+        switch appearance {
+        case .general: Color(.General.Label.brand)
+        case .experiment: Color(.Experiment.Label.brand)
+        }
     }
 
     public var body: some View {
@@ -57,7 +74,8 @@ public struct TimerTabs: View {
             TimerTabItem(
                 title: leftTitle,
                 isSelected: selection == .set,
-                style: style
+                style: style,
+                appearance: appearance
             ) {
                 selection = .set
             }
@@ -66,7 +84,8 @@ public struct TimerTabs: View {
                 TimerTabItem(
                     title: rightTitle,
                     isSelected: selection == .running,
-                    style: style
+                    style: style,
+                    appearance: appearance
                 ) {
                     selection = .running
                 }
@@ -76,7 +95,7 @@ public struct TimerTabs: View {
                         Text(count)
                             .typography(Typography.callout)
                             .monospacedDigit()
-                            .foregroundStyle(Color(.Experiment.Label.brand))
+                            .foregroundStyle(countColor)
                             .contentTransition(.opacity)
                             .fixedSize(horizontal: true, vertical: false)
                             .accessibilityLabel(Text("\(count)개"))

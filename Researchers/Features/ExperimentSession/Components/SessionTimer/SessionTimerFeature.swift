@@ -1,10 +1,3 @@
-//
-//  SessionTimerFeature.swift
-//  Researchers
-//
-//  Created by 정홍섭 on 10/28/26.
-//
-
 import ComposableArchitecture
 import Foundation
 import LabcordiOS
@@ -25,6 +18,7 @@ struct SessionTimerFeature {
     struct PendingSave: Equatable {
         let changes: [TimerChange]
         let collection: ExperimentTimerCollection
+        var dismissedTimerID: UUID?
     }
 
     @ObservableState
@@ -39,6 +33,7 @@ struct SessionTimerFeature {
         var isSaving = false
         var saveFailed = false
         var isClosing = false
+        var watchRequest: WatchExperimentCommand?
 
         var canModifyTimers: Bool {
             !isClosing && pendingSave == nil
@@ -62,6 +57,8 @@ struct SessionTimerFeature {
         case timerSaved
         case timerSaveFailed
         case retrySaveTapped
+        case watchCommand(WatchExperimentCommand)
+        case delegate(WatchExperimentResponse)
     }
 
     @Dependency(\.experimentClient) var experimentClient
@@ -83,6 +80,35 @@ struct SessionTimerFeature {
     var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
+            case let .watchCommand(command):
+                guard command.experimentID == state.experimentID, state.isConfigured,
+                      state.canModifyTimers else {
+                    return .send(.delegate(WatchExperimentResponse(
+                        requestID: command.requestID, phase: .failed, error: .invalidState
+                    )))
+                }
+                do {
+                    let mutation = try WatchTimerMutation.prepare(
+                        command, timers: state.timerCollection.timers, at: now
+                    )
+                    state.watchRequest = command
+                    return persist(PendingSave(
+                        changes: mutation.changes.map {
+                            TimerChange(timer: $0.timer, endedAt: $0.endedAt)
+                        }, collection: mutation.collection,
+                        dismissedTimerID: command.operation == .deleteTimer
+                            ? command.targetID : nil
+                    ), state: &state)
+                } catch {
+                    return .send(.delegate(WatchExperimentResponse(
+                        requestID: command.requestID, phase: .failed,
+                        error: (error as? WatchExperimentError) ?? .invalidState
+                    )))
+                }
+
+            case .delegate:
+                return .none
+
             case let .configure(mode, timerSeconds, timers):
                 guard !state.isConfigured else { return .none }
                 state.mode = mode
@@ -138,7 +164,8 @@ struct SessionTimerFeature {
                 return persist(
                     PendingSave(
                         changes: [TimerChange(timer: timer, endedAt: now)],
-                        collection: collection
+                        collection: collection,
+                        dismissedTimerID: id
                     ),
                     state: &state
                 )
@@ -169,11 +196,26 @@ struct SessionTimerFeature {
                 state.isSaving = false
                 state.saveFailed = false
                 state.selectedTimerTab = .active
+                let command = state.watchRequest
+                state.watchRequest = nil
+                if let command {
+                    return .concatenate(
+                        .send(.delegate(WatchExperimentResponse(
+                            requestID: command.requestID, phase: .completed
+                        ))),
+                        .send(.timerTick(now))
+                    )
+                }
                 return .send(.timerTick(now))
 
             case .timerSaveFailed:
                 state.isSaving = false
                 state.saveFailed = true
+                if let command = state.watchRequest {
+                    return .send(.delegate(WatchExperimentResponse(
+                        requestID: command.requestID, phase: .failed, error: .storageFailed
+                    )))
+                }
                 return .none
 
             case .retrySaveTapped:
@@ -211,11 +253,24 @@ struct SessionTimerFeature {
             .cancel(id: CancelID.timerTick),
             .run { send in
                 do {
+                    if let timerID = pendingSave.dismissedTimerID,
+                       let change = pendingSave.changes.first(where: {
+                           $0.timer.id == timerID
+                       }), let endedAt = change.endedAt {
+                        try await experimentClient.beginTimerDeletion(
+                            experimentID, timerID, change.timer.finishedAt ?? endedAt
+                        )
+                    }
                     for change in pendingSave.changes {
                         try await experimentClient.saveTimer(
                             experimentID,
                             change.timer,
                             change.endedAt
+                        )
+                    }
+                    if let timerID = pendingSave.dismissedTimerID {
+                        try await experimentClient.dismissWatchTimer(
+                            experimentID: experimentID, timerID: timerID
                         )
                     }
                     await send(.timerSaved)

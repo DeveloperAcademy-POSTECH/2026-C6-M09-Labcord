@@ -4,6 +4,7 @@ import SwiftUI
 struct CatalogFeedbackToastScenario: View {
     @State private var tone = ToastType.success
     @State private var appearance = ToastAppearance.default
+    @State private var isGeneral = false
     @State private var message = "프로토콜을 저장했어요."
     @State private var actionTitle = "다시시도"
     @State private var showsIcon = true
@@ -17,6 +18,7 @@ struct CatalogFeedbackToastScenario: View {
             if isVisible {
                 Toast(
                     message, type: tone, appearance: appearance,
+                    colorPalette: isGeneral ? .general : .experiment,
                     showLeadingIcon: showsIcon, actionTitle: actionTitle,
                     onAction: showsAction ? {
                         actionCount += 1
@@ -31,6 +33,7 @@ struct CatalogFeedbackToastScenario: View {
                     .buttonStyle(.labcord(.secondary, size: .small))
                     .accessibilityIdentifier("catalog.scenario.toast.restore")
             }
+            Toggle("General 색상", isOn: $isGeneral)
             Picker("알림 종류", selection: $tone) {
                 ForEach(ToastType.allCases, id: \.self) { tone in
                     Text(String(describing: tone).capitalized).tag(tone)

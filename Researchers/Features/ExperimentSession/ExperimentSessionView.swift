@@ -19,19 +19,15 @@ struct ExperimentSessionView: View {
     @State private var voiceToast: VoiceToastPresentation?
 
     let store: StoreOf<ExperimentSessionFeature>
-
     private var timerStore: StoreOf<SessionTimerFeature> {
         store.scope(state: \.timer, action: \.timer)
     }
-
     private var captureStore: StoreOf<CameraCaptureFeature> {
         store.scope(state: \.capture, action: \.capture)
     }
-
     private var voiceStore: StoreOf<VoiceRecordingFeature> {
         store.scope(state: \.voice, action: \.voice)
     }
-
     private var isPortraitVoiceActivityVisible: Bool {
         verticalSizeClass != .compact
             && voiceStore.saveError == nil
@@ -149,11 +145,23 @@ struct ExperimentSessionView: View {
         )
         .overlay {
             if !store.isReady {
-                ExperimentSetupView()
+                ExperimentSetupView(
+                    failure: store.setupFailure,
+                    canOpenSettings: store.permissions.issue?.canOpenSettings == true,
+                    onLeave: { store.send(.setupLeaveTapped) },
+                    onOpenSettings: { store.send(.permissions(.openSettingsTapped)) },
+                    onRetry: { store.send(.setupRetryCameraTapped) }
+                )
                     .task(id: store.permissionRequestGeneration) {
                         try? await Task.sleep(for: .milliseconds(200))
                         guard !Task.isCancelled else { return }
                         store.send(.permissions(.request))
+                    }
+                    .task(id: "\(store.permissions.camera.status)-"
+                          + "\(store.permissionRequestGeneration)") {
+                        try? await Task.sleep(for: .seconds(15))
+                        guard !Task.isCancelled else { return }
+                        store.send(.cameraPreparationTimedOut)
                     }
             }
         }
@@ -214,11 +222,9 @@ private struct SessionAlerts: ViewModifier {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     let store: StoreOf<ExperimentSessionFeature>
-
     private var captureStore: StoreOf<CameraCaptureFeature> {
         store.scope(state: \.capture, action: \.capture)
     }
-
     private var voiceStore: StoreOf<VoiceRecordingFeature> {
         store.scope(state: \.voice, action: \.voice)
     }
@@ -238,7 +244,8 @@ private struct SessionAlerts: ViewModifier {
         .alert(
             store.permissions.issue == .settingsUnavailable ? "설정 열기 실패" : "권한 안내",
             isPresented: Binding(
-                get: { store.permissions.issue != nil },
+                get: { (store.isReady || store.permissions.issue == .settingsUnavailable)
+                    && store.permissions.issue != nil },
                 set: { if !$0 { store.send(.permissions(.issueDismissed)) } }
             )
         ) {
@@ -256,7 +263,7 @@ private struct SessionAlerts: ViewModifier {
         .alert(
             "카메라 오류",
             isPresented: Binding(
-                get: { captureStore.cameraErrorMessage != nil },
+                get: { store.isReady && captureStore.cameraErrorMessage != nil },
                 set: { if !$0 { captureStore.send(.cameraErrorDismissed) } }
             )
         ) {
@@ -265,6 +272,14 @@ private struct SessionAlerts: ViewModifier {
             }
         } message: {
             Text(captureStore.cameraErrorMessage ?? "")
+        }
+        .alert("홈으로 이동하지 못했어요", isPresented: Binding(
+            get: { !store.isReady && store.pause.exitFailed },
+            set: { if !$0 { store.send(.pause(.dismissHomeExitFailure)) } }
+        )) {
+            Button("확인", role: .cancel) { store.send(.pause(.dismissHomeExitFailure)) }
+        } message: {
+            Text("다시 시도해 주세요.")
         }
         .modifier(DetailLoadFailureAlert(store: store))
     }

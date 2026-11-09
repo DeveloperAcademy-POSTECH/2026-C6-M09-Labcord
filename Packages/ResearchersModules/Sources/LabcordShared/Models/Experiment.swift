@@ -67,6 +67,12 @@ public final class Experiment {
         statusHistory.append(ExperimentStatusEntry(status: .running, date: date))
     }
 
+    public func resumeCompleted(at date: Date) {
+        guard status == .completed else { return }
+        status = .running
+        statusHistory.append(ExperimentStatusEntry(status: .running, date: date))
+    }
+
     public func complete(at date: Date) {
         guard status != .completed else { return }
         endedAt.append(date)

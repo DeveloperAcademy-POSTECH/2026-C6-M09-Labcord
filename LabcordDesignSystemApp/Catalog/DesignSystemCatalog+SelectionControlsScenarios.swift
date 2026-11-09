@@ -60,16 +60,18 @@ struct CatalogExperimentListItemScenario: View {
     @State private var isSelected = false
     @State private var showBadge = true
     @State private var showRadioButton = true
+    @State private var showRunningTimer = false
     @State private var title = "실험 제목"
     @State private var date = "2026.10.13"
-    @State private var status = ExperimentStatus.preparing
+    @State private var status = StatusBadge.Status.ready
     @State private var openCount = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             ExperimentListItem(
                 title, date: date, status: status,
-                isSelected: $isSelected, showBadge: showBadge, showRadioButton: showRadioButton
+                isSelected: $isSelected, showBadge: showBadge, showRadioButton: showRadioButton,
+                showRunningTimer: showRunningTimer
             ) { openCount += 1 }
             .accessibilityIdentifier("catalog.motion.experimentStatus")
             Picker("상태", selection: $isSelected) {
@@ -78,12 +80,14 @@ struct CatalogExperimentListItemScenario: View {
             }
             .accessibilityIdentifier("catalog.review.experimentList.state")
             Picker("배지 상태", selection: $status) {
-                catalogPickerOptions(
-                    [ExperimentStatus.preparing, .inProgress, .paused, .completed]
-                )
+                Text("준비").tag(StatusBadge.Status.ready)
+                Text("진행 중").tag(StatusBadge.Status.running)
+                Text("일시정지").tag(StatusBadge.Status.paused)
+                Text("완료").tag(StatusBadge.Status.completed)
             }
             .accessibilityIdentifier("catalog.review.experimentStatus")
             CatalogDisclosureGroup("콘텐츠 옵션") {
+                Toggle("진행 중 타이머 표시", isOn: $showRunningTimer)
                 Toggle("배지 표시", isOn: $showBadge)
                     .accessibilityIdentifier("catalog.review.experimentList.showBadge")
                 Toggle("라디오 버튼 표시", isOn: $showRadioButton)

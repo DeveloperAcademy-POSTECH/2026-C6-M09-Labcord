@@ -7,6 +7,7 @@ struct CatalogControlButtonScenario: View {
     @State private var size = ComponentSize.small
     @State private var variant = IOSButtonStyle.Variant.primary
     @State private var state = CatalogControlButtonState.normal
+    @State private var colorPalette = IOSButtonStyle.ColorPalette.general
     @State private var isDestructive = false
     @State private var showsIcon = true
     @State private var label: String
@@ -24,6 +25,12 @@ struct CatalogControlButtonScenario: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 preview
+                    .padding(8)
+                    .background(
+                        colorPalette == .general
+                            ? Color("General/Background/Primary", bundle: catalogBundle)
+                            : Color("Experiment/Background/Primary", bundle: catalogBundle)
+                    )
                 Spacer(minLength: 0)
             }
             Text("실행 \(actionCount)회")
@@ -43,6 +50,10 @@ struct CatalogControlButtonScenario: View {
                 }
             }
             .accessibilityIdentifier(identifier + ".style")
+            Picker("색상", selection: $colorPalette) {
+                Text("General").tag(IOSButtonStyle.ColorPalette.general)
+                Text("Experiment").tag(IOSButtonStyle.ColorPalette.experiment)
+            }
             Picker("상태", selection: $state) {
                 catalogPickerOptions(CatalogControlButtonState.allCases, capitalized: false)
             }
@@ -73,7 +84,9 @@ struct CatalogControlButtonScenario: View {
                         .frame(width: 20, height: 20)
                         .accessibilityIdentifier(identifier + ".sourceIcon." + icon.rawValue)
                 }
-                .buttonStyle(.labcordIcon(variant, size: size, isLoading: state == .loading))
+                .buttonStyle(.labcordIcon(
+                    variant, size: size, isLoading: state == .loading, colorPalette: colorPalette
+                ))
             } else {
                 Button(role: isDestructive ? .destructive : nil) { actionCount += 1 } label: {
                     if showsIcon {
@@ -90,7 +103,9 @@ struct CatalogControlButtonScenario: View {
                         Text(label)
                     }
                 }
-                .buttonStyle(.labcord(variant, size: size, isLoading: state == .loading))
+                .buttonStyle(.labcord(
+                    variant, size: size, isLoading: state == .loading, colorPalette: colorPalette
+                ))
             }
         }
         .disabled(state != .normal)

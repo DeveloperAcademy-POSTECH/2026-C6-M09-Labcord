@@ -5,6 +5,8 @@ struct DesignSystemFeedbackPage: View {
     let item: CatalogItem
 
     @State private var statusMessage = "3초 후 자동 저장됩니다."
+    @State private var isGeneral = false
+    @State private var showStatusIcon = true
 
     var body: some View {
         DesignSystemCatalogPage(title: item.title, context: item.context) {
@@ -15,7 +17,17 @@ struct DesignSystemFeedbackPage: View {
             }
             if item == .statusPill {
                 DesignSystemCatalogCard("Status Pill", description: "비상호작용 상태 안내") {
-                    StatusPill(statusMessage)
+                    StatusPill(
+                        statusMessage, appearance: isGeneral ? .general : .experiment,
+                        showIcon: showStatusIcon
+                    )
+                        .background {
+                            if isGeneral {
+                                Color("General/Background/Primary", bundle: catalogBundle)
+                            }
+                        }
+                    Toggle("General 색상", isOn: $isGeneral)
+                    Toggle("확인 아이콘 표시", isOn: $showStatusIcon)
                     Button("메시지 바꾸기") {
                         statusMessage = statusMessage == "3초 후 자동 저장됩니다."
                             ? "변경 사항을 저장했어요." : "3초 후 자동 저장됩니다."

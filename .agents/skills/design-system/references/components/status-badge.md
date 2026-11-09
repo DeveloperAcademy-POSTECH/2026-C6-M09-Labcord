@@ -2,7 +2,7 @@
 
 [구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/StatusBadge/StatusBadge.swift)
 
-`status`는 실험의 현재 `LabcordShared.ExperimentStatus`입니다.
+`status`는 `StatusBadge.Status`의 준비·진행 중·일시정지·완료 상태입니다.
 
 ```swift
 StatusBadge(status: status)

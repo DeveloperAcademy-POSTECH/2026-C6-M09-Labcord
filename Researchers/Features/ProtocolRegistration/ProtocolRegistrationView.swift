@@ -45,6 +45,10 @@ struct ProtocolRegistrationView: View {
                 setupContent
             }
         }
+        .background(Color(
+            "General/Background/Primary", bundle: LabcordDesignSystemResources.bundle
+        ).ignoresSafeArea())
+        .environment(\.colorScheme, .light)
         .disabled(input.restoringAnalysis)
         .alert("실험을 저장하지 못했어요", isPresented: Binding(
             get: { store.hasFailed },

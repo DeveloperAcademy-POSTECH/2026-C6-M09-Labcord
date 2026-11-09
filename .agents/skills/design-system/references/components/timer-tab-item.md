@@ -6,6 +6,7 @@
 TimerTabItem(title: title, isSelected: isSelected, action: selectTab)
 ```
 
+- 기본 색상은 Experiment이며, General 영역에서는 `appearance: .general`을 지정합니다.
 - `isSelected`는 표시 입력입니다. 탭을 누르면 `selectTab`이 부모의 실제 선택을 갱신해야 합니다.
 - 두 탭과 개수 표시가 함께 필요하면 [Timer Tabs](timer-tabs.md)를 사용합니다.
 

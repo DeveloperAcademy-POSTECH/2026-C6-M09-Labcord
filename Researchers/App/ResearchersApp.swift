@@ -9,6 +9,9 @@ struct ResearchersApp: App {
     private let notificationDelegate = ForegroundNotificationDelegate()
 
     init() {
+        PhoneWatchExperimentCoordinator.shared.activate()
+        PhoneWatchAudioService.shared.activate()
+        PhoneWatchExperimentCoordinator.shared.configureRecordHandling()
         FontRegistration.register()
         UNUserNotificationCenter.current().delegate = notificationDelegate
     }
@@ -25,7 +28,7 @@ struct ResearchersApp: App {
                         }
                     }
             } else {
-                AppView()
+                AppView(notificationDelegate: notificationDelegate)
             }
         }
     }
