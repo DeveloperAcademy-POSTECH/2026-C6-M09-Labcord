@@ -5,6 +5,7 @@ import SwiftUI
 
 struct RecordTimelineEntryView: View {
     let entry: ExperimentResultDetail.TimelineEntry
+    let timerIdentities: [UUID: TimerIdentity]
 
     var body: some View {
         timelineRow(entry)
@@ -31,6 +32,7 @@ struct RecordTimelineEntryView: View {
             RecordedTimerTimelineView(
                 record: record,
                 event: event,
+                identity: timerIdentities[record.id] ?? .identity01,
                 timestamp: timestamp,
                 date: entry.date,
                 note: entry.note
@@ -78,6 +80,7 @@ struct RecordTimelineEntryView: View {
             RecordedTimerTimelineView(
                 record: record,
                 event: .start,
+                identity: timerIdentities[record.id] ?? .identity01,
                 timestamp: timestamp,
                 date: record.recordedAt,
                 note: record.note

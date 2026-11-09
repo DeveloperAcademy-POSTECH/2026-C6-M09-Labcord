@@ -8,6 +8,7 @@
 import ComposableArchitecture
 import LabcordDesignSystem
 import LabcordiOS
+import LabcordShared
 import SwiftUI
 
 struct ExperimentResultView: View {
@@ -57,7 +58,10 @@ struct ExperimentResultView: View {
 
                                         Separator(orientation: .horizontal)
 
-                                        RecordTimelineView(entries: store.displayedEntries) {
+                                        RecordTimelineView(
+                                            entries: store.displayedEntries,
+                                            timerIdentities: timerIdentities
+                                        ) {
                                             store.send(.timelineEntrySelected($0))
                                         }
                                     }
@@ -127,6 +131,9 @@ struct ExperimentResultView: View {
             )) { entry in
                 ExperimentRecordSheetHost(
                     entry: entry,
+                    timerIdentity: store.selectedRecord.flatMap {
+                        timerIdentities[$0.id]
+                    } ?? .identity01,
                     note: Binding(
                         get: { store.draftNote },
                         set: { store.send(.recordNoteChanged($0)) }
@@ -153,6 +160,14 @@ struct ExperimentResultView: View {
                     onCancelDelete: { store.send(.recordDeleteCancelled) }
                 )
             }
+        }
+    }
+
+    private var timerIdentities: [UUID: TimerIdentity] {
+        guard let detail = store.recordTimeline?.detail else { return [:] }
+        let identities = TimerIdentity.allCases
+        return detail.timerIdentityOrderByRecordID.mapValues {
+            identities[$0 % identities.count]
         }
     }
 }
