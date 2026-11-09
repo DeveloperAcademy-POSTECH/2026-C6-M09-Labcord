@@ -73,7 +73,7 @@ struct ProtocolReviewView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 16)
                 .background(Color(
-                    "General/Background/Primary", bundle: LabcordDesignSystemResources.bundle
+                    "General/Background/Primary"
                 ))
             }
         }
@@ -84,7 +84,7 @@ struct ProtocolReviewView: View {
                 store.send(.backTapped)
             }
             .background {
-                Color("General/Background/Primary", bundle: LabcordDesignSystemResources.bundle)
+                Color("General/Background/Primary")
                     .ignoresSafeArea(edges: .top)
             }
         }
@@ -109,8 +109,7 @@ struct ProtocolReviewView: View {
                         .id(editor.id)
                         .frame(maxWidth: .infinity)
                         .background(Color(
-                            "General/Background/Grouped/Secondary",
-                            bundle: LabcordDesignSystemResources.bundle
+                            "General/Background/Grouped/Secondary"
                         ))
                         .clipShape(UnevenRoundedRectangle(
                             topLeadingRadius: 28, topTrailingRadius: 28
@@ -131,11 +130,10 @@ private extension ProtocolReviewView {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 0) {
                 Text("실험 이름 ").foregroundStyle(Color(
-                    "General/Label/Secondary", bundle: LabcordDesignSystemResources.bundle
+                    "General/Label/Secondary"
                 ))
                 Text("*").foregroundStyle(Color(
-                    "General/Feedback/Error/Foreground",
-                    bundle: LabcordDesignSystemResources.bundle
+                    "General/Feedback/Error/Foreground"
                 ))
             }
             .typography(Typography.calloutSemiBold)
@@ -152,8 +150,7 @@ private extension ProtocolReviewView {
                         .typography(Typography.subheadline)
                         .foregroundStyle(Color(
                             store.titleError == nil
-                                ? "General/Label/Secondary" : "General/Feedback/Error/Foreground",
-                            bundle: LabcordDesignSystemResources.bundle
+                                ? "General/Label/Secondary" : "General/Feedback/Error/Foreground"
                         ))
                 }
                 Spacer()
@@ -161,8 +158,7 @@ private extension ProtocolReviewView {
                     .typography(Typography.subheadline)
                     .foregroundStyle(Color(
                         store.titleError == nil
-                            ? "General/Label/Tertiary" : "General/Feedback/Error/Foreground",
-                        bundle: LabcordDesignSystemResources.bundle
+                            ? "General/Label/Tertiary" : "General/Feedback/Error/Foreground"
                     ))
             }
         }
@@ -174,7 +170,7 @@ private extension ProtocolReviewView {
                 Text("타이머").typography(Typography.calloutSemiBold)
                 Text("\(store.timerSeconds.count)")
                     .foregroundStyle(Color(
-                        "General/Label/Tertiary", bundle: LabcordDesignSystemResources.bundle
+                        "General/Label/Tertiary"
                     ))
                 Spacer()
                 Button("추가") { openTimer(index: nil) }
@@ -194,7 +190,7 @@ private extension ProtocolReviewView {
             Text("프로토콜에서 추출한 전문 용어를 음성 인식에 반영해요.")
                 .typography(Typography.subheadline)
                 .foregroundStyle(Color(
-                    "General/Label/Secondary", bundle: LabcordDesignSystemResources.bundle
+                    "General/Label/Secondary"
                 ))
             ForEach(ProtocolTermCategory.allCases, id: \.self) { category in
                 Accordion(category.title, count: store.terms[category, default: []].count,
@@ -260,8 +256,7 @@ private extension ProtocolReviewView {
             .typography(Typography.subheadline)
             .foregroundStyle(Color(
                 store.termError == nil
-                    ? "General/Label/Tertiary" : "General/Feedback/Error/Foreground",
-                bundle: LabcordDesignSystemResources.bundle
+                    ? "General/Label/Tertiary" : "General/Feedback/Error/Foreground"
             ))
         }
     }

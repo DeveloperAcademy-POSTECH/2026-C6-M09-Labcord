@@ -63,7 +63,11 @@ struct RecentProtocolView: View {
             }
         }
         .navigationDestination(item: $detail) { entry in
-            RecentProtocolDetailView(entry: entry) {
+            RecentProtocolDetailView(store: Store(
+                initialState: RecentProtocolDetailFeature.State(entry: entry)
+            ) {
+                RecentProtocolDetailFeature()
+            }) {
                 store.send(.select(entry.id))
                 detail = nil
             }

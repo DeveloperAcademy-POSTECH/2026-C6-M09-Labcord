@@ -1,14 +1,15 @@
+import ComposableArchitecture
 import LabcordDesignSystem
 import SwiftUI
 
 struct ProtocolAnalysisProgressView: View {
+    @Bindable var store: StoreOf<ProtocolAnalysisProgressFeature>
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var ringAnimating = false
     let scanCompleted: Bool
     let extractionCompleted: Bool
     let isCancelling: Bool
     var notice: String?
-    let onCancel: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -31,8 +32,7 @@ struct ProtocolAnalysisProgressView: View {
                         Text("프로토콜 기반으로 실험 준비 중이에요.")
                             .typography(Typography.subheadline)
                             .foregroundStyle(Color(
-                                "General/Label/Secondary",
-                                bundle: LabcordDesignSystemResources.bundle
+                                "General/Label/Secondary"
                             ))
                     }
                     .multilineTextAlignment(.center)
@@ -64,10 +64,10 @@ struct ProtocolAnalysisProgressView: View {
                 Text("분석을 건너뛰고, 실험을 시작할 수 있어요.")
                     .typography(Typography.subheadline)
                     .foregroundStyle(Color(
-                        "General/Label/Secondary", bundle: LabcordDesignSystemResources.bundle
+                        "General/Label/Secondary"
                     ))
                     .multilineTextAlignment(.center)
-                Button(action: onCancel) {
+                Button { store.send(.skipTapped) } label: {
                     Text(isCancelling ? "취소 중..." : "분석 건너뛰기")
                         .frame(maxWidth: .infinity)
                 }
@@ -78,15 +78,36 @@ struct ProtocolAnalysisProgressView: View {
             .padding(.vertical, 16)
         }
         .accessibilityIdentifier("protocol-analysis-progress")
+        .alert("프로토콜 분석을 건너뛸까요?", isPresented: Binding(
+            get: { store.showSkipConfirmation },
+            set: { if !$0 { store.send(.dismissSkipConfirmation) } }
+        )) {
+            Button("분석 건너뛰기", role: .destructive) { store.send(.confirmSkip) }
+            Button("취소", role: .cancel) { store.send(.dismissSkipConfirmation) }
+        } message: {
+            Text("분석을 건너뛰면 분석 결과없이 실험을 진행해요.")
+        }
+        .alert("프로토콜 분석을 종료할까요?", isPresented: Binding(
+            get: { store.showExitConfirmation },
+            set: { if !$0 { store.send(.dismissExitConfirmation) } }
+        )) {
+            Button("분석 종료", role: .destructive) { store.send(.confirmExit) }
+            Button("취소", role: .cancel) { store.send(.dismissExitConfirmation) }
+        } message: {
+            Text("분석을 종료하면 분석 결과가 초기화 돼요.")
+        }
     }
 }
 
 #Preview("프로토콜 분석 중") {
     let fontRegistration = FontRegistration.register()
     ProtocolAnalysisProgressView(
+        store: Store(initialState: ProtocolAnalysisProgressFeature.State()) {
+            ProtocolAnalysisProgressFeature()
+        },
         scanCompleted: false,
         extractionCompleted: false,
         isCancelling: false
-    ) {}
+    )
     .id(fontRegistration)
 }

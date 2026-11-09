@@ -40,12 +40,11 @@ struct RegistrationAttachmentScrollView<Content: View>: View {
                     let progress = min(max(metrics.offset / scrollRange, 0), 1)
                     ZStack(alignment: .leading) {
                         Capsule().fill(Color(
-                            "General/Separator/Opaque", bundle: LabcordDesignSystemResources.bundle
+                            "General/Separator/Opaque"
                         ))
                         Capsule()
                             .fill(Color(
-                                "General/Border/Strong",
-                                bundle: LabcordDesignSystemResources.bundle
+                                "General/Border/Strong"
                             ))
                             .frame(width: thumbWidth)
                             .offset(x: (trackWidth - thumbWidth) * progress)

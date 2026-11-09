@@ -139,7 +139,7 @@ private struct TimerEditorSheet: View {
         VStack(spacing: 16) {
             Capsule()
                 .fill(Color(
-                    "General/Timer/Sheet/Grabber", bundle: LabcordDesignSystemResources.bundle
+                    "General/Timer/Sheet/Grabber"
                 ))
                 .frame(width: 36, height: 5)
                 .accessibilityHidden(true)

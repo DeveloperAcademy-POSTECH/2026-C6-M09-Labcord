@@ -12,7 +12,6 @@ struct ProtocolRegistrationView: View {
     @State private var importFailed = false
     @Environment(\.scenePhase) private var scenePhase
     @State private var showReviewConfirmation = false
-    @State private var showSkipConfirmation = false
     @State private var showExitConfirmation = false
     @State private var showAnalysisExitConfirmation = false
     @State private var showDiscardConfirmation = false
@@ -21,22 +20,25 @@ struct ProtocolRegistrationView: View {
         Group {
             if input.analysisID != nil {
                 ProtocolAnalysisProgressView(
+                    store: store.scope(state: \.analysisProgress, action: \.analysisProgress),
                     scanCompleted: !input.selectedInputs.isEmpty
                         && input.pendingParsingInputs.isEmpty,
                     extractionCompleted: !input.selectedInputs.isEmpty
                         && input.pendingInputs.isEmpty,
                     isCancelling: input.analysisCancellationRequested,
                     notice: input.analysisMessage
-                ) {
-                    showSkipConfirmation = true
-                }
+                )
                 .background(Color(
-                    "General/Background/Primary", bundle: LabcordDesignSystemResources.bundle
+                    "General/Background/Primary"
                 ))
             } else if input.showsAnalysisCompletion && input.invalidatingJobID == nil {
-                ProtocolAnalysisCompletionView(onReview: requestReview)
+                ProtocolAnalysisCompletionView(
+                    store: store.scope(state: \.analysisCompletion, action: \.analysisCompletion),
+                    requiresReviewConfirmation: input.requiresReviewConfirmation,
+                    reviewConfirmationMessage: reviewConfirmationMessage
+                )
                     .background(Color(
-                        "General/Background/Primary", bundle: LabcordDesignSystemResources.bundle
+                        "General/Background/Primary"
                     ))
             } else {
                 setupContent
@@ -70,14 +72,6 @@ struct ProtocolRegistrationView: View {
             Button("취소", role: .cancel) { }
         } message: {
             Text(reviewConfirmationMessage)
-        }
-        .alert("프로토콜 분석을 건너뛸까요?", isPresented: $showSkipConfirmation) {
-            Button("분석 건너뛰기", role: .destructive) {
-                store.send(.skipTapped)
-            }
-            Button("취소", role: .cancel) { }
-        } message: {
-            Text("분석을 건너뛰면 분석 결과없이 실험을 진행해요.")
         }
         .alert("프로토콜 분석을 종료할까요?", isPresented: $showAnalysisExitConfirmation) {
             Button("분석 종료", role: .destructive) {
@@ -134,8 +128,11 @@ struct ProtocolRegistrationView: View {
             NavigationPageTitle(
                 input.analysisID != nil || input.showsAnalysisCompletion ? "" : "실험 등록"
             ) {
-                if input.analysisID != nil || input.analysisStarting
-                    || input.showsAnalysisCompletion {
+                if input.analysisID != nil {
+                    store.send(.analysisProgress(.backTapped))
+                } else if input.showsAnalysisCompletion && input.invalidatingJobID == nil {
+                    store.send(.analysisCompletion(.backTapped))
+                } else if input.analysisStarting || input.showsAnalysisCompletion {
                     showAnalysisExitConfirmation = true
                 } else if input.selectedInputs.isEmpty {
                     store.send(.inputAnalysis(.backTapped))
@@ -297,12 +294,12 @@ private extension ProtocolRegistrationView {
         }
         .padding(12)
         .background(Color(
-            "General/Fill/Light", bundle: LabcordDesignSystemResources.bundle
+            "General/Fill/Light"
         ), in: RoundedRectangle(cornerRadius: 8))
         .overlay {
             RoundedRectangle(cornerRadius: 8)
                 .strokeBorder(Color(
-                    "General/Border/Default", bundle: LabcordDesignSystemResources.bundle
+                    "General/Border/Default"
                 ), lineWidth: 0.75)
                 .allowsHitTesting(false)
         }
