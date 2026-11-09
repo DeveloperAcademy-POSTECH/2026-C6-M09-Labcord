@@ -16,6 +16,7 @@ public final class PhoneWatchExperimentCoordinator {
         case command(WatchExperimentCommand)
         case started(UUID)
         case navigation(WatchExperimentCommand)
+        case recordChanged(UUID)
     }
 
     public var recordHandler: ((WatchExperimentCommand) async throws -> Void)?

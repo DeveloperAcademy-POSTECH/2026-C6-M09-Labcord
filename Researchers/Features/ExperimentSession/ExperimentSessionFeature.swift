@@ -18,6 +18,9 @@ struct ExperimentSessionFeature {
         var sharedCountdownEndsAt: Date?
         var isGestureGuidePresented = false
         var isSidePanelExpanded = true
+        var lastScreenRecording: WatchScreenRecording?
+        var voiceScreenElapsed: TimeInterval?
+        var videoScreenElapsed: TimeInterval?
         var detail: ExperimentSessionDetail?
         var isLoadingDetail = false
         var detailLoadFailed = false
@@ -52,6 +55,7 @@ struct ExperimentSessionFeature {
         case watchDrainProgress(UUID)
         case watchResourcesReleased(UUID)
         case watchControlFinished(UUID, WatchExperimentError?)
+        case clearScreenRecording(UUID, WatchRecordSnapshot.Phase)
         case gestureGuidePresented(Bool)
         case sidePanelExpanded(Bool)
         case beginRemotePreview
@@ -119,7 +123,7 @@ private extension ExperimentSessionFeature {
     var sessionReducer: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case .gestureGuidePresented, .sidePanelExpanded,
+            case .clearScreenRecording, .gestureGuidePresented, .sidePanelExpanded,
                  .beginRemotePreview, .cancelRemotePreview,
                  .watchControl, .watchResourcesReleased, .watchControlFinished,
                  .watchRecordControl, .watchRecordResponse, .watchDrainProgress: return .none

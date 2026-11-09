@@ -9,7 +9,11 @@ struct WatchExperimentView: View {
 
     var body: some View {
         Group {
-            if store.screen == .experiment || store.screen == .timers,
+            if store.showsMirroredRecording, let recording = store.mirroredRecording {
+                WatchMirroredRecordingView(
+                    recording: recording, isCurrent: store.phoneScreenIsCurrent
+                )
+            } else if store.screen == .experiment || store.screen == .timers,
                       store.recording.focused == nil,
                       store.snapshot?.experiment.status == .running {
                 TabView(selection: Binding(get: { selectedPage }, set: { page in

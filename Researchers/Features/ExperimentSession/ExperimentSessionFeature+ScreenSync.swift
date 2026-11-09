@@ -34,9 +34,16 @@ extension ExperimentSessionFeature {
     var screenSyncReducer: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
+            case let .clearScreenRecording(id, phase):
+                guard state.lastScreenRecording?.id == id,
+                      state.lastScreenRecording?.phase == phase,
+                      state.currentScreenRecording == nil else { return .none }
+                state.lastScreenRecording = nil
+                return .none
             case let .gestureGuidePresented(presented):
                 state.isGestureGuidePresented = presented
                 state.sharedStage = nil
+                if state.currentScreenRecording == nil { state.lastScreenRecording = nil }
             case let .sidePanelExpanded(expanded):
                 state.isSidePanelExpanded = expanded
                 state.sharedStage = nil
@@ -50,10 +57,20 @@ extension ExperimentSessionFeature {
             case .pauseTapped, .pause(.delegate(.resumeRequested)),
                  .timer(.editorPresented), .timer(.timerTabSelected), .timer(.timerSaved):
                 state.sharedStage = nil
+                if state.currentScreenRecording == nil { state.lastScreenRecording = nil }
             default:
                 break
             }
-            return .none
+            let previous = state.lastScreenRecording
+            state.updateScreenRecording(action: action, at: now)
+            guard let recording = state.lastScreenRecording, previous != recording,
+                  recording.phase == .saved || recording.phase == .cancelled
+                    || (recording.phase == .failed && !state.hasUnsettledLocalMedia)
+            else { return .none }
+            return .run { send in
+                try await Task.sleep(for: .seconds(1))
+                await send(.clearScreenRecording(recording.id, recording.phase))
+            }
         }
     }
 }
@@ -88,6 +105,7 @@ extension ExperimentSessionFeature.State {
     }
 
     mutating func applyScreen(_ screen: WatchScreenSnapshot, status: ExperimentStatus) {
+        if currentScreenRecording == nil { lastScreenRecording = nil }
         isRemotePreview = status != .running
         sharedStage = screen.stage
         sharedCountdownEndsAt = screen.countdownEndsAt
@@ -102,10 +120,11 @@ extension ExperimentSessionFeature.State {
         }
     }
 
-    func screenSnapshot() -> WatchScreenSnapshot {
+    func screenSnapshot(watchRecording: WatchScreenRecording?) -> WatchScreenSnapshot {
         WatchScreenSnapshot(
             destination: .experiment, experimentID: experimentID, stage: screenStage,
             countdownEndsAt: sharedCountdownEndsAt,
+            recording: currentScreenRecording ?? watchRecording ?? lastScreenRecording,
             timerDraftSeconds: screenStage == .timerEditor ? timer.draftSeconds : nil
         )
     }

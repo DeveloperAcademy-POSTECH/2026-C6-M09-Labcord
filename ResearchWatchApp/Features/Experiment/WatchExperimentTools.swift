@@ -77,6 +77,10 @@ extension WatchExperimentFeature {
             )
         case let .recording(.delegate(.local(input))):
             return performLocal(input, observationID: state.recordObservationID)
+        case let .recording(.delegate(.closed(id))):
+            guard state.isReachable, let record = state.recording.records[id], record.isSettled,
+                  record.experimentID == state.selectedID else { return .none }
+            return navigateToExperiment(state: &state)
         default:
             return reduceRecordObservation(state: &state, action: action)
         }

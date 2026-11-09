@@ -219,10 +219,14 @@ public final class PhoneWatchAudioService {
             latest[recordID] = receipt
             recordRevisions[recordID] = revision
             connectivity.records.publish(record, session: connectivity.session)
-            screenState.receive(record)
+            let elapsed = receipt.manifest.map {
+                Double($0.totalSamples) / Double($0.header.sampleRate)
+            }
+            screenState.receive(record, elapsedSeconds: elapsed)
             if record.phase != .recording, liveRecording?.recordingID == record.id {
                 liveRecording = nil
             }
+            PhoneWatchExperimentCoordinator.shared.recordDidChange(record)
             if receipt.savedRecordID != nil || receipt.isCancelled || receipt.isReviewing
                 || receipt.failure != nil {
                 sendReceipt(receipt)
@@ -291,7 +295,15 @@ extension PhoneWatchAudioService {
         } else if liveRecording?.recordingID == status.recordingID {
             liveRecording = nil
         }
+        let previous = screenState.recording
         screenState.receive(status)
+        if previous != screenState.recording {
+            PhoneWatchExperimentCoordinator.shared.recordDidChange(WatchRecordSnapshot(
+                id: status.recordingID, kind: .audio,
+                phase: screenState.recording?.phase ?? .recording,
+                experimentID: status.experimentID
+            ))
+        }
     }
 
 }

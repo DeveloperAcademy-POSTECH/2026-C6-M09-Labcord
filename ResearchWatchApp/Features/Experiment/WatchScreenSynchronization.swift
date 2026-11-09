@@ -16,6 +16,14 @@ extension WatchExperimentFeature.State {
             && phoneScreen.map { abs(currentTime.timeIntervalSince($0.recordedAt)) < 10 } == true
     }
 
+    var showsMirroredRecording: Bool {
+        guard let mirroredRecording, mirroredRecording.experimentID == selectedID,
+              recording.focused == nil else { return false }
+        if screen == .experiment { return true }
+        return (screen == .timers || screen == .timerEditor)
+            && mirroredRecording.phase != .saved && mirroredRecording.phase != .cancelled
+    }
+
     var phoneRecordingBlocksCapture: Bool {
         guard let record = phoneScreen?.recording, record.origin == .phone else { return false }
         return record.phase != .saved && record.phase != .cancelled
@@ -117,6 +125,7 @@ extension WatchExperimentFeature {
             }
             return active.id
         }
+        state.mirroredRecording = screen.recording?.origin == .phone ? screen.recording : nil
         state.clearMessageUnlessInterruptionUnconfirmed()
         switch screen.destination {
         case .home:

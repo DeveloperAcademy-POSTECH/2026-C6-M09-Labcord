@@ -110,6 +110,7 @@ struct VideoFeature {
             case .recordRequested:
                 guard state.phase == .idle else { return .none }
                 state.sessionID = UUID()
+                state.requestedRecordID = state.requestedRecordID ?? uuid()
                 state.phase = .starting
                 let id = state.sessionID
                 return .run { send in
