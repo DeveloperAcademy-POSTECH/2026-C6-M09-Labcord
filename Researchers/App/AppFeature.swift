@@ -328,23 +328,6 @@ extension AppFeature {
 }
 
 private extension AppFeature {
-    func handleLaunch(_ state: inout State, _ action: Action) -> Effect<Action> {
-        switch action {
-        case .appeared:
-            if !state.hasCompletedOnboarding {
-                state.onboarding = OnboardingFeature.State()
-            }
-
-        case .onboarding(.delegate(.finished)):
-            state.onboarding = nil
-            state.$hasCompletedOnboarding.withLock { $0 = true }
-
-        default:
-            break
-        }
-        return .none
-    }
-
     func openResumedSession(_ state: inout State, id: StackElementID) -> Effect<Action> {
         guard var result = state.path[id: id, case: \.result], result.isResuming else {
             return .none
@@ -408,16 +391,3 @@ private extension AppFeature {
         }
     }
 }
-
-extension AppFeature {
-    @Reducer
-    enum Path {
-        case registration(ProtocolRegistrationFeature)
-        case recent(RecentProtocolFeature)
-        case review(ProtocolReviewFeature)
-        case session(ExperimentSessionFeature)
-        case result(ExperimentResultFeature)
-    }
-}
-
-extension AppFeature.Path.State: Equatable {}
