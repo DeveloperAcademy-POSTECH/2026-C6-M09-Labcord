@@ -51,13 +51,13 @@ public struct SessionPermissionsFeature {
                 state.isRequesting = true
                 state.issue = nil
                 return .run { send in
-                    let camera = await cameraPermissionClient.requestAccess()
-                    guard !Task.isCancelled else { return }
-                    await send(.camera(.statusUpdated(camera)))
-
                     let microphone = await microphonePermissionClient.requestAccess()
                     guard !Task.isCancelled else { return }
                     await send(.microphoneStatusUpdated(microphone))
+
+                    let camera = await cameraPermissionClient.requestAccess()
+                    guard !Task.isCancelled else { return }
+                    await send(.camera(.statusUpdated(camera)))
 
                     let speechRecognition = await speechRecognitionPermissionClient.requestAccess()
                     guard !Task.isCancelled else { return }
@@ -80,16 +80,16 @@ public struct SessionPermissionsFeature {
 
             case .requestFinished:
                 state.isRequesting = false
-                let requirements: [PermissionRequirement] = [
-                    state.camera.status.map { .init(kind: .camera, status: $0) },
+                let requirement: PermissionRequirement? = [
                     state.microphoneStatus.map { .init(kind: .microphone, status: $0) },
+                    state.camera.status.map { .init(kind: .camera, status: $0) },
                     state.speechRecognitionStatus.map {
                         .init(kind: .speechRecognition, status: $0)
                     }
                 ]
                 .compactMap { $0 }
-                .filter { $0.status == .denied || $0.status == .restricted }
-                state.issue = requirements.isEmpty ? nil : .accessRequired(requirements)
+                .first { $0.status != .authorized }
+                state.issue = requirement.map { .accessRequired([$0]) }
                 return .none
 
             case let .accessFailed(kind):
