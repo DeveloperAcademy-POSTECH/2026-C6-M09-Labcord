@@ -315,7 +315,9 @@ private struct TermFlowLayout: Layout {
                 verticalOffset += rowHeight + spacing
                 rowHeight = 0
             }
-            frames.append(CGRect(origin: CGPoint(x: horizontalOffset, y: verticalOffset), size: size))
+            frames.append(CGRect(
+                origin: CGPoint(x: horizontalOffset, y: verticalOffset), size: size
+            ))
             horizontalOffset += size.width + spacing
             rowHeight = max(rowHeight, size.height)
         }

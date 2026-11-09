@@ -37,8 +37,7 @@ struct AppFeature {
         case showResult(StackElementID)
         case returnHome(StackElementID)
         case reviewSaved(
-            StackElementID, Result<ExperimentListEntry, ProtocolRegistrationFeature.SaveFailure>
-        )
+            StackElementID, Result<ExperimentListEntry, ProtocolRegistrationFeature.SaveFailure>)
         case reviewCleanupFinished(StackElementID, Bool)
         case reviewPreviouslySaved(StackElementID, ExperimentListEntry)
         case confirmAlreadySaved
@@ -65,9 +64,7 @@ struct AppFeature {
                 return loadNotificationExperiment(&state, experimentID: experimentID)
 
             case let .timerNotificationLoaded(experimentID, entry):
-                return openNotificationExperiment(
-                    &state, experimentID: experimentID, entry: entry
-                )
+                return openNotificationExperiment(&state, experimentID: experimentID, entry: entry)
 
             case .home(.addTapped):
                 guard state.path.isEmpty, !state.home.list.isDeleting,
