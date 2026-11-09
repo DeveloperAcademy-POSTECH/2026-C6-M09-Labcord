@@ -1,10 +1,3 @@
-//
-//  WatchConnectivitySession.swift
-//  labcord-package-swift
-//
-//  Created by 정홍섭 on 10/21/26.
-//
-
 import ComposableArchitecture
 import Foundation
 import LabcordShared
@@ -15,6 +8,8 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
     private var handlingUserInfoCount = 0
     private var lastHandledUserInfoAt: Date?
     public let observerStore = WatchConnectivityObserverStore()
+    public let experiments = WatchExperimentTransport()
+    @MainActor public private(set) var activationFailed = false
 
     private func deliveryState(since start: Date) -> (isHandling: Bool, handledRecently: Bool) {
         deliveryLock.lock()
@@ -29,7 +24,36 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         _ session: WCSession,
         activationDidCompleteWith state: WCSessionActivationState,
         error: Error?
-    ) {}
+    ) {
+        let failed = error != nil
+        Task { @MainActor in self.activationFailed = failed }
+    }
+
+    @MainActor public func retryActivation() {
+        activationFailed = false
+        activate()
+    }
+
+    public func session(
+        _ session: WCSession,
+        didReceiveMessage message: [String: Any],
+        replyHandler: @escaping ([String: Any]) -> Void
+    ) {
+        let data = message[WatchExperimentTransport.commandKey] as? Data
+        Task { @MainActor in
+            let response = data.flatMap { experiments.reply(to: $0) }
+            replyHandler(response.map { [WatchExperimentTransport.responseKey: $0] } ?? [:])
+        }
+    }
+
+    public func session(
+        _ session: WCSession,
+        didReceiveApplicationContext applicationContext: [String: Any]
+    ) {
+        guard let data = applicationContext[WatchExperimentTransport.snapshotKey] as? Data
+        else { return }
+        Task { @MainActor in experiments.receiveSnapshot(data) }
+    }
 
     public func session(
         _ session: WCSession,
