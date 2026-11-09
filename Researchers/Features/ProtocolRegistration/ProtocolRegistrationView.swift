@@ -4,7 +4,6 @@ import LabcordiOS
 import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
-
 struct ProtocolRegistrationView: View {
     @Bindable var store: StoreOf<ProtocolRegistrationFeature>
     @State private var photoPickerPresented = false
@@ -17,9 +16,7 @@ struct ProtocolRegistrationView: View {
     @State private var showExitConfirmation = false
     @State private var showAnalysisExitConfirmation = false
     @State private var showDiscardConfirmation = false
-
     private var input: ProtocolInputAnalysisFeature.State { store.inputAnalysis }
-
     private var registrationContent: some View {
         Group {
             if input.analysisID != nil {
@@ -105,7 +102,6 @@ struct ProtocolRegistrationView: View {
             Text("선택한 파일과 분석 결과가 초기화돼요. 원본 파일은 삭제되지 않아요.")
         }
     }
-
     var body: some View {
         registrationContent
         .photosPicker(
@@ -152,9 +148,7 @@ struct ProtocolRegistrationView: View {
             .accessibilityIdentifier("entry-back")
         }
     }
-
 }
-
 private extension ProtocolRegistrationView {
     var setupContent: some View {
         VStack(spacing: 0) {
@@ -170,7 +164,6 @@ private extension ProtocolRegistrationView {
                     }
                     .accessibilityHint("사진을 선택합니다")
                     .accessibilityIdentifier("entry-source-photos")
-
                     ProtocolUploadButton(
                         "파일", description: "PDF, XLSX, DOCX · 최대 1GB",
                         state: input.importedFile == nil ? .default : .selected
@@ -178,7 +171,6 @@ private extension ProtocolRegistrationView {
                         filePickerPresented = true
                     }
                     .accessibilityIdentifier("entry-source-file")
-
                     ProtocolUploadButton(
                         "최근 사용한 프로토콜", description: "", state: .default,
                         showDescription: false
@@ -193,7 +185,6 @@ private extension ProtocolRegistrationView {
                 .padding(.horizontal, 16)
                 .padding(.top, 16)
             }
-
             VStack(spacing: 16) {
                 if let importedFile = input.importedFile {
                     importedFileRow(importedFile)
@@ -269,7 +260,6 @@ private extension ProtocolRegistrationView {
                 .disabled(store.isSaving || input.importing || input.analysisID != nil
                           || input.invalidatingJobID != nil || input.analysisStarting)
                 .accessibilityIdentifier("entry-skip")
-
                 EntryNextButton(
                     enabled: (!input.pendingInputs.isEmpty || input.analysisPaused)
                         && !input.importing
@@ -283,7 +273,8 @@ private extension ProtocolRegistrationView {
             .padding(.top, 16)
         }
     }
-
+}
+private extension ProtocolRegistrationView {
     func importedFileRow(_ file: ImportedProtocolInput) -> some View {
         HStack(spacing: 16) {
             FileTypeIcon(fileIconKind(for: file.name))
@@ -316,7 +307,6 @@ private extension ProtocolRegistrationView {
                 .allowsHitTesting(false)
         }
     }
-
     func fileIconKind(for name: String) -> FileTypeIcon.Kind {
         switch (name as NSString).pathExtension.lowercased() {
         case "pdf": .pdf
@@ -325,7 +315,6 @@ private extension ProtocolRegistrationView {
         default: .pdf
         }
     }
-
     var protocolFileTypes: [UTType] {
         [.pdf] + ["xlsx", "docx"].compactMap { UTType(filenameExtension: $0) }
     }
@@ -405,123 +394,5 @@ private extension ProtocolRegistrationView {
             }
             store.send(.inputAnalysis(.importFinished))
         }
-    }
-}
-
-private struct AttachmentScrollMetrics: Equatable {
-    var contentWidth: CGFloat = 0
-    var visibleWidth: CGFloat = 0
-    var offset: CGFloat = 0
-}
-
-private struct RegistrationAttachmentScrollView<Content: View>: View {
-    @ViewBuilder let content: Content
-    @State private var metrics = AttachmentScrollMetrics()
-    @ScaledMetric(relativeTo: .body) private var attachmentHeight: CGFloat = 100
-
-    var body: some View {
-        VStack(spacing: 8) {
-            ScrollView(.horizontal) {
-                HStack(spacing: 8) {
-                    content
-                }
-            }
-            .frame(height: attachmentHeight)
-            .scrollIndicators(.hidden)
-            .onScrollGeometryChange(for: AttachmentScrollMetrics.self) { geometry in
-                AttachmentScrollMetrics(
-                    contentWidth: geometry.contentSize.width,
-                    visibleWidth: geometry.containerSize.width,
-                    offset: geometry.contentOffset.x + geometry.contentInsets.leading
-                )
-            } action: { _, newMetrics in
-                metrics = newMetrics
-            }
-
-            if metrics.contentWidth > metrics.visibleWidth && metrics.visibleWidth > 0 {
-                GeometryReader { geometry in
-                    let trackWidth = geometry.size.width
-                    let visibleFraction = min(metrics.visibleWidth / metrics.contentWidth, 1)
-                    let thumbWidth = trackWidth * visibleFraction
-                    let scrollRange = metrics.contentWidth - metrics.visibleWidth
-                    let progress = min(max(metrics.offset / scrollRange, 0), 1)
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(Color(
-                            "General/Separator/Opaque", bundle: LabcordDesignSystemResources.bundle
-                        ))
-                        Capsule()
-                            .fill(Color(
-                                "General/Border/Strong",
-                                bundle: LabcordDesignSystemResources.bundle
-                            ))
-                            .frame(width: thumbWidth)
-                            .offset(x: (trackWidth - thumbWidth) * progress)
-                    }
-                }
-                .frame(height: 6)
-                .accessibilityHidden(true)
-                .allowsHitTesting(false)
-            }
-        }
-    }
-}
-
-#Preview("사진 첨부 스크롤") {
-    RegistrationAttachmentScrollView {
-        ForEach(0..<10, id: \.self) { index in
-            RoundedRectangle(cornerRadius: 8)
-                .fill(.gray.opacity(0.15))
-                .frame(width: 100, height: 100)
-                .overlay { Text("\(index + 1)") }
-        }
-    }
-    .padding(16)
-}
-
-#Preview("실험 등록") {
-    _ = FontRegistration.register()
-    NavigationStack {
-        ProtocolRegistrationView(
-            store: Store(initialState: ProtocolRegistrationFeature.State()) {
-                ProtocolRegistrationFeature()
-            } withDependencies: {
-                $0.protocolAnalysisJobManager = .testValue
-            }
-        )
-    }
-}
-
-#Preview("실험 등록 · 여러 사진") {
-    _ = FontRegistration.register()
-    var state = ProtocolRegistrationFeature.State()
-    state.inputAnalysis.importedPhotos = (0..<8).map { index in
-        ImportedProtocolInput.recovered(
-            id: UUID(), url: URL(fileURLWithPath: "/preview/photo-\(index).jpg"),
-            name: "사진 \(index + 1).jpg"
-        )
-    }
-    return NavigationStack {
-        ProtocolRegistrationView(
-            store: Store(initialState: state) {
-                ProtocolRegistrationFeature()
-            } withDependencies: {
-                $0.protocolAnalysisJobManager = .testValue
-            }
-        )
-    }
-}
-
-#Preview("분석 완료 · 종료 확인") {
-    _ = FontRegistration.register()
-    var state = ProtocolRegistrationFeature.State()
-    state.inputAnalysis.showsAnalysisCompletion = true
-    return NavigationStack {
-        ProtocolRegistrationView(
-            store: Store(initialState: state) {
-                ProtocolRegistrationFeature()
-            } withDependencies: {
-                $0.protocolAnalysisJobManager = .testValue
-            }
-        )
     }
 }

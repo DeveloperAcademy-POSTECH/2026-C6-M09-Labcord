@@ -80,7 +80,7 @@ struct RecentProtocolView: View {
 }
 
 #Preview("최근 사용한 프로토콜 · 빈 목록") {
-    _ = FontRegistration.register()
+    let fontRegistration = FontRegistration.register()
     NavigationStack {
         RecentProtocolView(
             store: Store(initialState: RecentProtocolFeature.State()) {
@@ -90,4 +90,5 @@ struct RecentProtocolView: View {
             }
         )
     }
+    .id(fontRegistration)
 }

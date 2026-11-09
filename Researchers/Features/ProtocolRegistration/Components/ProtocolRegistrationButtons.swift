@@ -53,7 +53,7 @@ struct InvalidationRetryView: View {
 }
 
 #Preview("등록 버튼과 진행 상태") {
-    _ = FontRegistration.register()
+    let fontRegistration = FontRegistration.register()
     VStack(spacing: 16) {
         EntryLoadingIndicator()
         EntryNextButton(enabled: true, retry: false) {}
@@ -62,4 +62,5 @@ struct InvalidationRetryView: View {
         InvalidationRetryView(retry: {}, discard: {})
     }
     .padding(16)
+    .id(fontRegistration)
 }

@@ -82,10 +82,11 @@ struct ProtocolAnalysisProgressView: View {
 }
 
 #Preview("프로토콜 분석 중") {
-    _ = FontRegistration.register()
+    let fontRegistration = FontRegistration.register()
     ProtocolAnalysisProgressView(
         scanCompleted: false,
         extractionCompleted: false,
         isCancelling: false
     ) {}
+    .id(fontRegistration)
 }

@@ -125,7 +125,10 @@ struct ProtocolReviewView: View {
         }
     }
 
-    private var titleField: some View {
+}
+
+private extension ProtocolReviewView {
+    var titleField: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 0) {
                 Text("실험 이름 ").foregroundStyle(Color(
@@ -166,7 +169,7 @@ struct ProtocolReviewView: View {
         }
     }
 
-    private var timerSection: some View {
+    var timerSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("타이머").typography(Typography.calloutSemiBold)
@@ -186,7 +189,7 @@ struct ProtocolReviewView: View {
         }
     }
 
-    private var termSection: some View {
+    var termSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("추출한 용어").typography(Typography.calloutSemiBold)
             Text("프로토콜에서 추출한 전문 용어를 음성 인식에 반영해요.")
@@ -237,7 +240,7 @@ struct ProtocolReviewView: View {
         }
     }
 
-    private var termInput: some View {
+    var termInput: some View {
         VStack(alignment: .leading, spacing: 4) {
             TextField("용어 입력", text: Binding(
                 get: { store.termInput }, set: { store.send(.termChanged($0)) }
@@ -264,7 +267,7 @@ struct ProtocolReviewView: View {
         }
     }
 
-    private func openTimer(index: Int?) {
+    func openTimer(index: Int?) {
         timerEditor = TimerEditor(
             index: index, duration: .seconds(index.map { store.timerSeconds[$0] } ?? 0)
         )
@@ -299,29 +302,29 @@ private struct TermFlowLayout: Layout {
         guard !subviews.isEmpty else { return (.zero, []) }
         let availableWidth = max(0, width)
         var frames: [CGRect] = []
-        var x: CGFloat = 0
-        var y: CGFloat = 0
+        var horizontalOffset: CGFloat = 0
+        var verticalOffset: CGFloat = 0
         var rowHeight: CGFloat = 0
         for subview in subviews {
             let intrinsic = subview.sizeThatFits(.unspecified)
             let size = intrinsic.width > availableWidth
                 ? subview.sizeThatFits(ProposedViewSize(width: availableWidth, height: nil))
                 : intrinsic
-            if x > 0 && x + size.width > availableWidth {
-                x = 0
-                y += rowHeight + spacing
+            if horizontalOffset > 0 && horizontalOffset + size.width > availableWidth {
+                horizontalOffset = 0
+                verticalOffset += rowHeight + spacing
                 rowHeight = 0
             }
-            frames.append(CGRect(origin: CGPoint(x: x, y: y), size: size))
-            x += size.width + spacing
+            frames.append(CGRect(origin: CGPoint(x: horizontalOffset, y: verticalOffset), size: size))
+            horizontalOffset += size.width + spacing
             rowHeight = max(rowHeight, size.height)
         }
-        return (CGSize(width: availableWidth, height: y + rowHeight), frames)
+        return (CGSize(width: availableWidth, height: verticalOffset + rowHeight), frames)
     }
 }
 
 #Preview("프로토콜 분석 결과") {
-    _ = FontRegistration.register()
+    let fontRegistration = FontRegistration.register()
     let terms: [ProtocolTermCategory: [ProtocolReviewTerm]] = [
         .materials: [
             ProtocolReviewTerm(id: UUID(), value: "시약"),
@@ -341,10 +344,11 @@ private struct TermFlowLayout: Layout {
             }
         )
     }
+    .id(fontRegistration)
 }
 
 #Preview("프로토콜 분석 결과 · 빈 입력") {
-    _ = FontRegistration.register()
+    let fontRegistration = FontRegistration.register()
     NavigationStack {
         ProtocolReviewView(
             store: Store(initialState: ProtocolReviewFeature.State(
@@ -354,4 +358,5 @@ private struct TermFlowLayout: Layout {
             }
         )
     }
+    .id(fontRegistration)
 }

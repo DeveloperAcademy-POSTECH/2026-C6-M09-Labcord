@@ -187,7 +187,7 @@ private struct RecentTermFlow: Layout {
 }
 
 #Preview("최근 프로토콜 상세") {
-    _ = FontRegistration.register()
+    let fontRegistration = FontRegistration.register()
     NavigationStack {
         RecentProtocolDetailView(
             title: "촉매 반응 조건 비교 실험",
@@ -200,4 +200,5 @@ private struct RecentTermFlow: Layout {
             ]
         ) {}
     }
+    .id(fontRegistration)
 }
