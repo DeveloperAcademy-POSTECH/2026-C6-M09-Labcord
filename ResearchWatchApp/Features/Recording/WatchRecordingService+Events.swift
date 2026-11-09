@@ -20,6 +20,7 @@ extension WatchRecordingService {
             throw error
         }
         await transfer.recover()
+        refreshVoiceLiveStatus()
     }
 
     func markCancelledStart(_ input: WatchRecordingUIBridge.Input) {

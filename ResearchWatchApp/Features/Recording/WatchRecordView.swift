@@ -228,6 +228,7 @@ struct WatchRecordControls: View {
 
     private var canRecord: Bool {
         store.recording.isIntegrated && store.pending == nil && !store.isPreparingInterruption
+            && !store.screenRecoveryNeeded && !store.phoneRecordingBlocksCapture
             && store.snapshot?.experiment.status == .running
     }
 }

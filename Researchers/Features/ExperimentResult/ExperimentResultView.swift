@@ -132,6 +132,14 @@ struct ExperimentResultView: View {
                     .animation(.easeInOut(duration: 0.2), value: store.selectedEntry != nil)
                     .allowsHitTesting(false)
             }
+            .alert("실험을 재개할까요?", isPresented: Binding(
+                get: { store.isResumeConfirmationPresented },
+                set: { if !$0 { store.send(.resumeConfirmationCancelled) } }
+            )) {
+                Button("취소", role: .cancel) { store.send(.resumeConfirmationCancelled) }
+                Button("재개") { store.send(.resumeTapped) }
+                    .disabled(store.recordTimeline == nil || store.isResuming)
+            }
             .fullScreenCover(item: Binding(
                 get: { store.selectedEntry },
                 set: { if $0 == nil { store.send(.timelineSheetDismissed) } }

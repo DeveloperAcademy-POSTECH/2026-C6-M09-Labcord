@@ -5,14 +5,16 @@ import LabcordWatchOS
 
 extension WatchExperimentFeature {
     func close(state: inout State) -> Effect<Action> {
+        let previousScreen = state.screen
         let cancellingPreparation = state.pending?.command.operation == .prepareStart
         if cancellingPreparation { state.pending = nil }
         state.isRequestingPermission = false
+        state.permissionRequestID = nil
         state.cleanupRequestID = nil
         state.startToken = nil
         state.countdownID = nil
+        state.localCountdownEndsAt = nil
         state.authorization = nil
-        state.screen = state.selectedID == nil ? .selection : .experiment
         state.clearMessageUnlessInterruptionUnconfirmed()
         var effects: [Effect<Action>] = [
             .cancel(id: CancelID.permission), .cancel(id: CancelID.countdown)
@@ -20,6 +22,15 @@ extension WatchExperimentFeature {
         if cancellingPreparation {
             effects += [.cancel(id: CancelID.request), .cancel(id: CancelID.delivery),
                         .cancel(id: CancelID.poll)]
+        }
+        if previousScreen == .connection {
+            state.screen = state.selectedID == nil ? .selection : .experiment
+        } else if previousScreen == .recordCleanup || previousScreen == .phoneRegistration {
+            effects.append(navigate(.init(destination: .home), state: &state))
+        } else if previousScreen == .timerEditor {
+            effects.append(navigateToStage(.timers, discardTimerDraft: true, state: &state))
+        } else {
+            effects.append(navigateToExperiment(state: &state))
         }
         return .merge(effects)
     }
@@ -109,21 +120,12 @@ extension WatchExperimentFeature {
         case let .requestFailed(id, error):
             return handleRequestFailure(id, error: error, state: &state)
         case let .deliveryExpired(id):
-            guard state.pending?.responseID == id,
-                  state.pending?.phase == .delivering else { return .none }
-            state.pending?.phase = .uncertain
-            state.canRetryPendingCancellation = false
-            state.message = WatchExperimentError.deliveryTimeout.watchMessage
-            if let pending = state.pending,
-               WatchRequestPolicy.canAbandon(pending.command.operation) {
-                return .merge(
-                    fail(.deliveryTimeout, state: &state), .cancel(id: CancelID.request)
-                )
-            }
-            return .none
+            return expireDelivery(id, state: &state)
         case let .pollRequest(id):
             guard state.pending?.command.requestID == id else { return .none }
             return checkStatus(state: &state)
+        case .screenReceived, .screenStreamEnded:
+            return reduceScreenEvent(state: &state, action: action)
         case .snapshotReceived, .streamEnded, .connectionChanged, .connectionStatusChanged,
              .retryConnection, .tick:
             return reduceLifecycle(state: &state, action: action)
@@ -132,10 +134,29 @@ extension WatchExperimentFeature {
         }
     }
 
+    private func expireDelivery(_ id: UUID, state: inout State) -> Effect<Action> {
+        guard state.pending?.responseID == id,
+              state.pending?.phase == .delivering else { return .none }
+        if state.pending?.command.operation == .navigate {
+            return recoverNavigation(state: &state)
+        }
+        state.pending?.phase = .uncertain
+        state.canRetryPendingCancellation = false
+        state.message = WatchExperimentError.deliveryTimeout.watchMessage
+        if let pending = state.pending,
+           WatchRequestPolicy.canAbandon(pending.command.operation) {
+            return .merge(
+                fail(.deliveryTimeout, state: &state), .cancel(id: CancelID.request)
+            )
+        }
+        return .none
+    }
+
     private func handleRequestFailure(
         _ id: UUID, error: WatchExperimentError, state: inout State
     ) -> Effect<Action> {
         guard let pending = state.pending, pending.responseID == id else { return .none }
+        if pending.command.operation == .navigate { return recoverNavigation(state: &state) }
         if !WatchRequestPolicy.canAbandon(pending.command.operation) {
             state.pending?.phase = .uncertain
             state.canRetryPendingCancellation = pending.command.operation == .cancelRecord
@@ -158,7 +179,10 @@ extension WatchExperimentFeature {
             state.canRetryPendingCancellation = true
         }
         if let error = response.error {
-            return fail(error, state: &state, definitive: response.phase == .failed)
+            let screenEffect = response.screen.map { receiveScreen($0, state: &state) } ?? .none
+            return .merge(
+                screenEffect, fail(error, state: &state, definitive: response.phase == .failed)
+            )
         }
         switch response.phase {
         case .received, .processing:
@@ -203,6 +227,7 @@ extension WatchExperimentFeature {
         state.canRetryPendingCancellation = false
         state.clearMessageUnlessInterruptionUnconfirmed()
         applyDeferredPhoneSession(after: pending.command.operation, state: &state)
+        let screenEffect = acceptCompletedScreen(response, command: pending.command, state: &state)
         if pending.command.operation == .prepareStart {
             return handlePreparedStart(response, state: &state)
         }
@@ -215,6 +240,7 @@ extension WatchExperimentFeature {
             state.message = "실험 상태가 반영됐어요. 기록 저장 결과는 별도로 확인해주세요."
         }
         let cancel: Effect<Action> = .merge(
+            screenEffect,
             .cancel(id: CancelID.delivery), .cancel(id: CancelID.poll),
             recordCommandProcessed(pending.command, state: state)
         )
@@ -238,6 +264,7 @@ extension WatchExperimentFeature {
     ) -> Bool {
         switch operation {
         case .list: response.experiments != nil
+        case .screen, .navigate: response.screen?.isValid == true
         case .snapshot: response.snapshot != nil
         case .prepareStart: response.startToken != nil
         default: true
@@ -257,6 +284,9 @@ extension WatchExperimentFeature {
     func fail(
         _ error: WatchExperimentError, state: inout State, definitive: Bool = false
     ) -> Effect<Action> {
+        if navigationNeedsRecovery(error, state: state) {
+            return recoverNavigation(state: &state)
+        }
         if state.pending?.command.operation == .list { state.deferredPhoneSession = nil }
         state.message = error.watchMessage
         let command = state.pending?.command
@@ -286,10 +316,8 @@ extension WatchExperimentFeature {
             state.pending = nil
             state.startToken = nil
         }
-        if state.pending == nil { state.cleanupRequestID = nil }
-        var effects: [Effect<Action>] = [
-            .cancel(id: CancelID.delivery), .cancel(id: CancelID.poll)
-        ]
+        clearFailedNavigation(command, state: &state)
+        var effects = [Effect<Action>.cancel(id: CancelID.delivery), .cancel(id: CancelID.poll)]
         if state.pending == nil, let id = command?.targetID ?? authorization?.targetID,
            state.recording.records[id] != nil {
             let operation = authorization?.operation ?? command?.operation
