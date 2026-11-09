@@ -109,6 +109,7 @@ struct WatchRecordFeature {
                 record.detail = message
                 record.canAutoSave = false
                 state.records[id] = record
+                if state.focusedID == id { state.focusedID = nil }
                 return .none
             case let .recapture(id):
                 guard state.isIntegrated, let record = state.records[id],
@@ -123,6 +124,7 @@ struct WatchRecordFeature {
                       !record.originalRetained else { return .none }
                 state.records[id]?.phase = .cancelled
                 state.records[id]?.detail = "촬영 요청을 보내기 전에 취소했어요."
+                if state.focusedID == id { state.focusedID = nil }
                 state.decisions[id] = nil
                 state.failedDecisions.remove(id)
                 return .none
@@ -247,6 +249,9 @@ private extension WatchRecordFeature {
             } else if update.phase == .review { update.phase = .saving }
         }
         state.records[record.id] = update
+        if state.focusedID == record.id, update.canRecapture || update.phase == .cancelled {
+            state.focusedID = nil
+        }
         if update.phase == .review, update.canAutoSave, state.isIntegrated {
             state.autoSaveSeconds[record.id] = state.autoSaveSeconds[record.id] ?? 3
             return autoSave(id: record.id, revision: record.revision)
