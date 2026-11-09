@@ -24,9 +24,25 @@ public final class WatchExperimentTransport {
         guard let session, session.activationState == .activated, session.isReachable else {
             throw WatchExperimentError.notReachable
         }
+        let responseKey = Self.responseKey
+        return try await send(command) { data, reply, failure in
+            session.sendMessage([Self.commandKey: data]) { @Sendable message in
+                reply(message[responseKey] as? Data)
+            } errorHandler: { @Sendable _ in
+                failure()
+            }
+        }
+    }
+
+    func send(
+        _ command: WatchExperimentCommand,
+        transmit: (
+            Data, @escaping @Sendable (Data?) -> Void, @escaping @Sendable () -> Void
+        ) -> Void
+    ) async throws -> WatchExperimentResponse {
+        try Task.checkCancellation()
         guard pending[command.requestID] == nil else { throw WatchExperimentError.phoneBusy }
         let data = try JSONEncoder().encode(command)
-        let responseKey = Self.responseKey
         let transmissionID = UUID()
         return try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { continuation in
@@ -40,21 +56,20 @@ public final class WatchExperimentTransport {
                         result: .failure(WatchExperimentError.deliveryTimeout)
                     )
                 }
-                session.sendMessage([Self.commandKey: data]) { @Sendable [weak self] message in
-                    let responseData = message[responseKey] as? Data
+                transmit(data, { @Sendable [weak self] responseData in
                     Task { @MainActor in
                         self?.handleReply(
                             responseData, command: command, transmissionID: transmissionID
                         )
                     }
-                } errorHandler: { @Sendable [weak self] _ in
+                }, { @Sendable [weak self] in
                     Task { @MainActor in
                         self?.finish(
                             command.requestID, transmissionID: transmissionID,
                             result: .failure(WatchExperimentError.resultUnknown)
                         )
                     }
-                }
+                })
             }
         } onCancel: { [weak self] in
             Task { @MainActor in

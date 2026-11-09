@@ -19,4 +19,14 @@ enum PhoneIntentReadiness: Equatable {
         guard input.detailReady, !input.cameraNeeded || input.cameraReady else { return .wait }
         return .ready
     }
+
+    static func photoRequestAccepted(
+        requestID: UUID,
+        currentRequestID: UUID?,
+        isScheduled: Bool,
+        isCapturing: Bool,
+        hasCapturedData: Bool
+    ) -> Bool {
+        currentRequestID == requestID && (isScheduled || isCapturing || hasCapturedData)
+    }
 }
