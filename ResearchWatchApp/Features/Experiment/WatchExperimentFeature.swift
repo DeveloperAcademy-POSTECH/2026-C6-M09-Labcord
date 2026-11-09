@@ -40,6 +40,8 @@ struct WatchExperimentFeature {
         var connectionStatus: WatchConnectionStatus = .activating
         var isVisible = false
         var streamID: UUID?
+        var recordObservationID: UUID?
+        var recordObservationReady = false
         var message: String?
         var permissionDenied = false
         var isRequestingPermission = false
@@ -104,7 +106,9 @@ struct WatchExperimentFeature {
         case practiceRecord(WatchRecordPresentation.Kind)
         case recordUpdate(UUID, WatchRecordPresentation)
         case recordReconnect
-        case recordStreamEnded(UUID)
+        case recordStreamReady(UUID, UUID)
+        case recordStreamEnded(UUID, UUID)
+        case recordRecoveryFinished(UUID?, Bool)
         case interruptionPrepared(UUID, UUID, WatchExperimentCommand.Operation)
         case interruptionFailed(UUID, UUID), cancelInterruptionPreparation
     }

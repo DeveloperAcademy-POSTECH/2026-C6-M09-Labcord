@@ -37,8 +37,12 @@ extension WatchExperimentFeature {
         state.connectionStatus = .activating
         let streamID = uuid()
         state.streamID = streamID
+        let observationID = uuid()
+        state.recordObservationID = observationID
+        state.recordObservationReady = false
+        state.recording.isIntegrated = false
         return .merge(
-            observeRecords(streamID),
+            observeRecords(streamID, observationID: observationID),
             .run { [client] send in
                 let snapshots = await client.snapshots()
                 for await snapshot in snapshots {
@@ -132,6 +136,8 @@ extension WatchExperimentFeature {
         state.isReachable = false
         state.connectionStatus = .activationFailed
         state.streamID = nil
+        state.recordObservationID = nil
+        state.recordObservationReady = false
         state.startToken = nil
         state.countdownID = nil
         state.authorization = nil
@@ -224,6 +230,8 @@ extension WatchExperimentFeature {
         state.isRequestingPermission = false
         state.cleanupRequestID = nil
         state.streamID = nil
+        state.recordObservationID = nil
+        state.recordObservationReady = false
         state.authorization = nil
         state.countdownID = nil
         if case .countdown = state.screen {

@@ -71,10 +71,7 @@ extension WatchExperimentFeature {
         case let .remoteVoiceRequested(id, expiresAt):
             return requestRemoteVoicePermission(id, expiresAt: expiresAt, state: &state)
         case .recordReconnect:
-            return reconnectRecords(state: state)
-        case let .recordStreamEnded(id):
-            guard state.streamID == id else { return .none }
-            return .send(.recording(.recoveryFailed))
+            return reconnectRecords(state: &state)
         case let .recordUpdate(streamID, record):
             guard state.isVisible, state.streamID == streamID else { return .none }
             return receiveRecordUpdate(record, state: &state)
@@ -83,7 +80,31 @@ extension WatchExperimentFeature {
                 operation, recordID: recordID, experimentID: experimentID, state: &state
             )
         case let .recording(.delegate(.local(input))):
-            return performLocal(input)
+            return performLocal(input, observationID: state.recordObservationID)
+        default:
+            return reduceRecordObservation(state: &state, action: action)
+        }
+    }
+
+    private func reduceRecordObservation(state: inout State, action: Action) -> Effect<Action> {
+        switch action {
+        case let .recordStreamReady(id, observationID):
+            guard state.isVisible, state.streamID == id,
+                  state.recordObservationID == observationID else { return .none }
+            state.recordObservationReady = true
+            return .send(.recording(.delegate(.local(.reconcile))))
+        case let .recordStreamEnded(id, observationID):
+            guard state.streamID == id,
+                  state.recordObservationID == observationID else { return .none }
+            state.recordObservationID = nil
+            state.recordObservationReady = false
+            return .send(.recording(.recoveryFailed))
+        case let .recordRecoveryFinished(observationID, succeeded):
+            guard state.isVisible, state.streamID != nil, state.recordObservationReady,
+                  let observationID, state.recordObservationID == observationID else {
+                return .none
+            }
+            return .send(.recording(succeeded ? .integrationAvailable(true) : .recoveryFailed))
         default:
             return reduceInterruption(state: &state, action: action)
         }
@@ -175,9 +196,13 @@ extension WatchExperimentFeature {
             && (state.screen == .experiment || state.screen == .timers)
     }
 
-    private func reconnectRecords(state: State) -> Effect<Action> {
+    private func reconnectRecords(state: inout State) -> Effect<Action> {
         guard state.isVisible, let id = state.streamID else { return .none }
-        return observeRecords(id)
+        let observationID = uuid()
+        state.recordObservationID = observationID
+        state.recordObservationReady = false
+        state.recording.isIntegrated = false
+        return observeRecords(id, observationID: observationID)
     }
 
     private func requestRemoteVoicePermission(
@@ -216,18 +241,36 @@ extension WatchExperimentFeature {
             return effect
         }
         guard state.selectedID == experimentID, state.canOperate else {
-            return .send(.recording(.commandFailed(
-                recordID, "요청할 수 없어요. 연결·실험·처리 중 상태를 확인해주세요. 원본은 유지해요."
-            )))
+            return rejectUnsentRecordCommand(recordID, state: state)
         }
         return request(operation, targetID: recordID, state: &state)
     }
 
-    private func performLocal(_ input: WatchRecordingUIBridge.Input) -> Effect<Action> {
+    private func rejectUnsentRecordCommand(_ id: UUID, state: State) -> Effect<Action> {
+        let message = "요청을 보내지 못했어요. 연결·실험·처리 중 상태를 확인해주세요. 원본은 유지해요."
+        do {
+            let retained = try pendingJournal.load()
+            let decisions = try pendingJournal.loadDecisions()
+            guard state.pending?.command.targetID != id, retained?.targetID != id,
+                  !decisions.contains(where: { $0.recordID == id }) else {
+                return .send(.recording(.commandFailed(id, message)))
+            }
+            return .send(.recording(.commandNotSent(id, message)))
+        } catch {
+            return .send(.recording(.commandFailed(id, message)))
+        }
+    }
+
+    private func performLocal(
+        _ input: WatchRecordingUIBridge.Input, observationID: UUID?
+    ) -> Effect<Action> {
         guard let bridge = recordingBridge else { return .none }
         return .run { send in
             do {
                 try await bridge.perform(input)
+                if case .reconcile = input {
+                    await send(.recordRecoveryFinished(observationID, true))
+                }
             } catch {
                 let id: UUID
                 switch input {
@@ -235,7 +278,7 @@ extension WatchExperimentFeature {
                      let .stopVoice(_, recordID),
                      let .retry(_, recordID): id = recordID
                 case .reconcile, .stopForExperiment, .cancelActiveVoiceForPause:
-                    await send(.recording(.recoveryFailed))
+                    await send(.recordRecoveryFinished(observationID, false))
                     return
                 }
                 await send(.recording(.commandFailed(
@@ -267,22 +310,20 @@ extension WatchExperimentFeature {
         .cancellable(id: CancelID.interruptionWork, cancelInFlight: false)
     }
 
-    func observeRecords(_ streamID: UUID) -> Effect<Action> {
+    func observeRecords(_ streamID: UUID, observationID: UUID) -> Effect<Action> {
         guard let bridge = recordingBridge else {
-            return .send(.recording(.integrationAvailable(false)))
+            return .send(.recordStreamEnded(streamID, observationID))
         }
         return .run { send in
             let updates = await bridge.updates()
             try Task.checkCancellation()
-            await send(.recording(.integrationAvailable(true)))
-            try Task.checkCancellation()
-            await send(.recording(.delegate(.local(.reconcile))))
+            await send(.recordStreamReady(streamID, observationID))
             for await record in updates {
                 try Task.checkCancellation()
                 await send(.recordUpdate(streamID, record))
             }
             guard !Task.isCancelled else { return }
-            await send(.recordStreamEnded(streamID))
+            await send(.recordStreamEnded(streamID, observationID))
         }
         .cancellable(id: CancelID.recordStream, cancelInFlight: true)
     }
