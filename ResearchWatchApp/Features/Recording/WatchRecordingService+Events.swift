@@ -1,8 +1,27 @@
 import Foundation
 import LabcordShared
 import LabcordWatchOS
+import OSLog
 
 extension WatchRecordingService {
+    func logFailure(_ error: Error, stage: String, recordID: UUID? = nil) {
+        let error = error as NSError
+        let recordID = recordID?.uuidString ?? "none"
+        logger.error("Recording failure: stage=\(stage, privacy: .public)")
+        logger.error("Record=\(recordID, privacy: .public)")
+        logger.error("Domain=\(error.domain, privacy: .public) code=\(error.code)")
+    }
+
+    func reconcileRecords() async throws {
+        do {
+            try await restoreLocalRecords()
+        } catch {
+            logFailure(error, stage: "reconcile")
+            throw error
+        }
+        await transfer.recover()
+    }
+
     func markCancelledStart(_ input: WatchRecordingUIBridge.Input) {
         if case let .cancelActiveVoiceForPause(_, recordID?) = input {
             invalidatedVoiceStarts.insert(recordID)

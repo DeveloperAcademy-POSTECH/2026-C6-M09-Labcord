@@ -189,8 +189,11 @@ struct WatchRecordFeature {
                 return .none
             case let .integrationAvailable(available):
                 state.isIntegrated = available
-                if available { state.notice = nil }
-                return .none
+                guard available else { return .none }
+                state.notice = nil
+                return .merge(state.records.values.filter {
+                    $0.phase == .review && $0.canAutoSave
+                }.map { .send(.update($0)) })
             case .recoveryFailed:
                 state.notice = "기록 상태를 다시 받지 못했어요. 원본을 유지하고 다시 연결해주세요."
                 state.isIntegrated = false

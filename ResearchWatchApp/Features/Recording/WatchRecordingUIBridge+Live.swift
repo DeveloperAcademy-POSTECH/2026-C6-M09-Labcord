@@ -2,6 +2,7 @@ import ComposableArchitecture
 import Foundation
 import LabcordShared
 import LabcordWatchOS
+import OSLog
 
 extension WatchRecordingUIBridge {
     static let live = Self(
@@ -13,6 +14,7 @@ extension WatchRecordingUIBridge {
 @MainActor
 final class WatchRecordingService {
     static let shared = WatchRecordingService()
+    let logger = Logger(subsystem: "Labcord", category: "WatchRecording")
     let archive: WatchAudioArchive
     let recorder: WatchAudioRecorder
     let transfer: WatchAudioTransferClient
@@ -56,6 +58,7 @@ final class WatchRecordingService {
 
     func activate() {
         guard startup == nil else { return }
+        logger.info("Recording service activation")
         if receiptTask == nil { observeTransport() }
         startup = Task {
             do {
@@ -63,7 +66,7 @@ final class WatchRecordingService {
                 try await restoreLocalRecords()
                 transfer.startRecovery()
             } catch {
-
+                logFailure(error, stage: "startup")
                 startup = nil
                 throw error
             }
@@ -128,8 +131,7 @@ final class WatchRecordingService {
             try await restoreLocalRecords(recordID: recordID)
             await transfer.recover()
         case .reconcile:
-            try await restoreLocalRecords()
-            await transfer.recover()
+            try await reconcileRecords()
         case let .stopForExperiment(experimentID):
             try await finishVoiceForExperiment(experimentID)
         case let .cancelActiveVoiceForPause(experimentID, recordID):
@@ -325,6 +327,7 @@ private extension WatchRecordingService {
                 experimentID: experimentID, recordingID: recordID, expiresAt: expiresAt
             )
         } catch {
+            logFailure(error, stage: "voiceStart", recordID: recordID)
             await rejectEmptyVoiceStart(experimentID: experimentID, recordID: recordID)
             throw error
         }

@@ -87,18 +87,15 @@ final class WatchIntentRuntime {
             let selectedID = canRestoreSelection ? store.selectedID : selectionBeforeActivation
             try validateLease(practice: startedInPractice, selectedID: selectedID)
             if startedInPractice {
-                _ = try WatchIntentRouting.action(for: kind, state: store.withState { $0 })
-                store.send(.practiceRecord(kind))
-                guard let feedback = store.practice.feedback else {
-                    throw WatchIntentRuntimeError.notReady
-                }
-                return feedback
+                return try performPractice(kind)
             }
             if kind == .voice, let stop = WatchIntentRouting.localVoiceStop(
                 state: store.withState { $0 }
             ) {
                 return try await execute(stop, kind: kind, remote: remote)
             }
+            try await waitForRecordingIntegration(until: deadline, remote: remote)
+            try validateLease(practice: false, selectedID: selectedID)
             if let pending = store.pending,
                !WatchRequestPolicy.isReadOnly(pending.command.operation) {
                 throw WatchIntentRuntimeError.busy
@@ -117,8 +114,9 @@ final class WatchIntentRuntime {
             try validateRemote(remote)
             let action = try WatchIntentRouting.action(for: kind, state: store.withState { $0 })
             return try await execute(action, kind: kind, remote: remote)
-        } catch is CancellationError {
-            throw WatchIntentRuntimeError.interrupted
+        } catch {
+            logFailure(error)
+            throw error is CancellationError ? WatchIntentRuntimeError.interrupted : error
         }
     }
 
@@ -146,8 +144,7 @@ final class WatchIntentRuntime {
                 throw WatchIntentRuntimeError.contextChanged
             }
             if try verifyAccepted(
-                action, previousIDs: previousIDs, experimentID: experimentID,
-                remoteVoice: remote != nil
+                action, previousIDs: previousIDs, experimentID: experimentID
             ) { break }
             if let remote, Date.now >= remote.expiresAt {
                 throw WatchIntentRuntimeError.requestRejected(
@@ -242,8 +239,7 @@ final class WatchIntentRuntime {
     }
 
     private func verifyAccepted(
-        _ action: WatchExperimentFeature.Action, previousIDs: Set<UUID>, experimentID: UUID?,
-        remoteVoice: Bool
+        _ action: WatchExperimentFeature.Action, previousIDs: Set<UUID>, experimentID: UUID?
     ) throws -> Bool {
         let record: WatchRecordPresentation?
         switch action {
@@ -264,9 +260,40 @@ final class WatchIntentRuntime {
         if case .recordTapped(.photo) = action {
             return record.startedAt != nil || [.review, .saving, .saved].contains(record.phase)
         }
-        if remoteVoice, case .recordTapped(.voice) = action {
+        if case .recordTapped(.voice) = action {
             return record.phase == .capturing
         }
         return true
+    }
+}
+
+private extension WatchIntentRuntime {
+    func performPractice(_ kind: WatchRecordPresentation.Kind) throws -> String {
+        _ = try WatchIntentRouting.action(for: kind, state: store.withState { $0 })
+        store.send(.practiceRecord(kind))
+        guard let feedback = store.practice.feedback else {
+            throw WatchIntentRuntimeError.notReady
+        }
+        return feedback
+    }
+
+    private func waitForRecordingIntegration(
+        until deadline: ContinuousClock.Instant, remote: RemoteVoice?
+    ) async throws {
+        while !store.recording.isIntegrated {
+            try validateRemote(remote)
+            guard isActive(), store.isVisible, store.streamID != nil else {
+                throw WatchIntentRuntimeError.contextChanged
+            }
+            try await pause(until: deadline)
+        }
+    }
+
+    func logFailure(_ error: Error) {
+        let active = isActive()
+        let integrated = store.recording.isIntegrated
+        let errorCode = (error as NSError).code
+        logger.error("Intent failed: active=\(active) integrated=\(integrated)")
+        logger.error("Intent state: pending=\(self.store.pending != nil) errorCode=\(errorCode)")
     }
 }
