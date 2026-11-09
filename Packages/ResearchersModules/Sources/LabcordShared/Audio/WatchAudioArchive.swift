@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 public actor WatchAudioArchive {
@@ -8,14 +9,6 @@ public actor WatchAudioArchive {
     public init(root: URL, maximumBytes: Int = 256 * 1_024 * 1_024) {
         self.root = root
         self.maximumBytes = maximumBytes
-    }
-
-    public func headers() throws -> [WatchAudioHeader] {
-        guard files.fileExists(atPath: root.path) else { return [] }
-        return try files.contentsOfDirectory(at: root, includingPropertiesForKeys: nil)
-            .filter { UUID(uuidString: $0.lastPathComponent) != nil }
-            .filter { files.fileExists(atPath: $0.appendingPathComponent("header.json").path) }
-            .map { try read(WatchAudioHeader.self, at: $0.appendingPathComponent("header.json")) }
     }
 
     public func begin(_ header: WatchAudioHeader) throws {
@@ -88,19 +81,30 @@ public actor WatchAudioArchive {
     public func statusEnsuringArchive(_ header: WatchAudioHeader) throws -> WatchAudioReceipt {
         try begin(header)
         let directory = directory(header)
-        let sequences = try files.contentsOfDirectory(
+        var sequences = try files.contentsOfDirectory(
             at: directory, includingPropertiesForKeys: nil
         )
             .filter { $0.pathExtension == "chunk" }
             .compactMap { Int($0.deletingPathExtension().lastPathComponent) }.sorted()
         let manifestURL = directory.appendingPathComponent("manifest.json")
         let savedURL = directory.appendingPathComponent("saved.json")
+        let digestURL = directory.appendingPathComponent("saved-digest.json")
+        let manifest = files.fileExists(atPath: manifestURL.path)
+            ? try read(WatchAudioManifest.self, at: manifestURL) : nil
+        let savedID = files.fileExists(atPath: savedURL.path)
+            ? try read(UUID.self, at: savedURL) : nil
+        let digest = savedID != nil && files.fileExists(atPath: digestURL.path)
+            ? try read(String.self, at: digestURL) : nil
+        if savedID == header.recordingID, let proof = try loadOrMigrateCleanupProof(header) {
+            guard proof.manifest == manifest, proof.digest == digest else {
+                throw WatchAudioError.conflict
+            }
+
+            sequences = Array(0..<proof.manifest.chunkCount)
+        }
         return WatchAudioReceipt(
             header: header, receivedSequences: sequences,
-            manifest: files.fileExists(atPath: manifestURL.path)
-                ? try read(WatchAudioManifest.self, at: manifestURL) : nil,
-            savedRecordID: files.fileExists(atPath: savedURL.path)
-                ? try read(UUID.self, at: savedURL) : nil,
+            manifest: manifest, savedRecordID: savedID, contentDigest: digest,
             isCancelled: files.fileExists(
                 atPath: directory.appendingPathComponent("cancelled.json").path
             )
@@ -123,6 +127,14 @@ public actor WatchAudioArchive {
 
     public func rememberRemoteReceipt(_ receipt: WatchAudioReceipt) throws {
         try begin(receipt.header)
+        if let proof = try loadOrMigrateCleanupProof(receipt.header) {
+            guard receipt.savedRecordID == receipt.header.recordingID,
+                  receipt.header == proof.header, receipt.manifest == proof.manifest,
+                  receipt.contentDigest == proof.digest, !receipt.isCancelled else {
+                throw WatchAudioError.conflict
+            }
+            return
+        }
         let local = try statusEnsuringArchive(receipt.header)
         guard Set(receipt.receivedSequences).isSubset(of: Set(local.receivedSequences)) else {
             throw WatchAudioError.conflict
@@ -134,22 +146,6 @@ public actor WatchAudioArchive {
         let url = directory(header).appendingPathComponent("remote.json")
         guard files.fileExists(atPath: url.path) else { return nil }
         return try read(WatchAudioReceipt.self, at: url)
-    }
-
-    public func completeManifest(_ header: WatchAudioHeader) throws -> WatchAudioManifest {
-        let receipt = try statusEnsuringArchive(header)
-        guard let manifest = receipt.manifest,
-              receipt.receivedSequences == Array(0..<manifest.chunkCount) else {
-            throw WatchAudioError.incomplete
-        }
-        var expectedSample: Int64 = 0
-        for sequence in receipt.receivedSequences {
-            let chunk = try chunk(header, sequence)
-            guard chunk.firstSample == expectedSample else { throw WatchAudioError.conflict }
-            expectedSample += chunk.sampleCount
-        }
-        guard expectedSample == manifest.totalSamples else { throw WatchAudioError.conflict }
-        return manifest
     }
 
     public func sealInterrupted(_ header: WatchAudioHeader) throws -> WatchAudioReceipt {
@@ -175,7 +171,9 @@ public actor WatchAudioArchive {
         guard try !statusEnsuringArchive(header).isCancelled else {
             throw WatchAudioError.conflict
         }
-        _ = try completeManifest(header)
+        let manifest = try completeManifest(header)
+        let digest = try contentDigest(header, manifest: manifest)
+        try write(digest, to: directory(header).appendingPathComponent("saved-digest.json"))
         try write(recordID, to: directory(header).appendingPathComponent("saved.json"))
         return try statusEnsuringArchive(header)
     }
@@ -188,16 +186,46 @@ public actor WatchAudioArchive {
         return try statusEnsuringArchive(header)
     }
 
-    public func acknowledgeSaved(_ receipt: WatchAudioReceipt) throws {
-        let manifest = try completeManifest(receipt.header)
+    public func acknowledgeSavedAndCleanUp(_ receipt: WatchAudioReceipt) throws {
         guard receipt.savedRecordID == receipt.header.recordingID,
-              receipt.manifest == manifest,
-              receipt.receivedSequences == Array(0..<manifest.chunkCount) else {
+              !receipt.isCancelled, receipt.failure == nil else {
             throw WatchAudioError.incomplete
         }
+        let proof: WatchAudioCleanupProof
+        if let existing = try loadOrMigrateCleanupProof(receipt.header) {
+            guard existing.header == receipt.header, receipt.manifest == existing.manifest,
+                  receipt.contentDigest == existing.digest else { throw WatchAudioError.conflict }
+            proof = existing
+        } else {
+            let manifest = try completeManifest(receipt.header)
+            let digest = try contentDigest(receipt.header, manifest: manifest)
+            guard receipt.manifest == manifest, receipt.contentDigest == digest,
+                  receipt.receivedSequences == Array(0..<manifest.chunkCount) else {
+                throw WatchAudioError.conflict
+            }
+            let fingerprints = try (0..<manifest.chunkCount).map { sequence in
+                let value = try chunk(receipt.header, sequence)
+                return WatchAudioChunkFingerprint(
+                    firstSample: value.firstSample, sampleCount: value.sampleCount,
+                    sha256: value.sha256
+                )
+            }
+            proof = WatchAudioCleanupProof(
+                header: receipt.header, manifest: manifest, digest: digest, chunks: fingerprints
+            )
 
-        _ = try markSaved(receipt.header, recordID: receipt.header.recordingID)
-
+            let proofURL = directory(receipt.header).appendingPathComponent("cleanup-proof.json")
+            try write(proof, to: proofURL)
+        }
+        let local = try statusEnsuringArchive(receipt.header)
+        guard local.savedRecordID == nil
+            || local.savedRecordID == receipt.header.recordingID else {
+            throw WatchAudioError.conflict
+        }
+        if local.savedRecordID == nil || local.contentDigest != proof.digest {
+            _ = try markSaved(receipt.header, recordID: receipt.header.recordingID)
+        }
+        try resumeSavedCleanup(receipt.header)
     }
 
     private func directory(_ header: WatchAudioHeader) -> URL {
@@ -223,7 +251,10 @@ public actor WatchAudioArchive {
                 used += (try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
             }
         }
-        guard data.count <= maximumBytes, used - existingSize <= maximumBytes - data.count else {
+
+        let reserve = url.pathExtension == "chunk" ? min(2 * 1_024 * 1_024, maximumBytes / 4) : 0
+        guard data.count <= maximumBytes - reserve,
+              used - existingSize <= maximumBytes - reserve - data.count else {
             throw WatchAudioError.storageFull
         }
         try files.createDirectory(
@@ -233,4 +264,130 @@ public actor WatchAudioArchive {
             to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication]
         )
     }
+}
+
+extension WatchAudioArchive {
+
+    public func localRetention(_ header: WatchAudioHeader) throws -> WatchAudioLocalRetention {
+        try WatchAudioLocalRetentionInspector.inspect(root: root, header: header)
+    }
+
+    public func headers() throws -> [WatchAudioHeader] {
+        try scanHeaders().headers
+    }
+
+    public func scanHeaders() throws -> WatchAudioHeaderScan {
+        guard files.fileExists(atPath: root.path) else {
+            return WatchAudioHeaderScan(headers: [], damagedRecordingIDs: [])
+        }
+        let directories = try files.contentsOfDirectory(at: root, includingPropertiesForKeys: nil)
+        var valid: [WatchAudioHeader] = []
+        var damaged: [UUID] = []
+        for directory in directories {
+            guard let id = UUID(uuidString: directory.lastPathComponent) else { continue }
+            let url = directory.appendingPathComponent("header.json")
+            guard let header = try? read(WatchAudioHeader.self, at: url),
+                  header.isValid, header.recordingID == id else {
+                damaged.append(id)
+                continue
+            }
+            valid.append(header)
+        }
+        return WatchAudioHeaderScan(
+            headers: valid, damagedRecordingIDs: damaged.sorted { $0.uuidString < $1.uuidString }
+        )
+    }
+
+    public func completeManifest(_ header: WatchAudioHeader) throws -> WatchAudioManifest {
+        let receipt = try statusEnsuringArchive(header)
+        if receipt.savedRecordID == header.recordingID,
+           let proof = try loadOrMigrateCleanupProof(header) {
+            guard receipt.manifest == proof.manifest, receipt.contentDigest == proof.digest else {
+                throw WatchAudioError.conflict
+            }
+            return proof.manifest
+        }
+        guard let manifest = receipt.manifest,
+              receipt.receivedSequences == Array(0..<manifest.chunkCount) else {
+            throw WatchAudioError.incomplete
+        }
+        var expectedSample: Int64 = 0
+        for sequence in receipt.receivedSequences {
+            let chunk = try chunk(header, sequence)
+            guard chunk.firstSample == expectedSample else { throw WatchAudioError.conflict }
+            expectedSample += chunk.sampleCount
+        }
+        guard expectedSample == manifest.totalSamples else { throw WatchAudioError.conflict }
+        return manifest
+    }
+
+    public func needsSavedCleanup(_ header: WatchAudioHeader) throws -> Bool {
+        let receipt = try statusEnsuringArchive(header)
+        guard receipt.savedRecordID == header.recordingID else { return false }
+        let urls = try files.contentsOfDirectory(
+            at: directory(header), includingPropertiesForKeys: nil
+        )
+        return urls.contains { $0.pathExtension == "chunk" }
+    }
+
+    func resumeSavedCleanup(_ header: WatchAudioHeader) throws {
+        guard let proof = try loadOrMigrateCleanupProof(header) else { return }
+        let local = try statusEnsuringArchive(header)
+        guard local.savedRecordID == header.recordingID, local.contentDigest == proof.digest,
+              local.manifest == proof.manifest else { throw WatchAudioError.conflict }
+        try removeVerifiedChunks(proof)
+    }
+
+    private func loadOrMigrateCleanupProof(
+        _ header: WatchAudioHeader
+    ) throws -> WatchAudioCleanupProof? {
+        try begin(header)
+        let url = directory(header).appendingPathComponent("cleanup-proof.json")
+        guard files.fileExists(atPath: url.path) else { return nil }
+        let data = try Data(contentsOf: url)
+        if let proof = try? JSONDecoder().decode(WatchAudioCleanupProof.self, from: data) {
+            guard proof.header == header else { throw WatchAudioError.conflict }
+            return proof
+        }
+        let upgraded = try WatchAudioLegacyProofMigration.upgrade(
+            data: data, header: header
+        ) { sequence in
+            guard files.fileExists(atPath: chunkURL(header, sequence: sequence).path) else {
+                throw WatchAudioError.incomplete
+            }
+            return try chunk(header, sequence)
+        }
+        try write(upgraded, to: url)
+        return upgraded
+    }
+
+    private func removeVerifiedChunks(_ proof: WatchAudioCleanupProof) throws {
+        guard proof.chunks.count == proof.manifest.chunkCount else {
+            throw WatchAudioError.conflict
+        }
+
+        var retained: [URL] = []
+        for sequence in 0..<proof.manifest.chunkCount {
+            let url = chunkURL(proof.header, sequence: sequence)
+            guard files.fileExists(atPath: url.path) else { continue }
+            let value = try chunk(proof.header, sequence)
+            let expected = proof.chunks[sequence]
+            guard value.firstSample == expected.firstSample,
+                  value.sampleCount == expected.sampleCount,
+                  value.sha256 == expected.sha256 else { throw WatchAudioError.conflict }
+            retained.append(url)
+        }
+        for url in retained { try files.removeItem(at: url) }
+    }
+
+    private func contentDigest(
+        _ header: WatchAudioHeader, manifest: WatchAudioManifest
+    ) throws -> String {
+        var hasher = SHA256()
+        for sequence in 0..<manifest.chunkCount {
+            hasher.update(data: try chunk(header, sequence).pcm)
+        }
+        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+    }
+
 }
