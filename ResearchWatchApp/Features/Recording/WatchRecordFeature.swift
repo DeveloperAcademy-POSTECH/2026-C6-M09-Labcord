@@ -38,6 +38,7 @@ struct WatchRecordFeature {
         case update(WatchRecordPresentation)
         case commandProcessed(UUID, WatchExperimentCommand.Operation)
         case commandFailed(UUID, String)
+        case commandNotSent(UUID, String)
         case captureRejected(UUID, String)
         case preparationCancelled(UUID)
         case recapture(UUID)
@@ -136,6 +137,24 @@ struct WatchRecordFeature {
                 record.canAutoSave = false
                 state.records[id] = record
                 state.autoSaveSeconds[id] = nil
+                return .cancel(id: CancelID.autoSave(id))
+            case let .commandNotSent(id, message):
+                guard var record = state.records[id], !record.isSettled else { return .none }
+                if record.phase == .starting, record.kind != .voice,
+                   !record.originalRetained, record.startedAt == nil {
+                    record.captureRejectedBeforeStart = true
+                }
+                record.phase = .failed
+                record.detail = message
+                record.canAutoSave = false
+                state.records[id] = record
+                state.decisions[id] = nil
+                state.failedDecisions.remove(id)
+                state.autoSaveSeconds[id] = nil
+                if state.focusedID == id,
+                   record.canRecapture || record.isRecoverableVoiceFailure {
+                    state.focusedID = nil
+                }
                 return .cancel(id: CancelID.autoSave(id))
             case let .confirm(id):
                 return confirm(id, state: &state)
@@ -249,7 +268,9 @@ private extension WatchRecordFeature {
             } else if update.phase == .review { update.phase = .saving }
         }
         state.records[record.id] = update
-        if state.focusedID == record.id, update.canRecapture || update.phase == .cancelled {
+        if state.focusedID == record.id,
+           update.canRecapture || update.phase == .cancelled
+            || (update.isRecoverableVoiceFailure && !state.blocksNewCapture(update)) {
             state.focusedID = nil
         }
         if update.phase == .review, update.canAutoSave, state.isIntegrated {

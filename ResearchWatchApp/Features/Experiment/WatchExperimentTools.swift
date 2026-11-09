@@ -216,11 +216,24 @@ extension WatchExperimentFeature {
             return effect
         }
         guard state.selectedID == experimentID, state.canOperate else {
-            return .send(.recording(.commandFailed(
-                recordID, "요청할 수 없어요. 연결·실험·처리 중 상태를 확인해주세요. 원본은 유지해요."
-            )))
+            return rejectUnsentRecordCommand(recordID, state: state)
         }
         return request(operation, targetID: recordID, state: &state)
+    }
+
+    private func rejectUnsentRecordCommand(_ id: UUID, state: State) -> Effect<Action> {
+        let message = "요청을 보내지 못했어요. 연결·실험·처리 중 상태를 확인해주세요. 원본은 유지해요."
+        do {
+            let retained = try pendingJournal.load()
+            let decisions = try pendingJournal.loadDecisions()
+            guard state.pending?.command.targetID != id, retained?.targetID != id,
+                  !decisions.contains(where: { $0.recordID == id }) else {
+                return .send(.recording(.commandFailed(id, message)))
+            }
+            return .send(.recording(.commandNotSent(id, message)))
+        } catch {
+            return .send(.recording(.commandFailed(id, message)))
+        }
     }
 
     private func performLocal(_ input: WatchRecordingUIBridge.Input) -> Effect<Action> {

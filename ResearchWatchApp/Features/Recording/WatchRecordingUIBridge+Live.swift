@@ -334,6 +334,11 @@ private extension WatchRecordingService {
                 guard let self else { return }
                 self.capture(event, experimentID: experimentID, recordID: recordID)
             }
+            if !Task.isCancelled {
+                await self?.refreshFailedVoiceCapture(
+                    experimentID: experimentID, recordID: recordID
+                )
+            }
             self?.captureTasks[recordID] = nil
         }
     }

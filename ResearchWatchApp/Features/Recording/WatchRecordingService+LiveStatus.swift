@@ -33,7 +33,8 @@ extension WatchRecordingService {
         )
         guard let data = try? JSONEncoder().encode(status) else { return }
         session.sendMessage(
-            [WatchVoiceLiveStatus.messageKey: data], replyHandler: { _ in }, errorHandler: { _ in }
+            [WatchVoiceLiveStatus.messageKey: data],
+            replyHandler: { @Sendable _ in }, errorHandler: { @Sendable _ in }
         )
     }
 }

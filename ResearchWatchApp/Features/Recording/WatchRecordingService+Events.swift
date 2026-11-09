@@ -59,6 +59,38 @@ extension WatchRecordingService {
         }
     }
 
+    func refreshFailedVoiceCapture(experimentID: UUID, recordID: UUID) async {
+        guard records[recordID]?.phase == .failed,
+              !invalidatedVoiceStarts.contains(recordID),
+              !transfer.isCancellationPending(recordingID: recordID) else { return }
+        do {
+            guard let header = try await archive.headers().first(where: {
+                $0.experimentID == experimentID && $0.recordingID == recordID
+            }), recorder.activeRecording != header else { return }
+            let local = try await archive.statusEnsuringArchive(header)
+            let remote = try await archive.remoteReceipt(header)
+            var record = try await voiceWithLocalStatus(header, local: local, forceRefresh: true)
+            guard records[recordID]?.phase == .failed,
+                  !invalidatedVoiceStarts.contains(recordID),
+                  !transfer.isCancellationPending(header) else { return }
+            if local.isCancelled {
+                record.phase = .cancelled
+            } else if WatchRecordPresentation.isEmptyVoiceCapture(
+                local: local, remote: remote, hasActiveCapture: recorder.activeRecording != nil
+            ) {
+                record.captureRejectedBeforeStart = true
+            }
+            publish(record)
+        } catch {
+            guard var record = records[recordID], record.phase == .failed,
+                  !invalidatedVoiceStarts.contains(recordID),
+                  !transfer.isCancellationPending(recordingID: recordID) else { return }
+            record.captureCompleteConfirmed = false
+            record.captureRejectedBeforeStart = false
+            publish(record)
+        }
+    }
+
     private func restoreLocalRecord(_ header: WatchAudioHeader) async throws {
         let local = try await archive.statusEnsuringArchive(header)
         let remote = try await archive.remoteReceipt(header)
