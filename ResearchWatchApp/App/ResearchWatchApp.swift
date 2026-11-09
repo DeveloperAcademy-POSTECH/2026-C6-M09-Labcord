@@ -1,10 +1,3 @@
-//
-//  ResearchWatchApp.swift
-//  ResearchWatch Watch App
-//
-//  Created by 정홍섭 on 10/18/26.
-//
-
 import SwiftUI
 
 import ComposableArchitecture
@@ -21,9 +14,13 @@ struct ResearchWatchApp: App {
         deviceNameClient.start()
     }
 
+    private let store = Store(initialState: WatchExperimentFeature.State()) {
+        WatchExperimentFeature()
+    }
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(store: store)
         }
         .backgroundTask(.watchConnectivity) { [connectivity] in
             await connectivity.waitForPendingUserInfo()
