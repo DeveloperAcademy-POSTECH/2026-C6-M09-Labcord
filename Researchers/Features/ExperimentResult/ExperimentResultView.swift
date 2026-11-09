@@ -82,11 +82,12 @@ struct ExperimentResultView: View {
                         HStack(spacing: LayoutTokens.spacing16) {
                             if store.recordTimeline != nil {
                                 Button {
-                                    // 실험 재개 코드 구현
+                                    store.send(.resumeTapped)
                                 } label: {
                                     Text("실험 재개")
                                 }
                                 .buttonStyle(.labcord(.plain, size: .large))
+                                .disabled(store.isResuming)
                             }
 
                             Button {
@@ -96,10 +97,16 @@ struct ExperimentResultView: View {
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(.labcord(.filled, size: .large))
+                            .disabled(store.isResuming)
                         }
                         .padding(.horizontal, LayoutTokens.spacing16)
                         .padding(.top, LayoutTokens.spacing12)
                         .padding(.bottom, max(34 - geometry.safeAreaInsets.bottom, 0))
+                        if let resumeMessage = store.resumeMessage {
+                            Text(resumeMessage)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)

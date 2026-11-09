@@ -135,11 +135,14 @@ final class PhoneIntentRuntime {
                 options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication]
             )
         } catch { throw PhoneIntentError.storage }
+        let responseKey = WatchRemoteIntentResponse.messageKey
         let response = try await VoiceReply.wait(for: request.requestID) { finish in
-            WCSession.default.sendMessage([WatchRemoteIntentRequest.messageKey: data]) { reply in
-                let data = reply[WatchRemoteIntentResponse.messageKey] as? Data
+            WCSession.default.sendMessage(
+                [WatchRemoteIntentRequest.messageKey: data]
+            ) { @Sendable reply in
+                let data = reply[responseKey] as? Data
                 Task { @MainActor in finish(data) }
-            } errorHandler: { _ in
+            } errorHandler: { @Sendable _ in
                 Task { @MainActor in finish(nil) }
             }
         }

@@ -26,6 +26,7 @@ public final class WatchExperimentTransport {
         }
         guard pending[command.requestID] == nil else { throw WatchExperimentError.phoneBusy }
         let data = try JSONEncoder().encode(command)
+        let responseKey = Self.responseKey
         let transmissionID = UUID()
         return try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { continuation in
@@ -39,14 +40,14 @@ public final class WatchExperimentTransport {
                         result: .failure(WatchExperimentError.deliveryTimeout)
                     )
                 }
-                session.sendMessage([Self.commandKey: data]) { [weak self] message in
-                    let responseData = message[Self.responseKey] as? Data
+                session.sendMessage([Self.commandKey: data]) { @Sendable [weak self] message in
+                    let responseData = message[responseKey] as? Data
                     Task { @MainActor in
                         self?.handleReply(
                             responseData, command: command, transmissionID: transmissionID
                         )
                     }
-                } errorHandler: { [weak self] _ in
+                } errorHandler: { @Sendable [weak self] _ in
                     Task { @MainActor in
                         self?.finish(
                             command.requestID, transmissionID: transmissionID,
