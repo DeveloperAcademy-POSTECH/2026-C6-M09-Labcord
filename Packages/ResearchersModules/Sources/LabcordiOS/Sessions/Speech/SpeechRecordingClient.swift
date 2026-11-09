@@ -1,35 +1,60 @@
 import ComposableArchitecture
 import Foundation
+import Speech
 
-public struct SpeechRecording: Equatable, Sendable {
-    public let audioURL: URL
-    public let transcript: String
+public struct SpeechLanguageModelHint: Equatable, Sendable {
+    public var languageModel: URL
+    public var vocabulary: URL
 
-    public init(audioURL: URL, transcript: String) {
-        self.audioURL = audioURL
-        self.transcript = transcript
+    public init(languageModel: URL, vocabulary: URL) {
+        self.languageModel = languageModel
+        self.vocabulary = vocabulary
+    }
+
+    func makeConfiguration() -> SFSpeechLanguageModel.Configuration {
+        SFSpeechLanguageModel.Configuration(
+            languageModel: languageModel, vocabulary: vocabulary
+        )
     }
 }
 
 public enum SpeechRecordingEvent: Equatable, Sendable {
     case transcript(String)
+    case transcriptionUnavailable
     case finished(SpeechRecording)
+    case interrupted(SpeechRecording, String)
     case failed(String)
 }
 
 public struct SpeechRecordingClient: Sendable {
-    public var start: @Sendable ([String]) async throws -> AsyncStream<SpeechRecordingEvent>
+    private var startOperation: @Sendable (
+        UUID, [String], [String: String], [String], SpeechLanguageModelHint?
+    ) async throws -> AsyncStream<SpeechRecordingEvent>
     public var stop: @Sendable () async -> SpeechRecording?
     public var cancel: @Sendable () async -> Void
 
     public init(
-        start: @escaping @Sendable ([String]) async throws -> AsyncStream<SpeechRecordingEvent>,
+        start: @escaping @Sendable (
+            UUID, [String], [String: String], [String], SpeechLanguageModelHint?
+        ) async throws -> AsyncStream<SpeechRecordingEvent>,
         stop: @escaping @Sendable () async -> SpeechRecording?,
         cancel: @escaping @Sendable () async -> Void
     ) {
-        self.start = start
+        self.startOperation = start
         self.stop = stop
         self.cancel = cancel
+    }
+
+    public func start(
+        experimentID: UUID,
+        contextualStrings: [String],
+        phoneticReplacements: [String: String],
+        units: [String],
+        languageModelHint: SpeechLanguageModelHint?
+    ) async throws -> AsyncStream<SpeechRecordingEvent> {
+        try await startOperation(
+            experimentID, contextualStrings, phoneticReplacements, units, languageModelHint
+        )
     }
 }
 
@@ -37,7 +62,13 @@ extension SpeechRecordingClient: DependencyKey {
     public static let liveValue: SpeechRecordingClient = {
         let session = SpeechRecordingSession()
         return SpeechRecordingClient(
-            start: { try await session.start(contextualStrings: $0) },
+            start: { experimentID, contextualStrings, phoneticReplacements, units, hint in
+                try await session.start(
+                    experimentID: experimentID, contextualStrings: contextualStrings,
+                    phoneticReplacements: phoneticReplacements, units: units,
+                    languageModelHint: hint
+                )
+            },
             stop: { await session.stop() },
             cancel: { await session.cancel() }
         )

@@ -1,10 +1,3 @@
-//
-//  VoiceRecordingFeature.swift
-//  Researchers
-//
-//  Created by 정홍섭 on 10/28/26.
-//
-
 import ComposableArchitecture
 import Foundation
 import LabcordiOS
@@ -31,10 +24,16 @@ struct VoiceRecordingFeature {
         var recordID: UUID?
         var recordedAt: Date?
         var isSaving = false
+        var isSessionClosing = false
         var saveError: String?
         var isAutoSavePending = false
         var lastSavedRecordID: UUID?
+        var speechUnits: [String] = []
         var contextualStrings: [String] = []
+        var phoneticReplacements: [String: String] = [:]
+        var languageModelHint: SpeechLanguageModelHint?
+        var shouldSaveOnStop = false
+        var isPauseCancellationPending = false
     }
 
     enum Action: Equatable {
@@ -46,6 +45,9 @@ struct VoiceRecordingFeature {
         case startFailed(UUID, String)
         case event(UUID, SpeechRecordingEvent)
         case stopRequested
+        case stopAndSaveRequested
+        case discardForWatchPause
+        case watchPauseDiscarded(UUID)
         case stopped(UUID, SpeechRecording?)
         case retakeRequested
         case saveRequested
@@ -53,12 +55,14 @@ struct VoiceRecordingFeature {
         case saved(UUID)
         case saveFailed(UUID, String)
         case saveErrorDismissed
+        case vocabularyLoaded(SpeechSessionVocabulary)
+        case languageModelHintLoaded(SpeechLanguageModelHint?)
         case cancelCleanupFailed(String)
         case closeRequested
         case errorDismissed
     }
 
-    private nonisolated enum CancelID: Hashable, Sendable {
+    nonisolated enum CancelID: Hashable, Sendable {
         case voiceStream
         case voiceStop
         case autoSave
@@ -72,7 +76,17 @@ struct VoiceRecordingFeature {
 
     var body: some Reducer<State, Action> {
         Reduce { state, action in
+            if state.isSessionClosing, action.isBlockedDuringSessionClose { return .none }
             switch action {
+            case .discardForWatchPause, .watchPauseDiscarded:
+                return reduceWatchPause(state: &state, action: action)
+
+            case .stopAndSaveRequested:
+                guard state.phase != .hidden else { return .none }
+                state.shouldSaveOnStop = true
+                if state.phase == .finished { return saveAudio(state: &state) }
+                return .send(.stopRequested)
+
             case .prepareRequested:
                 guard state.phase == .hidden else { return .none }
                 state.transcript = ""
@@ -90,10 +104,18 @@ struct VoiceRecordingFeature {
             case .startRequested:
                 guard state.phase == .starting else { return .none }
                 let id = state.sessionID
+                let experimentID = state.experimentID
+                let speechUnits = state.speechUnits
                 let contextualStrings = state.contextualStrings
+                let phoneticReplacements = state.phoneticReplacements
+                let languageModelHint = state.languageModelHint
                 return .run { send in
                     do {
-                        let events = try await speechRecordingClient.start(contextualStrings)
+                        let events = try await speechRecordingClient.start(
+                            experimentID: experimentID, contextualStrings: contextualStrings,
+                            phoneticReplacements: phoneticReplacements, units: speechUnits,
+                            languageModelHint: languageModelHint
+                        )
                         await send(.started(id))
                         for await event in events {
                             await send(.event(id, event))
@@ -112,6 +134,7 @@ struct VoiceRecordingFeature {
                 guard id == state.sessionID, state.phase == .starting else { return .none }
                 state.phase = .recording
                 state.recordedAt = now
+                if state.shouldSaveOnStop { return .send(.stopRequested) }
                 return .none
 
             case let .startPermissionFailed(id, _):
@@ -133,11 +156,15 @@ struct VoiceRecordingFeature {
                     if state.phase == .recording || state.phase == .stopping {
                         state.transcript = text
                     }
+                case .transcriptionUnavailable:
+                    state.errorMessage = "음성 전사가 중단됐어요. 녹음은 계속됩니다."
                 case let .finished(recording):
                     guard state.phase == .recording || state.phase == .stopping else {
                         return .none
                     }
                     return finishRecording(recording, state: &state)
+                case let .interrupted(recording, message):
+                    return interrupted(recording, message: message, state: &state)
                 case let .failed(message):
                     state.phase = .hidden
                     state.errorMessage = message
@@ -160,10 +187,7 @@ struct VoiceRecordingFeature {
             case let .stopped(id, recording):
                 guard id == state.sessionID, state.phase == .stopping else { return .none }
                 if let recording {
-                    return .merge(
-                        finishRecording(recording, state: &state),
-                        .cancel(id: CancelID.voiceStream)
-                    )
+                    return finishStopped(recording, state: &state)
                 }
                 state.phase = .hidden
                 state.errorMessage = "녹음하지 못했어요. 하단 마이크 버튼을 눌러 다시 녹음해 주세요."
@@ -209,6 +233,15 @@ struct VoiceRecordingFeature {
                 state.saveError = nil
                 return .none
 
+            case let .vocabularyLoaded(vocabulary):
+                state.contextualStrings = vocabulary.contextualStrings
+                state.phoneticReplacements = vocabulary.replacements
+                return .none
+
+            case let .languageModelHintLoaded(hint):
+                state.languageModelHint = hint
+                return .none
+
             case let .cancelCleanupFailed(message):
                 state.errorMessage = message
                 return .none
@@ -249,67 +282,11 @@ struct VoiceRecordingFeature {
     }
 }
 
-private extension VoiceRecordingFeature {
-    func finishRecording(
-        _ recording: SpeechRecording,
-        state: inout State
-    ) -> Effect<Action> {
-        let id = uuid()
-        state.recording = recording
-        state.transcript = recording.transcript
-        state.recordID = id
-        state.recordedAt = state.recordedAt ?? now
-        state.phase = .finished
-        state.saveError = nil
-        state.isAutoSavePending = true
-        return .run { send in
-            try await Task.sleep(for: .seconds(3))
-            await send(.autoSaveElapsed(id))
+private extension VoiceRecordingFeature.Action {
+    var isBlockedDuringSessionClose: Bool {
+        switch self {
+        case .prepareRequested, .retakeRequested, .closeRequested: true
+        default: false
         }
-        .cancellable(id: CancelID.autoSave, cancelInFlight: true)
-    }
-
-    func saveAudio(state: inout State) -> Effect<Action> {
-        guard state.phase == .finished,
-              let id = state.recordID,
-              let recordedAt = state.recordedAt,
-              let recording = state.recording,
-              !state.isSaving else { return .none }
-        state.isSaving = true
-        state.isAutoSavePending = false
-        state.saveError = nil
-        let experimentID = state.experimentID
-        return .concatenate(
-            .cancel(id: CancelID.autoSave),
-            .run { send in
-                do {
-                    try Task.checkCancellation()
-                    try await experimentClient.saveAudio(
-                        experimentID,
-                        id,
-                        recordedAt,
-                        recording.audioURL,
-                        recording.transcript
-                    )
-                    try Task.checkCancellation()
-                    await send(.saved(id))
-                } catch is CancellationError {
-                    return
-                } catch {
-                    await send(.saveFailed(id, error.localizedDescription))
-                }
-            }
-            .cancellable(id: CancelID.save)
-        )
-    }
-
-    func resetReview(state: inout State) {
-        state.transcript = ""
-        state.recording = nil
-        state.recordID = nil
-        state.recordedAt = nil
-        state.isSaving = false
-        state.saveError = nil
-        state.isAutoSavePending = false
     }
 }

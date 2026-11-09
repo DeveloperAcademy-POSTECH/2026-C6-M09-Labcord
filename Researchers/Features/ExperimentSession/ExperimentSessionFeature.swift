@@ -99,6 +99,12 @@ struct ExperimentSessionFeature {
             ExperimentPauseFeature()
         }
 
+        sessionReducer
+    }
+}
+
+private extension ExperimentSessionFeature {
+    var sessionReducer: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .watchControl, .watchResourcesReleased, .watchControlFinished: return .none
@@ -108,15 +114,23 @@ struct ExperimentSessionFeature {
             case let .detailLoaded(detail):
                 state.isLoadingDetail = false
                 state.detail = detail
+                state.voice.speechUnits = detail.speechUnits
                 state.voice.contextualStrings = detail.speechContextualStrings
-                return .send(
-                    .timer(
-                        .configure(
-                            mode: detail.mode,
-                            timerSeconds: detail.timerSeconds,
-                            timers: detail.timers
+                state.voice.phoneticReplacements = detail.speechPhoneticReplacements
+                return .merge(
+                    .send(.timer(.configure(
+                        mode: detail.mode, timerSeconds: detail.timerSeconds, timers: detail.timers
+                    ))),
+                    .run { send in
+                        let vocabulary = await SpeechSessionVocabulary.prepare(
+                            for: detail.speechTerms
                         )
-                    )
+                        await send(.voice(.vocabularyLoaded(vocabulary)))
+                        let hint = await SpeechCustomLanguageModel.hint(
+                            for: detail.speechTerms, locale: Locale(identifier: "ko-KR")
+                        )
+                        await send(.voice(.languageModelHintLoaded(hint)))
+                    }
                 )
 
             case .detailLoadingFailed:
@@ -297,9 +311,7 @@ struct ExperimentSessionFeature {
             }
         }
     }
-}
 
-private extension ExperimentSessionFeature {
     func loadDetail(state: inout State) -> Effect<Action> {
         guard state.detail == nil, !state.isLoadingDetail else { return .none }
         state.isLoadingDetail = true
