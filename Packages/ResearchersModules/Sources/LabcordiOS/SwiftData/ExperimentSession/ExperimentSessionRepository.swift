@@ -17,6 +17,7 @@ final class ExperimentSessionRepository {
     }
 
     private func loadDetail(id: UUID, recordEntry: Bool) throws -> ExperimentSessionDetail? {
+        try recoverTimerDeletions(experimentID: id)
         let context = try store.makeContext()
         guard let experiment = try store.find(id: id, in: context) else { return nil }
 
@@ -51,6 +52,7 @@ final class ExperimentSessionRepository {
     }
 
     func watchState(id: UUID) throws -> WatchExperimentState? {
+        try recoverTimerDeletions(experimentID: id)
         let context = try store.makeContext()
         guard let experiment = try store.find(id: id, in: context),
               let detail = try loadDetail(id: id, recordEntry: false) else { return nil }
@@ -70,6 +72,7 @@ final class ExperimentSessionRepository {
         guard let experimentID = command.experimentID else {
             throw WatchExperimentError.invalidPayload
         }
+        try recoverTimerDeletions(experimentID: experimentID)
         let context = try store.makeContext()
         guard let experiment = try store.find(id: experimentID, in: context) else {
             throw ExperimentStore.StoreError.experimentNotFound
@@ -95,6 +98,11 @@ final class ExperimentSessionRepository {
             return
         }
         let mutation = try WatchTimerMutation.prepare(command, timers: timers, at: now)
+        if command.operation == .deleteTimer, let timerID = command.targetID {
+            try timerVisibility.beginDeletion(
+                experimentID: experimentID, timerID: timerID, endedAt: now
+            )
+        }
         for change in mutation.changes {
             upsertTimer(change.timer, endedAt: change.endedAt, in: experiment)
         }
@@ -281,4 +289,37 @@ private extension ExperimentSessionRepository {
             }
         }
     }
+}
+
+extension ExperimentSessionRepository {
+    func beginTimerDeletion(experimentID: UUID, timerID: UUID, endedAt: Date) throws {
+        let context = try store.makeContext()
+        guard let experiment = try store.find(id: experimentID, in: context),
+              experiment.records.contains(where: { $0.id == timerID && $0.type == .timer }) else {
+            throw WatchExperimentError.invalidState
+        }
+        try timerVisibility.beginDeletion(
+            experimentID: experimentID, timerID: timerID, endedAt: endedAt
+        )
+    }
+
+    private func recoverTimerDeletions(experimentID: UUID) throws {
+        let pending = try timerVisibility.pendingDeletions(experimentID: experimentID)
+        guard !pending.isEmpty else { return }
+        let context = try store.makeContext()
+        guard let experiment = try store.find(id: experimentID, in: context) else {
+            throw ExperimentStore.StoreError.experimentNotFound
+        }
+        for (id, endedAt) in pending {
+            guard let record = experiment.records.first(where: {
+                $0.id == id && $0.type == .timer
+            }) else { throw WatchExperimentError.invalidState }
+            record.timerEndedAt = record.timerEndedAt ?? endedAt
+        }
+        try context.save()
+        for id in pending.keys {
+            try timerVisibility.dismiss(experimentID: experimentID, timerID: id)
+        }
+    }
+
 }

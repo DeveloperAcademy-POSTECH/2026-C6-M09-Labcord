@@ -4,6 +4,7 @@ struct WatchTimerVisibilityStore {
     private struct Contents: Codable {
         var version = 1
         var dismissed: [String: Set<UUID>] = [:]
+        var pending: [String: [String: Date]]?
     }
 
     private let fileURL: URL
@@ -17,11 +18,42 @@ struct WatchTimerVisibilityStore {
         try load().dismissed[experimentID.uuidString] ?? []
     }
 
+    func pendingDeletions(experimentID: UUID) throws -> [UUID: Date] {
+        let pending = try load().pending?[experimentID.uuidString] ?? [:]
+        var result: [UUID: Date] = [:]
+        for (key, date) in pending {
+            guard let timerID = UUID(uuidString: key), result[timerID] == nil else {
+                throw CocoaError(.coderReadCorrupt)
+            }
+            result[timerID] = date
+        }
+        return result
+    }
+
+    func beginDeletion(experimentID: UUID, timerID: UUID, endedAt: Date) throws {
+        var contents = try load()
+        let experimentKey = experimentID.uuidString
+        guard contents.dismissed[experimentKey]?.contains(timerID) != true else { return }
+        var pending = contents.pending ?? [:]
+        if pending[experimentKey]?[timerID.uuidString] == nil {
+            pending[experimentKey, default: [:]][timerID.uuidString] = endedAt
+            contents.pending = pending
+            try write(contents)
+        }
+    }
+
     func dismiss(experimentID: UUID, timerID: UUID) throws {
         var contents = try load()
         let key = experimentID.uuidString
-        guard contents.dismissed[key]?.contains(timerID) != true else { return }
+        if contents.dismissed[key]?.contains(timerID) == true,
+           contents.pending?[key]?[timerID.uuidString] == nil { return }
         contents.dismissed[key, default: []].insert(timerID)
+        contents.pending?[key]?[timerID.uuidString] = nil
+        if contents.pending?[key]?.isEmpty == true { contents.pending?[key] = nil }
+        try write(contents)
+    }
+
+    private func write(_ contents: Contents) throws {
         let directory = fileURL.deletingLastPathComponent()
         try FileManager.default.createDirectory(
             at: directory, withIntermediateDirectories: true,
@@ -41,7 +73,11 @@ struct WatchTimerVisibilityStore {
         }
         let contents = try JSONDecoder().decode(Contents.self, from: data)
         guard contents.version == 1,
-              contents.dismissed.keys.allSatisfy({ UUID(uuidString: $0) != nil }) else {
+              contents.dismissed.keys.allSatisfy({ UUID(uuidString: $0) != nil }),
+              (contents.pending ?? [:]).allSatisfy({ key, timers in
+                  UUID(uuidString: key) != nil
+                      && timers.keys.allSatisfy { UUID(uuidString: $0) != nil }
+              }) else {
             throw CocoaError(.coderReadCorrupt)
         }
         return contents
