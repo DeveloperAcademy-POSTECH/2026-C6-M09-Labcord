@@ -8,15 +8,11 @@ extension WatchExperimentFeature {
         case let .practiceRecord(kind):
             return practiceRecord(kind, state: &state)
         case .timersTapped:
-            if state.screen == .timerEditor, state.snapshot?.experiment.status == .running {
-                state.screen = .experiment
-            } else {
-                state.screen = .timers
-            }
-            return .none
+            return navigateToStage(.timers, state: &state)
         case .timerEditorTapped:
-            state.screen = .timerEditor
-            return .none
+            guard state.snapshot?.experiment.status == .running else { return .none }
+            let seconds = state.timerHours * 3600 + state.timerMinutes * 60 + state.timerSeconds
+            return navigateToStage(.timerEditor, timerDraftSeconds: seconds, state: &state)
         default:
             return reduceTimerInputs(state: &state, action: action)
         }
@@ -26,13 +22,13 @@ extension WatchExperimentFeature {
         switch action {
         case let .timerHoursChanged(hours):
             state.timerHours = min(23, max(0, hours))
-            return .none
+            return synchronizeTimerDraft(state: &state)
         case let .timerMinutesChanged(minutes):
             state.timerMinutes = min(59, max(0, minutes))
-            return .none
+            return synchronizeTimerDraft(state: &state)
         case let .timerSecondsChanged(seconds):
             state.timerSeconds = min(59, max(0, seconds))
-            return .none
+            return synchronizeTimerDraft(state: &state)
         case .customTimerStarted:
             let seconds = state.timerHours * 3600 + state.timerMinutes * 60 + state.timerSeconds
             return startTimer(seconds, state: &state)
@@ -112,11 +108,14 @@ extension WatchExperimentFeature {
 
     private func reduceInterruption(state: inout State, action: Action) -> Effect<Action> {
         switch action {
-        case let .remoteVoicePermissionResult(id, expiresAt, granted):
-            return completeRemoteVoicePermission(id, expiresAt: expiresAt, granted: granted,
-                                                 state: &state)
-        case let .voicePermissionResult(id, granted):
-            return completeVoicePermission(id, granted: granted, state: &state)
+        case let .remoteVoicePermissionResult(id, requestID, expiresAt, granted):
+            return completeRemoteVoicePermission(
+                id, requestID: requestID, expiresAt: expiresAt, granted: granted, state: &state
+            )
+        case let .voicePermissionResult(id, requestID, granted):
+            return completeVoicePermission(
+                id, requestID: requestID, granted: granted, state: &state
+            )
         case let .interruptionPrepared(id, attempt, operation):
             guard state.selectedID == id, state.isPreparingInterruption,
                   state.interruptionAttemptID == attempt else { return .none }
@@ -142,11 +141,15 @@ extension WatchExperimentFeature {
     }
 
     private func completeVoicePermission(
-        _ id: UUID, granted: Bool, state: inout State
+        _ id: UUID, requestID: UUID, granted: Bool, state: inout State
     ) -> Effect<Action> {
-        guard state.isRequestingPermission else { return .none }
+        guard state.isRequestingPermission, state.permissionRequestID == requestID else {
+            return .none
+        }
         state.isRequestingPermission = false
+        state.permissionRequestID = nil
         guard state.isVisible, state.streamID != nil, state.selectedID == id,
+              !state.screenRecoveryNeeded, !state.phoneRecordingBlocksCapture,
               state.pending == nil, !state.isPreparingInterruption,
               state.hasRestoredPending, !state.pendingRecoveryFailed,
               state.snapshot?.experiment.status == .running else { return .none }
@@ -171,6 +174,7 @@ extension WatchExperimentFeature {
         _ kind: WatchRecordPresentation.Kind, state: inout State
     ) -> Effect<Action> {
         guard state.isVisible, state.pending == nil, !state.isPreparingInterruption,
+              !state.screenRecoveryNeeded, !state.phoneRecordingBlocksCapture,
               state.hasRestoredPending, !state.pendingRecoveryFailed,
               state.snapshot?.experiment.status == .running,
               let id = state.selectedID else { return .none }
@@ -178,10 +182,12 @@ extension WatchExperimentFeature {
         if kind == .voice {
             guard state.streamID != nil, !state.isRequestingPermission else { return .none }
             state.isRequestingPermission = true
+            let requestID = uuid()
+            state.permissionRequestID = requestID
             return .run { [microphonePermission] send in
                 let granted = await microphonePermission.request()
                 guard !Task.isCancelled else { return }
-                await send(.voicePermissionResult(id, granted))
+                await send(.voicePermissionResult(id, requestID, granted))
             }
             .cancellable(id: CancelID.permission, cancelInFlight: true)
         }
@@ -190,6 +196,7 @@ extension WatchExperimentFeature {
 
     private func canStartRemoteVoice(_ id: UUID, expiresAt: Date, state: State) -> Bool {
         Date.now < expiresAt && state.isVisible && state.streamID != nil
+            && !state.screenRecoveryNeeded && !state.phoneRecordingBlocksCapture
             && state.selectedID == id && state.pending == nil && !state.isPreparingInterruption
             && state.hasRestoredPending && !state.pendingRecoveryFailed
             && state.snapshot?.experiment.status == .running
@@ -211,19 +218,24 @@ extension WatchExperimentFeature {
         guard !state.isRequestingPermission,
               canStartRemoteVoice(id, expiresAt: expiresAt, state: state) else { return .none }
         state.isRequestingPermission = true
+        let requestID = uuid()
+        state.permissionRequestID = requestID
         return .run { [microphonePermission] send in
             let granted = await microphonePermission.request()
             guard !Task.isCancelled else { return }
-            await send(.remoteVoicePermissionResult(id, expiresAt, granted))
+            await send(.remoteVoicePermissionResult(id, requestID, expiresAt, granted))
         }
         .cancellable(id: CancelID.permission, cancelInFlight: true)
     }
 
     private func completeRemoteVoicePermission(
-        _ id: UUID, expiresAt: Date, granted: Bool, state: inout State
+        _ id: UUID, requestID: UUID, expiresAt: Date, granted: Bool, state: inout State
     ) -> Effect<Action> {
-        guard state.isRequestingPermission else { return .none }
+        guard state.isRequestingPermission, state.permissionRequestID == requestID else {
+            return .none
+        }
         state.isRequestingPermission = false
+        state.permissionRequestID = nil
         guard canStartRemoteVoice(id, expiresAt: expiresAt, state: state) else { return .none }
         guard granted else {
             state.message = "마이크 권한이 필요해요. Watch 설정에서 권한을 확인해주세요."

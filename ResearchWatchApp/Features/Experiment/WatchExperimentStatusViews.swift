@@ -51,6 +51,8 @@ extension WatchExperimentView {
                 .multilineTextAlignment(.center)
             Button("확인") { store.send(.closeTapped) }
                 .frame(maxWidth: .infinity)
+            Button("실험 재개", systemImage: "play.fill") { store.send(.resumeTapped) }
+                .disabled(!store.canOperate)
         } else if store.pending?.command.operation == .complete,
                   store.pending?.phase == .processing {
             ProgressView()

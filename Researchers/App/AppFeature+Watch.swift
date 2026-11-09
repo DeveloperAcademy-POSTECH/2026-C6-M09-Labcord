@@ -20,7 +20,7 @@ extension AppFeature {
                 return .run { send in
                     let coordinator = await PhoneWatchExperimentCoordinator.shared
                     let events = await coordinator.events()
-                    if let id = await coordinator.pendingStartID {
+                    if let id = try? await coordinator.validPendingStartID() {
                         await send(.watchEvent(.started(id)))
                     }
                     for await event in events { await send(.watchEvent(event)) }
@@ -110,16 +110,20 @@ extension AppFeature {
                 state.path[id: $0, case: \.session]?.experimentID
             }
             coordinator.visibleExperimentID = sessionID
+            let canResumeResult = state.path.ids.last.flatMap {
+                state.path[id: $0, case: \.result]?.canRefreshExternalRecords
+            } == true && !PhoneWatchAudioService.shared.hasUnsettledRecording()
             coordinator.isBusy = state.reviewSaving || state.home.list.isDeleting
                 || state.home.list.pendingDeletion != nil
-                || (!state.path.isEmpty && sessionID == nil)
+                || (!state.path.isEmpty && sessionID == nil && !canResumeResult)
+            coordinator.updateScreen(screenSnapshot(state))
             coordinator.refresh()
             return .none
         }
     }
 
     func watchWorkPending(_ state: State) -> Bool {
-        if state.watchRequestID != nil { return true }
+        if state.watchRequestID != nil || !canLeaveCurrentScreen(state) { return true }
         guard let id = state.path.ids.last,
               let session = state.path[id: id, case: \.session] else { return false }
         let capture = session.capture
@@ -190,11 +194,33 @@ extension AppFeature {
               let experimentID = state.watchPendingStartID else {
             return .none
         }
+        guard (try? PhoneWatchExperimentCoordinator.shared.validPendingStartID()) == experimentID
+        else {
+            state.watchPendingStartID = nil
+            return .none
+        }
         if let id = state.path.ids.last,
-           state.path[id: id, case: \.session]?.experimentID == experimentID {
+           var session = state.path[id: id, case: \.session],
+           session.experimentID == experimentID {
+            let wasPreview = session.isRemotePreview
+            session.isRemotePreview = false
+            session.sharedStage = .active
+            session.sharedCountdownEndsAt = nil
+            if wasPreview { session.detail = nil }
+            state.path[id: id, case: \.session] = session
             state.watchPendingStartID = nil
             PhoneWatchExperimentCoordinator.shared.didOpen(experimentID)
-            return .none
+            return wasPreview
+                ? .send(.path(.element(id: id, action: .session(.loadDetail)))) : .none
+        }
+        if let id = state.path.ids.last,
+           let result = state.path[id: id, case: \.result],
+           result.experimentID == experimentID, canLeaveCurrentScreen(state) {
+            state.watchPendingStartID = nil
+            PhoneWatchExperimentCoordinator.shared.didOpen(experimentID)
+            state.path.removeAll()
+            state.path.append(.session(.init(experimentID: experimentID)))
+            return .send(.home(.list(.cancelLoad)))
         }
         guard state.path.isEmpty, !state.home.list.isDeleting,
               state.home.list.pendingDeletion == nil else { return .none }

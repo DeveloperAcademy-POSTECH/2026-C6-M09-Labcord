@@ -6,6 +6,6 @@ enum WatchRequestPolicy {
     }
 
     static func isReadOnly(_ operation: WatchExperimentCommand.Operation) -> Bool {
-        operation == .list || operation == .snapshot
+        operation == .list || operation == .snapshot || operation == .screen
     }
 }

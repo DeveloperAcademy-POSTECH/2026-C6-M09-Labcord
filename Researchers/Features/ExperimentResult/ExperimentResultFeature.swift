@@ -29,10 +29,12 @@ struct ExperimentResultFeature {
     struct State: Equatable {
         let experimentID: UUID
         let isOpenedFromHome: Bool
+        var isInitialLoadPending = false
         var recordTimeline: RecordTimelineFeature.State?
         var loadMessage: String?
         var isResuming = false
         var resumeMessage: String?
+        var isResumeConfirmationPresented = false
         var selectedType: RecordFilter = .all
         var selectedSort: RecordSort = .oldest
         var selectedEntry: ExperimentResultDetail.TimelineEntry?
@@ -43,32 +45,12 @@ struct ExperimentResultFeature {
         var recordSaveMessage: String?
         var titleEditOverlay: TitleEditOverlayFeature.State?
 
-        var selectedRecord: ExperimentResultDetail.Record? {
-            guard let selectedEntry else { return nil }
-            switch selectedEntry.kind {
-            case let .record(record), let .timer(record, _): return record
-            default: return nil
-            }
-        }
-
-        var normalizedNote: String {
-            draftNote.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-
         var editedTranscript: String? {
             guard let selectedRecord, selectedRecord.type == .audio else { return nil }
             let transcript = draftTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
             let original = (selectedRecord.transcript ?? "")
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             return transcript == original ? nil : transcript
-        }
-
-        var canSaveRecord: Bool {
-            guard !isRecordSaving, selectedRecord != nil else { return false }
-            let noteChanged = normalizedNote
-                != (selectedEntry?.note ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            return (noteChanged || editedTranscript != nil)
-                && draftNote.count <= 300
         }
 
         init(experimentID: UUID, isOpenedFromHome: Bool = false) {
@@ -99,6 +81,7 @@ struct ExperimentResultFeature {
         case titleEditOverlay(TitleEditOverlayFeature.Action)
         case homeTapped
         case resumeTapped
+        case resumeConfirmationCancelled
         case resumeFinished(Bool)
         case resumeReady
     }
@@ -110,6 +93,7 @@ struct ExperimentResultFeature {
         Reduce { state, action in
             switch action {
             case .loadResultDetail:
+                state.isInitialLoadPending = true
                 state.recordTimeline = nil
                 state.loadMessage = nil
                 state.clearRecordDraft()
@@ -145,11 +129,13 @@ struct ExperimentResultFeature {
                 }
 
             case let .resultDetailLoaded(detail):
+                state.isInitialLoadPending = false
                 state.recordTimeline = detail.map { RecordTimelineFeature.State(detail: $0) }
                 state.loadMessage = detail == nil ? "실험을 찾을 수 없습니다." : nil
                 return .none
 
             case .resultDetailLoadFailed:
+                state.isInitialLoadPending = false
                 state.loadMessage = "실험을 불러오지 못했습니다."
                 return .none
 
@@ -281,7 +267,12 @@ struct ExperimentResultFeature {
                 return .none
 
             case .resumeTapped:
+                state.isResumeConfirmationPresented = false
                 return resumeExperiment(state: &state)
+
+            case .resumeConfirmationCancelled:
+                state.isResumeConfirmationPresented = false
+                return .none
 
             case let .resumeFinished(success):
                 return finishResume(success, state: &state)
@@ -302,7 +293,8 @@ struct ExperimentResultFeature {
 private extension ExperimentResultFeature {
     func resumeExperiment(state: inout State) -> Effect<Action> {
         guard state.recordTimeline?.detail.status == .completed,
-              !state.isResuming else { return .none }
+              state.canRefreshExternalRecords,
+              !PhoneWatchAudioService.shared.hasUnsettledRecording() else { return .none }
         state.isResuming = true
         state.resumeMessage = nil
         let id = state.experimentID

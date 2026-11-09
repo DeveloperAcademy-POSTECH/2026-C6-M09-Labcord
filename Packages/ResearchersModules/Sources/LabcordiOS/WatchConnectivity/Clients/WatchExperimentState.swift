@@ -10,7 +10,9 @@ public struct WatchExperimentState: Equatable, Sendable {
         self.detail = detail
     }
 
-    func snapshot(revision: UInt64, at date: Date) -> WatchExperimentSnapshot {
+    func snapshot(
+        revision: UInt64, at date: Date, phoneSessionActive: Bool? = nil
+    ) -> WatchExperimentSnapshot {
         WatchExperimentSnapshot(
             experiment: experiment,
             revision: revision,
@@ -24,7 +26,7 @@ public struct WatchExperimentState: Equatable, Sendable {
                 )
             },
             recordedAt: date,
-            mode: detail.mode
+            mode: detail.mode, phoneSessionActive: phoneSessionActive
         )
     }
 }
