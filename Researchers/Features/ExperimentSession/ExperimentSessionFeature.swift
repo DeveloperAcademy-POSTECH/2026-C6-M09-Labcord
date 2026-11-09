@@ -38,12 +38,17 @@ struct ExperimentSessionFeature {
             self.pause = ExperimentPauseFeature.State(experimentID: experimentID)
         }
 
-        var isReady: Bool {
+        var isSetupReady: Bool {
             permissions.camera.status == .authorized
                 && permissions.microphoneStatus == .authorized
                 && permissions.speechRecognitionStatus == .authorized
                 && !permissions.isRequesting
+                && permissions.issue == nil
                 && capture.previewConnector != nil
+        }
+
+        var isReady: Bool {
+            isSetupReady && detail != nil && timer.isConfigured
         }
 
         var canCloseSession: Bool {
@@ -360,7 +365,8 @@ private extension ExperimentSessionFeature {
     }
 
     func loadDetail(state: inout State) -> Effect<Action> {
-        guard state.detail == nil, !state.isLoadingDetail else { return .none }
+        guard state.isSetupReady, state.detail == nil,
+              !state.isLoadingDetail else { return .none }
         state.isLoadingDetail = true
         state.detailLoadFailed = false
         let experimentID = state.experimentID
