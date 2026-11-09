@@ -6,6 +6,7 @@ import SwiftUI
 
 struct ExperimentRecordSheetView: View {
     let entry: ExperimentResultDetail.TimelineEntry
+    let timerIdentity: TimerIdentity
     @Binding var note: String
     @Binding var transcript: String
     let canSave: Bool
@@ -22,6 +23,7 @@ struct ExperimentRecordSheetView: View {
                 type: presentation.type,
                 contentState: canSave ? .filled : .empty,
                 setDuration: presentation.timer?.setDuration ?? "",
+                timerIdentity: timerIdentity,
                 timerState: presentation.timer?.state ?? .start,
                 timerElapsedTime: presentation.timer?.elapsedTime ?? "",
                 timerCumulativeTime: presentation.timer?.cumulativeTime ?? "",

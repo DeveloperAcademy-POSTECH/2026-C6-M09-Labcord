@@ -6,6 +6,7 @@ import SwiftUI
 struct RecordedTimerTimelineView: View {
     let record: ExperimentResultDetail.Record
     let event: ExperimentResultDetail.TimelineTimerEvent
+    let identity: TimerIdentity
     let timestamp: String
     let date: Date
     let note: String
@@ -46,7 +47,8 @@ struct RecordedTimerTimelineView: View {
                 elapsedTime: "\(TimerDurationFormatter.string(from: elapsedSeconds)) 실행",
                 cumulativeTime: TimerDurationFormatter.string(from: cumulativeSeconds),
                 pauseCount: "(\(pauseCount))",
-                state: state
+                state: state,
+                identity: identity
             )
         }
     }
