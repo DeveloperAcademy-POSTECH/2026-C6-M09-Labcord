@@ -146,9 +146,8 @@ struct ExperimentSessionView: View {
         .overlay {
             if !store.isReady {
                 ExperimentSetupView(
-                    failureMessage: store.setupFailureMessage,
-                    onRetry: { store.send(.setupRetryCameraTapped) }
-                )
+                    failureMessage: store.setupFailureMessage
+                )                    { store.send(.setupRetryCameraTapped) }
                     .task(id: store.permissionRequestGeneration) {
                         try? await Task.sleep(for: .milliseconds(200))
                         guard !Task.isCancelled else { return }
