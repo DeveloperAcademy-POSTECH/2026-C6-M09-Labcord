@@ -60,3 +60,19 @@ Watch 자체 음성 단축어도 실제 `capturing` 상태를 확인한 뒤 접�
 새 캡처는 현재 구독 복구를 기존 준비 제한 시간까지 기다리며, 진행 중인 음성의
 중지는 복구 완료를 기다리지 않습니다. 복구 중 앱 이탈은 새 캡처를 시작하지 않습니다.
 시뮬레이터 결과는 실기기 단축어·제스처와 사진 단일 실행 성공을 대신하지 않습니다.
+
+
+### 성공 결과 대화창과 실기기 확인
+
+1.0(8) 실기기에서 Watch 음성 시작과 사진 촬영이 실행됐습니다. 사진 요청ID와
+동일한 JPEG가 iPhone 저장 경로에 생성된 것을 확인했습니다. 음성 시작 직후
+단축어 화면으로 전환되는 현상은 계속 보고됐으므로 화면 유지 성공으로 판단하지 않습니다.
+
+iPhone·Watch의 기록 App Intent 여섯 개는 성공 시 `ProvidesDialog` 대신 빈
+`IntentResult`를 반환합니다. 실행 조건·오류 전달·기록 처리는 유지하며,
+성공 안내를 위해 시스템에 대화창을 요청하지 않습니다. `.foreground(.immediate)`는
+동작 시작 전에 앱을 전면으로 여는 설정이며, 완료 후 화면 유지 보장은 아닙니다.
+
+Apple 문서: [ProvidesDialog](https://developer.apple.com/documentation/appintents/providesdialog),
+[supportedModes](https://developer.apple.com/documentation/appintents/appintent/supportedmodes).
+화면 복귀와 음성 중단의 직접 원인은 최종 실기기 재현으로 확인합니다.

@@ -136,7 +136,8 @@ final class WatchIntentRuntime {
         } else {
             store.send(action)
         }
-        logger.info("Intent dispatched recording action")
+        let operation = if case .recording(.stop) = action { "stop" } else { "start" }
+        logger.info("Intent dispatched recording action: \(operation, privacy: .public)")
         let deadline = ContinuousClock.now.advanced(by: .seconds(3))
         while true {
             try Task.checkCancellation()
