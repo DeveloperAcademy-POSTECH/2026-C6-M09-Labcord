@@ -30,27 +30,6 @@ nonisolated enum EnglishKoreanPhonetic {
         "z": "제트"
     ]
 
-    private static let overrides: [String: String] = [
-        "one": "원", "two": "투", "three": "스리", "four": "포",
-        "five": "파이브", "six": "식스", "seven": "세븐", "eight": "에이트",
-        "nine": "나인", "ten": "텐", "time": "타임",
-        "pickle": "피클", "medium": "미디엄", "buffer": "버퍼", "sample": "샘플",
-        "range": "레인지", "gates": "게이츠", "smart": "스마트", "gauge": "게이지",
-        "protocol": "프로토콜", "pipette": "피펫", "centrifuge": "센트리퓨즈",
-        "threshold": "스레시홀드", "spectrophotometer": "스펙트로포토미터",
-        "rpm": "알피엠", "pcr": "피씨알", "tube": "튜브",
-        "microcentrifuge": "마이크로센트리퓨즈", "microburet": "마이크로뷰렛",
-        "endpoint": "엔드포인트", "recognition": "리코그니션", "matrix": "매트릭스",
-        "spike": "스파이크", "volumetric": "볼루메트릭", "reagent": "리에이전트",
-        "analytical": "애널리티컬", "balance": "밸런스", "flask": "플라스크",
-        "burette": "뷰렛", "class": "클래스", "free": "프리",
-        "crankcase": "크랭크케이스", "bomb": "봄", "solution": "솔루션",
-        "standard": "스탠다드", "blank": "블랭크", "indicator": "인디케이터",
-        "titration": "타이트레이션", "distilled": "디스틸드", "beaker": "비커",
-        "cylinder": "실린더", "a": "에이", "ph": "피에이치",
-        "mg": "밀리그램", "ml": "밀리리터"
-    ]
-
     private static let patterns: [(String, String)] = [
         ("able", "ㅔㅣㅂㅡㄹ"),
         ("tion", "ㅅㅕㄴ"),
@@ -116,12 +95,6 @@ nonisolated enum EnglishKoreanPhonetic {
         guard word.contains(where: { $0.isASCII && $0.isLetter }) else { return nil }
         word = word.filter { $0.isASCII && ($0.isLetter || $0 == "-") }
         guard !word.isEmpty else { return nil }
-        if let override = overrides[word] { return override }
-        if word.count > 3, word.hasSuffix("s"),
-           let singular = overrides[String(word.dropLast())] {
-            return singular + "스"
-        }
-
         if raw.count <= 3, raw.allSatisfy({ $0.isASCII && $0.isLetter }),
            raw == raw.uppercased() {
             return raw.lowercased().compactMap { letterNames[$0] }.joined()
