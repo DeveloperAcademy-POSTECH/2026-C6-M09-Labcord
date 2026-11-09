@@ -14,6 +14,10 @@ nonisolated enum SpeechContextualTerms {
         return result
     }
 
+    static func candidates(from value: String) -> [String] {
+        split(value).map(removingCalculationDirective).filter { !$0.isEmpty }
+    }
+
     private static func removingCalculationDirective(_ term: String) -> String {
         let words = term.split(separator: " ")
         guard words.count >= 3, words.count <= 5,
