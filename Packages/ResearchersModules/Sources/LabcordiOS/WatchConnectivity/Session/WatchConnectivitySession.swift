@@ -80,7 +80,9 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         replyHandler: @escaping ([String: Any]) -> Void
     ) {
         let data = message[WatchExperimentTransport.commandKey] as? Data
+        let voiceStatus = message[WatchVoiceLiveStatus.messageKey] as? Data
         Task { @MainActor in
+            if let voiceStatus { PhoneWatchAudioService.shared.receiveLiveStatus(voiceStatus) }
             let response = data.flatMap { experiments.reply(to: $0) }
             replyHandler(response.map { [WatchExperimentTransport.responseKey: $0] } ?? [:])
         }

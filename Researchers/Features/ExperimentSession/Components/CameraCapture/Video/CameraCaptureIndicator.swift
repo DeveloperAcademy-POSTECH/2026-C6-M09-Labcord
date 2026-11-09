@@ -24,3 +24,24 @@ struct VideoRecordingIndicator: View {
         }
     }
 }
+
+struct WatchVoiceRecordingIndicator: View {
+    let experimentID: UUID
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            if let recording = PhoneWatchAudioService.shared.liveRecording,
+               recording.experimentID == experimentID, context.date < recording.expiresAt {
+                let seconds = max(0, Int(context.date.timeIntervalSince(recording.startedAt)))
+                Label("워치 녹음 \(seconds / 60):\(String(format: "%02d", seconds % 60))",
+                      systemImage: "mic.fill")
+                    .font(.caption.monospacedDigit())
+                    .padding(8)
+                    .background(.black.opacity(0.75), in: Capsule())
+                    .foregroundStyle(.white)
+            }
+        }
+        .padding(.top, 8)
+        .allowsHitTesting(false)
+    }
+}

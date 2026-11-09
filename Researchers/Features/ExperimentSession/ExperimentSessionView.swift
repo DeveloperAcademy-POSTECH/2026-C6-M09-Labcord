@@ -9,7 +9,6 @@ import ComposableArchitecture
 import LabcordDesignSystem
 import LabcordiOS
 import SwiftUI
-
 struct ExperimentSessionView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.verticalSizeClass) private var verticalSizeClass
@@ -17,7 +16,6 @@ struct ExperimentSessionView: View {
     @State private var isSidePanelExpanded = true
     @State private var isGestureGuidePresented = false
     @State private var voiceToast: VoiceToastPresentation?
-
     let store: StoreOf<ExperimentSessionFeature>
     private var timerStore: StoreOf<SessionTimerFeature> {
         store.scope(state: \.timer, action: \.timer)
@@ -80,6 +78,9 @@ struct ExperimentSessionView: View {
                 }
             }
             .ignoresSafeArea()
+        }
+        .overlay(alignment: .top) {
+            WatchVoiceRecordingIndicator(experimentID: store.experimentID)
         }
         .navigationBarBackButtonHidden()
         .toolbarVisibility(

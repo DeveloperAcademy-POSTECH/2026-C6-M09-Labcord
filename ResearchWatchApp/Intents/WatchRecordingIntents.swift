@@ -8,12 +8,12 @@ struct ToggleWatchVoiceRecordingIntent: AppIntent {
         .requiresLocalDeviceAuthentication
 
     @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog {
+    func perform() async throws -> some IntentResult {
         guard systemContext.currentMode == .foreground else {
             throw WatchIntentRuntimeError.appNotActive
         }
-        let message = try await WatchIntentRuntime.shared.perform(.voice)
-        return .result(dialog: "\(message)")
+        _ = try await WatchIntentRuntime.shared.perform(.voice)
+        return .result()
     }
 }
 
@@ -25,12 +25,12 @@ struct TakeWatchPhotoIntent: AppIntent {
         .requiresLocalDeviceAuthentication
 
     @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog {
+    func perform() async throws -> some IntentResult {
         guard systemContext.currentMode == .foreground else {
             throw WatchIntentRuntimeError.appNotActive
         }
-        let message = try await WatchIntentRuntime.shared.perform(.photo)
-        return .result(dialog: "\(message)")
+        _ = try await WatchIntentRuntime.shared.perform(.photo)
+        return .result()
     }
 }
 
@@ -42,11 +42,11 @@ struct ToggleWatchVideoRecordingIntent: AppIntent {
         .requiresLocalDeviceAuthentication
 
     @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog {
+    func perform() async throws -> some IntentResult {
         guard systemContext.currentMode == .foreground else {
             throw WatchIntentRuntimeError.appNotActive
         }
-        let message = try await WatchIntentRuntime.shared.perform(.video)
-        return .result(dialog: "\(message)")
+        _ = try await WatchIntentRuntime.shared.perform(.video)
+        return .result()
     }
 }

@@ -1,8 +1,10 @@
 import ComposableArchitecture
 import Foundation
 import LabcordShared
+import Observation
 
 @MainActor
+@Observable
 public final class PhoneWatchAudioService {
     public static let shared = PhoneWatchAudioService()
     public static let messageKey = "labcordAudioMessage"
@@ -12,11 +14,38 @@ public final class PhoneWatchAudioService {
     private let receiver: WatchAudioReceiver
     private let connectivity: WatchConnectivitySession
     private let revisionURL: URL
-    private var monitor: Task<Void, Never>?
-    private var transcripts: Task<Void, Never>?
+    @ObservationIgnored private var monitor: Task<Void, Never>?
+    @ObservationIgnored private var transcripts: Task<Void, Never>?
     private var latest: [UUID: WatchAudioReceipt] = [:]
-    private lazy var verificationJobs = makeVerificationJobs()
+    @ObservationIgnored private lazy var verificationJobs = makeVerificationJobs()
+    public struct LiveRecording: Equatable {
+        public let experimentID: UUID
+        public let recordingID: UUID
+        public let startedAt: Date
+        public let expiresAt: Date
+    }
+
+    public private(set) var liveRecording: LiveRecording?
+    private var lastLiveStatusAt: Date = .distantPast
     public private(set) var lastError: WatchAudioError?
+
+    public func receiveLiveStatus(_ data: Data, receivedAt: Date = .now) {
+        guard data.count <= 4096,
+              let status = try? JSONDecoder().decode(WatchVoiceLiveStatus.self, from: data),
+              status.sentAt > lastLiveStatusAt,
+              status.sentAt <= receivedAt.addingTimeInterval(2),
+              status.sentAt > receivedAt.addingTimeInterval(-3),
+              status.startedAt <= status.sentAt else { return }
+        lastLiveStatusAt = status.sentAt
+        if status.isRecording {
+            liveRecording = LiveRecording(
+                experimentID: status.experimentID, recordingID: status.recordingID,
+                startedAt: status.startedAt, expiresAt: status.sentAt.addingTimeInterval(3)
+            )
+        } else if liveRecording?.recordingID == status.recordingID {
+            liveRecording = nil
+        }
+    }
 
     public private(set) var damagedRecordingIDs: [UUID] = []
 

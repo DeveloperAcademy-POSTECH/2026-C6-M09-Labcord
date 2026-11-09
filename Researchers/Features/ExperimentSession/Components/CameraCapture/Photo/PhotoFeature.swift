@@ -96,6 +96,7 @@ struct PhotoFeature {
                 state.isScheduled = true
                 let scheduledAt = now
                 state.scheduledAt = scheduledAt
+                state.countdownEndAt = scheduledAt.addingTimeInterval(5)
                 let delay = Effect<Action>.run { send in
                     try await Task.sleep(for: .seconds(5))
                     await send(.delayElapsed(id))

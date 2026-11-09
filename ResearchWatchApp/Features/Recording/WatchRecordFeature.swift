@@ -38,6 +38,7 @@ struct WatchRecordFeature {
         case update(WatchRecordPresentation)
         case commandProcessed(UUID, WatchExperimentCommand.Operation)
         case commandFailed(UUID, String)
+        case commandNotSent(UUID, String)
         case captureRejected(UUID, String)
         case preparationCancelled(UUID)
         case recapture(UUID)
@@ -109,6 +110,7 @@ struct WatchRecordFeature {
                 record.detail = message
                 record.canAutoSave = false
                 state.records[id] = record
+                if state.focusedID == id { state.focusedID = nil }
                 return .none
             case let .recapture(id):
                 guard state.isIntegrated, let record = state.records[id],
@@ -123,6 +125,7 @@ struct WatchRecordFeature {
                       !record.originalRetained else { return .none }
                 state.records[id]?.phase = .cancelled
                 state.records[id]?.detail = "촬영 요청을 보내기 전에 취소했어요."
+                if state.focusedID == id { state.focusedID = nil }
                 state.decisions[id] = nil
                 state.failedDecisions.remove(id)
                 return .none
@@ -134,6 +137,24 @@ struct WatchRecordFeature {
                 record.canAutoSave = false
                 state.records[id] = record
                 state.autoSaveSeconds[id] = nil
+                return .cancel(id: CancelID.autoSave(id))
+            case let .commandNotSent(id, message):
+                guard var record = state.records[id], !record.isSettled else { return .none }
+                if record.phase == .starting, record.kind != .voice,
+                   !record.originalRetained, record.startedAt == nil {
+                    record.captureRejectedBeforeStart = true
+                }
+                record.phase = .failed
+                record.detail = message
+                record.canAutoSave = false
+                state.records[id] = record
+                state.decisions[id] = nil
+                state.failedDecisions.remove(id)
+                state.autoSaveSeconds[id] = nil
+                if state.focusedID == id,
+                   record.canRecapture || record.isRecoverableVoiceFailure {
+                    state.focusedID = nil
+                }
                 return .cancel(id: CancelID.autoSave(id))
             case let .confirm(id):
                 return confirm(id, state: &state)
@@ -168,8 +189,11 @@ struct WatchRecordFeature {
                 return .none
             case let .integrationAvailable(available):
                 state.isIntegrated = available
-                if available { state.notice = nil }
-                return .none
+                guard available else { return .none }
+                state.notice = nil
+                return .merge(state.records.values.filter {
+                    $0.phase == .review && $0.canAutoSave
+                }.map { .send(.update($0)) })
             case .recoveryFailed:
                 state.notice = "기록 상태를 다시 받지 못했어요. 원본을 유지하고 다시 연결해주세요."
                 state.isIntegrated = false
@@ -247,6 +271,11 @@ private extension WatchRecordFeature {
             } else if update.phase == .review { update.phase = .saving }
         }
         state.records[record.id] = update
+        if state.focusedID == record.id,
+           update.canRecapture || update.phase == .cancelled
+            || (update.isRecoverableVoiceFailure && !state.blocksNewCapture(update)) {
+            state.focusedID = nil
+        }
         if update.phase == .review, update.canAutoSave, state.isIntegrated {
             state.autoSaveSeconds[record.id] = state.autoSaveSeconds[record.id] ?? 3
             return autoSave(id: record.id, revision: record.revision)

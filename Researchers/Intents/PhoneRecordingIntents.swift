@@ -8,9 +8,9 @@ struct TogglePhoneVoiceRecordingIntent: AppIntent {
         .requiresLocalDeviceAuthentication
 
     @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog {
-        let message = try await PhoneIntentRuntime.shared.perform(.voice)
-        return .result(dialog: "\(message)")
+    func perform() async throws -> some IntentResult {
+        _ = try await PhoneIntentRuntime.shared.perform(.voice)
+        return .result()
     }
 }
 
@@ -22,9 +22,9 @@ struct TakePhoneExperimentPhotoIntent: AppIntent {
         .requiresLocalDeviceAuthentication
 
     @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog {
-        let message = try await PhoneIntentRuntime.shared.perform(.photo)
-        return .result(dialog: "\(message)")
+    func perform() async throws -> some IntentResult {
+        _ = try await PhoneIntentRuntime.shared.perform(.photo)
+        return .result()
     }
 }
 
@@ -37,9 +37,9 @@ struct StartPhoneExperimentVideoIntent: AppIntent {
         .requiresLocalDeviceAuthentication
 
     @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog {
-        let message = try await PhoneIntentRuntime.shared.perform(.video)
-        return .result(dialog: "\(message)")
+    func perform() async throws -> some IntentResult {
+        _ = try await PhoneIntentRuntime.shared.perform(.video)
+        return .result()
     }
 }
 
