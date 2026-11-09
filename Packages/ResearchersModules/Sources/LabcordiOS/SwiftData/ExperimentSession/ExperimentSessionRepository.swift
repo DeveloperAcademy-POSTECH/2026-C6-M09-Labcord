@@ -28,6 +28,7 @@ final class ExperimentSessionRepository {
             + (procedure?.samples ?? [])
             + (procedure?.glossaryTerms ?? [])
             + (procedure?.units ?? [])
+        let vocabulary = SpeechSessionVocabulary.usingCachedReadings(for: speechContextualStrings)
         let timers = activeTimers(in: experiment, at: enteredAt, persistExpiry: recordEntry)
         if recordEntry {
             if experiment.status != .completed, experiment.startedAt == nil {
@@ -41,7 +42,10 @@ final class ExperimentSessionRepository {
             timerSeconds: timerSeconds,
             mode: experiment.mode,
             timers: timers,
-            speechContextualStrings: SpeechContextualTerms.prepare(speechContextualStrings)
+            speechTerms: speechContextualStrings,
+            speechUnits: procedure?.units ?? [],
+            speechContextualStrings: vocabulary.contextualStrings,
+            speechPhoneticReplacements: vocabulary.replacements
         )
     }
 
