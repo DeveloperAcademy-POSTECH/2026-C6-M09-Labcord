@@ -23,6 +23,7 @@ struct ExperimentSessionFeature {
         var capture: CameraCaptureFeature.State
         var pause: ExperimentPauseFeature.State
         var permissionRequestGeneration = 0
+        var cameraPreparationTimedOut = false
         var isPausePresented = false
         var isReturningHome = false
         var exitID: UUID?
@@ -49,6 +50,7 @@ struct ExperimentSessionFeature {
             timer.isConfigured && timer.pendingSave == nil && !timer.isClosing && !voice.isSaving
                 && !pause.isCompleting && !isReturningHome
         }
+
     }
 
     enum Action: Equatable {
@@ -71,6 +73,9 @@ struct ExperimentSessionFeature {
         case photoStartRequested(UUID?)
         case videoStartRequested
         case appBecameActive
+        case setupLeaveTapped
+        case setupRetryCameraTapped
+        case cameraPreparationTimedOut
         case pauseTapped
         case stopCompleted(UUID, UUID?)
         case homeExitCompleted(UUID, UUID?)
@@ -119,9 +124,7 @@ private extension ExperimentSessionFeature {
             switch action {
             case .watchControl, .watchResourcesReleased, .watchControlFinished,
                  .watchRecordControl, .watchRecordResponse, .watchDrainProgress: return .none
-
             case .loadDetail: return loadDetail(state: &state)
-
             case let .detailLoaded(detail):
                 state.isLoadingDetail = false
                 state.detail = detail
@@ -143,30 +146,41 @@ private extension ExperimentSessionFeature {
                         await send(.voice(.languageModelHintLoaded(hint)))
                     }
                 )
-
             case .detailLoadingFailed:
                 state.isLoadingDetail = false
                 state.detailLoadFailed = true
                 return .none
-
             case .dismissDetailLoadFailure:
                 state.detailLoadFailed = false
                 return .none
-
             case .appBecameActive:
                 guard !state.isReady else { return .none }
                 state.permissionRequestGeneration += 1
                 return .none
-
+            case .setupLeaveTapped:
+                return .merge(
+                    .send(.permissions(.cancelRequest)),
+                    .send(.pause(.delegate(.returnHomeRequested)))
+                )
+            case .setupRetryCameraTapped:
+                state.cameraPreparationTimedOut = false
+                state.permissionRequestGeneration += 1
+                return .merge(
+                    .send(.capture(.cameraErrorDismissed)),
+                    .send(.capture(.cameraActivationRequested))
+                )
+            case .cameraPreparationTimedOut:
+                guard !state.isReady, state.capture.previewConnector == nil,
+                      state.permissions.camera.status == .authorized else { return .none }
+                state.cameraPreparationTimedOut = true
+                return .none
             case .pauseTapped:
                 guard state.watchCommand == nil else { return .none }
                 state.isPausePresented = true
                 return .send(.capture(.cancelPhotoGesture))
-
             case .pause(.delegate(.resumeRequested)):
                 state.isPausePresented = false
                 return .none
-
             case .pause(.delegate(.stopRequested)):
                 guard state.watchCommand == nil, state.canCloseSession else {
                     return .send(.pause(.stopRejected))
@@ -199,7 +213,10 @@ private extension ExperimentSessionFeature {
 
             case .pause(.delegate(.returnHomeRequested)):
                 guard state.watchCommand == nil || state.watchClosingResources,
-                      state.canCloseSession else { return .none }
+                      state.canCloseSession || (!state.isReady && !state.isReturningHome
+                          && !state.timer.isClosing && !state.voice.isSaving
+                          && !state.pause.isCompleting && state.timer.pendingSave == nil)
+                else { return .none }
                 state.isReturningHome = true
                 state.timer.isClosing = true
                 let experimentID = state.experimentID

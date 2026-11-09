@@ -206,6 +206,7 @@ public final class WatchAudioRecorder {
         var sequence = 0
         var firstSample: Int64 = 0
         var failure: WatchAudioError?
+        var archiveFailed = false
         var pending = Data()
         do {
             for try await pcm in stream {
@@ -215,25 +216,30 @@ public final class WatchAudioRecorder {
                         header: header, sequence: sequence, firstSample: firstSample,
                         pcm: Data(pending.prefix(16_384))
                     )
-                    _ = try await archive.accept(chunk)
+                    do { _ = try await archive.accept(chunk) } catch {
+                        archiveFailed = true
+                        throw error
+                    }
                     pending.removeFirst(16_384)
                     firstSample += chunk.sampleCount
                     sequence += 1
                     events?.yield(.retaining(header, throughSample: firstSample))
                 }
             }
-            if !pending.isEmpty {
-                let chunk = WatchAudioChunk(
-                    header: header, sequence: sequence, firstSample: firstSample, pcm: pending
-                )
-                _ = try await archive.accept(chunk)
-                firstSample += chunk.sampleCount
-                sequence += 1
-            }
         } catch {
             failure = (error as? WatchAudioError) ?? .interrupted
             engine.stop()
             removeTap()
+        }
+        if !archiveFailed, !pending.isEmpty {
+            let chunk = WatchAudioChunk(
+                header: header, sequence: sequence, firstSample: firstSample, pcm: pending
+            )
+            do {
+                _ = try await archive.accept(chunk)
+                firstSample += chunk.sampleCount
+                sequence += 1
+            } catch { failure = (error as? WatchAudioError) ?? .interrupted }
         }
         failure = await seal(
             header, sequence: sequence, firstSample: firstSample, failure: failure

@@ -12,6 +12,14 @@ final class ExperimentSessionRepository {
 
     private init() {}
 
+    func resumeCompleted(id: UUID, at date: Date) throws {
+        let context = try store.makeContext()
+        guard let experiment = try store.find(id: id, in: context),
+              experiment.status == .completed else { throw WatchExperimentError.invalidState }
+        experiment.resumeCompleted(at: date)
+        try context.save()
+    }
+
     func enterSessionAndLoadDetail(id: UUID) throws -> ExperimentSessionDetail? {
         try loadDetail(id: id, recordEntry: true)
     }
