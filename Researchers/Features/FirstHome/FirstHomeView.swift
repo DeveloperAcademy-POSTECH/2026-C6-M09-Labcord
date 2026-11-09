@@ -3,7 +3,7 @@ import LabcordDesignSystem
 import SwiftUI
 
 struct FirstHomeView: View {
-    let store: StoreOf<FirstHomeFeature>
+    let store: StoreOf<HomeFeature>
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -11,14 +11,14 @@ struct FirstHomeView: View {
                 .ignoresSafeArea()
 
             FirstHomeEmptyContent {
-                store.send(.registerTapped)
+                store.send(.firstHomeRegisterTapped)
             }
 
             if store.isGuideVisible {
                 Color.black.opacity(0.4)
                     .ignoresSafeArea()
                     .onTapGesture {
-                        store.send(.guideDismissed)
+                        store.send(.firstHomeGuideDismissed)
                     }
             }
 
@@ -27,21 +27,19 @@ struct FirstHomeView: View {
                     FirstHomeGuideTooltip()
                 }
 
-                FirstHomeHelpButton {
-                    store.send(.helpTapped)
-                }
+                FirstHomeHelpButton {}
             }
             .padding(.trailing, 20)
             .padding(.bottom, 17)
         }
         .task {
-            store.send(.appeared)
+            store.send(.firstHomeAppeared)
         }
     }
 }
 
 #Preview {
-    FirstHomeView(store: Store(initialState: FirstHomeFeature.State()) {
-        FirstHomeFeature()
+    FirstHomeView(store: Store(initialState: HomeFeature.State()) {
+        HomeFeature()
     })
 }

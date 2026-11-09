@@ -6,6 +6,14 @@ struct HomeView: View {
     let store: StoreOf<HomeFeature>
 
     var body: some View {
+        if store.isFirstHome {
+            FirstHomeView(store: store)
+        } else {
+            homeContent
+        }
+    }
+
+    private var homeContent: some View {
         ExperimentList(store: store.scope(state: \.list, action: \.list))
             .padding(.top, 54)
             .padding(.horizontal, 16)
