@@ -19,6 +19,7 @@ final class WatchRecordingService {
     var records: [UUID: WatchRecordPresentation] = [:]
     var observers: [UUID: AsyncStream<WatchRecordPresentation>.Continuation] = [:]
     var captureTasks: [UUID: Task<Void, Never>] = [:]
+    var voiceStatusTasks: [UUID: Task<Void, Never>] = [:]
     var voiceStartTasks: [UUID: Task<Void, Error>] = [:]
     var pendingVoiceStarts: Set<UUID> = []
     var closingExperiments: Set<UUID> = []
@@ -267,8 +268,10 @@ final class WatchRecordingService {
             value.revision = max(1, value.revision)
         }
         records[value.id] = value
+        updateVoiceLiveStatus(value)
         observers.values.forEach { $0.yield(value) }
     }
+
 }
 
 private extension WatchRecordingService {

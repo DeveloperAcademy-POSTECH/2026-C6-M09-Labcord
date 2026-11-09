@@ -10,17 +10,6 @@ struct CameraCaptureView: View {
                 .frame(width: 401, height: 215)
                 .anchorPreference(key: CameraPreviewAnchorKey.self, value: .bounds) { $0 }
                 .overlay {
-                    if store.photo.isScheduled, let startedAt = store.photo.scheduledAt {
-                        Text(timerInterval: startedAt...startedAt.addingTimeInterval(5),
-                             countsDown: true)
-                            .font(.largeTitle.monospacedDigit())
-                            .foregroundStyle(.white)
-                            .padding()
-                            .background(.black.opacity(0.6), in: .capsule)
-                            .accessibilityLabel("촬영까지 남은 시간")
-                    }
-                }
-                .overlay {
                     VStack {
                         Spacer()
 
