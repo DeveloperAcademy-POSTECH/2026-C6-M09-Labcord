@@ -111,7 +111,7 @@ extension SpeechRecordingSession {
         stopTimeout = nil
         cancelAnalyzerWork()
         isStopping = false
-        transcriptSegments = []
+        transcriptAccumulator = SpeechTranscriptAccumulator()
         termMatcher = SpeechTermMatcher(replacements: [:])
         languageModelHint = nil
         removeObservers()
@@ -167,29 +167,11 @@ extension SpeechRecordingSession {
 
     func receive(_ result: DictationTranscriber.Result, recordingID id: UUID) {
         guard recordingID == id else { return }
-        let text = bestCandidate(in: result)
-        guard !text.isEmpty else { return }
-        let start = result.range.start.seconds
-        if let index = transcriptSegments.lastIndex(where: {
-            abs($0.start - start) < 0.01
-        }) {
-            transcriptSegments[index].text = text
-        } else {
-            transcriptSegments.append(
-                TranscriptSegment(start: start, text: text)
-            )
-        }
-
-        let raw = transcriptSegments.map(\.text).joined(separator: " ")
-        transcript = unitNormalizer.normalize(termMatcher.restore(raw).text)
+        guard let text = transcriptAccumulator.accept(
+            result, termMatcher: &termMatcher, unitNormalizer: unitNormalizer
+        ) else { return }
+        transcript = text
         eventContinuation?.yield(.transcript(transcript))
-    }
-
-    private func bestCandidate(in result: DictationTranscriber.Result) -> String {
-        termMatcher.bestCandidate(
-            primary: String(result.text.characters),
-            alternatives: result.alternatives.lazy.map { String($0.characters) }
-        )
     }
 
     func recognitionDidFinish(recordingID id: UUID) {
