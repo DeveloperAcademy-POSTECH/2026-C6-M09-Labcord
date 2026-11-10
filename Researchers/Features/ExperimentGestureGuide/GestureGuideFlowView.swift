@@ -71,49 +71,53 @@ struct GestureGuideFlowView: View {
     }
 
     private var guide: some View {
-        GeometryReader { _ in
-            VStack(spacing: 0) {
-                NavigationPageTitle("제스처 가이드") { dismiss() }
+        VStack(spacing: 0) {
+            NavigationPageTitle("제스처 가이드") { dismiss() }
+            ScrollView {
+                VStack(spacing: 0) {
+                    Text("제스처로 음성 녹음, 사진, 영상을\n빠르게 기록하세요.")
+                        .typography(Typography.body)
+                        .foregroundStyle(Color("General/Label/Primary"))
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 55)
+                        .padding(.bottom, 20)
 
-                Text("제스처로 음성 녹음, 사진, 영상을\n빠르게 기록하세요.")
-                    .typography(Typography.body)
-                    .foregroundStyle(Color("General/Label/Primary"))
-                    .multilineTextAlignment(.center)
-                    .padding(.top, 55)
-
-                Spacer(minLength: 20)
-
-                VStack(spacing: 20) {
-                    gestureTabs
-                    VStack(spacing: 12) {
-                        ForEach(PracticeGesture.allCases) { gesture in
-                            GestureGuideItem(
-                                title: gesture.title,
-                                description: gesture.description(for: device),
-                                appearance: .general
-                            ) {
-                                Image(gesture.imageName(for: device))
-                                    .resizable()
-                                    .scaledToFit()
+                    VStack(spacing: 20) {
+                        gestureTabs
+                        VStack(spacing: 12) {
+                            ForEach(PracticeGesture.allCases) { gesture in
+                                GestureGuideItem(
+                                    title: gesture.title,
+                                    description: gesture.description(for: device),
+                                    appearance: .general
+                                ) {
+                                    Image(gesture.imageName(for: device))
+                                        .resizable()
+                                        .scaledToFit()
+                                }
                             }
                         }
                     }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 24)
                 }
-                .padding(.horizontal, 16)
-
-                Spacer(minLength: 24)
+                .frame(maxWidth: .infinity)
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
                 Button {
                     isPracticing = true
                 } label: {
                     Text("제스처 연습하기")
                         .frame(maxWidth: .infinity)
                 }
-                    .buttonStyle(.labcord(.primary, size: .large))
-                    .padding(.horizontal, 16)
+                .buttonStyle(.labcord(.primary, size: .large))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color("General/Background/Primary"))
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color("General/Background/Primary").ignoresSafeArea())
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color("General/Background/Primary").ignoresSafeArea())
     }
 
     private var gestureTabs: some View {
@@ -332,6 +336,11 @@ private struct GesturePracticeView: View {
         do {
             try await camera.activate(owner)
             if !Task.isCancelled, cameraOwner == owner {
+                try await camera.selectFrontCamera()
+                guard !Task.isCancelled, cameraOwner == owner else {
+                    await camera.deactivate(owner)
+                    return
+                }
                 let preview = await camera.previewConnector()
                 if !Task.isCancelled, cameraOwner == owner {
                     connector = preview

@@ -2,6 +2,16 @@ import AVFoundation
 import Dispatch
 import Foundation
 
+extension CameraSession {
+    public func selectFrontCamera() async throws {
+        try configureCamera()
+        guard let activeCamera else { throw CameraSessionError.cameraUnavailable }
+        if activeCamera.position != .front {
+            try await switchCamera()
+        }
+    }
+}
+
 public actor CameraSession {
     private let session = AVCaptureSession()
     private let sessionQueue = DispatchSerialQueue(
