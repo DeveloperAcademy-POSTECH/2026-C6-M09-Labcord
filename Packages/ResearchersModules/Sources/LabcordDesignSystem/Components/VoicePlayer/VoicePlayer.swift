@@ -166,12 +166,16 @@ public struct VoicePlayer: View {
             }
         }
         .sliderThumbVisibility(.hidden)
-        .opacity(waveform == nil ? 1 : 0.01)
+        .opacity(0.01)
         .overlay {
             if let waveform {
                 waveform
                     .frame(maxWidth: .infinity, minHeight: 6, maxHeight: 6)
                     .clipShape(Capsule())
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            } else {
+                progressTrack
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
             }
@@ -181,7 +185,6 @@ public struct VoicePlayer: View {
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
         }
-        .tint(Color(.General.Brand.primary))
         .controlSize(.small)
         .frame(maxWidth: .infinity, minHeight: minimumHeight)
         .labcordSliderPressObservation($isPressingSlider, isActive: isInteractive)
@@ -198,6 +201,23 @@ public struct VoicePlayer: View {
 
     private var canInteract: Bool {
         isInteractive && isEnabled
+    }
+
+    private var progressTrack: some View {
+        GeometryReader { geometry in
+            let width = geometry.size.width
+            let filledWidth = width * CGFloat(min(max(progress, 0), 1))
+
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color(.General.Fill.tertiary))
+                    .frame(width: width, height: 6)
+                Capsule()
+                    .fill(Color(.General.Brand.primary))
+                    .frame(width: filledWidth, height: 6)
+            }
+            .frame(width: width, height: geometry.size.height)
+        }
     }
 
     private func resetInteraction() {
