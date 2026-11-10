@@ -336,11 +336,6 @@ private struct GesturePracticeView: View {
         do {
             try await camera.activate(owner)
             if !Task.isCancelled, cameraOwner == owner {
-                try await camera.selectFrontCamera()
-                guard !Task.isCancelled, cameraOwner == owner else {
-                    await camera.deactivate(owner)
-                    return
-                }
                 let preview = await camera.previewConnector()
                 if !Task.isCancelled, cameraOwner == owner {
                     connector = preview
