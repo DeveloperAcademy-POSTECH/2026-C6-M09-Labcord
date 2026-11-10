@@ -23,7 +23,7 @@ struct ExperimentResultView: View {
                 VStack(spacing: 0) {
                     Group {
                         if store.recordTimeline == nil && store.loadMessage == nil {
-                            ExperimentProcessingView()
+                            ExperimentProcessingView(isOpenedFromHome: store.isOpenedFromHome)
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                         } else {
                             ScrollView {
