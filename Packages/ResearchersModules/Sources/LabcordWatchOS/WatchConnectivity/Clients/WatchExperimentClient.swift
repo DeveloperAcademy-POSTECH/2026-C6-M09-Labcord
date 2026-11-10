@@ -13,6 +13,7 @@ public enum WatchConnectionStatus: Equatable, Sendable {
 public struct WatchExperimentClient: Sendable {
     public var send: @Sendable (WatchExperimentCommand) async throws -> WatchExperimentResponse
     public var snapshots: @Sendable () async -> AsyncStream<WatchExperimentSnapshot>
+    public var screens: @Sendable () async -> AsyncStream<WatchScreenSnapshot>
     public var isReachable: @Sendable () async -> Bool
     public var connectionStatus: @Sendable () async -> WatchConnectionStatus
     public var retryActivation: @Sendable () async -> Void
@@ -22,10 +23,14 @@ public struct WatchExperimentClient: Sendable {
         snapshots: @escaping @Sendable () async -> AsyncStream<WatchExperimentSnapshot>,
         isReachable: @escaping @Sendable () async -> Bool,
         connectionStatus: @escaping @Sendable () async -> WatchConnectionStatus,
-        retryActivation: @escaping @Sendable () async -> Void
+        retryActivation: @escaping @Sendable () async -> Void,
+        screens: @escaping @Sendable () async -> AsyncStream<WatchScreenSnapshot> = {
+            AsyncStream { $0.finish() }
+        }
     ) {
         self.send = send
         self.snapshots = snapshots
+        self.screens = screens
         self.isReachable = isReachable
         self.connectionStatus = connectionStatus
         self.retryActivation = retryActivation
@@ -69,6 +74,10 @@ extension WatchExperimentClient: DependencyKey {
             },
             retryActivation: {
                 await connectivity.retryActivation()
+            },
+            screens: {
+                await connectivity.activate()
+                return await screenStream(connectivity)
             }
         )
     }
@@ -97,6 +106,24 @@ extension WatchExperimentClient: DependencyKey {
             )
         }
         return connectivity.experiments.stream()
+    }
+
+    @MainActor
+    private static func screenStream(
+        _ connectivity: WatchConnectivitySession
+    ) -> AsyncStream<WatchScreenSnapshot> {
+        if let data = connectivity.session?.receivedApplicationContext[
+            WatchExperimentTransport.screenKey
+        ] as? Data {
+            connectivity.experiments.receiveScreen(data)
+        }
+        connectivity.experiments.refreshScreen = { [weak connectivity] in
+            guard let connectivity else { return }
+            _ = try? await connectivity.experiments.send(
+                WatchExperimentCommand(operation: .screen), session: connectivity.session
+            )
+        }
+        return connectivity.experiments.screens()
     }
 
     public static let testValue = Self(

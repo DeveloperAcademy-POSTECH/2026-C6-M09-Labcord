@@ -3,6 +3,8 @@ import Foundation
 public struct WatchExperimentCommand: Codable, Equatable, Sendable {
     public enum Operation: String, Codable, Sendable {
         case list
+        case screen
+        case navigate
         case snapshot
         case prepareStart
         case start
@@ -30,6 +32,8 @@ public struct WatchExperimentCommand: Codable, Equatable, Sendable {
     public let targetID: UUID?
     public let durationSeconds: Int?
     public let startToken: UUID?
+    public let screen: WatchScreenSnapshot?
+    public let discardTimerDraft: Bool?
 
     public init(
         version: Int = Self.schemaVersion,
@@ -39,7 +43,9 @@ public struct WatchExperimentCommand: Codable, Equatable, Sendable {
         expectedRevision: UInt64? = nil,
         targetID: UUID? = nil,
         durationSeconds: Int? = nil,
-        startToken: UUID? = nil
+        startToken: UUID? = nil,
+        screen: WatchScreenSnapshot? = nil,
+        discardTimerDraft: Bool? = nil
     ) {
         self.version = version
         self.requestID = requestID
@@ -49,6 +55,8 @@ public struct WatchExperimentCommand: Codable, Equatable, Sendable {
         self.targetID = targetID
         self.durationSeconds = durationSeconds
         self.startToken = startToken
+        self.screen = screen
+        self.discardTimerDraft = discardTimerDraft
     }
 }
 

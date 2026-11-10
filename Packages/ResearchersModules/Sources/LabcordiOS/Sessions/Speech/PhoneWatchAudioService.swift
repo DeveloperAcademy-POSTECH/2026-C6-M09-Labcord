@@ -26,26 +26,14 @@ public final class PhoneWatchAudioService {
     }
 
     public private(set) var liveRecording: LiveRecording?
+    private var screenState = WatchRecordingScreenState()
+    public var screenRecording: WatchScreenRecording? { screenState.recording }
+
+    public func hasUnsettledRecording(in experimentID: UUID? = nil) -> Bool {
+        !damagedRecordingIDs.isEmpty || screenState.hasUnsettledRecording(in: experimentID)
+    }
     private var lastLiveStatusAt: Date = .distantPast
     public private(set) var lastError: WatchAudioError?
-
-    public func receiveLiveStatus(_ data: Data, receivedAt: Date = .now) {
-        guard data.count <= 4096,
-              let status = try? JSONDecoder().decode(WatchVoiceLiveStatus.self, from: data),
-              status.sentAt > lastLiveStatusAt,
-              status.sentAt <= receivedAt.addingTimeInterval(2),
-              status.sentAt > receivedAt.addingTimeInterval(-3),
-              status.startedAt <= status.sentAt else { return }
-        lastLiveStatusAt = status.sentAt
-        if status.isRecording {
-            liveRecording = LiveRecording(
-                experimentID: status.experimentID, recordingID: status.recordingID,
-                startedAt: status.startedAt, expiresAt: status.sentAt.addingTimeInterval(3)
-            )
-        } else if liveRecording?.recordingID == status.recordingID {
-            liveRecording = nil
-        }
-    }
 
     public private(set) var damagedRecordingIDs: [UUID] = []
 
@@ -231,6 +219,14 @@ public final class PhoneWatchAudioService {
             latest[recordID] = receipt
             recordRevisions[recordID] = revision
             connectivity.records.publish(record, session: connectivity.session)
+            let elapsed = receipt.manifest.map {
+                Double($0.totalSamples) / Double($0.header.sampleRate)
+            }
+            screenState.receive(record, elapsedSeconds: elapsed)
+            if record.phase != .recording, liveRecording?.recordingID == record.id {
+                liveRecording = nil
+            }
+            PhoneWatchExperimentCoordinator.shared.recordDidChange(record)
             if receipt.savedRecordID != nil || receipt.isCancelled || receipt.isReviewing
                 || receipt.failure != nil {
                 sendReceipt(receipt)
@@ -273,6 +269,43 @@ public final class PhoneWatchAudioService {
         if receipt.isReviewing { return .review }
         return receipt.manifest == nil ? .recording : .previewing
     }
+}
+
+extension PhoneWatchAudioService {
+    public func dismissFinishedScreenRecording() {
+        screenState.dismissFinishedRecording()
+    }
+
+    public func receiveLiveStatus(_ data: Data, receivedAt: Date = .now) {
+        guard data.count <= 4096,
+              let status = try? JSONDecoder().decode(WatchVoiceLiveStatus.self, from: data),
+              status.sentAt > lastLiveStatusAt,
+              status.sentAt <= receivedAt.addingTimeInterval(2),
+              status.sentAt > receivedAt.addingTimeInterval(-3),
+              status.startedAt <= status.sentAt,
+              status.elapsedSeconds.map({ $0.isFinite && $0 >= 0 }) ?? true,
+              latest[status.recordingID]?.savedRecordID == nil,
+              latest[status.recordingID]?.isCancelled != true else { return }
+        lastLiveStatusAt = status.sentAt
+        if status.isRecording {
+            liveRecording = LiveRecording(
+                experimentID: status.experimentID, recordingID: status.recordingID,
+                startedAt: status.startedAt, expiresAt: status.sentAt.addingTimeInterval(3)
+            )
+        } else if liveRecording?.recordingID == status.recordingID {
+            liveRecording = nil
+        }
+        let previous = screenState.recording
+        screenState.receive(status)
+        if previous != screenState.recording {
+            PhoneWatchExperimentCoordinator.shared.recordDidChange(WatchRecordSnapshot(
+                id: status.recordingID, kind: .audio,
+                phase: screenState.recording?.phase ?? .recording,
+                experimentID: status.experimentID
+            ))
+        }
+    }
+
 }
 
 private extension WatchAudioMessage {

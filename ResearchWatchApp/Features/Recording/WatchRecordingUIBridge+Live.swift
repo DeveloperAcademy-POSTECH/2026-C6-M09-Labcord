@@ -22,6 +22,7 @@ final class WatchRecordingService {
     var observers: [UUID: AsyncStream<WatchRecordPresentation>.Continuation] = [:]
     var captureTasks: [UUID: Task<Void, Never>] = [:]
     var voiceStatusTasks: [UUID: Task<Void, Never>] = [:]
+    var voiceStatusRecordID: UUID?
     var voiceStartTasks: [UUID: Task<Void, Error>] = [:]
     var pendingVoiceStarts: Set<UUID> = []
     var closingExperiments: Set<UUID> = []

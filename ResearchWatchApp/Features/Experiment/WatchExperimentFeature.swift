@@ -18,6 +18,7 @@ struct WatchExperimentFeature {
         case gestures
         case timers
         case timerEditor
+        case phoneRegistration
     }
 
     @ObservableState
@@ -29,6 +30,14 @@ struct WatchExperimentFeature {
         var selectedID: UUID?
         var snapshots: [UUID: WatchExperimentSnapshot] = [:]
         var deferredPhoneSession: WatchExperimentSnapshot?
+        var phoneScreen: WatchScreenSnapshot?
+        var deferredScreen: WatchScreenSnapshot?
+        var queuedNavigation: WatchScreenSnapshot?
+        var queuedNavigationRequestID: UUID?
+        var queuedNavigationDiscardsTimerDraft = false
+        var mirroredRecording: WatchScreenRecording?
+        var localCountdownEndsAt: Date?
+        var screenRecoveryNeeded = false
         var pending: PendingRequest?
         var hasRestoredPending = false
         var pendingRecoveryFailed = false
@@ -45,6 +54,7 @@ struct WatchExperimentFeature {
         var message: String?
         var permissionDenied = false
         var isRequestingPermission = false
+        var permissionRequestID: UUID?
         var cleanupRequestID: UUID?
         var currentTime = Date.now
         var recording = WatchRecordFeature.State()
@@ -66,14 +76,16 @@ struct WatchExperimentFeature {
         case retryConnection
         case streamEnded(UUID)
         case snapshotReceived(UUID, WatchExperimentSnapshot)
+        case screenReceived(UUID, WatchScreenSnapshot)
+        case screenStreamEnded(UUID)
         case selected(UUID)
         case backTapped
         case startTapped
         case permissionRequested
-        case permissionResult(UUID, Bool)
-        case voicePermissionResult(UUID, Bool)
+        case permissionResult(UUID, UUID, Bool)
+        case voicePermissionResult(UUID, UUID, Bool)
         case remoteVoiceRequested(UUID, Date)
-        case remoteVoicePermissionResult(UUID, Date, Bool)
+        case remoteVoicePermissionResult(UUID, UUID, Date, Bool)
         case countdownTick(UUID)
         case cancelCountdown
         case pauseTapped
@@ -122,6 +134,7 @@ struct WatchExperimentFeature {
         case countdown
         case permission
         case recordStream
+        case screenStream
         case interruptionTimeout
         case interruptionWork
     }
@@ -156,25 +169,17 @@ struct WatchExperimentFeature {
                       state.experiments.contains(where: { $0.id == id }) else {
                     return .none
                 }
-                state.selectedID = id
-                state.startToken = nil
-                state.screen = .experiment
-                if !state.interruptionNeedsConfirmation { state.message = nil }
-                return request(.snapshot, state: &state)
+                return selectExperiment(id, state: &state)
             case .backTapped:
                 guard state.pending == nil,
                       !state.recording.hasUnsettledRecords(in: state.selectedID),
                       !state.isPreparingInterruption else { return .none }
-                state.screen = .selection
-                state.selectedID = nil
-                state.startToken = nil
-                return request(.list, state: &state)
+                return navigate(.init(destination: .home), state: &state)
             case .startTapped:
                 guard state.canOperate, state.snapshot?.experiment.status == .ready else {
                     return .none
                 }
-                state.screen = .permission
-                return .none
+                return navigateToStage(.permission, state: &state)
             case .permissionRequested, .permissionResult:
                 return reduceStart(state: &state, action: action)
             case let .countdownTick(token):
@@ -183,8 +188,11 @@ struct WatchExperimentFeature {
                     return .none
                 }
                 guard seconds > 1 else {
-                    state.screen = .experiment
                     state.countdownID = nil
+                    state.screen = .countdown(0)
+                    guard state.localCountdownEndsAt != nil else { return .none }
+                    state.localCountdownEndsAt = nil
+                    state.screen = .experiment
                     return request(.start, state: &state)
                 }
                 state.screen = .countdown(seconds - 1)
@@ -192,19 +200,17 @@ struct WatchExperimentFeature {
             case .cancelCountdown:
                 state.countdownID = nil
                 state.startToken = nil
-                state.screen = .experiment
-                return .cancel(id: CancelID.countdown)
+                state.localCountdownEndsAt = nil
+                return .merge(.cancel(id: CancelID.countdown), navigateToExperiment(state: &state))
             case .pauseTapped:
                 guard state.canOperate, state.snapshot?.experiment.status == .running else {
                     return .none
                 }
-                state.screen = .confirmPause
-                return .none
+                return navigateToStage(.pauseConfirmation, state: &state)
             case .completeTapped:
                 guard state.canOperate, state.snapshot?.experiment.status != .ready,
                       state.snapshot?.experiment.status != .completed else { return .none }
-                state.screen = .confirmComplete
-                return .none
+                return navigateToStage(.completionConfirmation, state: &state)
             case .confirmed:
                 let operation: WatchExperimentCommand.Operation
                 switch state.screen {
@@ -217,8 +223,7 @@ struct WatchExperimentFeature {
                 return prepareInterruption(operation, state: &state)
             case .resumeTapped:
                 guard state.canOperate, state.canResume else { return .none }
-                state.screen = .confirmResume
-                return .none
+                return navigateToStage(.resumeConfirmation, state: &state)
             case .resumeConfirmed:
                 guard state.screen == .confirmResume, state.canOperate, state.canResume else {
                     return .none
@@ -229,8 +234,7 @@ struct WatchExperimentFeature {
                 state.screen = .connection
                 return .none
             case .gesturesTapped:
-                state.screen = .gestures
-                return .none
+                return navigateToStage(.gestures, state: &state)
             case .closeTapped:
                 return close(state: &state)
             case .checkRequest:
@@ -241,12 +245,15 @@ struct WatchExperimentFeature {
                 return reduceTools(state: &state, action: action)
             }
         }
+        Reduce { state, _ in
+            resumeScreenSynchronization(state: &state)
+        }
     }
 }
 
 extension WatchExperimentFeature.CancelID {
     static let all: [Self] = [
         .stream, .connection, .request, .delivery, .poll, .countdown, .permission, .recordStream,
-        .interruptionTimeout, .interruptionWork
+        .interruptionTimeout, .interruptionWork, .screenStream
     ]
 }

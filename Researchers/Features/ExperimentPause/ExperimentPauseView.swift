@@ -50,6 +50,7 @@ struct ExperimentPauseView: View {
                             .foregroundStyle(Color("Experiment/Label/Primary"))
                     }
                     .buttonStyle(.labcord(.plain, size: .medium))
+                    .disabled(!canCloseSession)
 
                     Spacer()
 

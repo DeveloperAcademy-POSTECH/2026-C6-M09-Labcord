@@ -17,6 +17,7 @@ struct AppFeature {
     @ObservableState
     struct State: Equatable {
         var watchPendingStartID: UUID?
+        var screenNavigation: WatchExperimentCommand?
         var watchIsActive = false
         var watchRequestID: UUID?
         var watchCloseGate: WatchCloseCompletionGate<StackElementID>?
@@ -34,6 +35,7 @@ struct AppFeature {
     }
 
     enum Action {
+        case screenNavigationLoaded(UUID, WatchExperimentState?, WatchExperimentError?)
         case watchTask
         case watchEvent(PhoneWatchExperimentCoordinator.Event)
         case watchSceneChanged(Bool)
@@ -68,11 +70,12 @@ struct AppFeature {
     var body: some Reducer<State, Action> {
         Scope(state: \.home, action: \.home) { HomeFeature() }
         watchReducer
+        screenNavigationReducer
         settingsReturnReducer
 
         Reduce { state, action in
             switch action {
-            case .timerNotificationTapped, .timerNotificationLoaded,
+            case .screenNavigationLoaded, .timerNotificationTapped, .timerNotificationLoaded,
                  .watchTask, .watchEvent, .watchSceneChanged,
                  .restoreSettingsSession, .settingsSessionLoaded: return .none
 
@@ -97,9 +100,7 @@ struct AppFeature {
                         ))
                     )
                 } else {
-                    state.path.append(
-                        .session(ExperimentSessionFeature.State(experimentID: identifier))
-                    )
+                    state.path.append(.session(.init(experimentID: identifier)))
                 }
                 return .send(.home(.list(.cancelLoad)))
 
@@ -262,9 +263,7 @@ struct AppFeature {
                       let experimentID = state.path[id: id, case: \.session]?.experimentID else {
                     return .none
                 }
-                state.path.append(
-                    .result(ExperimentResultFeature.State(experimentID: experimentID))
-                )
+                state.path.append(.result(.init(experimentID: experimentID)))
                 return .none
 
             case let .path(.element(id: id, action: .result(.homeTapped))):

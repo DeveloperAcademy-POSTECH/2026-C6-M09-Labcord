@@ -33,8 +33,10 @@ extension WatchExperimentFeature {
                 if decision.failed { state.recording.failedDecisions.insert(decision.recordID) }
             }
             if let command = try pendingJournal.load() {
-                state.selectedID = command.experimentID
-                state.screen = .experiment
+                if command.operation != .navigate {
+                    state.selectedID = command.experimentID
+                    state.screen = .experiment
+                }
                 state.pending = PendingRequest(
                     command: command, responseID: command.requestID, phase: .uncertain
                 )

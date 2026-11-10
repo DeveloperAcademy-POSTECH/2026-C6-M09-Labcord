@@ -19,12 +19,16 @@ struct SessionTimerFeature {
         let changes: [TimerChange]
         let collection: ExperimentTimerCollection
         var dismissedTimerID: UUID?
+        var clearsTimerDraft = false
     }
 
     @ObservableState
     struct State: Equatable {
         let experimentID: UUID
         var selectedTimerTab: TimerTab = .configured
+        var isEditorPresented = false
+        var draftSeconds = 600
+        var initialDraftSeconds = 600
         var timerSeconds: [Int] = []
         var mode: ExperimentMode = .free
         var timerCollection = ExperimentTimerCollection()
@@ -35,10 +39,6 @@ struct SessionTimerFeature {
         var isClosing = false
         var watchRequest: WatchExperimentCommand?
 
-        var canModifyTimers: Bool {
-            !isClosing && pendingSave == nil
-        }
-
         init(experimentID: UUID = UUID()) {
             self.experimentID = experimentID
         }
@@ -47,6 +47,8 @@ struct SessionTimerFeature {
     enum Action: Equatable {
         case configure(mode: ExperimentMode, timerSeconds: [Int], timers: [ExperimentTimer])
         case timerTabSelected(TimerTab)
+        case editorPresented(Bool)
+        case draftSecondsChanged(Int)
         case timerStarted(Int)
         case customTimerStarted(Int)
         case timerPaused(UUID)
@@ -58,6 +60,7 @@ struct SessionTimerFeature {
         case timerSaveFailed
         case retrySaveTapped
         case watchCommand(WatchExperimentCommand)
+        case watchTimerRemovalFinished(UUID, WatchExperimentError?)
         case delegate(WatchExperimentResponse)
     }
 
@@ -67,14 +70,6 @@ struct SessionTimerFeature {
 
     private nonisolated enum CancelID: Hashable, Sendable {
         case timerTick
-    }
-
-    private var tickerEffect: Effect<Action> {
-        .run { send in
-            try await Task.sleep(for: .seconds(1))
-            await send(.timerTick(.now))
-        }
-        .cancellable(id: CancelID.timerTick, cancelInFlight: true)
     }
 
     var body: some Reducer<State, Action> {
@@ -87,6 +82,7 @@ struct SessionTimerFeature {
                         requestID: command.requestID, phase: .failed, error: .invalidState
                     )))
                 }
+                if let effect = removeUnlistedWatchTimer(command, state: &state) { return effect }
                 do {
                     let mutation = try WatchTimerMutation.prepare(
                         command, timers: state.timerCollection.timers, at: now
@@ -97,7 +93,9 @@ struct SessionTimerFeature {
                             TimerChange(timer: $0.timer, endedAt: $0.endedAt)
                         }, collection: mutation.collection,
                         dismissedTimerID: command.operation == .deleteTimer
-                            ? command.targetID : nil
+                            ? command.targetID : nil,
+                        clearsTimerDraft: command.operation == .startTimer
+                            && state.isEditorPresented
                     ), state: &state)
                 } catch {
                     return .send(.delegate(WatchExperimentResponse(
@@ -105,6 +103,9 @@ struct SessionTimerFeature {
                         error: (error as? WatchExperimentError) ?? .invalidState
                     )))
                 }
+
+            case let .watchTimerRemovalFinished(id, error):
+                return finishUnlistedWatchTimer(id, error: error, state: &state)
 
             case .delegate:
                 return .none
@@ -117,6 +118,9 @@ struct SessionTimerFeature {
                 state.isConfigured = true
                 return .send(.timerTick(now))
 
+            case .editorPresented, .draftSecondsChanged:
+                return editTimerDraft(action, state: &state)
+
             case let .timerTabSelected(tab):
                 state.selectedTimerTab = tab
                 return .none
@@ -128,7 +132,9 @@ struct SessionTimerFeature {
 
             case let .customTimerStarted(seconds):
                 guard state.canModifyTimers else { return .none }
-                return startTimer(seconds: seconds, state: &state)
+                let effect = startTimer(seconds: seconds, state: &state)
+                state.pendingSave?.clearsTimerDraft = true
+                return effect
 
             case let .timerPaused(id):
                 guard state.canModifyTimers else { return .none }
@@ -192,6 +198,10 @@ struct SessionTimerFeature {
             case .timerSaved:
                 guard let pendingSave = state.pendingSave else { return .none }
                 state.timerCollection = pendingSave.collection
+                if pendingSave.clearsTimerDraft {
+                    state.initialDraftSeconds = state.draftSeconds
+                    state.isEditorPresented = false
+                }
                 state.pendingSave = nil
                 state.isSaving = false
                 state.saveFailed = false
@@ -225,7 +235,10 @@ struct SessionTimerFeature {
         }
     }
 
-    private func startTimer(seconds: Int, state: inout State) -> Effect<Action> {
+}
+
+private extension SessionTimerFeature {
+    func startTimer(seconds: Int, state: inout State) -> Effect<Action> {
         var collection = state.timerCollection
         guard collection.start(id: uuid(), durationSeconds: seconds, at: now) else { return .none }
         return saveChanges(from: state.timerCollection, to: collection, state: &state)
@@ -280,4 +293,22 @@ struct SessionTimerFeature {
             }
         )
     }
+}
+
+private extension SessionTimerFeature {
+    var tickerEffect: Effect<Action> {
+        .run { send in
+            try await Task.sleep(for: .seconds(1))
+            await send(.timerTick(.now))
+        }
+        .cancellable(id: CancelID.timerTick, cancelInFlight: true)
+    }
+
+}
+
+extension SessionTimerFeature.State {
+    var canModifyTimers: Bool {
+        !isClosing && pendingSave == nil && !isSaving
+    }
+
 }

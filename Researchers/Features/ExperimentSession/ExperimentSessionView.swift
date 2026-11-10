@@ -13,8 +13,6 @@ struct ExperimentSessionView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.scenePhase) private var scenePhase
-    @State private var isSidePanelExpanded = true
-    @State private var isGestureGuidePresented = false
     @State private var voiceToast: VoiceToastPresentation?
     let store: StoreOf<ExperimentSessionFeature>
     private var timerStore: StoreOf<SessionTimerFeature> {
@@ -42,11 +40,14 @@ struct ExperimentSessionView: View {
                 )
             } else {
                 PortraitSessionView(
-                    isSidePanelExpanded: $isSidePanelExpanded,
+                    isSidePanelExpanded: Binding(
+                        get: { store.isSidePanelExpanded },
+                        set: { store.send(.sidePanelExpanded($0)) }
+                    ),
                     store: captureStore,
                     timerStore: timerStore,
                     sessionStore: store
-                ) { isGestureGuidePresented = true }
+                ) { store.send(.gestureGuidePresented(true)) }
             }
         }
         .backgroundPreferenceValue(CameraPreviewAnchorKey.self) { anchor in
@@ -145,7 +146,7 @@ struct ExperimentSessionView: View {
             )
         )
         .overlay {
-            if !store.isReady {
+            if !store.isReady && !store.isRemotePreview {
                 ExperimentSetupView(
                     failureMessage: store.setupFailureMessage
                 ) { store.send(.setupRetryCameraTapped) }
@@ -162,16 +163,21 @@ struct ExperimentSessionView: View {
                     }
             }
         }
+        .overlay {
+            if store.isRemotePreview {
+                RemoteExperimentPreparation(store: store)
+            }
+        }
         .modifier(PauseOverlay(store: store))
         .overlay {
-            if isGestureGuidePresented {
+            if store.isGestureGuidePresented {
                 ExperimentGestureGuideView {
-                    isGestureGuidePresented = false
+                    store.send(.gestureGuidePresented(false))
                 }
             }
         }
-        .task(id: store.isSetupReady) {
-            if store.isSetupReady {
+        .task(id: [store.isRemotePreview, store.isSetupReady]) {
+            if store.isRemotePreview || store.isSetupReady {
                 await store.send(.loadDetail).finish()
             }
         }
@@ -206,7 +212,7 @@ struct ExperimentSessionView: View {
             return anchoredFrame
         }
 
-        let previewOverlap: CGFloat = 50 + (isSidePanelExpanded ? 0 : 30)
+        let previewOverlap: CGFloat = 50 + (store.isSidePanelExpanded ? 0 : 30)
         return CGRect(
             x: 0,
             y: 0,
@@ -350,22 +356,6 @@ private struct SessionAlerts: ViewModifier {
             }
         } message: {
             Text("타이머 기록을 저장하지 못했습니다.")
-        }
-    }
-}
-
-private struct PauseOverlay: ViewModifier {
-    let store: StoreOf<ExperimentSessionFeature>
-
-    func body(content: Content) -> some View {
-        content.overlay {
-            if store.isPausePresented {
-                ExperimentPauseView(
-                    store: store.scope(state: \.pause, action: \.pause),
-                    timerStore: store.scope(state: \.timer, action: \.timer),
-                    canCloseSession: store.canCloseSession
-                )
-            }
         }
     }
 }
