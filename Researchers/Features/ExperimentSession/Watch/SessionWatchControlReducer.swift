@@ -43,6 +43,7 @@ extension ExperimentSessionFeature {
         }
         guard state.watchCommand == nil, state.watchMediaCommand == nil,
               state.timer.isConfigured, state.timer.pendingSave == nil, !state.timer.isClosing,
+              !state.timer.hasUnsavedDraft,
               !state.pause.isCompleting, !state.isReturningHome,
               !state.voice.hasRecordingFailure,
               WatchDrainGate.canDrainVoice(

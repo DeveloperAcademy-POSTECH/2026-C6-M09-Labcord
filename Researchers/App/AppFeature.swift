@@ -17,6 +17,7 @@ struct AppFeature {
     @ObservableState
     struct State: Equatable {
         var watchPendingStartID: UUID?
+        var screenNavigation: WatchExperimentCommand?
         var watchIsActive = false
         var watchRequestID: UUID?
         var watchCloseGate: WatchCloseCompletionGate<StackElementID>?
@@ -34,9 +35,12 @@ struct AppFeature {
     }
 
     enum Action {
+        case screenNavigationLoaded(UUID, WatchExperimentState?, WatchExperimentError?)
         case watchTask
         case watchEvent(PhoneWatchExperimentCoordinator.Event)
         case watchSceneChanged(Bool)
+        case restoreSettingsSession
+        case settingsSessionLoaded(UUID, Bool)
         case home(HomeFeature.Action)
         case path(StackActionOf<Path>)
         case closeRegistration(StackElementID)
@@ -65,11 +69,14 @@ struct AppFeature {
     var body: some Reducer<State, Action> {
         Scope(state: \.home, action: \.home) { HomeFeature() }
         watchReducer
+        screenNavigationReducer
+        settingsReturnReducer
 
         Reduce { state, action in
             switch action {
-            case .timerNotificationTapped, .timerNotificationLoaded,
-                 .watchTask, .watchEvent, .watchSceneChanged: return .none
+            case .screenNavigationLoaded, .timerNotificationTapped, .timerNotificationLoaded,
+                 .watchTask, .watchEvent, .watchSceneChanged,
+                 .restoreSettingsSession, .settingsSessionLoaded: return .none
 
             case .home(.addTapped):
                 guard state.path.isEmpty, !state.home.list.isDeleting,
@@ -92,9 +99,7 @@ struct AppFeature {
                         ))
                     )
                 } else {
-                    state.path.append(
-                        .session(ExperimentSessionFeature.State(experimentID: identifier))
-                    )
+                    state.path.append(.session(.init(experimentID: identifier)))
                 }
                 return .send(.home(.list(.cancelLoad)))
 
@@ -251,13 +256,15 @@ struct AppFeature {
                       let experimentID = state.path[id: id, case: \.session]?.experimentID else {
                     return .none
                 }
-                state.path.append(
-                    .result(ExperimentResultFeature.State(experimentID: experimentID))
-                )
+                state.path.append(.result(.init(experimentID: experimentID)))
                 return .none
 
             case let .path(.element(id: id, action: .result(.homeTapped))):
+                guard state.path[id: id, case: \.result]?.isResuming == false else { return .none }
                 return .send(.returnHome(id))
+
+            case let .path(.element(id: id, action: .result(.resumeReady))):
+                return openResumedSession(&state, id: id)
 
             case let .returnHome(id):
                 guard state.path.ids.last == id else { return .none }
@@ -334,6 +341,20 @@ private extension AppFeature {
         return .send(.path(.element(
             id: registrationID, action: .registration(.inputAnalysis(.backTapped))
         )))
+    }
+
+    func openResumedSession(_ state: inout State, id: StackElementID) -> Effect<Action> {
+        guard var result = state.path[id: id, case: \.result], result.isResuming else {
+            return .none
+        }
+        guard state.path.ids.last == id else {
+            result.isResuming = false
+            state.path[id: id, case: \.result] = result
+            return .none
+        }
+        state.path.removeAll()
+        state.path.append(.session(.init(experimentID: result.experimentID)))
+        return .none
     }
 
     func registerReview(_ state: inout State, id: StackElementID) -> Effect<Action> {

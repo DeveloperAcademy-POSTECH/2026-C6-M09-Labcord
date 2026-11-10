@@ -67,10 +67,16 @@ nonisolated enum SpeechVocabulary {
         for terms: [String], modelReading: (String) -> String? = { _ in nil }
     ) -> [String: String] {
         var result: [String: String] = [:]
+        var ambiguous = Set<String>()
         for term in terms where isRestorable(term) {
-            for reading in readings(for: term, modelReading: modelReading(term))
-            where result[reading] == nil {
-                result[reading] = term
+            for reading in readings(for: term, modelReading: modelReading(term)) {
+                guard !ambiguous.contains(reading) else { continue }
+                if let existing = result[reading], existing != term {
+                    result.removeValue(forKey: reading)
+                    ambiguous.insert(reading)
+                } else {
+                    result[reading] = term
+                }
             }
         }
         return result
@@ -82,9 +88,8 @@ nonisolated enum SpeechVocabulary {
         let readingLists = terms.map { readings(for: $0, modelReading: modelReading($0)) }
         let primary = readingLists.compactMap(\.first)
         let alternates = readingLists.flatMap { $0.dropFirst() }
-        let english = terms.filter(containsASCIILettersWithoutHangul)
         var seen = Set<String>()
-        return (primary + alternates + english)
+        return (terms + primary + alternates)
             .filter { seen.insert($0).inserted }
             .prefix(maxContextualStrings)
             .map { $0 }
@@ -101,8 +106,11 @@ nonisolated enum SpeechVocabulary {
     private static func isRestorable(_ term: String) -> Bool {
         if isHangul(term) { return term.filter(isHangulCharacter).count >= 2 }
         let letters = term.filter { $0.isASCII && $0.isLetter }
-        return letters.count >= 3 && !term.contains("/")
-            && !(letters.count <= 3 && letters == letters.lowercased())
+        guard !term.contains("/") else { return false }
+        if letters.count >= 2, term.contains(where: \.isNumber), isFormula(term) {
+            return true
+        }
+        return letters.count >= 3 && !(letters.count <= 3 && letters == letters.lowercased())
     }
 
     private static func isUsable(_ term: String) -> Bool {
@@ -124,19 +132,23 @@ nonisolated enum SpeechVocabulary {
     }
 
     private static func isFormula(_ token: String) -> Bool {
-        token.range(of: "^(?:[A-Z][a-z]?[0-9]*)+$", options: .regularExpression) != nil
+        token.range(of: "^(?:[A-Z][a-z]?[0-9]*)(?:-?[A-Z][a-z]?[0-9]*|-?[0-9]+)*$",
+                    options: .regularExpression) != nil
     }
 
     private static func spelledOut(_ term: String) -> [String] {
         let tokens = term.split(separator: " ")
-        guard tokens.count == 1, let token = tokens.first, (2...6).contains(token.count),
-              token.allSatisfy({ $0.isASCII && ($0.isLetter || $0.isNumber) }),
+        guard tokens.count == 1, let token = tokens.first else { return [] }
+        let compact = token.filter { $0 != "-" }
+        guard (2...6).contains(compact.count),
+              token.allSatisfy({ $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "-") }),
+              !token.contains("-") || isFormula(String(token)),
               token.contains(where: \.isUppercase),
               token.filter(\.isUppercase).count >= 2 || isFormula(String(token)) else {
             return []
         }
         return digitNames.map { names in
-            token.lowercased().compactMap { character in
+            compact.lowercased().compactMap { character in
                 EnglishKoreanPhonetic.letterNames[character] ?? names[character]
             }.joined()
         }.filter { !$0.isEmpty }

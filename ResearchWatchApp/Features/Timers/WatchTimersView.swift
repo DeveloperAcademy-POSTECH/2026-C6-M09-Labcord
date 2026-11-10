@@ -139,8 +139,9 @@ struct WatchTimerEditorView: View {
             }
             .frame(height: 100)
             Button("타이머 실행") { store.send(.customTimerStarted) }
-                .disabled(!store.canOperate || duration == 0)
-            Button("취소", role: .cancel) { store.send(.timersTapped) }
+                .disabled(!store.canOperate || store.snapshot?.experiment.status != .running
+                          || duration == 0)
+            Button("취소", role: .cancel) { store.send(.closeTapped) }
         }
     }
 

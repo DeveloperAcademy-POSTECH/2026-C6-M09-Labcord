@@ -77,9 +77,11 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         didReceiveApplicationContext applicationContext: [String: Any]
     ) {
         let snapshot = applicationContext[WatchExperimentTransport.snapshotKey] as? Data
+        let screen = applicationContext[WatchExperimentTransport.screenKey] as? Data
         let record = applicationContext[WatchRecordTransport.snapshotKey] as? Data
         Task { @MainActor in
             if let snapshot { experiments.receiveSnapshot(snapshot) }
+            if let screen { experiments.receiveScreen(screen) }
             if let record { records.receive(record) }
         }
     }

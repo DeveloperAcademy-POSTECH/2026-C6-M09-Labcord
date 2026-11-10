@@ -69,12 +69,14 @@ enum WatchIntentRouting {
     private static func liveAction(
         for kind: WatchRecordPresentation.Kind, state: WatchExperimentFeature.State
     ) throws -> WatchExperimentFeature.Action {
-        guard state.hasRestoredPending, !state.pendingRecoveryFailed else {
+        guard state.hasRestoredPending, !state.pendingRecoveryFailed,
+              !state.screenRecoveryNeeded else {
             throw WatchIntentRuntimeError.notReady
         }
         guard state.pending == nil, !state.isPreparingInterruption else {
             throw WatchIntentRuntimeError.busy
         }
+        guard !state.phoneRecordingBlocksCapture else { throw WatchIntentRuntimeError.busy }
         guard state.screen == .experiment || state.screen == .timers else {
             throw WatchIntentRuntimeError.busy
         }

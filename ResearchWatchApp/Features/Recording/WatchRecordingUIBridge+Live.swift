@@ -2,6 +2,7 @@ import ComposableArchitecture
 import Foundation
 import LabcordShared
 import LabcordWatchOS
+import OSLog
 
 extension WatchRecordingUIBridge {
     static let live = Self(
@@ -13,12 +14,15 @@ extension WatchRecordingUIBridge {
 @MainActor
 final class WatchRecordingService {
     static let shared = WatchRecordingService()
+    let logger = Logger(subsystem: "Labcord", category: "WatchRecording")
     let archive: WatchAudioArchive
     let recorder: WatchAudioRecorder
     let transfer: WatchAudioTransferClient
     var records: [UUID: WatchRecordPresentation] = [:]
     var observers: [UUID: AsyncStream<WatchRecordPresentation>.Continuation] = [:]
     var captureTasks: [UUID: Task<Void, Never>] = [:]
+    var voiceStatusTasks: [UUID: Task<Void, Never>] = [:]
+    var voiceStatusRecordID: UUID?
     var voiceStartTasks: [UUID: Task<Void, Error>] = [:]
     var pendingVoiceStarts: Set<UUID> = []
     var closingExperiments: Set<UUID> = []
@@ -55,6 +59,7 @@ final class WatchRecordingService {
 
     func activate() {
         guard startup == nil else { return }
+        logger.info("Recording service activation")
         if receiptTask == nil { observeTransport() }
         startup = Task {
             do {
@@ -62,7 +67,7 @@ final class WatchRecordingService {
                 try await restoreLocalRecords()
                 transfer.startRecovery()
             } catch {
-
+                logFailure(error, stage: "startup")
                 startup = nil
                 throw error
             }
@@ -127,8 +132,7 @@ final class WatchRecordingService {
             try await restoreLocalRecords(recordID: recordID)
             await transfer.recover()
         case .reconcile:
-            try await restoreLocalRecords()
-            await transfer.recover()
+            try await reconcileRecords()
         case let .stopForExperiment(experimentID):
             try await finishVoiceForExperiment(experimentID)
         case let .cancelActiveVoiceForPause(experimentID, recordID):
@@ -267,8 +271,10 @@ final class WatchRecordingService {
             value.revision = max(1, value.revision)
         }
         records[value.id] = value
+        updateVoiceLiveStatus(value)
         observers.values.forEach { $0.yield(value) }
     }
+
 }
 
 private extension WatchRecordingService {
@@ -322,6 +328,7 @@ private extension WatchRecordingService {
                 experimentID: experimentID, recordingID: recordID, expiresAt: expiresAt
             )
         } catch {
+            logFailure(error, stage: "voiceStart", recordID: recordID)
             await rejectEmptyVoiceStart(experimentID: experimentID, recordID: recordID)
             throw error
         }
@@ -330,6 +337,11 @@ private extension WatchRecordingService {
                 guard !Task.isCancelled else { break }
                 guard let self else { return }
                 self.capture(event, experimentID: experimentID, recordID: recordID)
+            }
+            if !Task.isCancelled {
+                await self?.refreshFailedVoiceCapture(
+                    experimentID: experimentID, recordID: recordID
+                )
             }
             self?.captureTasks[recordID] = nil
         }

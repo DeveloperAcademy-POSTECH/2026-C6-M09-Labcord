@@ -13,6 +13,14 @@ struct ExperimentSessionFeature {
         var watchCameraWasVisible = false
         var watchClosingResources = false
         var watchDrainGate: WatchDrainGate?
+        var isRemotePreview = false
+        var sharedStage: WatchScreenSnapshot.Stage?
+        var sharedCountdownEndsAt: Date?
+        var isGestureGuidePresented = false
+        var isSidePanelExpanded = true
+        var lastScreenRecording: WatchScreenRecording?
+        var voiceScreenElapsed: TimeInterval?
+        var videoScreenElapsed: TimeInterval?
         var detail: ExperimentSessionDetail?
         var isLoadingDetail = false
         var detailLoadFailed = false
@@ -23,6 +31,7 @@ struct ExperimentSessionFeature {
         var capture: CameraCaptureFeature.State
         var pause: ExperimentPauseFeature.State
         var permissionRequestGeneration = 0
+        var cameraPreparationTimedOut = false
         var isPausePresented = false
         var isReturningHome = false
         var exitID: UUID?
@@ -37,18 +46,6 @@ struct ExperimentSessionFeature {
             self.pause = ExperimentPauseFeature.State(experimentID: experimentID)
         }
 
-        var isReady: Bool {
-            permissions.camera.status == .authorized
-                && permissions.microphoneStatus == .authorized
-                && permissions.speechRecognitionStatus == .authorized
-                && !permissions.isRequesting
-                && capture.previewConnector != nil
-        }
-
-        var canCloseSession: Bool {
-            timer.isConfigured && timer.pendingSave == nil && !timer.isClosing && !voice.isSaving
-                && !pause.isCompleting && !isReturningHome
-        }
     }
 
     enum Action: Equatable {
@@ -58,6 +55,11 @@ struct ExperimentSessionFeature {
         case watchDrainProgress(UUID)
         case watchResourcesReleased(UUID)
         case watchControlFinished(UUID, WatchExperimentError?)
+        case clearScreenRecording(UUID, WatchRecordSnapshot.Phase)
+        case gestureGuidePresented(Bool)
+        case sidePanelExpanded(Bool)
+        case beginRemotePreview
+        case cancelRemotePreview
         case loadDetail
         case detailLoaded(ExperimentSessionDetail)
         case detailLoadingFailed
@@ -71,6 +73,9 @@ struct ExperimentSessionFeature {
         case photoStartRequested(UUID?)
         case videoStartRequested
         case appBecameActive
+        case setupLeaveTapped
+        case setupRetryCameraTapped
+        case cameraPreparationTimedOut
         case pauseTapped
         case stopCompleted(UUID, UUID?)
         case homeExitCompleted(UUID, UUID?)
@@ -110,6 +115,7 @@ struct ExperimentSessionFeature {
         watchRecordReducer
         watchDrainEventsReducer
         sessionReducer
+        screenSyncReducer
     }
 }
 
@@ -117,11 +123,11 @@ private extension ExperimentSessionFeature {
     var sessionReducer: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case .watchControl, .watchResourcesReleased, .watchControlFinished,
+            case .clearScreenRecording, .gestureGuidePresented, .sidePanelExpanded,
+                 .beginRemotePreview, .cancelRemotePreview,
+                 .watchControl, .watchResourcesReleased, .watchControlFinished,
                  .watchRecordControl, .watchRecordResponse, .watchDrainProgress: return .none
-
             case .loadDetail: return loadDetail(state: &state)
-
             case let .detailLoaded(detail):
                 state.isLoadingDetail = false
                 state.detail = detail
@@ -143,32 +149,47 @@ private extension ExperimentSessionFeature {
                         await send(.voice(.languageModelHintLoaded(hint)))
                     }
                 )
-
             case .detailLoadingFailed:
                 state.isLoadingDetail = false
                 state.detailLoadFailed = true
                 return .none
-
             case .dismissDetailLoadFailure:
                 state.detailLoadFailed = false
                 return .none
-
             case .appBecameActive:
-                guard !state.isReady else { return .none }
+                if !state.isReady {
+                    state.permissionRequestGeneration += 1
+                }
+                return .send(.capture(.camera(.resumeIfNeeded)))
+            case .setupLeaveTapped:
+                return .merge(
+                    .send(.permissions(.cancelRequest)),
+                    .send(.pause(.delegate(.returnHomeRequested)))
+                )
+            case .setupRetryCameraTapped:
+                state.cameraPreparationTimedOut = false
                 state.permissionRequestGeneration += 1
+                return .merge(
+                    .send(.capture(.cameraErrorDismissed)),
+                    .send(.capture(.cameraActivationRequested))
+                )
+            case .cameraPreparationTimedOut:
+                guard !state.isReady, state.capture.previewConnector == nil,
+                      state.permissions.camera.status == .authorized else { return .none }
+                state.cameraPreparationTimedOut = true
                 return .none
-
             case .pauseTapped:
                 guard state.watchCommand == nil else { return .none }
                 state.isPausePresented = true
                 return .send(.capture(.cancelPhotoGesture))
-
             case .pause(.delegate(.resumeRequested)):
                 state.isPausePresented = false
                 return .none
-
             case .pause(.delegate(.stopRequested)):
-                guard state.watchCommand == nil, state.canCloseSession else {
+                guard state.watchCommand == nil, state.canCloseSession,
+                      !PhoneWatchAudioService.shared.hasUnsettledRecording(
+                        in: state.experimentID
+                      ) else {
                     return .send(.pause(.stopRejected))
                 }
                 state.timer.isClosing = true
@@ -198,8 +219,15 @@ private extension ExperimentSessionFeature {
                 )
 
             case .pause(.delegate(.returnHomeRequested)):
+                guard state.watchCommand != nil || !state.hasUnsettledLocalMedia
+                else { return .send(.pause(.homeExitFailed)) }
+                guard !PhoneWatchAudioService.shared.hasUnsettledRecording(in: state.experimentID)
+                else { return .send(.pause(.homeExitFailed)) }
                 guard state.watchCommand == nil || state.watchClosingResources,
-                      state.canCloseSession else { return .none }
+                      state.canCloseSession || (!state.isReady && !state.isReturningHome
+                          && !state.timer.isClosing && !state.voice.isSaving
+                          && !state.pause.isCompleting && state.timer.pendingSave == nil)
+                else { return .none }
                 state.isReturningHome = true
                 state.timer.isClosing = true
                 let experimentID = state.experimentID
@@ -285,14 +313,17 @@ private extension ExperimentSessionFeature {
                 return prepareVoiceRecording(state: &state)
 
             case let .photoStartRequested(id):
-                guard !state.isPausePresented, state.watchCommand == nil else { return .none }
+                guard !state.isPausePresented, state.watchCommand == nil, !state.isRemotePreview,
+                      !PhoneWatchAudioService.shared.hasUnsettledRecording(in: state.experimentID)
+                else { return .none }
                 guard state.voice.phase == .hidden else {
                     return .send(.capture(.cancelPhotoGesture))
                 }
                 return .send(.capture(.photoCaptureRequested(id)))
 
             case .videoStartRequested:
-                guard !state.isPausePresented, state.watchCommand == nil,
+                guard !state.isPausePresented, state.watchCommand == nil, !state.isRemotePreview,
+                      !PhoneWatchAudioService.shared.hasUnsettledRecording(in: state.experimentID),
                       state.voice.phase == .hidden else { return .none }
                 return .send(.capture(.videoRecordRequested))
 
@@ -342,25 +373,10 @@ private extension ExperimentSessionFeature {
 
     }
 
-    func loadDetail(state: inout State) -> Effect<Action> {
-        guard state.detail == nil, !state.isLoadingDetail else { return .none }
-        state.isLoadingDetail = true
-        state.detailLoadFailed = false
-        let experimentID = state.experimentID
-        return .run { send in
-            await timerCompletionNotificationClient.cancelForExperiment(experimentID)
-            guard let detail = try? await experimentClient.enterSessionAndLoadDetail(
-                experimentID
-            ) else {
-                await send(.detailLoadingFailed)
-                return
-            }
-            await send(.detailLoaded(detail))
-        }
-    }
-
     func prepareVoiceRecording(state: inout State) -> Effect<Action> {
-        guard state.watchCommand == nil else { return .none }
+        guard state.watchCommand == nil, !state.isRemotePreview,
+              !PhoneWatchAudioService.shared.hasUnsettledRecording(in: state.experimentID)
+        else { return .none }
         guard state.detail != nil else {
             if state.isLoadingDetail {
                 state.voice.errorMessage = "실험 정보를 불러오고 있어요. 잠시 후 다시 시도해 주세요."

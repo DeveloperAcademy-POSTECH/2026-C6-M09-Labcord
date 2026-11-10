@@ -60,6 +60,7 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
             }
             self.notifyStateObservers()
             self.records.resend(session: session)
+            PhoneWatchExperimentCoordinator.shared.refresh()
         }
     }
 
@@ -71,6 +72,7 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         Task { @MainActor in
             self.notifyStateObservers()
             self.records.resend(session: session)
+            PhoneWatchExperimentCoordinator.shared.refresh()
         }
     }
 
@@ -80,7 +82,9 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         replyHandler: @escaping ([String: Any]) -> Void
     ) {
         let data = message[WatchExperimentTransport.commandKey] as? Data
+        let voiceStatus = message[WatchVoiceLiveStatus.messageKey] as? Data
         Task { @MainActor in
+            if let voiceStatus { PhoneWatchAudioService.shared.receiveLiveStatus(voiceStatus) }
             let response = data.flatMap { experiments.reply(to: $0) }
             replyHandler(response.map { [WatchExperimentTransport.responseKey: $0] } ?? [:])
         }
@@ -91,9 +95,11 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         didReceiveApplicationContext applicationContext: [String: Any]
     ) {
         let snapshot = applicationContext[WatchExperimentTransport.snapshotKey] as? Data
+        let screen = applicationContext[WatchExperimentTransport.screenKey] as? Data
         let record = applicationContext[WatchRecordTransport.snapshotKey] as? Data
         Task { @MainActor in
             if let snapshot { experiments.receiveSnapshot(snapshot) }
+            if let screen { experiments.receiveScreen(screen) }
             if let record { records.receive(record) }
         }
     }
