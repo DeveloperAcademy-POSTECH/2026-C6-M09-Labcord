@@ -37,6 +37,8 @@ struct AppFeature {
         case watchTask
         case watchEvent(PhoneWatchExperimentCoordinator.Event)
         case watchSceneChanged(Bool)
+        case restoreSettingsSession
+        case settingsSessionLoaded(UUID, Bool)
         case home(HomeFeature.Action)
         case path(StackActionOf<Path>)
         case closeRegistration(StackElementID)
@@ -66,11 +68,13 @@ struct AppFeature {
     var body: some Reducer<State, Action> {
         Scope(state: \.home, action: \.home) { HomeFeature() }
         watchReducer
+        settingsReturnReducer
 
         Reduce { state, action in
             switch action {
             case .timerNotificationTapped, .timerNotificationLoaded,
-                 .watchTask, .watchEvent, .watchSceneChanged: return .none
+                 .watchTask, .watchEvent, .watchSceneChanged,
+                 .restoreSettingsSession, .settingsSessionLoaded: return .none
 
             case .home(.addTapped):
                 guard state.path.isEmpty, !state.home.list.isDeleting,

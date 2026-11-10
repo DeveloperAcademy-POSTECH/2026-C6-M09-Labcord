@@ -41,7 +41,7 @@ final class ExperimentSessionRepository {
         let vocabulary = SpeechSessionVocabulary.usingCachedReadings(for: speechContextualStrings)
         let timers = activeTimers(in: experiment, at: enteredAt, persistExpiry: recordEntry)
         if recordEntry {
-            if experiment.status != .completed, experiment.startedAt == nil {
+            if experiment.status == .ready {
                 experiment.startedAt = enteredAt
             }
             experiment.recordEntry(at: enteredAt)

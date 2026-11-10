@@ -38,12 +38,17 @@ struct ExperimentSessionFeature {
             self.pause = ExperimentPauseFeature.State(experimentID: experimentID)
         }
 
-        var isReady: Bool {
+        var isSetupReady: Bool {
             permissions.camera.status == .authorized
                 && permissions.microphoneStatus == .authorized
                 && permissions.speechRecognitionStatus == .authorized
                 && !permissions.isRequesting
+                && permissions.issue == nil
                 && capture.previewConnector != nil
+        }
+
+        var isReady: Bool {
+            isSetupReady && detail != nil && timer.isConfigured
         }
 
         var canCloseSession: Bool {
@@ -357,23 +362,6 @@ private extension ExperimentSessionFeature {
         case .starting, .stopping, .finished: return .none
         }
 
-    }
-
-    func loadDetail(state: inout State) -> Effect<Action> {
-        guard state.detail == nil, !state.isLoadingDetail else { return .none }
-        state.isLoadingDetail = true
-        state.detailLoadFailed = false
-        let experimentID = state.experimentID
-        return .run { send in
-            await timerCompletionNotificationClient.cancelForExperiment(experimentID)
-            guard let detail = try? await experimentClient.enterSessionAndLoadDetail(
-                experimentID
-            ) else {
-                await send(.detailLoadingFailed)
-                return
-            }
-            await send(.detailLoaded(detail))
-        }
     }
 
     func prepareVoiceRecording(state: inout State) -> Effect<Action> {

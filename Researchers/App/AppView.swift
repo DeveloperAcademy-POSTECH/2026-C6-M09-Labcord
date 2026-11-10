@@ -48,7 +48,10 @@ struct AppView: View {
             }
         }
         .task { await store.send(.watchTask).finish() }
-        .onAppear { store.send(.watchSceneChanged(scenePhase == .active)) }
+        .onAppear {
+            store.send(.restoreSettingsSession)
+            store.send(.watchSceneChanged(scenePhase == .active))
+        }
         .onChange(of: scenePhase) { _, phase in
             store.send(.watchSceneChanged(phase == .active))
         }
