@@ -78,7 +78,7 @@ struct SessionTimerView: View {
                     store.send(.editorPresented(true))
                 } label: {
                     Image(labcordIcon: .plus)
-                        .foregroundStyle(Color("Experiment/Label/Secondary"))
+                        .foregroundStyle(Color("General/Label/Secondary"))
                 }
                 .buttonStyle(.labcordIcon(.plain, size: .large))
             }
