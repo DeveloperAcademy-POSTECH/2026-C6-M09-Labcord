@@ -16,6 +16,11 @@ struct AppFeature {
 
     @ObservableState
     struct State: Equatable {
+        var watchPendingStartID: UUID?
+        var screenNavigation: WatchExperimentCommand?
+        var watchIsActive = false
+        var watchRequestID: UUID?
+        var watchCloseGate: WatchCloseCompletionGate<StackElementID>?
         var home = HomeFeature.State()
         var path = StackState<Path.State>()
         var reviewSaving = false
@@ -26,9 +31,16 @@ struct AppFeature {
         var reviewAnalysisJobID: UUID?
         var recentRegistrationID: StackElementID?
         var savedReview: ExperimentListEntry?
+        var watchNotificationGate = WatchNotificationGate()
     }
 
     enum Action {
+        case screenNavigationLoaded(UUID, WatchExperimentState?, WatchExperimentError?)
+        case watchTask
+        case watchEvent(PhoneWatchExperimentCoordinator.Event)
+        case watchSceneChanged(Bool)
+        case restoreSettingsSession
+        case settingsSessionLoaded(UUID, Bool)
         case home(HomeFeature.Action)
         case path(StackActionOf<Path>)
         case closeRegistration(StackElementID)
@@ -46,6 +58,8 @@ struct AppFeature {
         case dismissReviewSaveFailure
         case confirmReviewExit
         case cancelReviewExit
+        case timerNotificationTapped(UUID)
+        case timerNotificationLoaded(UUID, UUID, ExperimentListEntry?)
     }
 
     @Dependency(\.experimentClient) var experimentClient
@@ -55,9 +69,16 @@ struct AppFeature {
 
     var body: some Reducer<State, Action> {
         Scope(state: \.home, action: \.home) { HomeFeature() }
+        watchReducer
+        screenNavigationReducer
+        settingsReturnReducer
 
         Reduce { state, action in
             switch action {
+            case .screenNavigationLoaded, .timerNotificationTapped, .timerNotificationLoaded,
+                 .watchTask, .watchEvent, .watchSceneChanged,
+                 .restoreSettingsSession, .settingsSessionLoaded: return .none
+
             case .home(.addTapped):
                 guard state.path.isEmpty, !state.home.list.isDeleting,
                       state.home.list.pendingDeletion == nil else { return .none }
@@ -79,9 +100,7 @@ struct AppFeature {
                         ))
                     )
                 } else {
-                    state.path.append(
-                        .session(ExperimentSessionFeature.State(experimentID: identifier))
-                    )
+                    state.path.append(.session(.init(experimentID: identifier)))
                 }
                 return .send(.home(.list(.cancelLoad)))
 
@@ -239,39 +258,92 @@ struct AppFeature {
                 state.path.append(.session(ExperimentSessionFeature.State(experimentID: entry.id)))
                 return .send(.home(.list(.created(entry))))
 
-            case let .path(.element(id: id, action: .session(.stopCompleted))):
-                return .send(.showResult(id))
-
-            case let .path(.element(id: id, action: .session(.homeExitCompleted))):
-                return .send(.returnHome(id))
-
             case let .showResult(id):
                 guard state.path.ids.last == id,
                       let experimentID = state.path[id: id, case: \.session]?.experimentID else {
                     return .none
                 }
-                state.path.append(
-                    .result(ExperimentResultFeature.State(experimentID: experimentID))
-                )
+                state.path.append(.result(.init(experimentID: experimentID)))
                 return .none
 
             case let .path(.element(id: id, action: .result(.homeTapped))):
+                guard state.path[id: id, case: \.result]?.isResuming == false else { return .none }
                 return .send(.returnHome(id))
+
+            case let .path(.element(id: id, action: .result(.resumeReady))):
+                return openResumedSession(&state, id: id)
 
             case let .returnHome(id):
                 guard state.path.ids.last == id else { return .none }
                 state.path.removeAll()
                 return .send(.home(.list(.load)))
 
-            case .home, .path:
-                return .none
+            case .home, .path: return .none
             }
         }
         .forEach(\.path, action: \.path)
+        watchCompletionNavigationReducer
+        watchContextReducer
     }
 }
 
+extension AppFeature {
+    func loadNotificationExperiment(
+        _ state: inout State,
+        experimentID: UUID
+    ) -> Effect<Action> {
+        let token = uuid()
+        state.watchNotificationGate.begin(experimentID: experimentID, token: token)
+        return .run { send in
+            let entry = try? await experimentClient.load().first { $0.id == experimentID }
+            await send(.timerNotificationLoaded(experimentID, token, entry))
+        }
+    }
+
+    func openNotificationExperiment(
+        _ state: inout State,
+        experimentID: UUID,
+        token: UUID,
+        entry: ExperimentListEntry?
+    ) -> Effect<Action> {
+        guard state.watchNotificationGate.receive(
+            experimentID: experimentID, token: token,
+            watchRequestPending: watchWorkPending(state)
+        ) == .open else { return .none }
+        guard let entry, !state.reviewSaving else { return .none }
+        if entry.status == .completed {
+            if state.path.ids.last.flatMap({ state.path[id: $0, case: \.result] })?
+                .experimentID == experimentID { return .none }
+            state.path.removeAll()
+            state.path.append(.result(.init(
+                experimentID: experimentID, isOpenedFromHome: true
+            )))
+        } else {
+            if state.path.ids.last.flatMap({ state.path[id: $0, case: \.session] })?
+                .experimentID == experimentID { return .none }
+            state.path.removeAll()
+            state.path.append(.session(.init(experimentID: experimentID)))
+        }
+        return .send(.home(.list(.cancelLoad)))
+    }
+
+}
+
 private extension AppFeature {
+    func openResumedSession(_ state: inout State, id: StackElementID) -> Effect<Action> {
+        guard var result = state.path[id: id, case: \.result], result.isResuming else {
+            return .none
+        }
+        guard state.path.ids.last == id else {
+            result.isResuming = false
+            state.path[id: id, case: \.result] = result
+            return .none
+        }
+        state.path.removeAll()
+        state.path.append(.session(.init(experimentID: result.experimentID)))
+        return .none
+    }
+
     func registerReview(_ state: inout State, id: StackElementID) -> Effect<Action> {
         guard !state.reviewSaving, state.path.ids.last == id,
               let review = state.path[id: id, case: \.review], review.titleValid,

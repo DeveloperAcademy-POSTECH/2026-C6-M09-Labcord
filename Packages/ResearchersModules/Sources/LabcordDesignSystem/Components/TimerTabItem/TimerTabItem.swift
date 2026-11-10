@@ -5,24 +5,34 @@ public struct TimerTabItem: View {
     private let isSelected: Bool
     private let action: () -> Void
     private let style: TimerTabs.Style
+    private let appearance: TimerTabs.Appearance
 
     public init(
         title: String,
         isSelected: Bool,
+        appearance: TimerTabs.Appearance = .experiment,
         action: @escaping () -> Void
     ) {
-        self.init(title: title, isSelected: isSelected, style: .plain, action: action)
+        self.init(
+            title: title,
+            isSelected: isSelected,
+            style: .plain,
+            appearance: appearance,
+            action: action
+        )
     }
 
     init(
         title: String,
         isSelected: Bool,
         style: TimerTabs.Style,
+        appearance: TimerTabs.Appearance,
         action: @escaping () -> Void
     ) {
         self.title = title
         self.isSelected = isSelected
         self.style = style
+        self.appearance = appearance
         self.action = action
     }
 
@@ -44,7 +54,7 @@ public struct TimerTabItem: View {
                 .frame(minHeight: style == .plain ? 46 : nil)
                 .background {
                     if style == .pill && isSelected {
-                        Capsule().fill(Color(.Experiment.Fill.selected))
+                        Capsule().fill(selectedBackgroundColor)
                     }
                 }
                 .labcordMotion(.state, value: isSelected)
@@ -56,10 +66,23 @@ public struct TimerTabItem: View {
     }
 
     private var foregroundColor: Color {
-        style == .pill ? (isSelected
-            ? Color(.Experiment.Label.brand) : Color(.Experiment.Label.quaternary))
-            : (isSelected ? Color(.Experiment.Label.primary)
-                : Color(.Experiment.Label.tertiary))
+        switch (appearance, style, isSelected) {
+        case (.general, .pill, true): Color(.General.Label.brand)
+        case (.general, .pill, false): Color(.General.Label.quaternary)
+        case (.general, .plain, true): Color(.General.Label.primary)
+        case (.general, .plain, false): Color(.General.Label.tertiary)
+        case (.experiment, .pill, true): Color(.Experiment.Label.brand)
+        case (.experiment, .pill, false): Color(.Experiment.Label.quaternary)
+        case (.experiment, .plain, true): Color(.Experiment.Label.primary)
+        case (.experiment, .plain, false): Color(.Experiment.Label.tertiary)
+        }
+    }
+
+    private var selectedBackgroundColor: Color {
+        switch appearance {
+        case .general: Color(.General.Fill.selected)
+        case .experiment: Color(.Experiment.Fill.selected)
+        }
     }
 
     private var horizontalPadding: CGFloat {

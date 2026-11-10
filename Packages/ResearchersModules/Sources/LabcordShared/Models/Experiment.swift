@@ -54,7 +54,8 @@ public final class Experiment {
     }
 
     public func recordExit(at date: Date, entryID: UUID) {
-        guard !statusHistory.contains(where: { $0.id == entryID }) else { return }
+        guard status == .running,
+              !statusHistory.contains(where: { $0.id == entryID }) else { return }
         status = .paused
         statusHistory.append(
             ExperimentStatusEntry(id: entryID, status: .paused, date: date)
@@ -63,6 +64,12 @@ public final class Experiment {
 
     public func recordEntry(at date: Date) {
         guard status == .ready || status == .paused else { return }
+        status = .running
+        statusHistory.append(ExperimentStatusEntry(status: .running, date: date))
+    }
+
+    public func resumeCompleted(at date: Date) {
+        guard status == .completed else { return }
         status = .running
         statusHistory.append(ExperimentStatusEntry(status: .running, date: date))
     }

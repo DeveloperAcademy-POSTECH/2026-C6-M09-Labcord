@@ -1,10 +1,3 @@
-//
-//  CameraCaptureView.swift
-//  Researchers
-//
-//  Created by 정홍섭 on 10/25/26.
-//
-
 import ComposableArchitecture
 import SwiftUI
 

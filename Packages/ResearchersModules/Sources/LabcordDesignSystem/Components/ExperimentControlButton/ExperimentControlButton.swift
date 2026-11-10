@@ -1,31 +1,40 @@
 import SwiftUI
 
 public struct ExperimentControlButton<Icon: View>: View {
+    public enum Appearance: Sendable {
+        case general, experiment
+    }
+
     public enum State: String, CaseIterable, Sendable {
         case `default`
         case disabled
     }
 
     private let state: State
+    private let appearance: Appearance
     private let action: () -> Void
     private let icon: Icon
 
     public init(
         state: State = .default,
+        appearance: Appearance = .experiment,
         action: @escaping () -> Void,
         icon: Icon
     ) {
         self.state = state
+        self.appearance = appearance
         self.action = action
         self.icon = icon
     }
 
     public init(
         state: State = .default,
+        appearance: Appearance = .experiment,
         action: @escaping () -> Void,
         @ViewBuilder icon: () -> Icon
     ) {
         self.state = state
+        self.appearance = appearance
         self.action = action
         self.icon = icon()
     }
@@ -37,9 +46,15 @@ public struct ExperimentControlButton<Icon: View>: View {
         }
         .buttonStyle(
             RunIconButtonStyle(
-                background: Color(.Experiment.Fill.primary),
-                foreground: Color(.Experiment.Label.secondary),
-                iconSize: 20
+                background: appearance == .general
+                    ? Color(.General.Fill.primary) : Color(.Experiment.Fill.primary),
+                foreground: appearance == .general
+                    ? Color(.General.Label.secondary) : Color(.Experiment.Label.secondary),
+                iconSize: 20,
+                disabledBackground: appearance == .general
+                    ? Color(.General.Fill.disabled) : Color(.Experiment.Fill.disabled),
+                disabledForeground: appearance == .general
+                    ? Color(.General.Label.disabled) : Color(.Experiment.Label.disabled)
             )
         )
         .disabled(state == .disabled)

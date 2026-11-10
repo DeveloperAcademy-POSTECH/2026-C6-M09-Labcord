@@ -3,16 +3,17 @@ import LabcordShared
 import SwiftUI
 
 struct CatalogControlStatusBadgeScenario: View {
-    @State private var status = ExperimentStatus.preparing
+    @State private var status = StatusBadge.Status.ready
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             StatusBadge(status: status)
                 .accessibilityIdentifier("catalog.scenario.statusBadge.preview")
             Picker("상태", selection: $status) {
-                catalogPickerOptions(
-                    [ExperimentStatus.preparing, .inProgress, .paused, .completed]
-                )
+                Text("준비").tag(StatusBadge.Status.ready)
+                Text("진행 중").tag(StatusBadge.Status.running)
+                Text("일시정지").tag(StatusBadge.Status.paused)
+                Text("완료").tag(StatusBadge.Status.completed)
             }
             .accessibilityIdentifier("catalog.scenario.statusBadge.state")
         }

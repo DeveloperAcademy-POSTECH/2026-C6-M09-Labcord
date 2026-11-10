@@ -1,6 +1,10 @@
 import SwiftUI
 
 public struct GestureGuideItem<Media: View>: View {
+    public enum Appearance: Sendable {
+        case general, experiment
+    }
+
     public enum Layout: String, CaseIterable, Sendable {
         case portrait
         case landscape
@@ -9,17 +13,20 @@ public struct GestureGuideItem<Media: View>: View {
     private let title: String
     private let description: String
     private let layout: Layout
+    private let appearance: Appearance
     private let media: Media
 
     public init(
         title: String = "음성 녹음",
         description: String = "손바닥을 활짝 펼쳤다가 주먹 쥐기",
         layout: Layout = .landscape,
+        appearance: Appearance = .experiment,
         @ViewBuilder media: () -> Media
     ) {
         self.title = title
         self.description = description
         self.layout = layout
+        self.appearance = appearance
         self.media = media()
     }
 
@@ -31,7 +38,9 @@ public struct GestureGuideItem<Media: View>: View {
                 maxWidth: layout == .portrait ? 130 : .infinity
             )
             .background(
-                Color(.Experiment.Background.Grouped.primary),
+                appearance == .general
+                    ? Color(.General.Background.Grouped.primary)
+                    : Color(.Experiment.Background.Grouped.primary),
                 in: RoundedRectangle(cornerRadius: LayoutTokens.radiusMd)
             )
             .accessibilityElement(children: .contain)
@@ -72,7 +81,8 @@ public struct GestureGuideItem<Media: View>: View {
                 .typography(Typography.subheadline)
                 .frame(maxWidth: .infinity, alignment: textAlignment)
         }
-        .foregroundStyle(Color(.Experiment.Label.primary))
+        .foregroundStyle(appearance == .general
+            ? Color(.General.Label.primary) : Color(.Experiment.Label.primary))
         .multilineTextAlignment(layout == .portrait ? .center : .leading)
         .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: .infinity, alignment: textAlignment)

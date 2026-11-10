@@ -5,13 +5,17 @@ struct RunIconButtonStyle: ButtonStyle {
     let background: Color
     let foreground: Color
     let iconSize: CGFloat
+    var disabledBackground: Color = Color(.Experiment.Fill.disabled)
+    var disabledForeground: Color = Color(.Experiment.Label.disabled)
 
     func makeBody(configuration: Configuration) -> some View {
         RunIconButtonContent(
             configuration: configuration,
             background: background,
             foreground: foreground,
-            iconSize: iconSize
+            iconSize: iconSize,
+            disabledBackground: disabledBackground,
+            disabledForeground: disabledForeground
         )
     }
 }
@@ -24,6 +28,8 @@ private struct RunIconButtonContent: View {
     let background: Color
     let foreground: Color
     let iconSize: CGFloat
+    let disabledBackground: Color
+    let disabledForeground: Color
 
     private var isPressed: Bool {
         configuration.isPressed && isEnabled
@@ -33,11 +39,11 @@ private struct RunIconButtonContent: View {
         configuration.label
             .frame(minWidth: iconSize, minHeight: iconSize)
             .foregroundStyle(
-                isEnabled ? foreground : Color(.Experiment.Label.disabled)
+                isEnabled ? foreground : disabledForeground
             )
             .frame(width: buttonSize, height: buttonSize)
             .background(
-                isEnabled ? background : Color(.Experiment.Fill.disabled),
+                isEnabled ? background : disabledBackground,
                 in: Circle()
             )
             .contentShape(Circle())

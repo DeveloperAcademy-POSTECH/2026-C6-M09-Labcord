@@ -1,10 +1,22 @@
 import SwiftUI
 
 public struct StatusPill: View {
-    private let message: String
+    public enum Appearance: Sendable {
+        case general, experiment
+    }
 
-    public init(_ message: String) {
+    private let message: String
+    private let appearance: Appearance
+    private let showIcon: Bool
+
+    public init(
+        _ message: String,
+        appearance: Appearance = .experiment,
+        showIcon: Bool = true
+    ) {
         self.message = message
+        self.appearance = appearance
+        self.showIcon = showIcon
     }
 
     public var body: some View {
@@ -16,9 +28,13 @@ public struct StatusPill: View {
             .background {
                 pillShape
                     .fill(.ultraThinMaterial)
-                    .environment(\.colorScheme, .dark)
+                    .environment(\.colorScheme, appearance == .general ? .light : .dark)
             }
-            .background(Color(.Experiment.Fill.primary), in: pillShape)
+            .background(
+                appearance == .general
+                    ? Color(.General.Fill.primary) : Color(.Experiment.Fill.primary),
+                in: pillShape
+            )
             .clipShape(pillShape)
             .accessibilityElement(children: .combine)
             .accessibilityLabel(Text(message))
@@ -28,17 +44,26 @@ public struct StatusPill: View {
         HStack(spacing: LayoutTokens.spacing12) {
             Text(message)
                 .typography(Typography.calloutSemiBold)
-                .foregroundStyle(Color(.Experiment.Label.primary))
+                .foregroundStyle(labelColor)
                 .contentTransition(.opacity)
                 .labcordMotion(.state, value: message)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
-            IconArtwork(icon: .checkBold, size: 20)
-                .foregroundStyle(Color(.Experiment.Label.primary))
-                .accessibilityHidden(true)
+            if showIcon {
+                IconArtwork(icon: .checkBold, size: 20)
+                    .foregroundStyle(
+                        appearance == .general
+                            ? Color(.General.Brand.primary) : Color(.Experiment.Brand.primary)
+                    )
+                    .accessibilityHidden(true)
+            }
         }
         .padding(.horizontal, LayoutTokens.spacing20)
         .padding(.vertical, LayoutTokens.spacing12)
+    }
+
+    private var labelColor: Color {
+        appearance == .general ? Color(.General.Label.primary) : Color(.Experiment.Label.primary)
     }
 
     private var pillShape: RoundedRectangle {

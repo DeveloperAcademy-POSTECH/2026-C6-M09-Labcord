@@ -10,6 +10,7 @@ public enum CameraHandEvent: Equatable, Sendable {
 
 public struct CameraSessionClient: Sendable {
     public var activate: @Sendable (UUID) async throws -> Void
+    public var isRunning: @Sendable () async -> Bool
     public var deactivate: @Sendable (UUID) async -> Void
     public var switchCamera: @Sendable () async throws -> Void
     public var previewConnector: @Sendable () async -> CameraPreviewConnector
@@ -18,10 +19,12 @@ public struct CameraSessionClient: Sendable {
     public var prepareVideoRecording: @Sendable () async throws -> Void
     public var recordVideo: @Sendable (@escaping @Sendable () -> Void) async throws -> URL
     public var cancelVideoRecording: @Sendable () async -> Void
+    public var stopVideoRecording: @Sendable () async -> Void
     public var discardVideo: @Sendable (URL) async -> Void
 
     public init(
         activate: @escaping @Sendable (UUID) async throws -> Void,
+        isRunning: @escaping @Sendable () async -> Bool,
         deactivate: @escaping @Sendable (UUID) async -> Void,
         switchCamera: @escaping @Sendable () async throws -> Void,
         previewConnector: @escaping @Sendable () async -> CameraPreviewConnector,
@@ -30,9 +33,11 @@ public struct CameraSessionClient: Sendable {
         prepareVideoRecording: @escaping @Sendable () async throws -> Void,
         recordVideo: @escaping @Sendable (@escaping @Sendable () -> Void) async throws -> URL,
         cancelVideoRecording: @escaping @Sendable () async -> Void,
+        stopVideoRecording: @escaping @Sendable () async -> Void,
         discardVideo: @escaping @Sendable (URL) async -> Void
     ) {
         self.activate = activate
+        self.isRunning = isRunning
         self.deactivate = deactivate
         self.switchCamera = switchCamera
         self.previewConnector = previewConnector
@@ -41,6 +46,7 @@ public struct CameraSessionClient: Sendable {
         self.prepareVideoRecording = prepareVideoRecording
         self.recordVideo = recordVideo
         self.cancelVideoRecording = cancelVideoRecording
+        self.stopVideoRecording = stopVideoRecording
         self.discardVideo = discardVideo
     }
 }
@@ -50,6 +56,7 @@ extension CameraSessionClient: DependencyKey {
         let session = CameraSession()
         return CameraSessionClient(
             activate: { try await session.activate(owner: $0) },
+            isRunning: { await session.isRunning() },
             deactivate: { await session.deactivate(owner: $0) },
             switchCamera: { try await session.switchCamera() },
             previewConnector: { await session.previewConnector() },
@@ -58,6 +65,7 @@ extension CameraSessionClient: DependencyKey {
             prepareVideoRecording: { try await session.prepareVideoRecording() },
             recordVideo: { try await session.recordVideo(onStarted: $0) },
             cancelVideoRecording: { await session.cancelVideoRecording() },
+            stopVideoRecording: { await session.stopVideoRecording() },
             discardVideo: { await session.discardVideo(at: $0) }
         )
     }()

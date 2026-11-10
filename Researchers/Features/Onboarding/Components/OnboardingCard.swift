@@ -23,7 +23,7 @@ struct OnboardingCard: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             .overlay(alignment: .bottom) {
-                PageControl(pageCount: 3, selection: .constant(currentPage))
+                PageControl(pageCount: 3, selection: .constant(currentPage), appearance: .general)
                     .frame(height: 32)
                     .padding(.bottom, 8)
             }

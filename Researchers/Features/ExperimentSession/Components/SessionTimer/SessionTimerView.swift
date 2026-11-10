@@ -20,10 +20,6 @@ struct SessionTimerView: View {
     let isPortrait: Bool
     @State private var selectedPage: Int? = 0
     @State private var selectedActivePage: Int? = 0
-    @State private var isTimerSetupPresented = false
-    @State private var selectedHours = 0
-    @State private var selectedMinutes = 10
-    @State private var selectedSeconds = 0
 
     init(store: StoreOf<SessionTimerFeature>, isPortrait: Bool = false) {
         self.store = store
@@ -41,7 +37,7 @@ struct SessionTimerView: View {
         let canStartTimer = timerCollection.canStartTimer && store.canModifyTimers
 
         return VStack(alignment: .leading, spacing: 12) {
-            if isTimerSetupPresented {
+            if store.isEditorPresented {
                 timerSetup(canStartTimer: canStartTimer)
             } else {
                 timerList(
@@ -79,9 +75,10 @@ struct SessionTimerView: View {
                 Spacer()
 
                 Button {
-                    isTimerSetupPresented = true
+                    store.send(.editorPresented(true))
                 } label: {
                     Image(labcordIcon: .plus)
+                        .foregroundStyle(Color("Experiment/Label/Secondary"))
                 }
                 .buttonStyle(.labcordIcon(.plain, size: .large))
             }
@@ -211,21 +208,20 @@ struct SessionTimerView: View {
     }
 
     private func timerSetup(canStartTimer: Bool) -> some View {
-        let durationSeconds = selectedHours * 3600 + selectedMinutes * 60 + selectedSeconds
+        let durationSeconds = store.draftSeconds
 
         return VStack(alignment: .leading, spacing: 12) {
             timerSetupHeader
 
             TimerPicker(
-                hours: $selectedHours,
-                minutes: $selectedMinutes,
-                seconds: $selectedSeconds,
+                hours: timerDraftBinding(unit: 3600),
+                minutes: timerDraftBinding(unit: 60),
+                seconds: timerDraftBinding(unit: 1),
                 usage: .running
             )
 
             Button {
                 store.send(.customTimerStarted(durationSeconds))
-                isTimerSetupPresented = false
             } label: {
                 Text("타이머 실행")
                     .frame(maxWidth: .infinity)
@@ -238,7 +234,7 @@ struct SessionTimerView: View {
     private var timerSetupHeader: some View {
         HStack(spacing: 8) {
             Button {
-                isTimerSetupPresented = false
+                store.send(.editorPresented(false))
             } label: {
                 Image(labcordIcon: .caretLeft)
                     .foregroundStyle(Color("Experiment/Label/Secondary"))
@@ -262,6 +258,17 @@ struct SessionTimerView: View {
 }
 
 private extension SessionTimerView {
+    func timerDraftBinding(unit: Int) -> Binding<Int> {
+        Binding(
+            get: { unit == 3600 ? store.draftSeconds / unit : store.draftSeconds / unit % 60 },
+            set: { value in
+                let previous = unit == 3600
+                    ? store.draftSeconds / unit : store.draftSeconds / unit % 60
+                store.send(.draftSecondsChanged(store.draftSeconds + (value - previous) * unit))
+            }
+        )
+    }
+
     func activeTimerPages(_ timers: [ExperimentTimer], at date: Date) -> some View {
         let pageCount = (timers.count + 2) / 3
 

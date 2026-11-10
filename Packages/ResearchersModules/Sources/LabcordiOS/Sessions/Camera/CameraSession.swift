@@ -1,10 +1,3 @@
-//
-//  CameraSession.swift
-//  labcord-package-swift
-//
-//  Created by 정홍섭 on 10/26/26.
-//
-
 import AVFoundation
 import Dispatch
 import Foundation
@@ -101,12 +94,13 @@ public actor CameraSession {
         }
 
         if activeOwners.isEmpty {
-            // Clear a held pose before a returning view subscribes to hand events.
+
             handTrackingQueue.sync { [handDetector] in handDetector.reset() }
         }
         if !session.isRunning {
             session.startRunning()
         }
+        guard session.isRunning else { throw CameraSessionError.cameraUnavailable }
         activeOwners.insert(owner)
     }
 
@@ -241,6 +235,10 @@ public actor CameraSession {
         try? FileManager.default.removeItem(at: url)
     }
 
+    public func stopVideoRecording() {
+        if movieOutput.isRecording { movieOutput.stopRecording() }
+    }
+
     public func prepareVideoRecording() throws {
         guard AVAudioApplication.shared.recordPermission == .granted else {
             throw PermissionAccessError(.microphone)
@@ -292,6 +290,10 @@ public actor CameraSession {
 }
 
 extension CameraSession {
+    public func isRunning() -> Bool {
+        session.isRunning
+    }
+
     public func previewConnector() -> CameraPreviewConnector {
         if let cachedPreviewConnector {
             return cachedPreviewConnector

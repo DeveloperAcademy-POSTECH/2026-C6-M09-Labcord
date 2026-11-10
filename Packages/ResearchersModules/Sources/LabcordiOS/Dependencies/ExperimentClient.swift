@@ -11,10 +11,20 @@ public enum ExperimentCreationError: Error, Sendable {
     case conflictingIdentifier
 }
 
+public enum WatchTimerAccessError: Error, Sendable {
+    case notConfigured
+}
+
 public struct ExperimentClient: Sendable {
+    public var applyWatchTimer: @MainActor @Sendable (WatchExperimentCommand) throws -> Void
+    public var beginTimerDeletion: @MainActor @Sendable (UUID, UUID, Date) throws -> Void
+    private var dismissWatchTimerOperation: @MainActor @Sendable (UUID, UUID) throws -> Void
+    public var watchState: @MainActor @Sendable (UUID) throws -> WatchExperimentState?
     public var load: @MainActor @Sendable () throws -> [ExperimentListEntry]
     public var loadRecentProtocols: @MainActor @Sendable () throws -> [RecentProtocolEntry]
-    public var loadDetail: @MainActor @Sendable (UUID) throws -> ExperimentSessionDetail?
+    public var enterSessionAndLoadDetail: @MainActor @Sendable (
+        UUID
+    ) throws -> ExperimentSessionDetail?
     public var loadResultDetail: @MainActor @Sendable (UUID) throws -> ExperimentResultDetail?
     public var updateTitle: @MainActor @Sendable (UUID, String) throws -> ExperimentResultDetail
     public var updateRecordContent: @MainActor @Sendable (
@@ -34,12 +44,15 @@ public struct ExperimentClient: Sendable {
     public var saveAudio: @MainActor @Sendable (UUID, UUID, Date, URL, String) throws -> Void
     public var cancelVideoSave: @MainActor @Sendable (UUID, UUID, URL) throws -> Void
     public var cancelAudioSave: @MainActor @Sendable (UUID, UUID, URL) throws -> Void
+    public var resumeCompleted: @MainActor @Sendable (UUID, Date) throws -> Void
     public var complete: @MainActor @Sendable (UUID, Date) throws -> Void
     public var delete: @MainActor @Sendable (UUID) throws -> Void
 
     public init(
         load: @escaping @MainActor @Sendable () throws -> [ExperimentListEntry],
-        loadDetail: @escaping @MainActor @Sendable (UUID) throws -> ExperimentSessionDetail?,
+        enterSessionAndLoadDetail: @escaping @MainActor @Sendable (
+            UUID
+        ) throws -> ExperimentSessionDetail?,
         loadResultDetail: @escaping @MainActor @Sendable (UUID) throws -> ExperimentResultDetail?,
         updateTitle: @escaping @MainActor @Sendable (
             UUID, String
@@ -67,11 +80,34 @@ public struct ExperimentClient: Sendable {
             UUID, Date, String, ExperimentProtocol
         ) throws -> ExperimentListEntry = { _, _, _, _ in
             throw ExperimentCreationError.unavailable
+        },
+        watchState: @escaping @MainActor @Sendable (UUID) throws -> WatchExperimentState? = { _ in
+            throw ExperimentCreationError.unavailable
+        },
+        applyWatchTimer: @escaping @MainActor @Sendable (
+            WatchExperimentCommand
+        ) throws -> Void = { _ in
+            throw WatchTimerAccessError.notConfigured
+        },
+        beginTimerDeletion: @escaping @MainActor @Sendable (
+            UUID, UUID, Date
+        ) throws -> Void = { _, _, _ in
+            throw WatchTimerAccessError.notConfigured
+        },
+        resumeCompleted: @escaping @MainActor @Sendable (UUID, Date) throws -> Void = { _, _ in
+            throw ExperimentCreationError.unavailable
+        },
+        dismissWatchTimer: @escaping @MainActor @Sendable (UUID, UUID) throws -> Void = { _, _ in
+            throw WatchTimerAccessError.notConfigured
         }
     ) {
+        self.applyWatchTimer = applyWatchTimer
+        self.beginTimerDeletion = beginTimerDeletion
+        self.dismissWatchTimerOperation = dismissWatchTimer
+        self.watchState = watchState
         self.load = load
         self.loadRecentProtocols = loadRecentProtocols
-        self.loadDetail = loadDetail
+        self.enterSessionAndLoadDetail = enterSessionAndLoadDetail
         self.loadResultDetail = loadResultDetail
         self.updateTitle = updateTitle
         self.updateRecordContent = updateRecordContent
@@ -85,16 +121,21 @@ public struct ExperimentClient: Sendable {
         self.saveAudio = saveAudio
         self.cancelVideoSave = cancelVideoSave
         self.cancelAudioSave = cancelAudioSave
+        self.resumeCompleted = resumeCompleted
         self.complete = complete
         self.delete = delete
+    }
+    @MainActor
+    public func dismissWatchTimer(experimentID: UUID, timerID: UUID) throws {
+        try dismissWatchTimerOperation(experimentID, timerID)
     }
 }
 
 extension ExperimentClient: DependencyKey {
     public static let liveValue = ExperimentClient(
         load: { try ExperimentListRepository.shared.load() },
-        loadDetail: {
-            try ExperimentSessionRepository.shared.loadDetail(id: $0)
+        enterSessionAndLoadDetail: {
+            try ExperimentSessionRepository.shared.enterSessionAndLoadDetail(id: $0)
         },
         loadResultDetail: { try ExperimentResultRepository.shared.loadResultDetail(id: $0) },
         updateTitle: { try ExperimentResultRepository.shared.updateTitle(id: $0, title: $1) },
@@ -149,6 +190,19 @@ extension ExperimentClient: DependencyKey {
             try ExperimentListRepository.shared.createWithProtocol(
                 id: $0, at: $1, title: $2, procedure: $3
             )
+        },
+        watchState: { try ExperimentSessionRepository.shared.watchState(id: $0) },
+        applyWatchTimer: { try ExperimentSessionRepository.shared.applyWatchTimer($0) },
+        beginTimerDeletion: {
+            try ExperimentSessionRepository.shared.beginTimerDeletion(
+                experimentID: $0, timerID: $1, endedAt: $2
+            )
+        },
+        resumeCompleted: {
+            try ExperimentSessionRepository.shared.resumeCompleted(id: $0, at: $1)
+        },
+        dismissWatchTimer: {
+            try ExperimentSessionRepository.shared.dismissWatchTimer(experimentID: $0, timerID: $1)
         }
     )
 }

@@ -41,6 +41,16 @@ nonisolated public enum PermissionIssue: Equatable, Sendable {
     case accessRequired([PermissionRequirement])
     case settingsUnavailable
 
+    public var title: String {
+        switch self {
+        case let .accessRequired(requirements):
+            guard requirements.count == 1 else { return "접근 권한이 필요해요." }
+            return "\(requirements[0].kind.title) 접근이 필요해요."
+        case .settingsUnavailable:
+            return "설정 열기 실패"
+        }
+    }
+
     public var message: String {
         switch self {
         case let .accessRequired(requirements):
@@ -50,7 +60,14 @@ nonisolated public enum PermissionIssue: Equatable, Sendable {
                     return "이 기기에서 \(requirement.kind.title) 사용이 제한되어 있습니다."
                 case .notDetermined:
                     return "\(requirement.kind.title) 접근 권한을 먼저 허용해 주세요."
-                case .denied, .authorized:
+                case .denied:
+                    switch requirement.kind {
+                    case .camera, .microphone:
+                        return "사진과 영상을 촬영하려면 아이폰 설정에서 카메라 접근을 허용해 주세요."
+                    case .speechRecognition:
+                        return "녹음 결과를 확인할려면 아이폰 설정에서 음성 인식 접근을 허용해요주세요."
+                    }
+                case .authorized:
                     return "\(requirement.kind.title) 접근 권한이 필요합니다. 설정에서 허용해 주세요."
                 }
             }.joined(separator: "\n")

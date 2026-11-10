@@ -22,6 +22,7 @@ final class MediaRecordStore {
     private enum MediaError: Error {
         case invalidPhotoData
         case invalidRecordingFile
+        case unverifiedRecording
     }
 
     static let shared = MediaRecordStore()
@@ -67,13 +68,35 @@ final class MediaRecordStore {
         transcript: String
     ) throws {
         try Task.checkCancellation()
-        try saveRecordingFile(
+        guard sourceURL.isFileURL, sourceURL.pathExtension.lowercased() == "caf" else {
+            throw MediaError.invalidRecordingFile
+        }
+        try saveMedia(
             record: MediaRecordDetails(
                 experimentID: experimentID, id: id, recordedAt: recordedAt, transcript: transcript
             ),
-            sourceURL: sourceURL,
-            file: MediaFileDetails(type: .audio, directory: "Audio", fileExtension: "caf")
+            file: MediaFileDetails(type: .audio, directory: "Audio", fileExtension: "caf"),
+            installFile: { fileURL in
+                try Task.checkCancellation()
+                try VoiceRecordingRecovery.installCopy(original: sourceURL, destination: fileURL)
+                try FileManager.default.setAttributes(
+                    [.protectionKey: FileProtectionType.complete], ofItemAtPath: fileURL.path
+                )
+            },
+            rollbackFile: nil
         )
+        let context = try store.makeContext()
+        guard let experiment = try store.find(id: experimentID, in: context),
+              let record = experiment.records.first(where: {
+                  $0.id == id && $0.type == .audio
+              }),
+              let path = record.filePath else { throw MediaError.unverifiedRecording }
+        let savedURL = URL.applicationSupportDirectory.appending(path: path)
+        guard FileManager.default.fileExists(atPath: savedURL.path),
+              FileManager.default.contentsEqual(
+                atPath: sourceURL.path, andPath: savedURL.path
+              ) else { throw MediaError.unverifiedRecording }
+        VoiceRecordingJournal.remove(filePath: sourceURL.path)
     }
 
     private func saveRecordingFile(
@@ -107,7 +130,7 @@ final class MediaRecordStore {
         record: MediaRecordDetails,
         file: MediaFileDetails,
         installFile: (URL) throws -> Void,
-        rollbackFile: (URL) -> Void
+        rollbackFile: ((URL) -> Void)?
     ) throws {
         let context = try store.makeContext()
         guard let experiment = try store.find(id: record.experimentID, in: context) else {
@@ -138,7 +161,7 @@ final class MediaRecordStore {
             )
             try context.save()
         } catch {
-            rollbackFile(fileURL)
+            rollbackFile?(fileURL)
             throw error
         }
     }

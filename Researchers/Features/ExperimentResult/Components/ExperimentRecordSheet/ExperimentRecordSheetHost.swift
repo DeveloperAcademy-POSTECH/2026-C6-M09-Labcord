@@ -5,6 +5,7 @@ import SwiftUI
 
 struct ExperimentRecordSheetHost: View {
     let entry: ExperimentResultDetail.TimelineEntry
+    let timerIdentity: TimerIdentity
     @Binding var note: String
     @Binding var transcript: String
     @Binding var isDeleteConfirmationPresented: Bool
@@ -56,6 +57,7 @@ struct ExperimentRecordSheetHost: View {
                         ScrollView {
                             ExperimentRecordSheetView(
                                 entry: entry,
+                                timerIdentity: timerIdentity,
                                 note: $note,
                                 transcript: $transcript,
                                 canSave: canSave,

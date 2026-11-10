@@ -1,22 +1,31 @@
 import SwiftUI
 
 public struct PageControl: View {
+    public enum Appearance {
+        case general
+        case experiment
+    }
+
     @Binding private var selection: Int
     private let pageCount: Int
+    private let appearance: Appearance
 
     @State private var pressedPage: Int?
 
     public init(
         pageCount: Int,
-        selection: Binding<Int>
+        selection: Binding<Int>,
+        appearance: Appearance = .experiment
     ) {
         self.pageCount = pageCount
+        self.appearance = appearance
         _selection = selection
     }
 
     public init<Pages: RandomAccessCollection>(
         pages: Pages,
-        selection: Binding<Pages.Element>
+        selection: Binding<Pages.Element>,
+        appearance: Appearance = .experiment
     ) where Pages.Element: Hashable {
         let values = Array(pages)
         self.init(
@@ -29,7 +38,8 @@ public struct PageControl: View {
                     guard page > 0, values.indices.contains(page - 1) else { return }
                     selection.transaction(transaction).wrappedValue = values[page - 1]
                 }
-            ).transaction(selection.transaction)
+            ).transaction(selection.transaction),
+            appearance: appearance
         )
     }
 
@@ -40,9 +50,7 @@ public struct PageControl: View {
                     ForEach(1...pageCount, id: \.self) { page in
                         Circle()
                             .fill(
-                                page == selection
-                                    ? Color(.Experiment.Label.primary)
-                                    : Color(.Experiment.Label.quaternary)
+                                dotColor(isSelected: page == selection)
                             )
                             .frame(width: dotDiameter(for: page), height: dotDiameter(for: page))
                             .labcordPressFeedback(pressedPage == page, isSubtle: true)
@@ -69,6 +77,16 @@ public struct PageControl: View {
         .accessibilityValue(accessibilityValue)
     }
 
+    private func dotColor(isSelected: Bool) -> Color {
+        switch appearance {
+        case .general:
+            return isSelected ? Color(.General.Label.primary) : Color(.General.Label.quaternary)
+        case .experiment:
+            return isSelected
+                ? Color(.Experiment.Label.primary) : Color(.Experiment.Label.quaternary)
+        }
+    }
+
     private var visualHeight: CGFloat {
         switch pageCount {
         case 2: 30
@@ -78,7 +96,11 @@ public struct PageControl: View {
     }
 
     private func dotDiameter(for page: Int) -> CGFloat {
-        page == selection ? 8 : 6
+        switch pageCount {
+        case 2: 6
+        case 3: page == 1 && selection == 1 ? 8 : 6
+        default: page == selection ? 8 : 6
+        }
     }
 
     private var accessibilityValue: Text {

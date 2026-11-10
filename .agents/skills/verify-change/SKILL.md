@@ -72,7 +72,7 @@ swiftlint version
 # SwiftLint: .github/workflows/swiftlint.yml의 검사 명령
 swiftlint --strict
 
-# iPhone: .github/workflows/build.yml의 빌드 명령
+# iPhone: develop push의 빌드 명령. PR CI는 추가로 ARCHS=arm64와 컴파일 캐시를 사용합니다.
 xcodebuild build \
   -project Researchers.xcodeproj \
   -scheme Researchers \

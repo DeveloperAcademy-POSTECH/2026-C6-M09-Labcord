@@ -1,23 +1,35 @@
 import SwiftUI
 
 public struct ProgressRing: View {
+    public enum Appearance: Sendable {
+        case general
+        case experiment
+    }
+
     private let value: Double
     private let showPercentage: Bool
     private let centerText: String?
+    private let appearance: Appearance
 
     @ScaledMetric(relativeTo: .title2) private var diameter: CGFloat = 160
     @ScaledMetric(relativeTo: .title2) private var lineWidth: CGFloat = 16
 
-    public init(value: Double, showPercentage: Bool = true, centerText: String? = nil) {
+    public init(
+        value: Double,
+        showPercentage: Bool = true,
+        centerText: String? = nil,
+        appearance: Appearance = .general
+    ) {
         self.value = value
         self.showPercentage = showPercentage
         self.centerText = centerText
+        self.appearance = appearance
     }
 
     public var body: some View {
         ZStack {
             Circle()
-                .stroke(Color(.General.Fill.primary), lineWidth: lineWidth)
+                .stroke(trackColor, lineWidth: lineWidth)
                 .frame(width: diameter, height: diameter)
 
             if progress > 0 {
@@ -40,13 +52,27 @@ public struct ProgressRing: View {
             } else if showPercentage {
                 Text("\(Int((progress * 100).rounded()))%")
                     .typography(Typography.title2Bold)
-                    .foregroundStyle(Color(.General.Label.primary))
+                    .foregroundStyle(labelColor)
             }
         }
         .frame(width: diameter, height: diameter)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("진행률")
         .accessibilityValue(centerText ?? "\(Int((progress * 100).rounded()))%")
+    }
+
+    private var trackColor: Color {
+        switch appearance {
+        case .general: Color(.General.Fill.primary)
+        case .experiment: Color(.Experiment.Fill.primary)
+        }
+    }
+
+    private var labelColor: Color {
+        switch appearance {
+        case .general: Color(.General.Label.primary)
+        case .experiment: Color(.Experiment.Label.primary)
+        }
     }
 
     private var progress: Double {

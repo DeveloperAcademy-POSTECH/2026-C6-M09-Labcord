@@ -1,8 +1,9 @@
 import SwiftUI
 
 public struct StatusBadge: View {
-    public enum Status: Equatable, Sendable {
+    public enum Status: Hashable, Sendable {
         case ready
+        case running
         case paused
         case completed
     }
@@ -33,6 +34,7 @@ private extension StatusBadge.Status {
     var defaultLabel: String {
         switch self {
         case .ready: "준비"
+        case .running: "진행 중"
         case .paused: "일시정지"
         case .completed: "완료"
         }
@@ -41,6 +43,7 @@ private extension StatusBadge.Status {
     var foregroundColor: Color {
         switch self {
         case .ready: Color(.General.Label.tertiary)
+        case .running: Color(.General.Experiment.Status.InProgress.foreground)
         case .paused: Color(.General.Experiment.Status.Paused.foreground)
         case .completed: Color(.General.Experiment.Status.Completed.foreground)
         }
@@ -49,6 +52,7 @@ private extension StatusBadge.Status {
     var backgroundColor: Color {
         switch self {
         case .ready: Color(.General.Background.secondary)
+        case .running: Color(.General.Experiment.Status.InProgress.background)
         case .paused: Color(.General.Experiment.Status.Paused.background)
         case .completed: Color(.General.Experiment.Status.Completed.background)
         }
@@ -59,6 +63,7 @@ private extension StatusBadge.Status {
     _ = FontRegistration.register()
     return VStack(spacing: 12) {
         StatusBadge(status: .ready)
+        StatusBadge(status: .running)
         StatusBadge(status: .paused)
         StatusBadge(status: .completed)
     }

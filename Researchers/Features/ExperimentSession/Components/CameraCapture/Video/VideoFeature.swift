@@ -21,14 +21,23 @@ struct VideoFeature {
         var recordID: UUID?
         var recordedAt: Date?
         var isSaving = false
+        var isSessionClosing = false
         var saveError: String?
         var hasPlaybackFinished = false
         var isAutoSavePending = false
+        var shouldSaveOnStop = false
+        var shouldStopOnStart = false
+        var requestedRecordID: UUID?
+        var requiresExternalConfirmation = false
     }
 
     enum Action: Equatable {
         case prepareRequested
         case recordRequested
+        case watchRecordRequested(UUID)
+        case shortcutRecordRequested(UUID)
+        case stopRequested
+        case stopAndSaveRequested
         case started(UUID, Date)
         case recorded(UUID, URL)
         case recordingFailed(UUID, String)
@@ -40,6 +49,7 @@ struct VideoFeature {
         case saveFailed(UUID, String)
         case saveErrorDismissed
         case cancelCleanupFailed(String)
+        case cancelCleanupFinished(UUID)
         case cancelRequested
         case errorDismissed
         case delegate(Delegate)
@@ -62,7 +72,36 @@ struct VideoFeature {
 
     var body: some Reducer<State, Action> {
         Reduce { state, action in
+            if state.isSessionClosing, action.isBlockedDuringSessionClose { return .none }
             switch action {
+            case let .watchRecordRequested(id):
+                guard state.phase == .idle else { return .none }
+                state.requestedRecordID = id
+                state.requiresExternalConfirmation = true
+                return .send(.recordRequested)
+
+            case let .shortcutRecordRequested(id):
+                guard state.phase == .idle, state.requestedRecordID == nil else { return .none }
+                state.requestedRecordID = id
+                return .send(.recordRequested)
+
+            case .stopAndSaveRequested:
+                guard state.phase != .idle else { return .none }
+                state.shouldSaveOnStop = true
+                if case .preview = state.phase { return saveVideo(state: &state) }
+                return .send(.stopRequested)
+
+            case .stopRequested:
+                switch state.phase {
+                case .starting:
+                    state.shouldStopOnStart = true
+                    return .none
+                case .recording:
+                    return .run { _ in await cameraSessionClient.stopVideoRecording() }
+                case .idle, .preview:
+                    return .none
+                }
+
             case .prepareRequested:
                 return .run { _ in
                     try? await cameraSessionClient.prepareVideoRecording()
@@ -71,6 +110,7 @@ struct VideoFeature {
             case .recordRequested:
                 guard state.phase == .idle else { return .none }
                 state.sessionID = UUID()
+                state.requestedRecordID = state.requestedRecordID ?? uuid()
                 state.phase = .starting
                 let id = state.sessionID
                 return .run { send in
@@ -97,6 +137,7 @@ struct VideoFeature {
             case let .started(id, startedAt):
                 guard id == state.sessionID, state.phase == .starting else { return .none }
                 state.phase = .recording(startedAt)
+                if state.shouldStopOnStart { return .send(.stopRequested) }
                 return .none
 
             case let .recorded(id, url):
@@ -104,27 +145,23 @@ struct VideoFeature {
                     return .run { _ in await cameraSessionClient.discardVideo(url) }
                 }
                 state.phase = .preview(url)
-                state.recordID = uuid()
+                state.recordID = state.requestedRecordID ?? uuid()
                 state.recordedAt = now
                 state.saveError = nil
                 state.hasPlaybackFinished = false
                 state.isAutoSavePending = false
+                if state.shouldSaveOnStop { return saveVideo(state: &state) }
                 return .none
 
             case let .recordingFailed(id, message):
                 guard id == state.sessionID else { return .none }
                 state.phase = .idle
                 state.errorMessage = message
+                resetReview(state: &state)
                 return .none
 
             case .retakeRequested:
-                guard case let .preview(url) = state.phase, !state.isSaving else { return .none }
-                state.phase = .idle
-                resetReview(state: &state)
-                return .merge(
-                    .cancel(id: CancelID.autoSave),
-                    .run { _ in await cameraSessionClient.discardVideo(url) }
-                )
+                return retakeVideo(state: &state)
 
             case .saveRequested:
                 return saveVideo(state: &state)
@@ -134,6 +171,7 @@ struct VideoFeature {
                       !state.hasPlaybackFinished,
                       !state.isSaving else { return .none }
                 state.hasPlaybackFinished = true
+                if state.requiresExternalConfirmation { return .none }
                 state.isAutoSavePending = true
                 return .run { send in
                     try await Task.sleep(for: .seconds(3))
@@ -165,7 +203,11 @@ struct VideoFeature {
                 state.errorMessage = message
                 return .none
 
+            case .cancelCleanupFinished:
+                return .none
+
             case .cancelRequested:
+                let cancelledRecordID = state.requestedRecordID ?? state.recordID
                 let videoURL: URL?
                 if case let .preview(url) = state.phase {
                     videoURL = url
@@ -183,17 +225,21 @@ struct VideoFeature {
                     .cancel(id: CancelID.save),
                     .run { send in
                         await cameraSessionClient.cancelVideoRecording()
-                        guard let videoURL else { return }
-                        if let savingRecordID {
-                            do {
-                                try await experimentClient.cancelVideoSave(
-                                    experimentID, savingRecordID, videoURL
-                                )
-                            } catch {
-                                await send(.cancelCleanupFailed(error.localizedDescription))
+                        if let videoURL {
+                            if let savingRecordID {
+                                do {
+                                    try await experimentClient.cancelVideoSave(
+                                        experimentID, savingRecordID, videoURL
+                                    )
+                                } catch {
+                                    await send(.cancelCleanupFailed(error.localizedDescription))
+                                }
+                            } else {
+                                await cameraSessionClient.discardVideo(videoURL)
                             }
-                        } else {
-                            await cameraSessionClient.discardVideo(videoURL)
+                        }
+                        if let cancelledRecordID {
+                            await send(.cancelCleanupFinished(cancelledRecordID))
                         }
                     }
                 )
@@ -235,12 +281,50 @@ struct VideoFeature {
         )
     }
 
-    private func resetReview(state: inout State) {
+}
+
+private extension VideoFeature {
+    func retakeVideo(state: inout State) -> Effect<Action> {
+        guard case let .preview(url) = state.phase, !state.isSaving else { return .none }
+        let discardedRecordID = state.requestedRecordID ?? state.recordID
+        state.phase = .idle
+        resetReview(state: &state)
+        return .merge(
+            .cancel(id: CancelID.autoSave),
+            .run { send in
+                await cameraSessionClient.discardVideo(url)
+                if let discardedRecordID {
+                    await send(.cancelCleanupFinished(discardedRecordID))
+                }
+            }
+        )
+
+    }
+
+    func resetReview(state: inout State) {
         state.recordID = nil
         state.recordedAt = nil
         state.isSaving = false
         state.saveError = nil
         state.hasPlaybackFinished = false
         state.isAutoSavePending = false
+        state.shouldSaveOnStop = false
+        state.shouldStopOnStart = false
+        state.requestedRecordID = nil
+        state.requiresExternalConfirmation = false
+    }
+}
+
+private extension VideoFeature.Action {
+    var isBlockedDuringSessionClose: Bool {
+        switch self {
+        case .prepareRequested,
+                 .recordRequested,
+                 .watchRecordRequested,
+                 .shortcutRecordRequested,
+                 .retakeRequested,
+                 .cancelRequested: true
+        default: false
+        }
     }
 }

@@ -4,6 +4,7 @@ import SwiftUI
 
 struct RecordTimelineView: View {
     let entries: [ExperimentResultDetail.TimelineEntry]
+    let timerIdentities: [UUID: TimerIdentity]
     let onSelectEntry: (ExperimentResultDetail.TimelineEntry) -> Void
 
     var body: some View {
@@ -22,7 +23,7 @@ struct RecordTimelineView: View {
                         .padding(.vertical, LayoutTokens.spacing4)
                 }
 
-                RecordTimelineEntryView(entry: entry)
+                RecordTimelineEntryView(entry: entry, timerIdentities: timerIdentities)
                     .simultaneousGesture(TapGesture().onEnded { onSelectEntry(entry) })
             }
         }

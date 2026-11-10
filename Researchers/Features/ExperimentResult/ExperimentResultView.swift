@@ -8,6 +8,7 @@
 import ComposableArchitecture
 import LabcordDesignSystem
 import LabcordiOS
+import LabcordShared
 import SwiftUI
 
 struct ExperimentResultView: View {
@@ -57,7 +58,10 @@ struct ExperimentResultView: View {
 
                                         Separator(orientation: .horizontal)
 
-                                        RecordTimelineView(entries: store.displayedEntries) {
+                                        RecordTimelineView(
+                                            entries: store.displayedEntries,
+                                            timerIdentities: timerIdentities
+                                        ) {
                                             store.send(.timelineEntrySelected($0))
                                         }
                                     }
@@ -78,11 +82,12 @@ struct ExperimentResultView: View {
                         HStack(spacing: LayoutTokens.spacing16) {
                             if store.recordTimeline != nil {
                                 Button {
-                                    // 실험 재개 코드 구현
+                                    store.send(.resumeTapped)
                                 } label: {
                                     Text("실험 재개")
                                 }
                                 .buttonStyle(.labcord(.plain, size: .large))
+                                .disabled(store.isResuming)
                             }
 
                             Button {
@@ -92,10 +97,16 @@ struct ExperimentResultView: View {
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(.labcord(.filled, size: .large))
+                            .disabled(store.isResuming)
                         }
                         .padding(.horizontal, LayoutTokens.spacing16)
                         .padding(.top, LayoutTokens.spacing12)
                         .padding(.bottom, max(34 - geometry.safeAreaInsets.bottom, 0))
+                        if let resumeMessage = store.resumeMessage {
+                            Text(resumeMessage)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -121,12 +132,23 @@ struct ExperimentResultView: View {
                     .animation(.easeInOut(duration: 0.2), value: store.selectedEntry != nil)
                     .allowsHitTesting(false)
             }
+            .alert("실험을 재개할까요?", isPresented: Binding(
+                get: { store.isResumeConfirmationPresented },
+                set: { if !$0 { store.send(.resumeConfirmationCancelled) } }
+            )) {
+                Button("취소", role: .cancel) { store.send(.resumeConfirmationCancelled) }
+                Button("재개") { store.send(.resumeTapped) }
+                    .disabled(store.recordTimeline == nil || store.isResuming)
+            }
             .fullScreenCover(item: Binding(
                 get: { store.selectedEntry },
                 set: { if $0 == nil { store.send(.timelineSheetDismissed) } }
             )) { entry in
                 ExperimentRecordSheetHost(
                     entry: entry,
+                    timerIdentity: store.selectedRecord.flatMap {
+                        timerIdentities[$0.id]
+                    } ?? .identity01,
                     note: Binding(
                         get: { store.draftNote },
                         set: { store.send(.recordNoteChanged($0)) }
@@ -153,6 +175,14 @@ struct ExperimentResultView: View {
                     onCancelDelete: { store.send(.recordDeleteCancelled) }
                 )
             }
+        }
+    }
+
+    private var timerIdentities: [UUID: TimerIdentity] {
+        guard let detail = store.recordTimeline?.detail else { return [:] }
+        let identities = TimerIdentity.allCases
+        return detail.timerIdentityOrderByRecordID.mapValues {
+            identities[$0 % identities.count]
         }
     }
 }

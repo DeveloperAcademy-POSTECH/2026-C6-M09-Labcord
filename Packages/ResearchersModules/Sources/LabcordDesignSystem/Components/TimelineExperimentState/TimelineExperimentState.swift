@@ -32,7 +32,7 @@ public struct TimelineExperimentState: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.horizontal, LayoutTokens.spacing16)
+        .padding(.horizontal, LayoutTokens.spacing12)
         .padding(.vertical, LayoutTokens.spacing8)
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)

@@ -6,15 +6,23 @@ public enum ToastType: CaseIterable, Sendable {
     case error
     case info
 
-    fileprivate var foregroundColor: Color {
-        switch self {
-        case .success:
+    fileprivate func foregroundColor(for palette: ToastColorPalette) -> Color {
+        switch (self, palette) {
+        case (.success, .general):
+            Color(.General.Feedback.Success.foreground)
+        case (.warning, .general):
+            Color(.General.Feedback.Warning.foreground)
+        case (.error, .general):
+            Color(.General.Feedback.Error.foreground)
+        case (.info, .general):
+            Color(.General.Feedback.Info.foreground)
+        case (.success, .experiment):
             Color(.Experiment.Feedback.Success.foreground)
-        case .warning:
+        case (.warning, .experiment):
             Color(.Experiment.Feedback.Warning.foreground)
-        case .error:
+        case (.error, .experiment):
             Color(.Experiment.Feedback.Error.foreground)
-        case .info:
+        case (.info, .experiment):
             Color(.Experiment.Feedback.Info.foreground)
         }
     }
@@ -32,15 +40,23 @@ public enum ToastType: CaseIterable, Sendable {
         }
     }
 
-    fileprivate var subtleColor: Color {
-        switch self {
-        case .success:
+    fileprivate func subtleColor(for palette: ToastColorPalette) -> Color {
+        switch (self, palette) {
+        case (.success, .general):
+            Color(.General.Feedback.Success.subtle)
+        case (.warning, .general):
+            Color(.General.Feedback.Warning.subtle)
+        case (.error, .general):
+            Color(.General.Feedback.Error.subtle)
+        case (.info, .general):
+            Color(.General.Feedback.Info.subtle)
+        case (.success, .experiment):
             Color(.Experiment.Feedback.Success.subtle)
-        case .warning:
+        case (.warning, .experiment):
             Color(.Experiment.Feedback.Warning.subtle)
-        case .error:
+        case (.error, .experiment):
             Color(.Experiment.Feedback.Error.subtle)
-        case .info:
+        case (.info, .experiment):
             Color(.Experiment.Feedback.Info.subtle)
         }
     }
@@ -51,11 +67,17 @@ public enum ToastAppearance: Sendable {
     case accent
 }
 
+public enum ToastColorPalette: Sendable {
+    case general
+    case experiment
+}
+
 public struct Toast: View {
 
     private let message: String
     private let type: ToastType
     private let appearance: ToastAppearance
+    private let colorPalette: ToastColorPalette
     private let fillsWidth: Bool
     private let showLeadingIcon: Bool
     private let showDismissButton: Bool
@@ -71,6 +93,7 @@ public struct Toast: View {
         _ message: String,
         type: ToastType = .success,
         appearance: ToastAppearance = .default,
+        colorPalette: ToastColorPalette = .experiment,
         fillsWidth: Bool = false,
         showLeadingIcon: Bool = true,
         actionTitle: String = "다시시도",
@@ -81,6 +104,7 @@ public struct Toast: View {
             message: message,
             type: type,
             appearance: appearance,
+            colorPalette: colorPalette,
             fillsWidth: fillsWidth,
             showLeadingIcon: showLeadingIcon,
             showDismissButton: onDismiss != nil,
@@ -95,6 +119,7 @@ public struct Toast: View {
         message: String,
         type: ToastType = .success,
         appearance: ToastAppearance = .default,
+        colorPalette: ToastColorPalette = .experiment,
         fillsWidth: Bool = false,
         showLeadingIcon: Bool = true,
         showDismissButton: Bool = true,
@@ -106,6 +131,7 @@ public struct Toast: View {
         self.message = message
         self.type = type
         self.appearance = appearance
+        self.colorPalette = colorPalette
         self.fillsWidth = fillsWidth
         self.showLeadingIcon = showLeadingIcon
         self.showDismissButton = showDismissButton
@@ -125,16 +151,16 @@ public struct Toast: View {
         .background {
             if appearance == .accent {
                 Rectangle()
-                    .fill(type.subtleColor)
+                    .fill(type.subtleColor(for: colorPalette))
                     .background(.ultraThinMaterial)
-                    .environment(\.colorScheme, .dark)
+                    .environment(\.colorScheme, colorPalette == .general ? .light : .dark)
             } else {
                 Rectangle()
-                    .fill(.ultraThinMaterial)
-                    .environment(\.colorScheme, .dark)
+                    .fill(secondaryFill)
+                    .background(.ultraThinMaterial)
+                    .environment(\.colorScheme, colorPalette == .general ? .light : .dark)
             }
         }
-        .background(appearance == .default ? Color(.Experiment.Fill.primary) : .clear)
         .clipShape(RoundedRectangle(cornerRadius: LayoutTokens.radiusSm))
         .accessibilityElement(children: .contain)
     }
@@ -177,7 +203,7 @@ public struct Toast: View {
             if showLeadingIcon {
                 ZStack {
                     IconArtwork(icon: type.icon, size: 28)
-                        .foregroundStyle(type.foregroundColor)
+                        .foregroundStyle(type.foregroundColor(for: colorPalette))
                         .id(type.icon.rawValue)
                         .transition(.opacity)
                 }
@@ -197,8 +223,22 @@ public struct Toast: View {
         }
     }
 
+    private var primaryLabel: Color {
+        colorPalette == .general ? Color(.General.Label.primary) : Color(.Experiment.Label.primary)
+    }
+
+    private var secondaryLabel: Color {
+        colorPalette == .general
+            ? Color(.General.Label.secondary) : Color(.Experiment.Label.secondary)
+    }
+
+    private var secondaryFill: Color {
+        colorPalette == .general
+            ? Color(.General.Fill.secondary) : Color(.Experiment.Fill.secondary)
+    }
+
     private var messageColor: Color {
-        appearance == .accent ? type.foregroundColor : Color(.Experiment.Label.primary)
+        appearance == .accent ? type.foregroundColor(for: colorPalette) : primaryLabel
     }
 
     @ViewBuilder
@@ -224,7 +264,7 @@ public struct Toast: View {
                 Text(actionTitle)
                     .foregroundStyle(
                         isEnabled
-                            ? Color(.Experiment.Label.secondary)
+                            ? secondaryLabel
                             : Color(.General.Action.Disabled.foreground)
                     )
                     .contentTransition(.opacity)
@@ -244,13 +284,13 @@ public struct Toast: View {
                 IconArtwork(icon: .x, size: 12)
                     .foregroundStyle(
                         isEnabled
-                            ? Color(.Experiment.Label.primary)
+                            ? primaryLabel
                             : Color(.General.Action.Disabled.foreground)
                     )
                     .frame(width: dismissSize, height: dismissSize)
                     .background(
                         isEnabled
-                            ? Color(.Experiment.Fill.secondary)
+                            ? secondaryFill
                             : Color(.General.Action.Disabled.background),
                         in: Circle()
                     )
