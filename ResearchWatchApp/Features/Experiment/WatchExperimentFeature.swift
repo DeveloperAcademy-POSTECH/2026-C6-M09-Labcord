@@ -229,6 +229,7 @@ struct WatchExperimentFeature {
                 state.screen = .connection
                 return .none
             case .gesturesTapped:
+                state.practice = WatchGesturePractice()
                 state.screen = .gestures
                 return .none
             case .closeTapped:

@@ -6,6 +6,10 @@ struct WatchGesturePractice: Equatable {
     var voiceRecording = false
     var videoRecording = false
     var feedback: String?
+    var completedVoice = false
+    var completedPhoto = false
+    var completedVideo = false
+    var successCount = 0
 }
 
 nonisolated enum WatchIntentRuntimeError: Error, LocalizedError, Equatable {
@@ -111,15 +115,19 @@ extension WatchExperimentFeature {
         switch kind {
         case .voice:
             state.practice.voiceRecording.toggle()
+            state.practice.completedVoice = true
             state.practice.feedback = state.practice.voiceRecording
                 ? "음성 시작 연습 성공" : "음성 중지 연습 성공"
         case .photo:
+            state.practice.completedPhoto = true
             state.practice.feedback = "사진 촬영 연습 성공"
         case .video:
             state.practice.videoRecording.toggle()
+            state.practice.completedVideo = true
             state.practice.feedback = state.practice.videoRecording
                 ? "영상 시작 연습 성공" : "영상 중지 연습 성공"
         }
+        state.practice.successCount += 1
         return .none
     }
 }

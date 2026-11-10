@@ -4,6 +4,7 @@ import SwiftUI
 
 struct HomeView: View {
     let store: StoreOf<HomeFeature>
+    @State private var isGestureGuidePresented = false
 
     var body: some View {
         ExperimentList(store: store.scope(state: \.list, action: \.list))
@@ -12,7 +13,7 @@ struct HomeView: View {
             .overlay(alignment: .bottomTrailing) {
                 VStack(spacing: LayoutTokens.spacing12) {
                     Button {
-                        // 가이드 화면 이동 구현
+                        isGestureGuidePresented = true
                     } label: {
                         Image(labcordIcon: .questionmark)
                     }
@@ -36,6 +37,9 @@ struct HomeView: View {
                 Color("General/Background/Primary")
                     .ignoresSafeArea()
             )
+            .fullScreenCover(isPresented: $isGestureGuidePresented) {
+                GestureGuideFlowView()
+            }
     }
 }
 
