@@ -4,33 +4,6 @@ import LabcordiOS
 import LabcordShared
 
 extension ExperimentSessionFeature {
-    func loadDetail(state: inout State) -> Effect<Action> {
-        guard state.detail == nil, !state.isLoadingDetail else { return .none }
-        state.isLoadingDetail = true
-        state.detailLoadFailed = false
-        let experimentID = state.experimentID
-        let preview = state.isRemotePreview
-        return .run { send in
-            if preview {
-                guard let detail = try? await experimentClient.watchState(experimentID)?.detail
-                else {
-                    await send(.detailLoadingFailed)
-                    return
-                }
-                await send(.detailLoaded(detail))
-                return
-            }
-            await timerCompletionNotificationClient.cancelForExperiment(experimentID)
-            guard let detail = try? await experimentClient.enterSessionAndLoadDetail(
-                experimentID
-            ) else {
-                await send(.detailLoadingFailed)
-                return
-            }
-            await send(.detailLoaded(detail))
-        }
-    }
-
     var screenSyncReducer: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
@@ -76,12 +49,17 @@ extension ExperimentSessionFeature {
 }
 
 extension ExperimentSessionFeature.State {
-    var isReady: Bool {
+    var isSetupReady: Bool {
         permissions.camera.status == .authorized
             && permissions.microphoneStatus == .authorized
             && permissions.speechRecognitionStatus == .authorized
             && !permissions.isRequesting
+            && permissions.issue == nil
             && capture.previewConnector != nil
+    }
+
+    var isReady: Bool {
+        isSetupReady && detail != nil && timer.isConfigured
     }
 
     var canCloseSession: Bool {

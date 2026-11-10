@@ -157,9 +157,10 @@ private extension ExperimentSessionFeature {
                 state.detailLoadFailed = false
                 return .none
             case .appBecameActive:
-                guard !state.isReady else { return .none }
-                state.permissionRequestGeneration += 1
-                return .none
+                if !state.isReady {
+                    state.permissionRequestGeneration += 1
+                }
+                return .send(.capture(.camera(.resumeIfNeeded)))
             case .setupLeaveTapped:
                 return .merge(
                     .send(.permissions(.cancelRequest)),

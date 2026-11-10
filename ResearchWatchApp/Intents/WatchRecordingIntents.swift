@@ -9,6 +9,9 @@ struct ToggleWatchVoiceRecordingIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
+        guard systemContext.currentMode == .foreground else {
+            throw WatchIntentRuntimeError.appNotActive
+        }
         _ = try await WatchIntentRuntime.shared.perform(.voice)
         return .result()
     }
@@ -23,6 +26,9 @@ struct TakeWatchPhotoIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
+        guard systemContext.currentMode == .foreground else {
+            throw WatchIntentRuntimeError.appNotActive
+        }
         _ = try await WatchIntentRuntime.shared.perform(.photo)
         return .result()
     }
@@ -37,6 +43,9 @@ struct ToggleWatchVideoRecordingIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
+        guard systemContext.currentMode == .foreground else {
+            throw WatchIntentRuntimeError.appNotActive
+        }
         _ = try await WatchIntentRuntime.shared.perform(.video)
         return .result()
     }

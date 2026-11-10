@@ -148,12 +148,8 @@ struct ExperimentSessionView: View {
         .overlay {
             if !store.isReady && !store.isRemotePreview {
                 ExperimentSetupView(
-                    failure: store.setupFailure,
-                    canOpenSettings: store.permissions.issue?.canOpenSettings == true,
-                    onLeave: { store.send(.setupLeaveTapped) },
-                    onOpenSettings: { store.send(.permissions(.openSettingsTapped)) },
-                    onRetry: { store.send(.setupRetryCameraTapped) }
-                )
+                    failureMessage: store.setupFailureMessage
+                ) { store.send(.setupRetryCameraTapped) }
                     .task(id: store.permissionRequestGeneration) {
                         try? await Task.sleep(for: .milliseconds(200))
                         guard !Task.isCancelled else { return }
@@ -180,8 +176,10 @@ struct ExperimentSessionView: View {
                 }
             }
         }
-        .task {
-            await store.send(.loadDetail).finish()
+        .task(id: [store.isRemotePreview, store.isSetupReady]) {
+            if store.isRemotePreview || store.isSetupReady {
+                await store.send(.loadDetail).finish()
+            }
         }
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
@@ -249,20 +247,21 @@ private struct SessionAlerts: ViewModifier {
     private func permissionAndCameraAlerts<V: View>(on content: V) -> some View {
         content
         .alert(
-            store.permissions.issue == .settingsUnavailable ? "설정 열기 실패" : "권한 안내",
+            store.permissions.issue?.title ?? "",
             isPresented: Binding(
-                get: { (store.isReady || store.permissions.issue == .settingsUnavailable)
-                    && store.permissions.issue != nil },
+                get: { store.permissions.issue != nil },
                 set: { if !$0 { store.send(.permissions(.issueDismissed)) } }
             )
         ) {
             if store.permissions.issue?.canOpenSettings == true {
-                Button("설정 열기") {
+                Button("설정으로 이동") {
+                    store.send(.permissions(.issueDismissed))
                     store.send(.permissions(.openSettingsTapped))
                 }
             }
-            Button("확인", role: .cancel) {
+            Button("취소", role: .cancel) {
                 store.send(.permissions(.issueDismissed))
+                store.send(.setupLeaveTapped)
             }
         } message: {
             Text(store.permissions.issue?.message ?? "")

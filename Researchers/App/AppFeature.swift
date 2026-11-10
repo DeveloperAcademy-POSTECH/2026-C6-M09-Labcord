@@ -39,6 +39,8 @@ struct AppFeature {
         case watchTask
         case watchEvent(PhoneWatchExperimentCoordinator.Event)
         case watchSceneChanged(Bool)
+        case restoreSettingsSession
+        case settingsSessionLoaded(UUID, Bool)
         case home(HomeFeature.Action)
         case path(StackActionOf<Path>)
         case closeRegistration(StackElementID)
@@ -69,11 +71,13 @@ struct AppFeature {
         Scope(state: \.home, action: \.home) { HomeFeature() }
         watchReducer
         screenNavigationReducer
+        settingsReturnReducer
 
         Reduce { state, action in
             switch action {
             case .screenNavigationLoaded, .timerNotificationTapped, .timerNotificationLoaded,
-                 .watchTask, .watchEvent, .watchSceneChanged: return .none
+                 .watchTask, .watchEvent, .watchSceneChanged,
+                 .restoreSettingsSession, .settingsSessionLoaded: return .none
 
             case .home(.addTapped):
                 guard state.path.isEmpty, !state.home.list.isDeleting,
@@ -96,9 +100,7 @@ struct AppFeature {
                         ))
                     )
                 } else {
-                    state.path.append(
-                        .session(ExperimentSessionFeature.State(experimentID: identifier))
-                    )
+                    state.path.append(.session(.init(experimentID: identifier)))
                 }
                 return .send(.home(.list(.cancelLoad)))
 
@@ -261,9 +263,7 @@ struct AppFeature {
                       let experimentID = state.path[id: id, case: \.session]?.experimentID else {
                     return .none
                 }
-                state.path.append(
-                    .result(ExperimentResultFeature.State(experimentID: experimentID))
-                )
+                state.path.append(.result(.init(experimentID: experimentID)))
                 return .none
 
             case let .path(.element(id: id, action: .result(.homeTapped))):
