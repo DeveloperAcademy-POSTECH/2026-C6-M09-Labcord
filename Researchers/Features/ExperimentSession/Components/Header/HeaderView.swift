@@ -15,13 +15,11 @@ struct HeaderView: View {
 
     var body: some View {
         HStack(spacing: 16) {
-            Button {
+            ExperimentControlButton {
                 store.send(.pauseTapped)
-            } label: {
+            } icon: {
                 Image(labcordIcon: .pause)
-                    .foregroundStyle(Color("Experiment/Label/Primary"))
             }
-            .buttonStyle(.labcordIcon(.neutral, size: .large))
             .background(
                 VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
             )
