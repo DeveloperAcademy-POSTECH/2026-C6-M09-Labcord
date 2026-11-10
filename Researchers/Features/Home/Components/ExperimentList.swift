@@ -67,7 +67,6 @@ private extension ExperimentList {
                 Text(emptyMessage)
                     .typography(Typography.subheadline)
                     .foregroundStyle(Color("General/Label/Secondary"))
-                    .listRowBackground(Color("General/Background/Primary"))
             } else {
                 ForEach(entries) { entry in
                     ExperimentListItem(entry: entry) {
@@ -95,6 +94,7 @@ private extension ExperimentList {
             .padding(.bottom, entries.isEmpty ? 0 : LayoutTokens.spacing12)
             .listRowInsets(.horizontal, 0)
         }
+        .listRowBackground(Color("General/Background/Primary"))
         .listRowInsets(.all, 0)
         .listRowSeparator(.hidden)
         .listSectionMargins(.horizontal, 0)

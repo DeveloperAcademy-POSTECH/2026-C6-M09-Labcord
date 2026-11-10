@@ -48,7 +48,6 @@ struct ExperimentListItem: View {
             .padding(LayoutTokens.spacing8)
             .contentShape(Rectangle())
         }
-        .background(Color("General/Background/Primary"))
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(Color("General/Border/Default"))
