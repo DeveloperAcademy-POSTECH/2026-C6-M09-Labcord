@@ -43,6 +43,7 @@ struct ExperimentResultFeature {
         var draftNote = ""
         var draftTranscript = ""
         var isRecordSaving = false
+        var isRecordDiscardConfirmationPresented = false
         var isRecordDeleteConfirmationPresented = false
         var recordSaveMessage: String?
         var titleEditOverlay: TitleEditOverlayFeature.State?
@@ -70,7 +71,10 @@ struct ExperimentResultFeature {
         case recordFilterSelected(RecordFilter)
         case recordSortSelected(RecordSort)
         case timelineEntrySelected(ExperimentResultDetail.TimelineEntry)
+        case timelineSheetDismissRequested
         case timelineSheetDismissed
+        case recordDiscardConfirmed
+        case recordDiscardCancelled
         case recordNoteChanged(String)
         case recordTranscriptChanged(String)
         case recordSaveTapped
@@ -103,7 +107,6 @@ struct ExperimentResultFeature {
                 state.recordTimeline = nil
                 state.loadMessage = nil
                 state.clearRecordDraft()
-                state.isRecordDeleteConfirmationPresented = false
                 let experimentID = state.experimentID
                 return .run { send in
                     async let minimumDisplay = Task.sleep(for: .seconds(1))
@@ -155,6 +158,7 @@ struct ExperimentResultFeature {
 
             case let .timelineEntrySelected(entry):
                 guard !state.isRecordSaving else { return .none }
+                state.isRecordDiscardConfirmationPresented = false
                 switch entry.kind {
                 case let .record(record), let .timer(record, _):
                     state.selectedEntry = entry
@@ -165,9 +169,28 @@ struct ExperimentResultFeature {
                 }
                 return .none
 
+            case .timelineSheetDismissRequested:
+                guard !state.isRecordSaving, state.selectedEntry != nil else { return .none }
+                if state.hasUnsavedRecordChanges {
+                    state.isRecordDiscardConfirmationPresented = true
+                } else {
+                    state.clearRecordDraft()
+                }
+                return .none
+
             case .timelineSheetDismissed:
                 state.clearRecordDraft()
-                state.isRecordDeleteConfirmationPresented = false
+                return .none
+
+            case .recordDiscardConfirmed:
+                guard state.isRecordDiscardConfirmationPresented, !state.isRecordSaving else {
+                    return .none
+                }
+                state.clearRecordDraft()
+                return .none
+
+            case .recordDiscardCancelled:
+                state.isRecordDiscardConfirmationPresented = false
                 return .none
 
             case let .recordNoteChanged(note):
@@ -332,6 +355,8 @@ extension ExperimentResultFeature.State {
         selectedEntry = nil
         draftNote = ""
         draftTranscript = ""
+        isRecordDiscardConfirmationPresented = false
+        isRecordDeleteConfirmationPresented = false
     }
 
     var displayedEntries: [ExperimentResultDetail.TimelineEntry] {
