@@ -29,7 +29,9 @@ struct PortraitVoiceLiveActivityView: View {
             LiveActivityContent(
                 state: contentState,
                 onStop: { store.send(.stopRequested) },
-                onRetry: retry
+                onRetry: retry,
+                onSave: { store.send(.saveRequested) },
+                isSaveEnabled: store.isAutoSavePending && !store.isSaving
             )
             .animation(nil, value: store.phase)
             .frame(height: fixedContentHeight, alignment: .top)

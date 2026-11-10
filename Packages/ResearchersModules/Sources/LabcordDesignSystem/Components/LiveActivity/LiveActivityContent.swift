@@ -13,6 +13,8 @@ public struct LiveActivityContent: View {
     private let isVideoStopComplete: Bool
     private let onStop: () -> Void
     private let onRetry: () -> Void
+    private let onSave: (() -> Void)?
+    private let isSaveEnabled: Bool
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -20,12 +22,16 @@ public struct LiveActivityContent: View {
         state: State,
         isVideoStopComplete: Bool = false,
         onStop: @escaping () -> Void,
-        onRetry: @escaping () -> Void
+        onRetry: @escaping () -> Void,
+        onSave: (() -> Void)? = nil,
+        isSaveEnabled: Bool = false
     ) {
         self.state = state
         self.isVideoStopComplete = isVideoStopComplete
         self.onStop = onStop
         self.onRetry = onRetry
+        self.onSave = onSave
+        self.isSaveEnabled = isSaveEnabled
     }
 
     public var body: some View {
@@ -47,12 +53,28 @@ public struct LiveActivityContent: View {
 
     private func resultControls(isSaving: Bool, progress: Double) -> some View {
         VStack(spacing: LayoutTokens.spacing10) {
-            LiveActivityStatusIndicator(
-                status: isSaving ? .audioSaving : .audioSaved,
-                progress: progress
-            )
+            if let onSave {
+                Button(action: onSave) {
+                    resultStatus(isSaving: isSaving, progress: progress)
+                }
+                .buttonStyle(.plain)
+                .disabled(!isSaveEnabled)
+                .accessibilityLabel(
+                    isSaveEnabled ? "지금 저장"
+                        : (isSaving ? "음성 저장 중" : "음성 저장 완료")
+                )
+            } else {
+                resultStatus(isSaving: isSaving, progress: progress)
+            }
             LiveActivityControlButton(kind: .retry, action: onRetry)
         }
+    }
+
+    private func resultStatus(isSaving: Bool, progress: Double) -> some View {
+        LiveActivityStatusIndicator(
+            status: isSaving ? .audioSaving : .audioSaved,
+            progress: progress
+        )
     }
 
     @ViewBuilder
