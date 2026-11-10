@@ -2,7 +2,7 @@ import ComposableArchitecture
 import LabcordDesignSystem
 import SwiftUI
 
-struct HomeContentView: View {
+struct DefaultHomeView: View {
     let store: StoreOf<HomeFeature>
 
     var body: some View {
@@ -41,7 +41,7 @@ struct HomeContentView: View {
 
 #Preview {
     NavigationStack {
-        HomeContentView(store: Store(initialState: HomeFeature.State()) {
+        DefaultHomeView(store: Store(initialState: HomeFeature.State()) {
             HomeFeature()
         })
     }

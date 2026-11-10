@@ -8,7 +8,7 @@ struct HomeView: View {
         if store.isFirstHome {
             FirstHomeView(store: store)
         } else {
-            HomeContentView(store: store)
+            DefaultHomeView(store: store)
         }
     }
 }
