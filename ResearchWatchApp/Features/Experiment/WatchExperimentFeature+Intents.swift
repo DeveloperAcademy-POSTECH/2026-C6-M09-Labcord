@@ -2,16 +2,6 @@ import ComposableArchitecture
 import Foundation
 import LabcordShared
 
-struct WatchGesturePractice: Equatable {
-    var voiceRecording = false
-    var videoRecording = false
-    var feedback: String?
-    var completedVoice = false
-    var completedPhoto = false
-    var completedVideo = false
-    var successCount = 0
-}
-
 nonisolated enum WatchIntentRuntimeError: Error, LocalizedError, Equatable {
     case appNotActive
     case notReady
@@ -49,11 +39,7 @@ enum WatchIntentRouting {
             throw WatchIntentRuntimeError.notReady
         }
         if state.screen == .gestures {
-            guard state.pending == nil, !state.isPreparingInterruption,
-                  !state.recording.records.values.contains(where: { !$0.isSettled }) else {
-                throw WatchIntentRuntimeError.busy
-            }
-            return .practiceRecord(kind)
+            throw WatchIntentRuntimeError.notReady
         }
         if kind == .voice, let stop = localVoiceStop(state: state) { return stop }
         return try liveAction(for: kind, state: state)
@@ -99,35 +85,5 @@ enum WatchIntentRouting {
             return .recording(.stop(record.id))
         }
         return .recordTapped(kind)
-    }
-}
-
-extension WatchExperimentFeature {
-    func practiceRecord(
-        _ kind: WatchRecordPresentation.Kind, state: inout State
-    ) -> Effect<Action> {
-        guard state.screen == .gestures, state.pending == nil,
-              !state.isPreparingInterruption,
-              !state.recording.records.values.contains(where: { !$0.isSettled }) else {
-            state.practice.feedback = "진행 중인 기록을 먼저 확인해주세요. 연습 입력은 적용하지 않았어요."
-            return .none
-        }
-        switch kind {
-        case .voice:
-            state.practice.voiceRecording.toggle()
-            state.practice.completedVoice = true
-            state.practice.feedback = state.practice.voiceRecording
-                ? "음성 시작 연습 성공" : "음성 중지 연습 성공"
-        case .photo:
-            state.practice.completedPhoto = true
-            state.practice.feedback = "사진 촬영 연습 성공"
-        case .video:
-            state.practice.videoRecording.toggle()
-            state.practice.completedVideo = true
-            state.practice.feedback = state.practice.videoRecording
-                ? "영상 시작 연습 성공" : "영상 중지 연습 성공"
-        }
-        state.practice.successCount += 1
-        return .none
     }
 }

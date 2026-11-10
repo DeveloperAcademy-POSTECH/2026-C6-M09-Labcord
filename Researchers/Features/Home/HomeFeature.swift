@@ -9,6 +9,7 @@ struct HomeFeature {
 
     enum Action {
         case list(ExperimentListFeature.Action)
+        case gestureGuideTapped
         case addTapped
         case settingsTapped
     }
@@ -18,7 +19,7 @@ struct HomeFeature {
 
         Reduce { _, action in
             switch action {
-            case .addTapped, .settingsTapped, .list:
+            case .gestureGuideTapped, .addTapped, .settingsTapped, .list:
                 return .none
             }
         }

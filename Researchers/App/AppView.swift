@@ -15,6 +15,11 @@ struct AppView: View {
             HomeView(store: store.scope(state: \.home, action: \.home))
         } destination: { store in
             switch store.case {
+            case .gestureGuide(let store):
+                GestureGuideFlowView(store: store)
+                    .navigationBarBackButtonHidden()
+                    .navigationSwipeBackEnabled(false)
+
             case .registration(let store):
                 ProtocolRegistrationView(store: store)
                     .navigationSwipeBackEnabled(!store.isSaving)

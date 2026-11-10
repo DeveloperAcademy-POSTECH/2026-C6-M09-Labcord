@@ -25,7 +25,6 @@ struct WatchExperimentFeature {
         var screen: Screen = .selection
         var experiments: [WatchExperimentSummary] = []
         var lastReadRequestID: UUID?
-        var practice = WatchGesturePractice()
         var selectedID: UUID?
         var snapshots: [UUID: WatchExperimentSnapshot] = [:]
         var deferredPhoneSession: WatchExperimentSnapshot?
@@ -103,7 +102,6 @@ struct WatchExperimentFeature {
         case timerDeleted(UUID)
         case recording(WatchRecordFeature.Action)
         case recordTapped(WatchRecordPresentation.Kind)
-        case practiceRecord(WatchRecordPresentation.Kind)
         case recordUpdate(UUID, WatchRecordPresentation)
         case recordReconnect
         case recordStreamReady(UUID, UUID)
@@ -229,7 +227,6 @@ struct WatchExperimentFeature {
                 state.screen = .connection
                 return .none
             case .gesturesTapped:
-                state.practice = WatchGesturePractice()
                 state.screen = .gestures
                 return .none
             case .closeTapped:

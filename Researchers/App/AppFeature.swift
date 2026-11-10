@@ -7,6 +7,7 @@ import LabcordShared
 struct AppFeature {
     @Reducer
     enum Path {
+        case gestureGuide(GestureGuideFeature)
         case registration(ProtocolRegistrationFeature)
         case recent(RecentProtocolFeature)
         case review(ProtocolReviewFeature)
@@ -66,6 +67,7 @@ struct AppFeature {
     var body: some Reducer<State, Action> {
         Scope(state: \.home, action: \.home) { HomeFeature() }
         watchReducer
+        gestureGuideReducer
 
         Reduce { state, action in
             switch action {
