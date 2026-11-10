@@ -119,7 +119,7 @@ struct ExperimentSessionView: View {
                 }
             } else if isPortraitVoiceActivityVisible {
                 GeometryReader { geometry in
-                    PortraitVoiceLiveActivityView(
+                    VoiceLiveActivityView(
                         store: voiceStore,
                         onRestart: { store.send(.voiceStartRequested) },
                         onFailureAutoDismiss: {

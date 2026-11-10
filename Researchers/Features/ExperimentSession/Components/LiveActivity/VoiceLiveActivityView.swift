@@ -3,7 +3,7 @@ import LabcordDesignSystem
 import SwiftUI
 import UIKit
 
-struct PortraitVoiceLiveActivityView: View {
+struct VoiceLiveActivityView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     let store: StoreOf<VoiceRecordingFeature>
