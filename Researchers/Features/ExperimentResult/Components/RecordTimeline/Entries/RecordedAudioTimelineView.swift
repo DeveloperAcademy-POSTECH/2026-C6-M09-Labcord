@@ -3,6 +3,7 @@ import SwiftUI
 
 struct RecordedAudioTimelineView: View {
     let url: URL
+    var isInteractive = true
 
     @State private var audioPlayer = RecordedAudioPlayer()
     @State private var duration: TimeInterval?
@@ -19,6 +20,7 @@ struct RecordedAudioTimelineView: View {
                 VStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
                     VoicePlayer(
                         duration: durationText(duration),
+                        isInteractive: isInteractive,
                         isPlaying: $isPlaying,
                         progress: $progress,
                         onEditingChanged: { isSeeking = $0 },

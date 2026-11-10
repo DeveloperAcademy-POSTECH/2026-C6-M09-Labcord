@@ -1,8 +1,28 @@
 import Foundation
 import LabcordShared
 import LabcordWatchOS
+import OSLog
 
 extension WatchRecordingService {
+    func logFailure(_ error: Error, stage: String, recordID: UUID? = nil) {
+        let error = error as NSError
+        let recordID = recordID?.uuidString ?? "none"
+        logger.error("Recording failure: stage=\(stage, privacy: .public)")
+        logger.error("Record=\(recordID, privacy: .public)")
+        logger.error("Domain=\(error.domain, privacy: .public) code=\(error.code)")
+    }
+
+    func reconcileRecords() async throws {
+        do {
+            try await restoreLocalRecords()
+        } catch {
+            logFailure(error, stage: "reconcile")
+            throw error
+        }
+        await transfer.recover()
+        refreshVoiceLiveStatus()
+    }
+
     func markCancelledStart(_ input: WatchRecordingUIBridge.Input) {
         if case let .cancelActiveVoiceForPause(_, recordID?) = input {
             invalidatedVoiceStarts.insert(recordID)
@@ -56,6 +76,38 @@ extension WatchRecordingService {
             } catch {
                 failed(header, detail: "보관된 기록을 확인하지 못했어요. 저장 상태를 확인해주세요.")
             }
+        }
+    }
+
+    func refreshFailedVoiceCapture(experimentID: UUID, recordID: UUID) async {
+        guard records[recordID]?.phase == .failed,
+              !invalidatedVoiceStarts.contains(recordID),
+              !transfer.isCancellationPending(recordingID: recordID) else { return }
+        do {
+            guard let header = try await archive.headers().first(where: {
+                $0.experimentID == experimentID && $0.recordingID == recordID
+            }), recorder.activeRecording != header else { return }
+            let local = try await archive.statusEnsuringArchive(header)
+            let remote = try await archive.remoteReceipt(header)
+            var record = try await voiceWithLocalStatus(header, local: local, forceRefresh: true)
+            guard records[recordID]?.phase == .failed,
+                  !invalidatedVoiceStarts.contains(recordID),
+                  !transfer.isCancellationPending(header) else { return }
+            if local.isCancelled {
+                record.phase = .cancelled
+            } else if WatchRecordPresentation.isEmptyVoiceCapture(
+                local: local, remote: remote, hasActiveCapture: recorder.activeRecording != nil
+            ) {
+                record.captureRejectedBeforeStart = true
+            }
+            publish(record)
+        } catch {
+            guard var record = records[recordID], record.phase == .failed,
+                  !invalidatedVoiceStarts.contains(recordID),
+                  !transfer.isCancellationPending(recordingID: recordID) else { return }
+            record.captureCompleteConfirmed = false
+            record.captureRejectedBeforeStart = false
+            publish(record)
         }
     }
 

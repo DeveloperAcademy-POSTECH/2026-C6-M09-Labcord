@@ -4,6 +4,20 @@ import LabcordShared
 import UIKit
 
 extension PhoneWatchExperimentCoordinator {
+    func executionResponse(_ command: WatchExperimentCommand) async throws
+        -> WatchExperimentResponse {
+        if command.operation == .navigate { return try await navigate(command) }
+        let current = try validate(command)
+        let token = try await perform(command, current: current)
+        let updated = try snapshot(current.experiment.id)
+        publish(updated)
+        return WatchExperimentResponse(
+            requestID: command.requestID, phase: .completed,
+            snapshot: updated, startToken: token, record: recordResults[command.requestID],
+            screen: refreshedScreen()
+        )
+    }
+
     func validate(_ command: WatchExperimentCommand) throws -> WatchExperimentSnapshot {
         guard !isBusy else { throw WatchExperimentError.phoneBusy }
         guard UIApplication.shared.isProtectedDataAvailable else {
@@ -17,6 +31,10 @@ extension PhoneWatchExperimentCoordinator {
         if let visibleExperimentID, visibleExperimentID != id {
             throw WatchExperimentError.activeExperimentConflict
         }
+        if [.prepareStart, .start, .resume].contains(command.operation),
+           currentScreen.revision > 0, currentScreen.experimentID != id {
+            throw WatchExperimentError.activeExperimentConflict
+        }
         let active = try client.load().compactMap { try client.watchState($0.id) }
             .first { $0.experiment.status == .running && $0.experiment.id != id }
         guard active == nil else { throw WatchExperimentError.activeExperimentConflict }
@@ -24,16 +42,13 @@ extension PhoneWatchExperimentCoordinator {
     }
 
     func perform(
-        _ command: WatchExperimentCommand, current: WatchExperimentSnapshot
+        _ command: WatchExperimentCommand, current: WatchExperimentSnapshot,
+        permissionGranted: Bool = AVAudioApplication.shared.recordPermission == .granted
     ) async throws -> UUID? {
         let id = current.experiment.id
         switch command.operation {
         case .prepareStart:
-            guard current.experiment.status != .completed else {
-                throw WatchExperimentError.invalidState
-            }
-            guard current.experiment.status == .running
-                    || AVAudioApplication.shared.recordPermission == .granted else {
+            guard current.experiment.status == .running || permissionGranted else {
                 throw WatchExperimentError.permissionDenied
             }
             tokens = tokens.filter { $0.value.expiresAt > .now }
@@ -41,7 +56,7 @@ extension PhoneWatchExperimentCoordinator {
             tokens[issued] = (id, .now.advanced(by: .seconds(3)))
             return issued
         case .start, .resume:
-            try start(command, current: current)
+            try start(command, current: current, permissionGranted: permissionGranted)
         case .pause, .complete:
             try await close(command, current: current)
         default:
@@ -62,18 +77,23 @@ extension PhoneWatchExperimentCoordinator {
         return nil
     }
 
-    func start(_ command: WatchExperimentCommand, current: WatchExperimentSnapshot) throws {
+    func start(
+        _ command: WatchExperimentCommand, current: WatchExperimentSnapshot,
+        permissionGranted: Bool = AVAudioApplication.shared.recordPermission == .granted
+    ) throws {
         let id = current.experiment.id
         if current.experiment.status != .running {
             try consumeToken(command, experimentID: id)
-            guard AVAudioApplication.shared.recordPermission == .granted else {
-                throw WatchExperimentError.permissionDenied
-            }
-            guard [.ready, .paused].contains(current.experiment.status) else {
-                throw WatchExperimentError.invalidState
-            }
-            guard try client.enterSessionAndLoadDetail(id) != nil else {
-                throw WatchExperimentError.experimentNotFound
+            guard permissionGranted else { throw WatchExperimentError.permissionDenied }
+            if current.experiment.status == .completed, command.operation == .resume {
+                try client.resumeCompleted(id, .now)
+            } else {
+                guard [.ready, .paused].contains(current.experiment.status) else {
+                    throw WatchExperimentError.invalidState
+                }
+                guard try client.enterSessionAndLoadDetail(id) != nil else {
+                    throw WatchExperimentError.experimentNotFound
+                }
             }
         }
         pendingStartID = id

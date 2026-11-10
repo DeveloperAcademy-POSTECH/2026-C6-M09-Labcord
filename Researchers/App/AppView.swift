@@ -51,14 +51,17 @@ struct AppView: View {
                             .navigationSwipeBackEnabled(store.isOpenedFromHome)
                     }
                 }
-                .onAppear { store.send(.watchSceneChanged(scenePhase == .active)) }
-                .onChange(of: scenePhase) { _, phase in
-                    store.send(.watchSceneChanged(phase == .active))
-                }
             }
         }
         .task { await store.send(.watchTask).finish() }
-        .task { store.send(.appeared) }
+.task { store.send(.appeared) }
+        .onAppear {
+            store.send(.restoreSettingsSession)
+            store.send(.watchSceneChanged(scenePhase == .active))
+        }
+        .onChange(of: scenePhase) { _, phase in
+            store.send(.watchSceneChanged(phase == .active))
+        }
         .disabled(store.reviewSaving || store.watchRequestID != nil)
         .alert("이전 Watch 음성 요청 확인", isPresented: $intentRuntime.pendingResolutionRequested) {
             Button("요청 유지", role: .cancel) { }

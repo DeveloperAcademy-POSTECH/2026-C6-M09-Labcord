@@ -13,7 +13,7 @@ extension WatchExperimentFeature.State {
     }
 
     var canReviewCompletedExperiment: Bool {
-        cleanupRequestID != nil && recording.isIntegrated
+        (cleanupRequestID != nil || phoneScreen?.destination == .result) && recording.isIntegrated
             && snapshot?.experiment.status == .completed && pending == nil
             && !recording.hasUnsettledRecords(in: selectedID)
     }
@@ -21,6 +21,7 @@ extension WatchExperimentFeature.State {
     var canOperate: Bool {
         isVisible && streamID != nil && pending == nil && isReachable
             && snapshot != nil && !isPreparingInterruption && !pendingRecoveryFailed
+            && !screenRecoveryNeeded
     }
 
     mutating func clearMessageUnlessInterruptionUnconfirmed() {
@@ -37,8 +38,13 @@ extension WatchExperimentFeature {
         state.connectionStatus = .activating
         let streamID = uuid()
         state.streamID = streamID
+        let observationID = uuid()
+        state.recordObservationID = observationID
+        state.recordObservationReady = false
+        state.recording.isIntegrated = false
         return .merge(
-            observeRecords(streamID),
+            observeScreens(streamID),
+            observeRecords(streamID, observationID: observationID),
             .run { [client] send in
                 let snapshots = await client.snapshots()
                 for await snapshot in snapshots {
@@ -67,8 +73,7 @@ extension WatchExperimentFeature {
             deferPhoneSessionDuringList(snapshot, state: &state)
             followPhoneSessionIfSafe(snapshot, state: &state)
             accept(snapshot, state: &state)
-            if state.countdownID == nil { return .cancel(id: CancelID.countdown) }
-            return .none
+            return normalizeScreenForExperiment(state: &state)
         case let .streamEnded(id):
             guard state.streamID == id else { return .none }
             return endObservation(state: &state)
@@ -128,10 +133,13 @@ extension WatchExperimentFeature {
             || interruptionPending
         state.isVisible = false
         state.isRequestingPermission = false
+        state.permissionRequestID = nil
         state.cleanupRequestID = nil
         state.isReachable = false
         state.connectionStatus = .activationFailed
         state.streamID = nil
+        state.recordObservationID = nil
+        state.recordObservationReady = false
         state.startToken = nil
         state.countdownID = nil
         state.authorization = nil
@@ -165,7 +173,8 @@ extension WatchExperimentFeature {
     func followPhoneSessionIfSafe(
         _ snapshot: WatchExperimentSnapshot, state: inout State
     ) {
-        guard snapshot.phoneSessionActive == true,
+        guard state.phoneScreen == nil, !state.screenRecoveryNeeded,
+              snapshot.phoneSessionActive == true,
               snapshot.experiment.status == .running,
               abs(snapshot.recordedAt.timeIntervalSince(now)) <= 30,
               state.hasRestoredPending, !state.pendingRecoveryFailed,
@@ -183,9 +192,9 @@ extension WatchExperimentFeature {
             return
         }
         guard state.selectedID == nil, state.screen == .selection,
-              WatchPresentationRules.accepts(
-                revision: snapshot.revision, previous: state.snapshots[id]?.revision
-              ) else { return }
+              state.snapshots[id].map({ snapshot.revision >= $0.revision }) ?? true else {
+            return
+        }
         state.selectedID = id
         state.screen = .experiment
         if !state.experiments.contains(where: { $0.id == id }) {
@@ -195,18 +204,21 @@ extension WatchExperimentFeature {
 
     func accept(_ snapshot: WatchExperimentSnapshot, state: inout State) {
         let id = snapshot.experiment.id
-        guard id == state.selectedID else { return }
         guard WatchPresentationRules.accepts(
             revision: snapshot.revision, previous: state.snapshots[id]?.revision
         ) else { return }
         state.snapshots[id] = snapshot
-        if snapshot.experiment.status != .ready, case .countdown = state.screen {
+        if id == state.selectedID, snapshot.experiment.status != .ready,
+           case .countdown = state.screen {
             state.startToken = nil
             state.countdownID = nil
+            state.localCountdownEndsAt = nil
             state.screen = .experiment
         }
         if let index = state.experiments.firstIndex(where: { $0.id == id }) {
             state.experiments[index] = snapshot.experiment
+        } else {
+            state.experiments.append(snapshot.experiment)
         }
     }
 }
@@ -222,10 +234,14 @@ extension WatchExperimentFeature {
         }
         state.isVisible = false
         state.isRequestingPermission = false
+        state.permissionRequestID = nil
         state.cleanupRequestID = nil
         state.streamID = nil
+        state.recordObservationID = nil
+        state.recordObservationReady = false
         state.authorization = nil
         state.countdownID = nil
+        state.localCountdownEndsAt = nil
         if case .countdown = state.screen {
             state.screen = .experiment
             state.startToken = nil

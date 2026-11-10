@@ -64,7 +64,6 @@ final class ExperimentListRepository {
             id: id,
             title: "새 실험 (\(nextNumber))",
             createdAt: date,
-            startedAt: .now,
             mode: .free,
         )
 
@@ -100,7 +99,6 @@ final class ExperimentListRepository {
             id: id,
             title: title,
             createdAt: date,
-            startedAt: .now,
             mode: .procedure,
             procedure: procedure
         )

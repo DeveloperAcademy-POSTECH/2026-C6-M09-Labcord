@@ -54,7 +54,8 @@ public final class Experiment {
     }
 
     public func recordExit(at date: Date, entryID: UUID) {
-        guard !statusHistory.contains(where: { $0.id == entryID }) else { return }
+        guard status == .running,
+              !statusHistory.contains(where: { $0.id == entryID }) else { return }
         status = .paused
         statusHistory.append(
             ExperimentStatusEntry(id: entryID, status: .paused, date: date)

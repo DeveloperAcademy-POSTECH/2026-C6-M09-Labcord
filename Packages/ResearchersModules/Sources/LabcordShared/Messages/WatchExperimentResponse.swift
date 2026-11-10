@@ -18,6 +18,7 @@ public struct WatchExperimentResponse: Codable, Equatable, Sendable {
     public let startToken: UUID?
     public let record: WatchRecordSnapshot?
     public let queriedRequestID: UUID?
+    public let screen: WatchScreenSnapshot?
 
     public init(
         version: Int = WatchExperimentCommand.schemaVersion,
@@ -28,7 +29,8 @@ public struct WatchExperimentResponse: Codable, Equatable, Sendable {
         error: WatchExperimentError? = nil,
         startToken: UUID? = nil,
         record: WatchRecordSnapshot? = nil,
-        queriedRequestID: UUID? = nil
+        queriedRequestID: UUID? = nil,
+        screen: WatchScreenSnapshot? = nil
     ) {
         self.version = version
         self.requestID = requestID
@@ -39,5 +41,6 @@ public struct WatchExperimentResponse: Codable, Equatable, Sendable {
         self.startToken = startToken
         self.record = record
         self.queriedRequestID = queriedRequestID
+        self.screen = screen
     }
 }

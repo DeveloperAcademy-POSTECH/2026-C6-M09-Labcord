@@ -100,6 +100,7 @@ public actor CameraSession {
         if !session.isRunning {
             session.startRunning()
         }
+        guard session.isRunning else { throw CameraSessionError.cameraUnavailable }
         activeOwners.insert(owner)
     }
 
@@ -289,6 +290,10 @@ public actor CameraSession {
 }
 
 extension CameraSession {
+    public func isRunning() -> Bool {
+        session.isRunning
+    }
+
     public func previewConnector() -> CameraPreviewConnector {
         if let cachedPreviewConnector {
             return cachedPreviewConnector

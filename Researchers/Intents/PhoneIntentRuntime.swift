@@ -1,7 +1,9 @@
 import ComposableArchitecture
 import Foundation
+import LabcordiOS
 import LabcordShared
 import Observation
+import OSLog
 import UIKit
 import WatchConnectivity
 
@@ -12,6 +14,7 @@ final class PhoneIntentRuntime {
 
     static let shared = PhoneIntentRuntime()
     let store = Store(initialState: AppFeature.State()) { AppFeature() }
+    private let logger = Logger(subsystem: "Labcord", category: "PhoneIntent")
     private var isPerforming = false
     var pendingResolutionRequested = false
     var pendingResolutionFailed = false
@@ -29,7 +32,10 @@ final class PhoneIntentRuntime {
     }
 
     func perform(_ kind: Kind) async throws -> String {
-        guard !isPerforming else { throw PhoneIntentError.busy }
+        guard !isPerforming else {
+            logger.error("Intent rejected: previous request is still running")
+            throw PhoneIntentError.busy
+        }
         isPerforming = true
         defer { isPerforming = false }
         guard let id = store.path.ids.last,
@@ -52,33 +58,55 @@ final class PhoneIntentRuntime {
               session.capture.videoPhase == .idle,
               session.capture.video.requestedRecordID == nil,
               !session.capture.video.requiresExternalConfirmation,
-              session.voice.phase == .hidden else { throw PhoneIntentError.cameraBusy }
+              session.voice.phase == .hidden else {
+            logCaptureState(session, stage: "beforeRequest")
+            throw PhoneIntentError.cameraBusy
+        }
         let requestID = UUID()
+        logger.info("Capture request submitted: id=\(requestID, privacy: .public)")
         let action: ExperimentSessionFeature.Action = kind == .photo
             ? .capture(.photo(.shortcutCaptureRequested(requestID)))
             : .capture(.video(.shortcutRecordRequested(requestID)))
         store.send(.path(.element(id: id, action: .session(action))))
+        return try await waitForCaptureAcceptance(
+            id: id, experimentID: session.experimentID, kind: kind, requestID: requestID
+        )
+    }
+
+    private func waitForCaptureAcceptance(
+        id: StackElementID, experimentID: UUID, kind: Kind, requestID: UUID
+    ) async throws -> String {
         let deadline = ContinuousClock.now.advanced(by: .seconds(2))
         while ContinuousClock.now < deadline {
             try Task.checkCancellation()
             guard UIApplication.shared.applicationState == .active,
                   store.path.ids.last == id,
                   let current = store.path[id: id, case: \.session],
-                  current.experimentID == session.experimentID else {
+                  current.experimentID == experimentID else {
+                logger.error("Capture context changed: id=\(requestID, privacy: .public)")
                 throw PhoneIntentError.contextChanged
             }
-            if kind == .photo, current.capture.photo.requestedRecordID == requestID,
-               current.capture.isPhotoCaptureScheduled || current.capture.isCapturingPhoto
-                || current.capture.capturedPhotoData != nil {
+            if kind == .photo, PhoneIntentReadiness.photoRequestAccepted(
+                requestID: requestID,
+                currentRequestID: current.capture.photo.requestedRecordID,
+                isScheduled: current.capture.isPhotoCaptureScheduled,
+                isCapturing: current.capture.isCapturingPhoto,
+                hasCapturedData: current.capture.capturedPhotoData != nil
+            ) {
+                logger.info("Photo request accepted: id=\(requestID, privacy: .public)")
                 return "iPhone에 사진 촬영을 요청했어요. 저장 결과는 앱에서 확인해주세요."
             }
             if kind == .video, current.capture.video.requestedRecordID == requestID,
                current.capture.videoPhase != .idle {
                 return "iPhone에 영상 녹화를 요청했어요. 저장 결과는 앱에서 확인해주세요."
             }
-            if current.capture.cameraErrorMessage != nil { throw PhoneIntentError.cameraBusy }
+            if current.capture.cameraErrorMessage != nil {
+                logCaptureState(current, stage: "afterRequest")
+                throw PhoneIntentError.cameraBusy
+            }
             try await Task.sleep(for: .milliseconds(50))
         }
+        logger.error("Capture acceptance timed out: id=\(requestID, privacy: .public)")
         throw PhoneIntentError.unknown
     }
 
@@ -101,27 +129,61 @@ final class PhoneIntentRuntime {
                 cameraReady: session.capture.isCameraViewVisible
                     && session.capture.previewConnector != nil,
                 cameraFailed: cameraNeeded && session.capture.cameraErrorMessage != nil,
-                busy: session.pause.isCompleting || session.isReturningHome
+                busy: session.isRemotePreview || session.pause.isCompleting
+                    || session.isReturningHome
+                    || (cameraNeeded && PhoneWatchAudioService.shared.hasUnsettledRecording(
+                        in: session.experimentID
+                    ))
                     || store.watchRequestID != nil || session.watchCommand != nil
                     || session.watchMediaCommand != nil
             ))
             switch readiness {
             case .ready: return session
-            case .busy: throw PhoneIntentError.busy
-            case .failed: throw PhoneIntentError.cameraBusy
+            case .busy:
+                logger.error("Intent readiness rejected: session command is still running")
+                throw PhoneIntentError.busy
+            case .failed:
+                logCaptureState(session, stage: "readiness")
+                throw PhoneIntentError.cameraBusy
             case .wait: try await Task.sleep(for: .milliseconds(50))
             }
         }
         throw PhoneIntentError.openExperiment
     }
 
+    private func logCaptureState(_ session: ExperimentSessionFeature.State, stage: String) {
+        let capture = session.capture
+        let camera = "visible=\(capture.isCameraViewVisible) "
+            + "ready=\(capture.previewConnector != nil) switching=\(capture.isCameraSwitching)"
+        let photo = "scheduled=\(capture.isPhotoCaptureScheduled) "
+            + "capturing=\(capture.isCapturingPhoto) data=\(capture.capturedPhotoData != nil) "
+            + "request=\(capture.photo.requestedRecordID != nil) "
+            + "confirmation=\(capture.photo.requiresExternalConfirmation)"
+        let video = "idle=\(capture.videoPhase == .idle) "
+            + "request=\(capture.video.requestedRecordID != nil) "
+            + "confirmation=\(capture.video.requiresExternalConfirmation)"
+        logger.error("Capture rejected: stage=\(stage, privacy: .public)")
+        logger.error("Camera \(camera, privacy: .public); photo \(photo, privacy: .public)")
+        let voiceHidden = session.voice.phase == .hidden
+        logger.error("Video \(video, privacy: .public); voiceHidden=\(voiceHidden)")
+    }
+
     private func requestWatchVoice(_ experimentID: UUID) async throws -> String {
         guard !FileManager.default.fileExists(atPath: pendingURL.path) else {
+            logger.error("Voice request blocked: previous result is unresolved")
             pendingResolutionRequested = true
             throw PhoneIntentError.unknown
         }
-        guard WCSession.isSupported(), WCSession.default.activationState == .activated,
-              WCSession.default.isReachable else { throw PhoneIntentError.watchUnavailable }
+        guard WCSession.isSupported() else {
+            logger.error("Voice request rejected: WatchConnectivity is unsupported")
+            throw PhoneIntentError.watchUnavailable
+        }
+        let activated = WCSession.default.activationState == .activated
+        let reachable = WCSession.default.isReachable
+        guard activated, reachable else {
+            logger.error("Voice request rejected: activated=\(activated) reachable=\(reachable)")
+            throw PhoneIntentError.watchUnavailable
+        }
         let request = WatchRemoteIntentRequest(
             requestID: UUID(), experimentID: experimentID, expiresAt: .now.addingTimeInterval(3)
         )
