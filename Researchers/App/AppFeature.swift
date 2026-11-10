@@ -5,17 +5,10 @@ import LabcordShared
 
 @Reducer
 struct AppFeature {
-    @Reducer
-    enum Path {
-        case registration(ProtocolRegistrationFeature)
-        case recent(RecentProtocolFeature)
-        case review(ProtocolReviewFeature)
-        case session(ExperimentSessionFeature)
-        case result(ExperimentResultFeature)
-    }
-
     @ObservableState
     struct State: Equatable {
+        @Shared(.appStorage("onboardingHasCompleted")) var hasCompletedOnboarding = false
+        var onboarding: OnboardingFeature.State?
         var watchPendingStartID: UUID?
         var screenNavigation: WatchExperimentCommand?
         var watchIsActive = false
@@ -35,6 +28,8 @@ struct AppFeature {
     }
 
     enum Action {
+        case appeared
+        case onboarding(OnboardingFeature.Action)
         case screenNavigationLoaded(UUID, WatchExperimentState?, WatchExperimentError?)
         case watchTask
         case watchEvent(PhoneWatchExperimentCoordinator.Event)
@@ -73,8 +68,14 @@ struct AppFeature {
         screenNavigationReducer
         settingsReturnReducer
 
+        Reduce { _, _ in .none }
+            .ifLet(\.onboarding, action: \.onboarding) { OnboardingFeature() }
+
         Reduce { state, action in
             switch action {
+            case .appeared, .onboarding:
+                return handleLaunch(&state, action)
+
             case .screenNavigationLoaded, .timerNotificationTapped, .timerNotificationLoaded,
                  .watchTask, .watchEvent, .watchSceneChanged,
                  .restoreSettingsSession, .settingsSessionLoaded: return .none
@@ -393,5 +394,3 @@ private extension AppFeature {
         }
     }
 }
-
-extension AppFeature.Path.State: Equatable {}
