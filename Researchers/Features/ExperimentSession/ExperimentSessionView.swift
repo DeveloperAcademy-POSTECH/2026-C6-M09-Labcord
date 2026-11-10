@@ -24,10 +24,20 @@ struct ExperimentSessionView: View {
     private var voiceStore: StoreOf<VoiceRecordingFeature> {
         store.scope(state: \.voice, action: \.voice)
     }
+    private var videoStore: StoreOf<VideoFeature> {
+        captureStore.scope(state: \.video, action: \.video)
+    }
     private var isPortraitVoiceActivityVisible: Bool {
         verticalSizeClass != .compact
             && voiceStore.saveError == nil
             && (voiceStore.phase != .hidden || voiceStore.hasRecordingFailure)
+    }
+    private var isVideoActivityVisible: Bool {
+        guard verticalSizeClass != .compact else { return false }
+        switch videoStore.phase {
+        case .starting, .recording: return true
+        case .idle, .preview: return false
+        }
     }
 
     var body: some View {
@@ -67,7 +77,8 @@ struct ExperimentSessionView: View {
                             }
                         }
                         .overlay(alignment: .topLeading) {
-                            if case let .recording(startedAt) = captureStore.videoPhase {
+                            if verticalSizeClass == .compact,
+                               case let .recording(startedAt) = captureStore.videoPhase {
                                 VideoRecordingIndicator(startedAt: startedAt)
                                     .padding(.leading, 16)
                                     .padding(.top, verticalSizeClass == .compact ? 16 : 130)
@@ -85,7 +96,8 @@ struct ExperimentSessionView: View {
         }
         .navigationBarBackButtonHidden()
         .toolbarVisibility(
-            isPortraitVoiceActivityVisible ? .hidden : .automatic,
+            isPortraitVoiceActivityVisible || isVideoActivityVisible
+                ? .hidden : .automatic,
             for: .statusBar
         )
         .overlay {
@@ -132,11 +144,24 @@ struct ExperimentSessionView: View {
                 }
                 .ignoresSafeArea(.container, edges: .top)
                 .transition(.opacity)
+            } else if isVideoActivityVisible {
+                GeometryReader { geometry in
+                    VideoLiveActivityView(store: videoStore, availableWidth: geometry.size.width)
+                        .id(videoStore.sessionID)
+                        .padding(.top, 14)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                }
+                .ignoresSafeArea(.container, edges: .top)
+                .transition(.opacity)
             }
         }
         .animation(
             reduceMotion ? nil : .spring(duration: 0.3, bounce: 0.08),
             value: isPortraitVoiceActivityVisible
+        )
+        .animation(
+            reduceMotion ? nil : .spring(duration: 0.3, bounce: 0.08),
+            value: isVideoActivityVisible
         )
         .modifier(
             VoiceRecordToastOverlay(
