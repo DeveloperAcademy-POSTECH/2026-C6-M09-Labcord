@@ -18,6 +18,7 @@ extension ProtocolInputAnalysisFeature {
             guard state.analysisJobID == snapshot.id,
                   Set(state.selectedInputs.map(\.id)) == Set(snapshot.inputs.map(\.id))
             else { return .none }
+            state.analysisProgress = max(state.analysisProgress, snapshot.progress)
             state.analysisMessage = snapshot.message
             state.analysisPaused = snapshot.status == .paused
             state.analysisResults = Dictionary(
@@ -74,6 +75,7 @@ private extension ProtocolInputAnalysisFeature {
               !state.importing, !state.isSaving,
               !state.pendingInputs.isEmpty || state.analysisPaused else { return .none }
         let isResuming = state.analysisJobID != nil
+        if !isResuming { state.analysisProgress = 0 }
         let inputs = state.selectedInputs.map { input in
             ProtocolAnalysisJobInput(
                 id: input.id, url: input.url, name: input.name,

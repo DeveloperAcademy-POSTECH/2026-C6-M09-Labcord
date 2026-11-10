@@ -5,7 +5,7 @@ import SwiftUI
 struct ProtocolAnalysisProgressView: View {
     @Bindable var store: StoreOf<ProtocolAnalysisProgressFeature>
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var ringAnimating = false
+    let progress: Double
     let scanCompleted: Bool
     let extractionCompleted: Bool
     let isCancelling: Bool
@@ -15,16 +15,9 @@ struct ProtocolAnalysisProgressView: View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(spacing: 0) {
-                    ProgressRing(value: 0.25, showPercentage: false)
-                        .rotationEffect(.degrees(ringAnimating && !reduceMotion ? 360 : 0))
-                        .animation(
-                            reduceMotion ? nil
-                                : .linear(duration: 1.3).repeatForever(autoreverses: false),
-                            value: ringAnimating
-                        )
-                        .onAppear { ringAnimating = true }
-                        .accessibilityLabel("프로토콜 분석 중")
-                        .accessibilityValue("진행률 확인 중")
+                    ProgressRing(value: progress)
+                        .animation(reduceMotion ? nil : .easeInOut(duration: 0.3), value: progress)
+                        .accessibilityLabel("프로토콜 분석 진행률")
 
                     VStack(spacing: 8) {
                         Text(isCancelling ? "분석을 취소하고 있어요" : "프로토콜 분석 중...")
@@ -105,6 +98,7 @@ struct ProtocolAnalysisProgressView: View {
         store: Store(initialState: ProtocolAnalysisProgressFeature.State()) {
             ProtocolAnalysisProgressFeature()
         },
+        progress: 0.5,
         scanCompleted: false,
         extractionCompleted: false,
         isCancelling: false

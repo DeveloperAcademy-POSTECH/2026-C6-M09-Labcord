@@ -22,6 +22,7 @@ struct ProtocolInputAnalysisFeature {
         var analysisStarting = false
         var analysisResuming = false
         var afterStart: AfterInvalidation?
+        var analysisProgress = 0.0
         var analysisPhase = ProtocolAnalysisPhase.reading
         var analysisStartedAt: Date?
         var analysisInputID: UUID?
@@ -331,6 +332,7 @@ private extension ProtocolInputAnalysisFeature.State {
         analysisResults = [:]
         analysisTerms = [:]
         analysisFailed = false
+        analysisProgress = 0
         analysisPhase = .reading
     }
 

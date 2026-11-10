@@ -33,6 +33,7 @@ nonisolated public struct ProtocolAnalysisJobSnapshot: Equatable, Sendable {
     public let startedAt: Date
     public let message: String?
     public let backgroundAvailable: Bool
+    public let progress: Double
     public let results: [ProtocolAnalysisItem]
     public let terms: [UUID: ProtocolExtractedTerms]
 }
@@ -207,10 +208,14 @@ nonisolated struct ProtocolAnalysisJobRecord: Codable {
         for input in self.inputs where finished.contains(input.id.uuidString) {
             terms[input.id] = classified[input.id.uuidString]?.restored
         }
+        let progress = ProtocolAnalysisProgress.values(record: self, phase: phase)
+        let fraction = progress.total > 0 ? Double(progress.completed) / Double(progress.total) : 0
         return ProtocolAnalysisJobSnapshot(
             id: id, inputs: inputs, status: status, phase: phase,
             startedAt: runStartedAt ?? createdAt, message: message,
-            backgroundAvailable: backgroundAvailable, results: results, terms: terms
+            backgroundAvailable: backgroundAvailable,
+            progress: status == .completed ? 1 : min(max(fraction, 0), 0.99),
+            results: results, terms: terms
         )
     }
 

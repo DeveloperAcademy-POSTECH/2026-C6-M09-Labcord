@@ -21,6 +21,7 @@ struct ProtocolRegistrationView: View {
             if input.analysisID != nil {
                 ProtocolAnalysisProgressView(
                     store: store.scope(state: \.analysisProgress, action: \.analysisProgress),
+                    progress: input.analysisProgress,
                     scanCompleted: !input.selectedInputs.isEmpty
                         && input.pendingParsingInputs.isEmpty,
                     extractionCompleted: !input.selectedInputs.isEmpty
