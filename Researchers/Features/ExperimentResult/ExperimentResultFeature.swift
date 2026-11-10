@@ -103,39 +103,7 @@ struct ExperimentResultFeature {
             case .externalRecordsChanged, .externalDetailLoaded:
                 return .none
             case .loadResultDetail:
-                state.isInitialLoadPending = true
-                state.recordTimeline = nil
-                state.loadMessage = nil
-                state.clearRecordDraft()
-                let experimentID = state.experimentID
-                return .run { send in
-                    async let minimumDisplay = Task.sleep(for: .seconds(1))
-                    await Task.yield()
-                    guard !Task.isCancelled else { return }
-
-                    let detail: ExperimentResultDetail?
-                    let loadFailed: Bool
-                    do {
-                        detail = try await experimentClient.loadResultDetail(experimentID)
-                        loadFailed = false
-                    } catch {
-                        detail = nil
-                        loadFailed = true
-                    }
-
-                    do {
-                        try await minimumDisplay
-                        try Task.checkCancellation()
-                    } catch {
-                        return
-                    }
-
-                    if loadFailed {
-                        await send(.resultDetailLoadFailed)
-                    } else {
-                        await send(.resultDetailLoaded(detail))
-                    }
-                }
+                return loadResultDetail(state: &state)
 
             case let .resultDetailLoaded(detail):
                 state.isInitialLoadPending = false
@@ -321,6 +289,42 @@ struct ExperimentResultFeature {
 }
 
 private extension ExperimentResultFeature {
+    func loadResultDetail(state: inout State) -> Effect<Action> {
+        state.isInitialLoadPending = true
+        state.recordTimeline = nil
+        state.loadMessage = nil
+        state.clearRecordDraft()
+        let experimentID = state.experimentID
+        return .run { send in
+            async let minimumDisplay = Task.sleep(for: .seconds(1))
+            await Task.yield()
+            guard !Task.isCancelled else { return }
+
+            let detail: ExperimentResultDetail?
+            let loadFailed: Bool
+            do {
+                detail = try await experimentClient.loadResultDetail(experimentID)
+                loadFailed = false
+            } catch {
+                detail = nil
+                loadFailed = true
+            }
+
+            do {
+                try await minimumDisplay
+                try Task.checkCancellation()
+            } catch {
+                return
+            }
+
+            if loadFailed {
+                await send(.resultDetailLoadFailed)
+            } else {
+                await send(.resultDetailLoaded(detail))
+            }
+        }
+    }
+
     func resumeExperiment(state: inout State) -> Effect<Action> {
         guard state.recordTimeline?.detail.status == .completed,
               state.canRefreshExternalRecords,
