@@ -5,10 +5,12 @@ import UIKit
 
 extension View {
     @ViewBuilder
-    func labcordSliderPressObservation(_ isPressed: Binding<Bool>) -> some View {
+    func labcordSliderPressObservation(
+        _ isPressed: Binding<Bool>, isActive: Bool
+    ) -> some View {
         #if os(iOS)
         background {
-            SliderPressObservation(isPressed: isPressed)
+            SliderPressObservation(isPressed: isPressed, isActive: isActive)
                 .allowsHitTesting(false)
         }
         #else
@@ -20,13 +22,14 @@ extension View {
 #if os(iOS)
 private struct SliderPressObservation: UIViewRepresentable {
     @Binding var isPressed: Bool
+    let isActive: Bool
 
     func makeUIView(context: Context) -> SliderPressObservationView {
         SliderPressObservationView(frame: .zero)
     }
 
     func updateUIView(_ view: SliderPressObservationView, context: Context) {
-        view.observationEnabled = context.environment.isEnabled
+        view.observationEnabled = isActive && context.environment.isEnabled
         view.onPressedChange = { isPressed = $0 }
     }
 

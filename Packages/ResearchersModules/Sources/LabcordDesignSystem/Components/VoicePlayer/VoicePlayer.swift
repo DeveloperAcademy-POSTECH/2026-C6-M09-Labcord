@@ -3,6 +3,7 @@ import SwiftUI
 public struct VoicePlayer: View {
     private let duration: String
     private let showDuration: Bool
+    private let isInteractive: Bool
     private let waveform: AnyView?
     private let onToggle: (() -> Void)?
     private let onSeek: ((Double) -> Void)?
@@ -20,6 +21,7 @@ public struct VoicePlayer: View {
     public init(
         duration: String = "00:08",
         showDuration: Bool = true,
+        isInteractive: Bool = true,
         isPlaying: Binding<Bool> = .constant(false),
         progress: Binding<Double> = .constant(0),
         waveform: AnyView? = nil,
@@ -29,6 +31,7 @@ public struct VoicePlayer: View {
     ) {
         self.duration = duration
         self.showDuration = showDuration
+        self.isInteractive = isInteractive
         self._isPlaying = isPlaying
         self._progress = progress
         self.waveform = waveform
@@ -40,6 +43,7 @@ public struct VoicePlayer: View {
     public init<Waveform: View>(
         duration: String = "00:08",
         showDuration: Bool = true,
+        isInteractive: Bool = true,
         isPlaying: Binding<Bool> = .constant(false),
         progress: Binding<Double> = .constant(0),
         onEditingChanged: ((Bool) -> Void)? = nil,
@@ -50,6 +54,7 @@ public struct VoicePlayer: View {
         self.init(
             duration: duration,
             showDuration: showDuration,
+            isInteractive: isInteractive,
             isPlaying: isPlaying,
             progress: progress,
             waveform: AnyView(waveform()),
@@ -65,23 +70,15 @@ public struct VoicePlayer: View {
             verticalLayout
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .allowsHitTesting(isInteractive)
         .accessibilityElement(children: .contain)
-        .onChange(of: isEnabled) { _, enabled in
-            if !enabled {
-                isPressingSlider = false
-                updateEditing(false)
-            }
+        .onChange(of: canInteract) { _, interactive in
+            if !interactive { resetInteraction() }
         }
         .onChange(of: waveform != nil) { _, hasWaveform in
-            if hasWaveform {
-                isPressingSlider = false
-                updateEditing(false)
-            }
+            if hasWaveform { resetInteraction() }
         }
-        .onDisappear {
-            isPressingSlider = false
-            updateEditing(false)
-        }
+        .onDisappear { resetInteraction() }
     }
 
     private var horizontalLayout: some View {
@@ -187,23 +184,32 @@ public struct VoicePlayer: View {
         .tint(Color(.General.Brand.primary))
         .controlSize(.small)
         .frame(maxWidth: .infinity, minHeight: minimumHeight)
-        .labcordSliderPressObservation($isPressingSlider)
+        .labcordSliderPressObservation($isPressingSlider, isActive: isInteractive)
         .accessibilityLabel(Text("음성 재생 위치"))
         .accessibilityValue(Text(progress.formatted(.percent.precision(.fractionLength(0)))))
     }
 
     private func updateEditing(_ isEditing: Bool) {
-        let active = isEditing && isEnabled
+        let active = isEditing && canInteract
         guard isSeeking != active else { return }
         isSeeking = active
         onEditingChanged?(active)
     }
 
+    private var canInteract: Bool {
+        isInteractive && isEnabled
+    }
+
+    private func resetInteraction() {
+        isPressingSlider = false
+        updateEditing(false)
+    }
+
     private var isSeekThumbVisible: Bool {
         #if os(iOS)
-        isEnabled && isPressingSlider
+        canInteract && isPressingSlider
         #else
-        isEnabled && isSeeking
+        canInteract && isSeeking
         #endif
     }
 
@@ -244,6 +250,7 @@ public extension VoicePlayer {
         progress: Binding<Double>,
         duration: String,
         showDuration: Bool = true,
+        isInteractive: Bool = true,
         waveform: AnyView? = nil,
         onEditingChanged: ((Bool) -> Void)? = nil,
         onToggle: (() -> Void)? = nil,
@@ -251,6 +258,7 @@ public extension VoicePlayer {
     ) {
         self.init(
             duration: duration, showDuration: showDuration,
+            isInteractive: isInteractive,
             isPlaying: isPlaying, progress: progress, waveform: waveform,
             onEditingChanged: onEditingChanged, onToggle: onToggle, onSeek: onSeek
         )
@@ -261,6 +269,7 @@ public extension VoicePlayer {
         progress: Binding<Double>,
         duration: String,
         showDuration: Bool = true,
+        isInteractive: Bool = true,
         onEditingChanged: ((Bool) -> Void)? = nil,
         onToggle: (() -> Void)? = nil,
         onSeek: ((Double) -> Void)? = nil,
@@ -268,6 +277,7 @@ public extension VoicePlayer {
     ) {
         self.init(
             duration: duration, showDuration: showDuration,
+            isInteractive: isInteractive,
             isPlaying: isPlaying, progress: progress, waveform: AnyView(waveform()),
             onEditingChanged: onEditingChanged, onToggle: onToggle, onSeek: onSeek
         )
