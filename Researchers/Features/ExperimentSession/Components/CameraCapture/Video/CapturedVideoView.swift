@@ -1,7 +1,7 @@
 import AVFoundation
 import Combine
-import LabcordiOS
 import LabcordDesignSystem
+import LabcordiOS
 import SwiftUI
 
 struct CapturedVideoView: View {
