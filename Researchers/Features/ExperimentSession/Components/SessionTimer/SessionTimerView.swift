@@ -61,6 +61,8 @@ struct SessionTimerView: View {
             HStack {
                 if store.mode == .free {
                     Text("타이머")
+                        .padding(.vertical, 12)
+                        .padding(.horizontal, 4)
                         .font(.body.weight(.semibold))
                 } else {
                     TimerTabs(
@@ -82,6 +84,7 @@ struct SessionTimerView: View {
                 }
                 .buttonStyle(.labcordIcon(.plain, size: .large))
             }
+            .padding(.leading, 2)
 
             if store.mode == .free || store.selectedTimerTab == .active {
                 if activeTimers.isEmpty {
@@ -253,7 +256,7 @@ struct SessionTimerView: View {
             .typography(Typography.callout)
             .foregroundStyle(Color("Experiment/Label/Tertiary"))
             .frame(maxWidth: .infinity)
-            .padding(.top, LayoutTokens.spacing24)
+            .padding(.top, LayoutTokens.spacing12)
     }
 }
 
