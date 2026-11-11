@@ -7,7 +7,7 @@ nonisolated final class CameraHandDetector: NSObject,
                                             AVCaptureVideoDataOutputSampleBufferDelegate,
                                             @unchecked Sendable {
     private let onHold: @Sendable (CameraHandEvent) -> Void
-    private let onTips: @Sendable (CameraHandOverlayHub.Frame) -> Void
+    private let onOverlay: @Sendable (CameraHandOverlayHub.Frame) -> Void
     private let queue: DispatchQueue
     private var holdTracker = HandHoldTracker()
     private var processingTask: Task<Void, Never>?
@@ -16,11 +16,11 @@ nonisolated final class CameraHandDetector: NSObject,
     init(
         queue: DispatchQueue,
         onHold: @escaping @Sendable (CameraHandEvent) -> Void,
-        onTips: @escaping @Sendable (CameraHandOverlayHub.Frame) -> Void
+        onOverlay: @escaping @Sendable (CameraHandOverlayHub.Frame) -> Void
     ) {
         self.queue = queue
         self.onHold = onHold
-        self.onTips = onTips
+        self.onOverlay = onOverlay
         super.init()
     }
 
@@ -48,7 +48,8 @@ nonisolated final class CameraHandDetector: NSObject,
             imageSize = .zero
         }
         let frame = CameraHandOverlayHub.Frame(
-            tips: [],
+            segments: [],
+            joints: [],
             imageSize: imageSize,
             videoRotationAngle: connection.videoRotationAngle,
             isVideoMirrored: connection.isVideoMirrored
@@ -70,8 +71,9 @@ nonisolated final class CameraHandDetector: NSObject,
         _ analysis: HandPoseClassifier.Analysis?,
         frame: CameraHandOverlayHub.Frame
     ) {
-        onTips(CameraHandOverlayHub.Frame(
-            tips: analysis?.extendedTips ?? [],
+        onOverlay(CameraHandOverlayHub.Frame(
+            segments: analysis?.segments ?? [],
+            joints: analysis?.joints ?? [],
             imageSize: frame.imageSize,
             videoRotationAngle: frame.videoRotationAngle,
             isVideoMirrored: frame.isVideoMirrored

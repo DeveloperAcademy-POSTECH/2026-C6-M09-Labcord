@@ -2,8 +2,14 @@ import CoreGraphics
 import Foundation
 
 nonisolated final class CameraHandOverlayHub: @unchecked Sendable {
+    struct Segment: Sendable {
+        let start: CGPoint
+        let end: CGPoint
+    }
+
     struct Frame: Sendable {
-        let tips: [CGPoint]
+        let segments: [Segment]
+        let joints: [CGPoint]
         let imageSize: CGSize
         let videoRotationAngle: CGFloat
         let isVideoMirrored: Bool
