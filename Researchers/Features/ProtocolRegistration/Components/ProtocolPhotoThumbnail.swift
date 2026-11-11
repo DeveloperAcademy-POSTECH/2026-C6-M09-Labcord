@@ -38,3 +38,8 @@ struct ProtocolPhotoThumbnail: View {
         }
     }
 }
+
+#Preview("프로토콜 사진 · 불러오는 중") {
+    ProtocolPhotoThumbnail(url: URL(fileURLWithPath: "/preview/protocol-photo.jpg"))
+        .frame(width: 100, height: 100)
+}

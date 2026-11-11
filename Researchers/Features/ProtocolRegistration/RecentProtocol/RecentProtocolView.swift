@@ -55,18 +55,19 @@ struct RecentProtocolView: View {
                 .disabled(store.selectedID == nil || store.loading || store.failed)
                 .padding(16)
         }
-        .navigationTitle("최근 사용한 프로토콜")
-        .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button("뒤로 가기", systemImage: "chevron.backward") {
-                    store.send(.backTapped)
-                }
+        .toolbar(.hidden, for: .navigationBar)
+        .safeAreaInset(edge: .top, spacing: 0) {
+            NavigationPageTitle("최근 사용한 프로토콜") {
+                store.send(.backTapped)
             }
         }
         .navigationDestination(item: $detail) { entry in
-            RecentProtocolDetailView(entry: entry) {
+            RecentProtocolDetailView(store: Store(
+                initialState: RecentProtocolDetailFeature.State(entry: entry)
+            ) {
+                RecentProtocolDetailFeature()
+            }) {
                 store.send(.select(entry.id))
                 detail = nil
             }
@@ -80,4 +81,18 @@ struct RecentProtocolView: View {
         formatter.dateFormat = "yyyy.MM.dd"
         return formatter.string(from: date)
     }
+}
+
+#Preview("최근 사용한 프로토콜 · 빈 목록") {
+    let fontRegistration = FontRegistration.register()
+    NavigationStack {
+        RecentProtocolView(
+            store: Store(initialState: RecentProtocolFeature.State()) {
+                RecentProtocolFeature()
+            } withDependencies: {
+                $0.experimentClient.loadRecentProtocols = { [] }
+            }
+        )
+    }
+    .id(fontRegistration)
 }

@@ -97,14 +97,14 @@ struct AppView: View {
         } message: {
             Text("이 분석으로 저장한 실험이 있어요. 이번에 편집한 내용은 반영되지 않아요.")
         }
-        .alert("결과 편집을 종료할까요?", isPresented: Binding(
+        .alert("실험 등록을 종료할까요?", isPresented: Binding(
             get: { store.reviewExitRequested },
             set: { if !$0 { store.send(.cancelReviewExit) } }
         )) {
-            Button("계속 편집", role: .cancel) { store.send(.cancelReviewExit) }
-            Button("종료", role: .destructive) { store.send(.confirmReviewExit) }
+            Button("취소", role: .cancel) { store.send(.cancelReviewExit) }
+            Button("실험 등록 종료", role: .destructive) { store.send(.confirmReviewExit) }
         } message: {
-            Text("편집한 내용은 저장되지 않아요.")
+            Text("이 화면을 나가면 분석 결과가 초기화 돼요.")
         }
         .onAppear {
             notificationDelegate.onTimerCompletionTap = { experimentID in

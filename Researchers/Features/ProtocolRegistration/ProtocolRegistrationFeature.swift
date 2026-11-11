@@ -20,6 +20,8 @@ struct ProtocolRegistrationFeature {
         var pendingID: UUID?
         var hasFailed = false
         var inputAnalysis = ProtocolInputAnalysisFeature.State()
+        var analysisProgress = ProtocolAnalysisProgressFeature.State()
+        var analysisCompletion = ProtocolAnalysisCompletionFeature.State()
 
         var isSaving: Bool {
             get { inputAnalysis.isSaving }
@@ -36,6 +38,8 @@ struct ProtocolRegistrationFeature {
 
     enum Action: Equatable {
         case inputAnalysis(ProtocolInputAnalysisFeature.Action)
+        case analysisProgress(ProtocolAnalysisProgressFeature.Action)
+        case analysisCompletion(ProtocolAnalysisCompletionFeature.Action)
         case backReady
         case createWithoutProtocol
         case skipTapped
@@ -59,8 +63,20 @@ struct ProtocolRegistrationFeature {
         Scope(state: \.inputAnalysis, action: \.inputAnalysis) {
             ProtocolInputAnalysisFeature()
         }
+        Scope(state: \.analysisProgress, action: \.analysisProgress) {
+            ProtocolAnalysisProgressFeature()
+        }
+        Scope(state: \.analysisCompletion, action: \.analysisCompletion) {
+            ProtocolAnalysisCompletionFeature()
+        }
         Reduce { state, action in
             switch action {
+            case .analysisProgress(.delegate(.skip)):
+                return .send(.skipTapped)
+            case .analysisProgress(.delegate(.exit)), .analysisCompletion(.delegate(.exit)):
+                return .send(.inputAnalysis(.backTapped))
+            case .analysisCompletion(.delegate(.review)):
+                return .send(.showReview)
             case .skipTapped:
                 guard !state.isSaving, !state.hasFailed else { return .none }
                 return .send(.inputAnalysis(.skipTapped))
@@ -98,7 +114,8 @@ struct ProtocolRegistrationFeature {
                 return .send(.backReady)
             case .inputAnalysis(.delegate(.createWithoutProtocol)):
                 return .send(.createWithoutProtocol)
-            case .inputAnalysis, .backReady, .sourceTapped, .saveSucceeded, .showReview:
+            case .inputAnalysis, .analysisProgress, .analysisCompletion,
+                 .backReady, .sourceTapped, .saveSucceeded, .showReview:
                 return .none
             }
         }
