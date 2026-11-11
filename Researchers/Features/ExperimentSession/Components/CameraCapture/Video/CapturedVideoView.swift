@@ -54,7 +54,9 @@ struct CapturedVideoView: View {
                     Button(action: togglePlayback) {
                         Image(labcordIcon: isPlaying ? .pause : .play)
                     }
-                    .buttonStyle(.labcordIcon(.neutral, size: .extraLarge, colorPalette: .experiment))
+                    .buttonStyle(
+                        .labcordIcon(.neutral, size: .extraLarge, colorPalette: .experiment)
+                    )
                     .background(
                         VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
                     )
