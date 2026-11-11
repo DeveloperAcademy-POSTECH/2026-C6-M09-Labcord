@@ -5,21 +5,28 @@ import SwiftUI
 
 struct WatchExperimentView: View {
     let store: StoreOf<WatchExperimentFeature>
-    @State private var selectedPage = 0
+    private var selectedPage: Int { store.screen == .timers ? 1 : 0 }
 
     var body: some View {
         Group {
-            if store.screen == .timers, store.recording.focused == nil {
-                WatchTimersView(store: store)
-            } else if store.screen == .experiment, store.recording.focused == nil,
+            if store.showsMirroredRecording, let recording = store.mirroredRecording {
+                WatchMirroredRecordingView(
+                    recording: recording, isCurrent: store.phoneScreenIsCurrent
+                )
+            } else if store.screen == .experiment || store.screen == .timers,
+                      store.recording.focused == nil,
                       store.snapshot?.experiment.status == .running {
-                TabView(selection: $selectedPage) {
+                TabView(selection: Binding(get: { selectedPage }, set: { page in
+                    store.send(page == 1 ? .timersTapped : .closeTapped)
+                })) {
                     experimentPage
                         .tag(0)
                     WatchTimersView(store: store)
                         .tag(1)
                 }
                 .tabViewStyle(.page)
+            } else if store.screen == .timers, store.recording.focused == nil {
+                WatchTimersView(store: store)
             } else {
                 ScrollView {
                     VStack(spacing: 12) {
@@ -54,7 +61,7 @@ struct WatchExperimentView: View {
                             store.send(.recording(.close))
                         } else if store.screen == .experiment, selectedPage == 1,
                                   store.snapshot?.experiment.status == .running {
-                            selectedPage = 0
+                            store.send(.closeTapped)
                         } else if store.screen == .experiment {
                             store.send(.backTapped)
                         } else {
@@ -66,6 +73,13 @@ struct WatchExperimentView: View {
             }
         }
         .tint(.blue)
+        .safeAreaInset(edge: .bottom) {
+            if store.phoneScreen != nil, !store.phoneScreenIsCurrent {
+                Text("연결 확인 중 · 마지막으로 받은 화면이에요")
+                    .font(.caption2)
+                    .multilineTextAlignment(.center)
+            }
+        }
     }
 
     private var experimentPage: some View {
@@ -81,33 +95,6 @@ struct WatchExperimentView: View {
                 requestStatus
             }
             .padding(.horizontal, 8)
-        }
-    }
-
-    private var title: String {
-        if let record = store.recording.focused, store.screen != .recordCleanup {
-            if record.phase == .review || record.phase == .saved { return "" }
-            switch record.kind {
-            case .voice: return "음성 녹음"
-            case .photo: return "사진 촬영"
-            case .video: return "영상 녹화"
-            }
-        }
-        return switch store.screen {
-        case .selection: "내 실험"
-        case .permission: "마이크 권한"
-        case .countdown: "실험 준비"
-        case .confirmPause: "실험 중단"
-        case .confirmComplete: "실험 종료"
-        case .confirmResume: "실험 재개"
-        case .recordCleanup: "실험 기록"
-        case .connection: "연결 상태"
-        case .gestures: "제스처 연습"
-        case .experiment:
-            store.snapshot?.experiment.status == .running
-                ? (selectedPage == 1 ? "타이머" : "실험 중") : store.selectedTitle
-        case .timers: "타이머"
-        case .timerEditor: "타이머 설정"
         }
     }
 
@@ -157,6 +144,12 @@ struct WatchExperimentView: View {
             WatchTimerEditorView(store: store)
         case .gestures:
             WatchGesturePracticeView(store: store)
+        case .phoneRegistration:
+            Image(systemName: "iphone")
+                .font(.largeTitle)
+            Text("iPhone에서 실험을 준비하고 있어요.")
+                .multilineTextAlignment(.center)
+            Button("실험 목록") { store.send(.backTapped) }
         }
     }
 
@@ -252,6 +245,34 @@ struct WatchExperimentView: View {
 }
 
 private extension WatchExperimentView {
+    private var title: String {
+        if let record = store.recording.focused, store.screen != .recordCleanup {
+            if record.phase == .review || record.phase == .saved { return "" }
+            switch record.kind {
+            case .voice: return "음성 녹음"
+            case .photo: return "사진 촬영"
+            case .video: return "영상 녹화"
+            }
+        }
+        return switch store.screen {
+        case .selection: "내 실험"
+        case .permission: "마이크 권한"
+        case .countdown: "실험 준비"
+        case .confirmPause: "실험 중단"
+        case .confirmComplete: "실험 종료"
+        case .confirmResume: "실험 재개"
+        case .recordCleanup: "실험 기록"
+        case .connection: "연결 상태"
+        case .gestures: "제스처 연습"
+        case .experiment:
+            store.snapshot?.experiment.status == .running
+                ? (selectedPage == 1 ? "타이머" : "실험 중") : store.selectedTitle
+        case .timers: "타이머"
+        case .timerEditor: "타이머 설정"
+        case .phoneRegistration: "실험 준비"
+        }
+    }
+
     @ViewBuilder
     private var requestStatus: some View {
         if store.isPreparingInterruption {

@@ -28,7 +28,8 @@ extension PhoneWatchExperimentCoordinator {
         let result = WatchExperimentResponse(
             requestID: response.requestID, phase: saved ? .completed : response.phase,
             snapshot: response.snapshot ?? entry.response.snapshot,
-            error: saved ? nil : response.error, record: record
+            error: saved ? nil : response.error, record: record,
+            screen: response.screen ?? entry.response.screen
         )
         try journal?.save(entry.command, response: result)
         if requests[response.requestID] != nil {
@@ -102,7 +103,8 @@ extension PhoneWatchExperimentCoordinator {
             result = WatchExperimentResponse(
                 requestID: response.requestID, phase: latest.phase,
                 snapshot: response.snapshot ?? latest.snapshot, error: latest.error,
-                startToken: response.startToken, record: record
+                startToken: response.startToken, record: record,
+                screen: response.screen ?? latest.screen
             )
         }
         let targetID = command.targetID ?? command.requestID
@@ -124,7 +126,7 @@ extension PhoneWatchExperimentCoordinator {
         }
         return WatchExperimentResponse(
             requestID: response.requestID, phase: phase, snapshot: result.snapshot,
-            error: error, startToken: result.startToken, record: record
+            error: error, startToken: result.startToken, record: record, screen: result.screen
         )
     }
 

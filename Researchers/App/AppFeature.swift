@@ -5,19 +5,12 @@ import LabcordShared
 
 @Reducer
 struct AppFeature {
-    @Reducer
-    enum Path {
-        case gestureGuide(GestureGuideFeature)
-        case registration(ProtocolRegistrationFeature)
-        case recent(RecentProtocolFeature)
-        case review(ProtocolReviewFeature)
-        case session(ExperimentSessionFeature)
-        case result(ExperimentResultFeature)
-    }
-
     @ObservableState
     struct State: Equatable {
+        @Shared(.appStorage("onboardingHasCompleted")) var hasCompletedOnboarding = false
+        var onboarding: OnboardingFeature.State?
         var watchPendingStartID: UUID?
+        var screenNavigation: WatchExperimentCommand?
         var watchIsActive = false
         var watchRequestID: UUID?
         var watchCloseGate: WatchCloseCompletionGate<StackElementID>?
@@ -35,9 +28,14 @@ struct AppFeature {
     }
 
     enum Action {
+        case appeared
+        case onboarding(OnboardingFeature.Action)
+        case screenNavigationLoaded(UUID, WatchExperimentState?, WatchExperimentError?)
         case watchTask
         case watchEvent(PhoneWatchExperimentCoordinator.Event)
         case watchSceneChanged(Bool)
+        case restoreSettingsSession
+        case settingsSessionLoaded(UUID, Bool)
         case home(HomeFeature.Action)
         case path(StackActionOf<Path>)
         case closeRegistration(StackElementID)
@@ -68,11 +66,20 @@ struct AppFeature {
         Scope(state: \.home, action: \.home) { HomeFeature() }
         watchReducer
         gestureGuideReducer
+        screenNavigationReducer
+        settingsReturnReducer
+
+        Reduce { _, _ in .none }
+            .ifLet(\.onboarding, action: \.onboarding) { OnboardingFeature() }
 
         Reduce { state, action in
             switch action {
-            case .timerNotificationTapped, .timerNotificationLoaded,
-                 .watchTask, .watchEvent, .watchSceneChanged: return .none
+            case .appeared, .onboarding:
+                return handleLaunch(&state, action)
+
+            case .screenNavigationLoaded, .timerNotificationTapped, .timerNotificationLoaded,
+                 .watchTask, .watchEvent, .watchSceneChanged,
+                 .restoreSettingsSession, .settingsSessionLoaded: return .none
 
             case .home(.addTapped):
                 guard state.path.isEmpty, !state.home.list.isDeleting,
@@ -95,9 +102,7 @@ struct AppFeature {
                         ))
                     )
                 } else {
-                    state.path.append(
-                        .session(ExperimentSessionFeature.State(experimentID: identifier))
-                    )
+                    state.path.append(.session(.init(experimentID: identifier)))
                 }
                 return .send(.home(.list(.cancelLoad)))
 
@@ -260,9 +265,7 @@ struct AppFeature {
                       let experimentID = state.path[id: id, case: \.session]?.experimentID else {
                     return .none
                 }
-                state.path.append(
-                    .result(ExperimentResultFeature.State(experimentID: experimentID))
-                )
+                state.path.append(.result(.init(experimentID: experimentID)))
                 return .none
 
             case let .path(.element(id: id, action: .result(.homeTapped))):
@@ -392,5 +395,3 @@ private extension AppFeature {
         }
     }
 }
-
-extension AppFeature.Path.State: Equatable {}

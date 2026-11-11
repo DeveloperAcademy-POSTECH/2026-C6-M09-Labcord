@@ -13,8 +13,6 @@ struct ExperimentSessionView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.scenePhase) private var scenePhase
-    @State private var isSidePanelExpanded = true
-    @State private var isGestureGuidePresented = false
     @State private var voiceToast: VoiceToastPresentation?
     let store: StoreOf<ExperimentSessionFeature>
     private var timerStore: StoreOf<SessionTimerFeature> {
@@ -42,11 +40,14 @@ struct ExperimentSessionView: View {
                 )
             } else {
                 PortraitSessionView(
-                    isSidePanelExpanded: $isSidePanelExpanded,
+                    isSidePanelExpanded: Binding(
+                        get: { store.isSidePanelExpanded },
+                        set: { store.send(.sidePanelExpanded($0)) }
+                    ),
                     store: captureStore,
                     timerStore: timerStore,
                     sessionStore: store
-                ) { isGestureGuidePresented = true }
+                ) { store.send(.gestureGuidePresented(true)) }
             }
         }
         .backgroundPreferenceValue(CameraPreviewAnchorKey.self) { anchor in
@@ -145,14 +146,10 @@ struct ExperimentSessionView: View {
             )
         )
         .overlay {
-            if !store.isReady {
+            if !store.isReady && !store.isRemotePreview {
                 ExperimentSetupView(
-                    failure: store.setupFailure,
-                    canOpenSettings: store.permissions.issue?.canOpenSettings == true,
-                    onLeave: { store.send(.setupLeaveTapped) },
-                    onOpenSettings: { store.send(.permissions(.openSettingsTapped)) },
-                    onRetry: { store.send(.setupRetryCameraTapped) }
-                )
+                    failureMessage: store.setupFailureMessage
+                ) { store.send(.setupRetryCameraTapped) }
                     .task(id: store.permissionRequestGeneration) {
                         try? await Task.sleep(for: .milliseconds(200))
                         guard !Task.isCancelled else { return }
@@ -166,16 +163,23 @@ struct ExperimentSessionView: View {
                     }
             }
         }
+        .overlay {
+            if store.isRemotePreview {
+                RemoteExperimentPreparation(store: store)
+            }
+        }
         .modifier(PauseOverlay(store: store))
         .overlay {
-            if isGestureGuidePresented {
+            if store.isGestureGuidePresented {
                 ExperimentGestureGuideView {
-                    isGestureGuidePresented = false
+                    store.send(.gestureGuidePresented(false))
                 }
             }
         }
-        .task {
-            await store.send(.loadDetail).finish()
+        .task(id: [store.isRemotePreview, store.isSetupReady]) {
+            if store.isRemotePreview || store.isSetupReady {
+                await store.send(.loadDetail).finish()
+            }
         }
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
@@ -208,7 +212,7 @@ struct ExperimentSessionView: View {
             return anchoredFrame
         }
 
-        let previewOverlap: CGFloat = 50 + (isSidePanelExpanded ? 0 : 30)
+        let previewOverlap: CGFloat = 50 + (store.isSidePanelExpanded ? 0 : 30)
         return CGRect(
             x: 0,
             y: 0,
@@ -243,20 +247,21 @@ private struct SessionAlerts: ViewModifier {
     private func permissionAndCameraAlerts<V: View>(on content: V) -> some View {
         content
         .alert(
-            store.permissions.issue == .settingsUnavailable ? "설정 열기 실패" : "권한 안내",
+            store.permissions.issue?.title ?? "",
             isPresented: Binding(
-                get: { (store.isReady || store.permissions.issue == .settingsUnavailable)
-                    && store.permissions.issue != nil },
+                get: { store.permissions.issue != nil },
                 set: { if !$0 { store.send(.permissions(.issueDismissed)) } }
             )
         ) {
             if store.permissions.issue?.canOpenSettings == true {
-                Button("설정 열기") {
+                Button("설정으로 이동") {
+                    store.send(.permissions(.issueDismissed))
                     store.send(.permissions(.openSettingsTapped))
                 }
             }
-            Button("확인", role: .cancel) {
+            Button("취소", role: .cancel) {
                 store.send(.permissions(.issueDismissed))
+                store.send(.setupLeaveTapped)
             }
         } message: {
             Text(store.permissions.issue?.message ?? "")
@@ -351,22 +356,6 @@ private struct SessionAlerts: ViewModifier {
             }
         } message: {
             Text("타이머 기록을 저장하지 못했습니다.")
-        }
-    }
-}
-
-private struct PauseOverlay: ViewModifier {
-    let store: StoreOf<ExperimentSessionFeature>
-
-    func body(content: Content) -> some View {
-        content.overlay {
-            if store.isPausePresented {
-                ExperimentPauseView(
-                    store: store.scope(state: \.pause, action: \.pause),
-                    timerStore: store.scope(state: \.timer, action: \.timer),
-                    canCloseSession: store.canCloseSession
-                )
-            }
         }
     }
 }

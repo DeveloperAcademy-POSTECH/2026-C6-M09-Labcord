@@ -11,49 +11,59 @@ struct AppView: View {
     var body: some View {
         @Bindable var store = store
 
-        NavigationStack(path: $store.scope(\.path, action: \.path)) {
-            HomeView(store: store.scope(state: \.home, action: \.home))
-        } destination: { store in
-            switch store.case {
-            case .gestureGuide(let store):
-                GestureGuideFlowView(store: store)
-                    .navigationBarBackButtonHidden()
-                    .navigationSwipeBackEnabled(false)
+        Group {
+            if let onboardingStore = store.scope(state: \.onboarding, action: \.onboarding) {
+                OnboardingView(store: onboardingStore)
+            } else {
+                NavigationStack(path: $store.scope(\.path, action: \.path)) {
+                    HomeView(store: store.scope(state: \.home, action: \.home))
+                } destination: { store in
+                    switch store.case {
+                    case .gestureGuide(let store):
+                        GestureGuideFlowView(store: store)
+                            .navigationBarBackButtonHidden()
+                            .navigationSwipeBackEnabled(false)
 
-            case .registration(let store):
-                ProtocolRegistrationView(store: store)
-                    .navigationSwipeBackEnabled(!store.isSaving)
+                    case .registration(let store):
+                        ProtocolRegistrationView(store: store)
+                            .navigationSwipeBackEnabled(!store.isSaving)
 
-            case .recent(let store):
-                RecentProtocolView(store: store)
+                    case .recent(let store):
+                        RecentProtocolView(store: store)
 
-            case .review(let store):
-                ProtocolReviewView(store: store)
-                    .disabled(self.store.savedReview != nil)
-                    .overlay(alignment: .bottom) {
-                        if self.store.savedReview != nil {
-                            VStack {
-                                Button("정리 다시 시도") { self.store.send(.retryReviewSave) }
-                                Button("저장된 실험으로 이동") { self.store.send(.openSavedReview) }
+                    case .review(let store):
+                        ProtocolReviewView(store: store)
+                            .disabled(self.store.savedReview != nil)
+                            .overlay(alignment: .bottom) {
+                                if self.store.savedReview != nil {
+                                    VStack {
+                                        Button("정리 다시 시도") { self.store.send(.retryReviewSave) }
+                                        Button("저장된 실험으로 이동") { self.store.send(.openSavedReview) }
+                                    }
+                                    .padding()
+                                    .background(.regularMaterial, in: Capsule())
+                                    .padding()
+                                }
                             }
-                            .padding()
-                            .background(.regularMaterial, in: Capsule())
-                            .padding()
-                        }
+                            .navigationSwipeBackEnabled(false)
+
+                    case .session(let store):
+                        ExperimentSessionView(store: store)
+                            .navigationSwipeBackEnabled(false)
+
+                    case .result(let store):
+                        ExperimentResultView(store: store)
+                            .navigationSwipeBackEnabled(store.isOpenedFromHome)
                     }
-                    .navigationSwipeBackEnabled(false)
-
-            case .session(let store):
-                ExperimentSessionView(store: store)
-                    .navigationSwipeBackEnabled(false)
-
-            case .result(let store):
-                ExperimentResultView(store: store)
-                    .navigationSwipeBackEnabled(store.isOpenedFromHome)
+                }
             }
         }
         .task { await store.send(.watchTask).finish() }
-        .onAppear { store.send(.watchSceneChanged(scenePhase == .active)) }
+.task { store.send(.appeared) }
+        .onAppear {
+            store.send(.restoreSettingsSession)
+            store.send(.watchSceneChanged(scenePhase == .active))
+        }
         .onChange(of: scenePhase) { _, phase in
             store.send(.watchSceneChanged(phase == .active))
         }

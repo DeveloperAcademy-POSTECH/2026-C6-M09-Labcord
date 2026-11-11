@@ -11,7 +11,10 @@ struct ExperimentRecordSheetHost: View {
     @Binding var isDeleteConfirmationPresented: Bool
     @Binding var saveMessage: String?
     let canSave: Bool
+    @Binding var isDiscardConfirmationPresented: Bool
     let onDismiss: () -> Void
+    let onConfirmDiscard: () -> Void
+    let onCancelDiscard: () -> Void
     let onSave: () -> Void
     let onDelete: () -> Void
     let onConfirmDelete: () -> Void
@@ -22,7 +25,6 @@ struct ExperimentRecordSheetHost: View {
     @State private var fullScreenVideoPlayer: AVPlayer?
     @State private var scrollTarget: RecordBottomSheetScrollTarget?
     @State private var dragOffset: CGFloat = 0
-    @State private var isDismissing = false
     @GestureState private var isHeaderDragging = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -39,9 +41,7 @@ struct ExperimentRecordSheetHost: View {
             ZStack(alignment: .bottom) {
                 Color.clear
                     .contentShape(Rectangle())
-                    .onTapGesture {
-                        if !canSave { onDismiss() }
-                    }
+                    .onTapGesture(perform: onDismiss)
 
                 VStack(spacing: 0) {
                     RecordBottomSheetHeader(onDismiss: onDismiss)
@@ -61,7 +61,6 @@ struct ExperimentRecordSheetHost: View {
                                 note: $note,
                                 transcript: $transcript,
                                 canSave: canSave,
-                                onDismiss: onDismiss,
                                 onSave: onSave,
                                 onDelete: onDelete,
                                 onScrollTargetChange: updateScrollTarget,
@@ -118,7 +117,7 @@ struct ExperimentRecordSheetHost: View {
                 .opacity(contentHeight > 0 && headerHeight > 0 ? 1 : 0)
                 .offset(y: dragOffset)
                 .onChange(of: isHeaderDragging) { _, isDragging in
-                    if !isDragging, !isDismissing {
+                    if !isDragging {
                         restoreOffset()
                     }
                 }
@@ -138,6 +137,11 @@ struct ExperimentRecordSheetHost: View {
         .presentationBackground(.clear)
         .presentationCornerRadius(0)
         .presentationDragIndicator(.hidden)
+        .recordEditDiscardAlert(
+            isPresented: $isDiscardConfirmationPresented,
+            onDiscard: onConfirmDiscard,
+            onCancel: onCancelDiscard
+        )
         .alert("기록 변경 실패", isPresented: Binding(
             get: { saveMessage != nil },
             set: { if !$0 { saveMessage = nil } }
@@ -165,8 +169,7 @@ struct ExperimentRecordSheetHost: View {
             }
             .onChanged { value in
                 let translation = value.translation
-                guard !isDismissing,
-                      dragOffset > 0 || abs(translation.height) > abs(translation.width)
+                guard dragOffset > 0 || abs(translation.height) > abs(translation.width)
                 else { return }
 
                 var transaction = Transaction(animation: nil)
@@ -178,7 +181,7 @@ struct ExperimentRecordSheetHost: View {
             .onEnded { value in
                 if value.translation.height > 80,
                    abs(value.translation.width) < value.translation.height {
-                    isDismissing = true
+                    restoreOffset()
                     onDismiss()
                 } else {
                     restoreOffset()

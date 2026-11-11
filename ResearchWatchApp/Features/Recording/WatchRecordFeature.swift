@@ -57,6 +57,7 @@ struct WatchRecordFeature {
     enum Delegate: Equatable {
         case command(WatchExperimentCommand.Operation, recordID: UUID, experimentID: UUID)
         case local(WatchRecordingUIBridge.Input)
+        case closed(UUID)
     }
 
     nonisolated enum CancelID: Hashable, Sendable {
@@ -184,9 +185,10 @@ struct WatchRecordFeature {
                 state.focusedID = id
                 return .none
             case .close:
-
+                let closed = state.focused
                 state.focusedID = nil
-                return .none
+                guard let closed, closed.isSettled else { return .none }
+                return .send(.delegate(.closed(closed.id)))
             case let .integrationAvailable(available):
                 state.isIntegrated = available
                 guard available else { return .none }

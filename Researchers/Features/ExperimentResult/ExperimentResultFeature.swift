@@ -29,31 +29,24 @@ struct ExperimentResultFeature {
     struct State: Equatable {
         let experimentID: UUID
         let isOpenedFromHome: Bool
+        var isInitialLoadPending = false
+        var needsExternalReload = false
+        var externalReloadID: UUID?
         var recordTimeline: RecordTimelineFeature.State?
         var loadMessage: String?
         var isResuming = false
         var resumeMessage: String?
+        var isResumeConfirmationPresented = false
         var selectedType: RecordFilter = .all
         var selectedSort: RecordSort = .oldest
         var selectedEntry: ExperimentResultDetail.TimelineEntry?
         var draftNote = ""
         var draftTranscript = ""
         var isRecordSaving = false
+        var isRecordDiscardConfirmationPresented = false
         var isRecordDeleteConfirmationPresented = false
         var recordSaveMessage: String?
         var titleEditOverlay: TitleEditOverlayFeature.State?
-
-        var selectedRecord: ExperimentResultDetail.Record? {
-            guard let selectedEntry else { return nil }
-            switch selectedEntry.kind {
-            case let .record(record), let .timer(record, _): return record
-            default: return nil
-            }
-        }
-
-        var normalizedNote: String {
-            draftNote.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
 
         var editedTranscript: String? {
             guard let selectedRecord, selectedRecord.type == .audio else { return nil }
@@ -63,14 +56,6 @@ struct ExperimentResultFeature {
             return transcript == original ? nil : transcript
         }
 
-        var canSaveRecord: Bool {
-            guard !isRecordSaving, selectedRecord != nil else { return false }
-            let noteChanged = normalizedNote
-                != (selectedEntry?.note ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            return (noteChanged || editedTranscript != nil)
-                && draftNote.count <= 300
-        }
-
         init(experimentID: UUID, isOpenedFromHome: Bool = false) {
             self.experimentID = experimentID
             self.isOpenedFromHome = isOpenedFromHome
@@ -78,13 +63,18 @@ struct ExperimentResultFeature {
     }
 
     enum Action: Equatable {
+        case externalRecordsChanged
+        case externalDetailLoaded(UUID, ExperimentResultDetail?)
         case loadResultDetail
         case resultDetailLoaded(ExperimentResultDetail?)
         case resultDetailLoadFailed
         case recordFilterSelected(RecordFilter)
         case recordSortSelected(RecordSort)
         case timelineEntrySelected(ExperimentResultDetail.TimelineEntry)
+        case timelineSheetDismissRequested
         case timelineSheetDismissed
+        case recordDiscardConfirmed
+        case recordDiscardCancelled
         case recordNoteChanged(String)
         case recordTranscriptChanged(String)
         case recordSaveTapped
@@ -99,6 +89,7 @@ struct ExperimentResultFeature {
         case titleEditOverlay(TitleEditOverlayFeature.Action)
         case homeTapped
         case resumeTapped
+        case resumeConfirmationCancelled
         case resumeFinished(Bool)
         case resumeReady
     }
@@ -109,47 +100,19 @@ struct ExperimentResultFeature {
     var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
+            case .externalRecordsChanged, .externalDetailLoaded:
+                return .none
             case .loadResultDetail:
-                state.recordTimeline = nil
-                state.loadMessage = nil
-                state.clearRecordDraft()
-                state.isRecordDeleteConfirmationPresented = false
-                let experimentID = state.experimentID
-                return .run { send in
-                    async let minimumDisplay = Task.sleep(for: .seconds(1))
-                    await Task.yield()
-                    guard !Task.isCancelled else { return }
-
-                    let detail: ExperimentResultDetail?
-                    let loadFailed: Bool
-                    do {
-                        detail = try await experimentClient.loadResultDetail(experimentID)
-                        loadFailed = false
-                    } catch {
-                        detail = nil
-                        loadFailed = true
-                    }
-
-                    do {
-                        try await minimumDisplay
-                        try Task.checkCancellation()
-                    } catch {
-                        return
-                    }
-
-                    if loadFailed {
-                        await send(.resultDetailLoadFailed)
-                    } else {
-                        await send(.resultDetailLoaded(detail))
-                    }
-                }
+                return loadResultDetail(state: &state)
 
             case let .resultDetailLoaded(detail):
+                state.isInitialLoadPending = false
                 state.recordTimeline = detail.map { RecordTimelineFeature.State(detail: $0) }
                 state.loadMessage = detail == nil ? "실험을 찾을 수 없습니다." : nil
                 return .none
 
             case .resultDetailLoadFailed:
+                state.isInitialLoadPending = false
                 state.loadMessage = "실험을 불러오지 못했습니다."
                 return .none
 
@@ -163,6 +126,7 @@ struct ExperimentResultFeature {
 
             case let .timelineEntrySelected(entry):
                 guard !state.isRecordSaving else { return .none }
+                state.isRecordDiscardConfirmationPresented = false
                 switch entry.kind {
                 case let .record(record), let .timer(record, _):
                     state.selectedEntry = entry
@@ -173,9 +137,28 @@ struct ExperimentResultFeature {
                 }
                 return .none
 
+            case .timelineSheetDismissRequested:
+                guard !state.isRecordSaving, state.selectedEntry != nil else { return .none }
+                if state.hasUnsavedRecordChanges {
+                    state.isRecordDiscardConfirmationPresented = true
+                } else {
+                    state.clearRecordDraft()
+                }
+                return .none
+
             case .timelineSheetDismissed:
                 state.clearRecordDraft()
-                state.isRecordDeleteConfirmationPresented = false
+                return .none
+
+            case .recordDiscardConfirmed:
+                guard state.isRecordDiscardConfirmationPresented, !state.isRecordSaving else {
+                    return .none
+                }
+                state.clearRecordDraft()
+                return .none
+
+            case .recordDiscardCancelled:
+                state.isRecordDiscardConfirmationPresented = false
                 return .none
 
             case let .recordNoteChanged(note):
@@ -281,7 +264,12 @@ struct ExperimentResultFeature {
                 return .none
 
             case .resumeTapped:
+                state.isResumeConfirmationPresented = false
                 return resumeExperiment(state: &state)
+
+            case .resumeConfirmationCancelled:
+                state.isResumeConfirmationPresented = false
+                return .none
 
             case let .resumeFinished(success):
                 return finishResume(success, state: &state)
@@ -296,13 +284,51 @@ struct ExperimentResultFeature {
         .ifLet(\.recordTimeline, action: \.recordTimeline) {
             RecordTimelineFeature()
         }
+        externalRecordReducer
     }
 }
 
 private extension ExperimentResultFeature {
+    func loadResultDetail(state: inout State) -> Effect<Action> {
+        state.isInitialLoadPending = true
+        state.recordTimeline = nil
+        state.loadMessage = nil
+        state.clearRecordDraft()
+        let experimentID = state.experimentID
+        return .run { send in
+            async let minimumDisplay = Task.sleep(for: .seconds(1))
+            await Task.yield()
+            guard !Task.isCancelled else { return }
+
+            let detail: ExperimentResultDetail?
+            let loadFailed: Bool
+            do {
+                detail = try await experimentClient.loadResultDetail(experimentID)
+                loadFailed = false
+            } catch {
+                detail = nil
+                loadFailed = true
+            }
+
+            do {
+                try await minimumDisplay
+                try Task.checkCancellation()
+            } catch {
+                return
+            }
+
+            if loadFailed {
+                await send(.resultDetailLoadFailed)
+            } else {
+                await send(.resultDetailLoaded(detail))
+            }
+        }
+    }
+
     func resumeExperiment(state: inout State) -> Effect<Action> {
         guard state.recordTimeline?.detail.status == .completed,
-              !state.isResuming else { return .none }
+              state.canRefreshExternalRecords,
+              !PhoneWatchAudioService.shared.hasUnsettledRecording() else { return .none }
         state.isResuming = true
         state.resumeMessage = nil
         let id = state.experimentID
@@ -333,6 +359,8 @@ extension ExperimentResultFeature.State {
         selectedEntry = nil
         draftNote = ""
         draftTranscript = ""
+        isRecordDiscardConfirmationPresented = false
+        isRecordDeleteConfirmationPresented = false
     }
 
     var displayedEntries: [ExperimentResultDetail.TimelineEntry] {

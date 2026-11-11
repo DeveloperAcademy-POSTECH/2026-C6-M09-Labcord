@@ -55,7 +55,7 @@ struct RecordTimelineEntryView: View {
                 type: .voice
             ) {
                 if let url = mediaURL(for: record) {
-                    RecordedAudioTimelineView(url: url)
+                    RecordedAudioTimelineView(url: url, isInteractive: false)
                 } else {
                     Text("음성 파일을 불러올 수 없습니다.")
                 }
