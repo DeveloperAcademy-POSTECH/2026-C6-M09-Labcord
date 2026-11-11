@@ -13,6 +13,8 @@ public struct LiveActivityContent: View {
     private let isVideoStopComplete: Bool
     private let onStop: () -> Void
     private let onRetry: () -> Void
+    private let onSave: (() -> Void)?
+    private let isSaveEnabled: Bool
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -20,61 +22,59 @@ public struct LiveActivityContent: View {
         state: State,
         isVideoStopComplete: Bool = false,
         onStop: @escaping () -> Void,
-        onRetry: @escaping () -> Void
+        onRetry: @escaping () -> Void,
+        onSave: (() -> Void)? = nil,
+        isSaveEnabled: Bool = false
     ) {
         self.state = state
         self.isVideoStopComplete = isVideoStopComplete
         self.onStop = onStop
         self.onRetry = onRetry
+        self.onSave = onSave
+        self.isSaveEnabled = isSaveEnabled
     }
 
     public var body: some View {
-        if case let .audioResult(_, isSaving, progress) = state {
-            ViewThatFits(in: .vertical) {
-                resultRow(isSaving: isSaving, progress: progress, stacked: false)
-                    .fixedSize(horizontal: false, vertical: true)
-                resultRow(isSaving: isSaving, progress: progress, stacked: true)
-            }
-        } else {
-            HStack(alignment: .center, spacing: LayoutTokens.spacing12) {
-                leading
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                trailing
-            }
-        }
-    }
-
-    private func resultRow(isSaving: Bool, progress: Double, stacked: Bool) -> some View {
-        HStack(alignment: .center, spacing: LayoutTokens.spacing12) {
+        HStack(alignment: contentAlignment, spacing: LayoutTokens.spacing12) {
             leading
                 .frame(maxWidth: .infinity, alignment: .leading)
-            resultControls(isSaving: isSaving, progress: progress, stacked: stacked)
+            trailing
         }
     }
 
-    @ViewBuilder
-    private func resultControls(
-        isSaving: Bool,
-        progress: Double,
-        stacked: Bool
-    ) -> some View {
-        if stacked {
-            VStack(spacing: LayoutTokens.spacing10) {
-                LiveActivityStatusIndicator(
-                    status: isSaving ? .audioSaving : .audioSaved,
-                    progress: progress
-                )
-                LiveActivityControlButton(kind: .retry, action: onRetry)
-            }
-        } else {
-            HStack(spacing: LayoutTokens.spacing10) {
-                LiveActivityStatusIndicator(
-                    status: isSaving ? .audioSaving : .audioSaved,
-                    progress: progress
-                )
-                LiveActivityControlButton(kind: .retry, action: onRetry)
-            }
+    private var contentAlignment: VerticalAlignment {
+        switch state {
+        case .audioRecording, .audioResult:
+            return .top
+        default:
+            return .center
         }
+    }
+
+    private func resultControls(isSaving: Bool, progress: Double) -> some View {
+        VStack(spacing: LayoutTokens.spacing10) {
+            if let onSave {
+                Button(action: onSave) {
+                    resultStatus(isSaving: isSaving, progress: progress)
+                }
+                .buttonStyle(.plain)
+                .disabled(!isSaveEnabled)
+                .accessibilityLabel(
+                    isSaveEnabled ? "지금 저장"
+                        : (isSaving ? "음성 저장 중" : "음성 저장 완료")
+                )
+            } else {
+                resultStatus(isSaving: isSaving, progress: progress)
+            }
+            LiveActivityControlButton(kind: .retry, action: onRetry)
+        }
+    }
+
+    private func resultStatus(isSaving: Bool, progress: Double) -> some View {
+        LiveActivityStatusIndicator(
+            status: isSaving ? .audioSaving : .audioSaved,
+            progress: progress
+        )
     }
 
     @ViewBuilder
@@ -102,7 +102,13 @@ public struct LiveActivityContent: View {
         case let .audioError(message):
             textGroup(title: "녹음 결과", message: message, style: Typography.title3, lines: 1)
         case let .audioResult(transcript, _, _):
-            textGroup(title: "녹음 결과", message: transcript, style: Typography.subheadline, lines: 4)
+            textGroup(
+                title: "녹음 결과",
+                message: transcript,
+                style: Typography.subheadline,
+                lines: 4,
+                truncationMode: .head
+            )
         case let .watchConnected(message, detail):
             VStack(alignment: .leading, spacing: LayoutTokens.spacing10) {
                 Text("연결 완료")
@@ -153,7 +159,7 @@ public struct LiveActivityContent: View {
         case .audioError:
             LiveActivityControlButton(kind: .retry, action: onRetry)
         case let .audioResult(_, isSaving, progress):
-            resultControls(isSaving: isSaving, progress: progress, stacked: true)
+            resultControls(isSaving: isSaving, progress: progress)
         case .watchConnected:
             LiveActivityStatusIndicator(status: .watchConnected)
         }

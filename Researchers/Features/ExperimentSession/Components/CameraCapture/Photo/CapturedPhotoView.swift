@@ -3,6 +3,7 @@ import SwiftUI
 
 struct CapturedPhotoView: View {
     let onRetake: () -> Void
+    let onClose: () -> Void
     let onSave: () -> Void
     let isSaving: Bool
     @StateObject private var imageStore: CapturedPhotoImageStore
@@ -11,9 +12,11 @@ struct CapturedPhotoView: View {
         photoData: Data,
         isSaving: Bool,
         onRetake: @escaping () -> Void,
+        onClose: @escaping () -> Void,
         onSave: @escaping () -> Void
     ) {
         self.onRetake = onRetake
+        self.onClose = onClose
         self.onSave = onSave
         self.isSaving = isSaving
         _imageStore = StateObject(wrappedValue: CapturedPhotoImageStore(data: photoData))
@@ -21,17 +24,17 @@ struct CapturedPhotoView: View {
 
     var body: some View {
         CapturedMediaReviewView(
+            title: "사진 기록",
             onRetake: onRetake,
+            onClose: onClose,
             onSave: onSave,
-            isSaving: isSaving
-        ) { size in
+            isSaving: isSaving,
+            isCloseEnabled: !isSaving
+        ) {
             if let photo = imageStore.image {
                 Image(uiImage: photo)
                     .resizable()
-                    .scaledToFit()
-                    .frame(maxWidth: size.width * 0.85, maxHeight: size.height * 0.72)
-                    .background(.black, in: RoundedRectangle(cornerRadius: 16))
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .scaledToFill()
             }
         }
     }

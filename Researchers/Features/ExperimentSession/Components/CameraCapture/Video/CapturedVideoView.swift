@@ -1,9 +1,12 @@
-import AVKit
+import AVFoundation
 import Combine
+import LabcordDesignSystem
+import LabcordiOS
 import SwiftUI
 
 struct CapturedVideoView: View {
     let onRetake: () -> Void
+    let onClose: () -> Void
     let onSave: () -> Void
     let onPlaybackFinished: () -> Void
     let isSaving: Bool
@@ -13,16 +16,19 @@ struct CapturedVideoView: View {
     @State private var playerItem: AVPlayerItem
     @State private var hasStartedPlayback = false
     @State private var didFinishPlayback = false
+    @State private var isPlaying = false
 
     init(
         videoURL: URL,
         isSaving: Bool,
         showAutoSaveMessage: Bool,
         onRetake: @escaping () -> Void,
+        onClose: @escaping () -> Void,
         onSave: @escaping () -> Void,
         onPlaybackFinished: @escaping () -> Void
     ) {
         self.onRetake = onRetake
+        self.onClose = onClose
         self.onSave = onSave
         self.onPlaybackFinished = onPlaybackFinished
         self.isSaving = isSaving
@@ -36,24 +42,34 @@ struct CapturedVideoView: View {
 
     var body: some View {
         CapturedMediaReviewView(
+            title: "영상 기록",
             onRetake: onRetake,
+            onClose: onClose,
             onSave: onSave,
-            isSaving: isSaving
-        ) { size in
-            VideoPlayer(player: player)
-                .frame(width: size.width * 0.85, height: size.height * 0.72)
-                .background(.black, in: RoundedRectangle(cornerRadius: 16))
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-
-            if didFinishPlayback && showAutoSaveMessage {
-                Text("3초 후 자동 저장돼요.")
-                    .foregroundStyle(.white)
-            }
+            isSaving: isSaving,
+            showsAutoSaveNotice: didFinishPlayback && showAutoSaveMessage
+        ) {
+            AspectFillVideoView(player: player)
+                .overlay {
+                    Button(action: togglePlayback) {
+                        Image(labcordIcon: isPlaying ? .pause : .play)
+                    }
+                    .buttonStyle(
+                        .labcordIcon(.neutral, size: .extraLarge, colorPalette: .experiment)
+                    )
+                    .background(
+                        VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
+                    )
+                    .cornerRadius(LayoutTokens.radiusFull)
+                }
         }
         .task { await startPlayback() }
         .onDisappear {
             player.pause()
             hasStartedPlayback = false
+        }
+        .onReceive(player.publisher(for: \.timeControlStatus)) { status in
+            isPlaying = status == .playing
         }
         .onReceive(
             NotificationCenter.default.publisher(
@@ -61,6 +77,7 @@ struct CapturedVideoView: View {
                 object: playerItem
             )
         ) { _ in
+            isPlaying = false
             guard !didFinishPlayback else { return }
             didFinishPlayback = true
             onPlaybackFinished()
@@ -74,13 +91,9 @@ struct CapturedVideoView: View {
         while !Task.isCancelled && !hasStartedPlayback {
             switch playerItem.status {
             case .readyToPlay:
-                if player.timeControlStatus == .playing {
-                    hasStartedPlayback = true
-                    return
-                }
-                if player.timeControlStatus == .paused {
-                    player.play()
-                }
+                hasStartedPlayback = true
+                player.play()
+                return
             case .failed:
                 return
             default:
@@ -88,6 +101,18 @@ struct CapturedVideoView: View {
             }
 
             try? await Task.sleep(for: .milliseconds(250))
+        }
+    }
+
+    private func togglePlayback() {
+        if isPlaying {
+            player.pause()
+        } else {
+            hasStartedPlayback = true
+            if didFinishPlayback {
+                player.seek(to: .zero)
+            }
+            player.play()
         }
     }
 }

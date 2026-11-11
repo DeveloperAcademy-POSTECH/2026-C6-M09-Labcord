@@ -1,4 +1,5 @@
 import AVFoundation
+import LabcordiOS
 import SwiftUI
 
 struct RecordedVideoTimelineView: View {
@@ -30,25 +31,4 @@ struct RecordedVideoTimelineView: View {
             }
             .onDisappear { player.pause() }
     }
-}
-
-struct AspectFillVideoView: UIViewRepresentable {
-    let player: AVPlayer
-
-    func makeUIView(context: Context) -> UIView {
-        let view = PlayerView()
-        view.playerLayer?.player = player
-        view.playerLayer?.videoGravity = .resizeAspectFill
-        return view
-    }
-
-    func updateUIView(_ uiView: UIView, context: Context) {
-        (uiView.layer as? AVPlayerLayer)?.player = player
-    }
-}
-
-private final class PlayerView: UIView {
-    override static var layerClass: AnyClass { AVPlayerLayer.self }
-
-    var playerLayer: AVPlayerLayer? { layer as? AVPlayerLayer }
 }

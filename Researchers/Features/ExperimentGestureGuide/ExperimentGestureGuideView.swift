@@ -6,6 +6,7 @@
 //
 
 import LabcordDesignSystem
+import LabcordiOS
 import SwiftUI
 
 private struct GestureGuide: Identifiable {
@@ -77,7 +78,7 @@ struct ExperimentGestureGuideView: View {
 
                 VStack(spacing: 0) {
                     NavigationPageTitle(
-                        "실험 기록",
+                        "제스처 가이드",
                         foregroundColor: Color("Experiment/Label/Primary"),
                         onBack: onClose
                     )

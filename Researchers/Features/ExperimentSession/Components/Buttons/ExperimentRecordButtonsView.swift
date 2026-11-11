@@ -7,6 +7,7 @@
 
 import ComposableArchitecture
 import LabcordDesignSystem
+import LabcordiOS
 import SwiftUI
 
 struct ExperimentRecordButtonsView: View {

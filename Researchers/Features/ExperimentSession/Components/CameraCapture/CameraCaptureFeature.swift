@@ -23,6 +23,9 @@ struct CameraCaptureFeature {
         var isCameraViewVisible: Bool { camera.isViewVisible }
         var previewConnector: CameraPreviewConnector? { camera.previewConnector }
         var isCameraSwitching: Bool { camera.isSwitching }
+        var isCameraReadyForCapture: Bool {
+            camera.isViewVisible && camera.previewConnector != nil && !camera.isSwitching
+        }
         var canSwitchCamera: Bool {
             camera.previewConnector != nil && !camera.isSwitching &&
             !photo.isCapturing && photo.capturedData == nil && video.phase == .idle
@@ -52,7 +55,9 @@ struct CameraCaptureFeature {
         case voiceButtonTapped
         case photoButtonTapped
         case videoButtonTapped
+        case videoRetakeAndRecordRequested
         case videoRecordRequested
+        case photoRetakeAndCaptureRequested
         case photoCaptureRequested(UUID?)
         case watchCommand(WatchExperimentCommand)
     }
@@ -65,6 +70,8 @@ struct CameraCaptureFeature {
         case videoRequested
         case watchResponse(WatchExperimentResponse)
     }
+
+    @Dependency(\.uuid) var uuid
 
     var body: some Reducer<State, Action> {
         Scope(state: \.camera, action: \.camera) {
@@ -130,9 +137,7 @@ struct CameraCaptureFeature {
                 return .send(.delegate(.photoRequested(id)))
 
             case let .photoGestureEvent(event):
-                guard state.camera.isViewVisible,
-                      state.camera.previewConnector != nil,
-                      !state.camera.isSwitching,
+                guard state.isCameraReadyForCapture,
                       state.video.phase == .idle else {
                     if case .fistHeld = event {
                         return .send(.photo(.disarmGesture))
@@ -153,10 +158,21 @@ struct CameraCaptureFeature {
             case .videoButtonTapped:
                 return .send(.delegate(.videoRequested))
 
+            case .videoRetakeAndRecordRequested:
+                guard state.isCameraReadyForCapture,
+                      !state.video.isSaving,
+                      !state.video.isSessionClosing,
+                      !state.photo.isCapturing,
+                      !state.photo.isScheduled,
+                      state.photo.capturedData == nil,
+                      case .preview = state.video.phase else { return .none }
+                return .concatenate(
+                    .send(.video(.retakeRequested)),
+                    .send(.videoRecordRequested)
+                )
+
             case .videoRecordRequested:
-                guard state.camera.isViewVisible,
-                      state.camera.previewConnector != nil,
-                      !state.camera.isSwitching,
+                guard state.isCameraReadyForCapture,
                       !state.photo.isCapturing,
                       !state.photo.isScheduled,
                       state.photo.capturedData == nil,
@@ -166,10 +182,19 @@ struct CameraCaptureFeature {
                     .send(.video(.recordRequested))
                 )
 
+            case .photoRetakeAndCaptureRequested:
+                guard state.isCameraReadyForCapture,
+                      !state.photo.isSaving,
+                      !state.photo.isSessionClosing,
+                      state.photo.capturedData != nil,
+                      state.video.phase == .idle else { return .none }
+                return .concatenate(
+                    .send(.photo(.retakeRequested)),
+                    .send(.photo(.shortcutCaptureRequested(uuid())))
+                )
+
             case let .photoCaptureRequested(id):
-                guard state.camera.isViewVisible,
-                      state.camera.previewConnector != nil,
-                      !state.camera.isSwitching,
+                guard state.isCameraReadyForCapture,
                       state.video.phase == .idle else { return .none }
                 return .send(.photo(.captureRequested(id)))
 
