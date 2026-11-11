@@ -49,7 +49,7 @@ struct PortraitSessionView: View {
                     }
                     .frame(maxWidth: .infinity)
 
-                    VStack(spacing: 16) {
+                    VStack {
                         ExperimentSettingButtonsView(
                             onShowGestureGuide: onShowGestureGuide,
                             onShowRunningTimers: {

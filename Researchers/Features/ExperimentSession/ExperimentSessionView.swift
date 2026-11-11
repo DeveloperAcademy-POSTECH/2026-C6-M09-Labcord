@@ -9,6 +9,7 @@ import ComposableArchitecture
 import LabcordDesignSystem
 import LabcordiOS
 import SwiftUI
+
 struct ExperimentSessionView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.verticalSizeClass) private var verticalSizeClass
