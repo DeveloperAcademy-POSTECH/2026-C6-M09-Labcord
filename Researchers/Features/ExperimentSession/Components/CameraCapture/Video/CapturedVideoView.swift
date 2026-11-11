@@ -1,5 +1,7 @@
-import AVKit
+import AVFoundation
 import Combine
+import LabcordiOS
+import LabcordDesignSystem
 import SwiftUI
 
 struct CapturedVideoView: View {
@@ -14,6 +16,7 @@ struct CapturedVideoView: View {
     @State private var playerItem: AVPlayerItem
     @State private var hasStartedPlayback = false
     @State private var didFinishPlayback = false
+    @State private var isPlaying = false
 
     init(
         videoURL: URL,
@@ -46,13 +49,25 @@ struct CapturedVideoView: View {
             isSaving: isSaving,
             showsAutoSaveNotice: didFinishPlayback && showAutoSaveMessage
         ) {
-            VideoPlayer(player: player)
-                .scaledToFill()
+            AspectFillVideoView(player: player)
+                .overlay {
+                    Button(action: togglePlayback) {
+                        Image(labcordIcon: isPlaying ? .pause : .play)
+                    }
+                    .buttonStyle(.labcordIcon(.neutral, size: .extraLarge, colorPalette: .experiment))
+                    .background(
+                        VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
+                    )
+                    .cornerRadius(LayoutTokens.radiusFull)
+                }
         }
         .task { await startPlayback() }
         .onDisappear {
             player.pause()
             hasStartedPlayback = false
+        }
+        .onReceive(player.publisher(for: \.timeControlStatus)) { status in
+            isPlaying = status == .playing
         }
         .onReceive(
             NotificationCenter.default.publisher(
@@ -60,6 +75,7 @@ struct CapturedVideoView: View {
                 object: playerItem
             )
         ) { _ in
+            isPlaying = false
             guard !didFinishPlayback else { return }
             didFinishPlayback = true
             onPlaybackFinished()
@@ -73,13 +89,9 @@ struct CapturedVideoView: View {
         while !Task.isCancelled && !hasStartedPlayback {
             switch playerItem.status {
             case .readyToPlay:
-                if player.timeControlStatus == .playing {
-                    hasStartedPlayback = true
-                    return
-                }
-                if player.timeControlStatus == .paused {
-                    player.play()
-                }
+                hasStartedPlayback = true
+                player.play()
+                return
             case .failed:
                 return
             default:
@@ -87,6 +99,18 @@ struct CapturedVideoView: View {
             }
 
             try? await Task.sleep(for: .milliseconds(250))
+        }
+    }
+
+    private func togglePlayback() {
+        if isPlaying {
+            player.pause()
+        } else {
+            hasStartedPlayback = true
+            if didFinishPlayback {
+                player.seek(to: .zero)
+            }
+            player.play()
         }
     }
 }
