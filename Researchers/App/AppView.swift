@@ -22,7 +22,19 @@ struct AppView: View {
                     case .gestureGuide(let store):
                         GestureGuideFlowView(store: store)
                             .navigationBarBackButtonHidden()
-                            .navigationSwipeBackEnabled(false)
+                            .navigationSwipeBackEnabled(true)
+
+                    case .gesturePractice(let store):
+                        GesturePracticeView(
+                            device: Binding(
+                                get: { store.device },
+                                set: { store.send(.deviceChanged($0)) }
+                            ),
+                            onBack: { store.send(.backTapped) },
+                            onExit: { store.send(.exitTapped) }
+                        )
+                        .navigationBarBackButtonHidden()
+                        .navigationSwipeBackEnabled(true)
 
                     case .registration(let store):
                         ProtocolRegistrationView(store: store)

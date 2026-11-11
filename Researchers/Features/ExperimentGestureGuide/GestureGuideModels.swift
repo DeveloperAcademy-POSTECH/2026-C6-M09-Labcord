@@ -10,6 +10,14 @@ enum PracticeGesture: Int, CaseIterable, Identifiable {
 
     var id: Int { rawValue }
 
+    func nextIncomplete(in completed: Set<PracticeGesture>) -> PracticeGesture? {
+        let allGestures = Self.allCases
+        guard let current = allGestures.firstIndex(of: self) else { return nil }
+        return (1..<allGestures.count)
+            .map { allGestures[(current + $0) % allGestures.count] }
+            .first { !completed.contains($0) }
+    }
+
     var title: String {
         switch self {
         case .voice: "음성 녹음"

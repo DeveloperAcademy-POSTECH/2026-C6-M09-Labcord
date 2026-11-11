@@ -18,6 +18,7 @@ struct GesturePracticeView: View {
     @GestureState private var cardDrag: CGFloat = 0
     @State private var completed: Set<PracticeGesture> = []
     @State private var isHandOpen = false
+    @State private var advanceTask: Task<Void, Never>?
 
     var body: some View {
         GeometryReader { geometry in
@@ -47,6 +48,8 @@ struct GesturePracticeView: View {
         }
         .preferredColorScheme(.dark)
         .onChange(of: device) { _, _ in
+            advanceTask?.cancel()
+            advanceTask = nil
             page = 1
             isHandOpen = false
             cameraOwner = nil
@@ -55,6 +58,10 @@ struct GesturePracticeView: View {
         .task(id: device) {
             guard device == .iPhone else { return }
             await runCamera()
+        }
+        .onDisappear {
+            advanceTask?.cancel()
+            advanceTask = nil
         }
     }
 
@@ -128,6 +135,8 @@ struct GesturePracticeView: View {
                     .onEnded { value in
                         let distance = value.predictedEndTranslation.width
                         guard abs(distance) > 40 else { return }
+                        advanceTask?.cancel()
+                        advanceTask = nil
                         withAnimation {
                             page = min(max(page + (distance < 0 ? 1 : -1), 1), 3)
                         }
@@ -222,9 +231,21 @@ struct GesturePracticeView: View {
             gesture = .video
             isHandOpen = false
         }
-        if let gesture {
-            completed.insert(gesture)
-            withAnimation { page = gesture.rawValue }
+        guard device == .iPhone, let gesture, completed.insert(gesture).inserted else { return }
+        advanceTask?.cancel()
+        withAnimation { page = gesture.rawValue }
+        guard let next = gesture.nextIncomplete(in: completed) else { return }
+        advanceTask = Task { @MainActor in
+            do {
+                try await Task.sleep(for: .milliseconds(650))
+                guard !Task.isCancelled, device == .iPhone, page == gesture.rawValue else {
+                    return
+                }
+                withAnimation { page = next.rawValue }
+                advanceTask = nil
+            } catch {
+                return
+            }
         }
     }
 }

@@ -7,6 +7,7 @@ extension AppFeature {
     @Reducer
     enum Path {
         case gestureGuide(GestureGuideFeature)
+        case gesturePractice(GesturePracticeFeature)
         case registration(ProtocolRegistrationFeature)
         case recent(RecentProtocolFeature)
         case review(ProtocolReviewFeature)

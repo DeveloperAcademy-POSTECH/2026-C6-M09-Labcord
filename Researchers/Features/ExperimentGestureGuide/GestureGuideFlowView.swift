@@ -8,20 +8,7 @@ struct GestureGuideFlowView: View {
     private var device: GestureDevice { store.device }
 
     var body: some View {
-        Group {
-            if store.isPracticing {
-                GesturePracticeView(
-                    device: Binding(
-                        get: { store.device },
-                        set: { store.send(.deviceChanged($0)) }
-                    ),
-                    onBack: { store.send(.backTapped) },
-                    onExit: { store.send(.exitTapped) }
-                )
-            } else {
-                guide
-            }
-        }
+        guide
     }
 
     private var guide: some View {
@@ -57,6 +44,7 @@ struct GestureGuideFlowView: View {
                 }
                 .frame(maxWidth: .infinity)
             }
+            .scrollBounceBehavior(.basedOnSize)
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 Button {
                     store.send(.practiceTapped)
