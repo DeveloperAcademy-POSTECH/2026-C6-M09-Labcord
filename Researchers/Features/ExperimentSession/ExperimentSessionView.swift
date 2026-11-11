@@ -118,6 +118,7 @@ struct ExperimentSessionView: View {
                     isSaving: captureStore.video.isSaving,
                     showAutoSaveMessage: captureStore.video.isAutoSavePending,
                     onRetake: { captureStore.send(.video(.retakeRequested)) },
+                    onClose: { captureStore.send(.video(.cancelRequested)) },
                     onSave: { captureStore.send(.video(.saveRequested)) },
                     onPlaybackFinished: { captureStore.send(.video(.playbackFinished(recordID))) }
                 )

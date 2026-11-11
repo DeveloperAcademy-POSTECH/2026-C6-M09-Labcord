@@ -4,6 +4,7 @@ import SwiftUI
 
 struct CapturedVideoView: View {
     let onRetake: () -> Void
+    let onClose: () -> Void
     let onSave: () -> Void
     let onPlaybackFinished: () -> Void
     let isSaving: Bool
@@ -19,10 +20,12 @@ struct CapturedVideoView: View {
         isSaving: Bool,
         showAutoSaveMessage: Bool,
         onRetake: @escaping () -> Void,
+        onClose: @escaping () -> Void,
         onSave: @escaping () -> Void,
         onPlaybackFinished: @escaping () -> Void
     ) {
         self.onRetake = onRetake
+        self.onClose = onClose
         self.onSave = onSave
         self.onPlaybackFinished = onPlaybackFinished
         self.isSaving = isSaving
@@ -36,19 +39,21 @@ struct CapturedVideoView: View {
 
     var body: some View {
         CapturedMediaReviewView(
+            title: "영상 기록",
             onRetake: onRetake,
+            onClose: onClose,
             onSave: onSave,
-            isSaving: isSaving
+            isSaving: isSaving,
+            showsAutoSaveNotice: didFinishPlayback && showAutoSaveMessage
         ) { size in
             VideoPlayer(player: player)
-                .frame(width: size.width * 0.85, height: size.height * 0.72)
-                .background(.black, in: RoundedRectangle(cornerRadius: 16))
+                .scaledToFill()
+                .frame(
+                    width: size.width * 370 / 402,
+                    height: size.height * 683 / 874
+                )
                 .clipShape(RoundedRectangle(cornerRadius: 16))
 
-            if didFinishPlayback && showAutoSaveMessage {
-                Text("3초 후 자동 저장돼요.")
-                    .foregroundStyle(.white)
-            }
         }
         .task { await startPlayback() }
         .onDisappear {

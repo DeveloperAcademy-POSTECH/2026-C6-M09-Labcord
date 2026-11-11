@@ -21,16 +21,21 @@ struct CapturedPhotoView: View {
 
     var body: some View {
         CapturedMediaReviewView(
+            title: "사진 기록",
             onRetake: onRetake,
+            onClose: onRetake,
             onSave: onSave,
-            isSaving: isSaving
+            isSaving: isSaving,
+            isCloseEnabled: !isSaving
         ) { size in
             if let photo = imageStore.image {
                 Image(uiImage: photo)
                     .resizable()
-                    .scaledToFit()
-                    .frame(maxWidth: size.width * 0.85, maxHeight: size.height * 0.72)
-                    .background(.black, in: RoundedRectangle(cornerRadius: 16))
+                    .scaledToFill()
+                    .frame(
+                        width: size.width * 370 / 402,
+                        height: size.height * 683 / 874
+                    )
                     .clipShape(RoundedRectangle(cornerRadius: 16))
             }
         }
