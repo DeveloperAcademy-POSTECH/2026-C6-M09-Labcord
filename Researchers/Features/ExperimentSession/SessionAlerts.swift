@@ -4,6 +4,7 @@
 //
 
 import ComposableArchitecture
+import LabcordiOS
 import SwiftUI
 
 struct SessionAlerts: ViewModifier {
