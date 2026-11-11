@@ -1,4 +1,5 @@
 import AVFoundation
+import Dispatch
 import QuartzCore
 import Vision
 
@@ -7,20 +8,26 @@ nonisolated final class CameraHandDetector: NSObject,
                                             @unchecked Sendable {
     private let onHold: @Sendable (CameraHandEvent) -> Void
     private let onTips: @Sendable (CameraHandOverlayHub.Frame) -> Void
-    private let request = VNDetectHumanHandPoseRequest()
+    private let queue: DispatchQueue
     private var holdTracker = HandHoldTracker()
+    private var processingTask: Task<Void, Never>?
+    private var generation = 0
 
     init(
+        queue: DispatchQueue,
         onHold: @escaping @Sendable (CameraHandEvent) -> Void,
         onTips: @escaping @Sendable (CameraHandOverlayHub.Frame) -> Void
     ) {
+        self.queue = queue
         self.onHold = onHold
         self.onTips = onTips
         super.init()
-        request.maximumHandCount = 1
     }
 
     func reset() {
+        generation += 1
+        processingTask?.cancel()
+        processingTask = nil
         holdTracker.reset()
     }
 
@@ -29,14 +36,8 @@ nonisolated final class CameraHandDetector: NSObject,
         didOutput sampleBuffer: CMSampleBuffer,
         from connection: AVCaptureConnection
     ) {
-        let analysis: HandPoseClassifier.Analysis?
-        do {
-            try VNImageRequestHandler(cmSampleBuffer: sampleBuffer).perform([request])
-            analysis = request.results?.first.flatMap(HandPoseClassifier.analyze)
-        } catch {
-            analysis = nil
-        }
-
+        guard processingTask == nil else { return }
+        let generation = generation
         let imageSize: CGSize
         if let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
             imageSize = CGSize(
@@ -46,11 +47,34 @@ nonisolated final class CameraHandDetector: NSObject,
         } else {
             imageSize = .zero
         }
-        onTips(CameraHandOverlayHub.Frame(
-            tips: analysis?.extendedTips ?? [],
+        let frame = CameraHandOverlayHub.Frame(
+            tips: [],
             imageSize: imageSize,
             videoRotationAngle: connection.videoRotationAngle,
             isVideoMirrored: connection.isVideoMirrored
+        )
+        processingTask = Task { [self] in
+            var request = DetectHumanHandPoseRequest()
+            request.maximumHandCount = 1
+            let observations = try? await request.perform(on: sampleBuffer)
+            let analysis = observations?.first.flatMap(HandPoseClassifier.analyze)
+            queue.async { [self] in
+                guard self.generation == generation else { return }
+                processingTask = nil
+                process(analysis, frame: frame)
+            }
+        }
+    }
+
+    private func process(
+        _ analysis: HandPoseClassifier.Analysis?,
+        frame: CameraHandOverlayHub.Frame
+    ) {
+        onTips(CameraHandOverlayHub.Frame(
+            tips: analysis?.extendedTips ?? [],
+            imageSize: frame.imageSize,
+            videoRotationAngle: frame.videoRotationAngle,
+            isVideoMirrored: frame.isVideoMirrored
         ))
         guard let heldPose = holdTracker.update(analysis?.pose, at: CACurrentMediaTime()) else {
             return
