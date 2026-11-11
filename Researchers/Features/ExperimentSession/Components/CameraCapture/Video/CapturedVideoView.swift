@@ -45,15 +45,9 @@ struct CapturedVideoView: View {
             onSave: onSave,
             isSaving: isSaving,
             showsAutoSaveNotice: didFinishPlayback && showAutoSaveMessage
-        ) { size in
+        ) {
             VideoPlayer(player: player)
                 .scaledToFill()
-                .frame(
-                    width: size.width * 370 / 402,
-                    height: size.height * 683 / 874
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-
         }
         .task { await startPlayback() }
         .onDisappear {

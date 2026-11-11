@@ -105,7 +105,8 @@ struct ExperimentSessionView: View {
                 CapturedPhotoView(
                     photoData: data,
                     isSaving: captureStore.photo.isSaving,
-                    onRetake: { captureStore.send(.photo(.retakeRequested)) },
+                    onRetake: { captureStore.send(.photoRetakeAndCaptureRequested) },
+                    onClose: { captureStore.send(.photo(.retakeRequested)) },
                     onSave: { captureStore.send(.photo(.saveRequested)) }
                 )
             }
@@ -117,7 +118,7 @@ struct ExperimentSessionView: View {
                     videoURL: url,
                     isSaving: captureStore.video.isSaving,
                     showAutoSaveMessage: captureStore.video.isAutoSavePending,
-                    onRetake: { captureStore.send(.video(.retakeRequested)) },
+                    onRetake: { captureStore.send(.videoRetakeAndRecordRequested) },
                     onClose: { captureStore.send(.video(.cancelRequested)) },
                     onSave: { captureStore.send(.video(.saveRequested)) },
                     onPlaybackFinished: { captureStore.send(.video(.playbackFinished(recordID))) }

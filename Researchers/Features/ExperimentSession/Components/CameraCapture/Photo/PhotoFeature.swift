@@ -66,6 +66,22 @@ struct PhotoFeature {
         return .cancel(id: CancelID.captureDelay)
     }
 
+    private func scheduleCapture(
+        id: UUID,
+        at scheduledAt: Date,
+        in state: inout State
+    ) -> Effect<Action> {
+        state.requestedRecordID = id
+        state.isScheduled = true
+        state.scheduledAt = scheduledAt
+        state.countdownEndAt = scheduledAt.addingTimeInterval(5)
+        return .run { send in
+            try await Task.sleep(for: .seconds(5))
+            await send(.delayElapsed(id))
+        }
+        .cancellable(id: CancelID.captureDelay, cancelInFlight: true)
+    }
+
     var body: some Reducer<State, Action> {
         Reduce { state, action in
             if state.isSessionClosing, action.isBlockedDuringSessionClose { return .none }
@@ -75,33 +91,16 @@ struct PhotoFeature {
                       state.capturedData == nil, !state.requiresExternalConfirmation else {
                     return .none
                 }
-                state.requestedRecordID = id
-                state.isScheduled = true
-                let scheduledAt = now
-                state.scheduledAt = scheduledAt
-                state.countdownEndAt = scheduledAt.addingTimeInterval(5)
-                return .run { send in
-                    try await Task.sleep(for: .seconds(5))
-                    await send(.delayElapsed(id))
-                }
-                .cancellable(id: CancelID.captureDelay, cancelInFlight: true)
+                return scheduleCapture(id: id, at: now, in: &state)
 
             case let .watchCaptureRequested(id):
                 guard state.pendingWatchCaptureID == id,
                       !state.isCapturing, !state.isScheduled,
                       state.capturedData == nil else { return .none }
                 state.pendingWatchCaptureID = nil
-                state.requestedRecordID = id
                 state.requiresExternalConfirmation = true
-                state.isScheduled = true
                 let scheduledAt = now
-                state.scheduledAt = scheduledAt
-                state.countdownEndAt = scheduledAt.addingTimeInterval(5)
-                let delay = Effect<Action>.run { send in
-                    try await Task.sleep(for: .seconds(5))
-                    await send(.delayElapsed(id))
-                }
-                .cancellable(id: CancelID.captureDelay, cancelInFlight: true)
+                let delay = scheduleCapture(id: id, at: scheduledAt, in: &state)
                 return .merge(delay, .send(.delegate(.captureScheduled(id, scheduledAt))))
 
             case let .gestureEvent(.openHandHeld(detectedAt)):
@@ -117,16 +116,7 @@ struct PhotoFeature {
                 guard !state.isScheduled, !state.isCapturing,
                       state.capturedData == nil, wasArmed,
                       detectedAt.timeIntervalSinceNow > -0.5 else { return .none }
-                let id = uuid()
-                state.requestedRecordID = id
-                state.isScheduled = true
-                state.countdownEndAt = now.addingTimeInterval(5)
-                state.scheduledAt = now
-                return .run { send in
-                    try await Task.sleep(for: .seconds(5))
-                    await send(.delayElapsed(id))
-                }
-                .cancellable(id: CancelID.captureDelay, cancelInFlight: true)
+                return scheduleCapture(id: uuid(), at: now, in: &state)
 
             case .gestureEvent:
                 return .none
