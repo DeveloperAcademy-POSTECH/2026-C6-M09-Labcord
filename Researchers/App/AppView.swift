@@ -51,6 +51,9 @@ struct AppView: View {
                             .navigationSwipeBackEnabled(store.isOpenedFromHome)
                     }
                 }
+                .onChange(of: store.path.ids.last) { _, _ in
+                    SessionOrientation.reset()
+                }
             }
         }
         .task { await store.send(.watchTask).finish() }
