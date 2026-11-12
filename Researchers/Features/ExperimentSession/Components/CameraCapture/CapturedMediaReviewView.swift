@@ -1,5 +1,4 @@
 import LabcordDesignSystem
-import LabcordiOS
 import SwiftUI
 
 struct CapturedMediaReviewView<Content: View>: View {
@@ -43,7 +42,7 @@ struct CapturedMediaReviewView<Content: View>: View {
     private var reviewControls: some View {
         VStack {
             HStack(spacing: 12) {
-                controlButton(
+                ExperimentReviewIconButton(
                     icon: .x,
                     label: "저장하지 않고 닫기",
                     isEnabled: isCloseEnabled,
@@ -59,52 +58,15 @@ struct CapturedMediaReviewView<Content: View>: View {
 
             Spacer()
 
-            VStack(alignment: .trailing, spacing: 12) {
-                if showsAutoSaveNotice {
-                    StatusPill("3초 후 자동 저장돼요", showIcon: false)
-                }
-
-                HStack(spacing: 12) {
-                    controlButton(
-                        icon: .arrowCounterClockwise,
-                        label: "다시 찍기",
-                        isEnabled: !isSaving,
-                        action: onRetake
-                    )
-
-                    Button(action: onSave) {
-                        Label {
-                            Text("지금 저장")
-                        } icon: {
-                            Image(labcordIcon: .check)
-                        }
-                    }
-                    .buttonStyle(.labcord(.filled, size: .large, colorPalette: .experiment))
-                    .disabled(isSaving)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .trailing)
+            ExperimentReviewActions(
+                retakeLabel: "다시 찍기",
+                isSaving: isSaving,
+                showsAutoSaveNotice: showsAutoSaveNotice,
+                onRetake: onRetake,
+                onSave: onSave
+            )
         }
         .padding(16)
-    }
-
-    private func controlButton(
-        icon: Icon,
-        label: String,
-        isEnabled: Bool,
-        action: @escaping () -> Void
-    ) -> some View {
-        ExperimentControlButton(
-            state: isEnabled ? .default : .disabled,
-            action: action
-        ) {
-            Image(labcordIcon: icon)
-        }
-        .accessibilityLabel(label)
-        .background(
-            VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
-        )
-        .cornerRadius(LayoutTokens.radiusFull)
     }
 }
 

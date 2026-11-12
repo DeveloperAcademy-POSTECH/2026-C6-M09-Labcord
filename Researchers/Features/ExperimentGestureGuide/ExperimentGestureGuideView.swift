@@ -68,10 +68,10 @@ struct ExperimentGestureGuideView: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            Color("Experiment/Overlay/Scrim", bundle: LabcordDesignSystemResources.bundle)
-                .background(
-                    VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
-                )
+            VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
+                .ignoresSafeArea()
+
+            Color("General/Overlay/Scrim")
                 .ignoresSafeArea()
 
             GeometryReader { geometry in

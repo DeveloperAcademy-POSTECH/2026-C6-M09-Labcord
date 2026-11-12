@@ -81,7 +81,8 @@ struct SessionAlerts: ViewModifier {
             isPresented: Binding(
                 get: {
                     voiceStore.errorMessage != nil
-                        && (verticalSizeClass == .compact || !voiceStore.hasRecordingFailure)
+                        && verticalSizeClass != .compact
+                        && !voiceStore.hasRecordingFailure
                 },
                 set: { if !$0 { voiceStore.send(.errorDismissed) } }
             )

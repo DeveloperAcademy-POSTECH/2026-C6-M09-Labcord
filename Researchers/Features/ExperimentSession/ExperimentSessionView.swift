@@ -33,6 +33,10 @@ struct ExperimentSessionView: View {
             && voiceStore.saveError == nil
             && (voiceStore.phase != .hidden || voiceStore.hasRecordingFailure)
     }
+    private var isLandscapeVoiceOverlayVisible: Bool {
+        verticalSizeClass == .compact
+            && (voiceStore.phase != .hidden || voiceStore.hasRecordingFailure)
+    }
     private var isVideoRecording: Bool {
         switch videoStore.phase {
         case .starting, .recording: return true
@@ -130,6 +134,11 @@ struct ExperimentSessionView: View {
                     onPlaybackFinished: { captureStore.send(.video(.playbackFinished(recordID))) }
                 )
                 .id(url)
+            }
+        }
+        .overlay {
+            if isLandscapeVoiceOverlayVisible {
+                VoiceRecordingOverlay(store: voiceStore)
             }
         }
         .overlay {

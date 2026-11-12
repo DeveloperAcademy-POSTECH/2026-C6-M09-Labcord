@@ -68,6 +68,14 @@ extension VoiceRecordingFeature {
         autoSave: Bool = true,
         state: inout State
     ) -> Effect<Action> {
+        if recording.transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+           !recording.transcriptionIncomplete {
+            state.phase = .hidden
+            resetReview(state: &state)
+            state.errorMessage = "녹음하지 못했어요. 다시 녹음해 주세요."
+            state.hasRecordingFailure = true
+            return .run { _ in await speechRecordingClient.cancel() }
+        }
         let id = recording.recordingID
         state.recording = recording
         state.transcript = recording.transcript

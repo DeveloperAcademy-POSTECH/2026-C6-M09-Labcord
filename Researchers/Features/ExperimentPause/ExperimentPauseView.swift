@@ -8,6 +8,7 @@
 import ComposableArchitecture
 import LabcordiOS
 import LabcordShared
+import LabcordDesignSystem
 import SwiftUI
 
 struct ExperimentPauseView: View {
@@ -33,10 +34,10 @@ struct ExperimentPauseView: View {
                 : 0
 
             ZStack {
-                Color("Experiment/Overlay/Scrim")
-                    .background(
-                        VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
-                    )
+                VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
+                    .ignoresSafeArea()
+
+                Color("General/Overlay/Scrim")
                     .ignoresSafeArea()
 
                 VStack(spacing: isLandscape ? 20 : 0) {
