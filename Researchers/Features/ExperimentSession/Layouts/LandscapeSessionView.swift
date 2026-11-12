@@ -8,8 +8,8 @@
 import ComposableArchitecture
 import LabcordDesignSystem
 import LabcordiOS
-import SwiftUI
 import LabcordShared
+import SwiftUI
 
 struct LandscapeSessionView: View {
     let sessionStore: StoreOf<ExperimentSessionFeature>

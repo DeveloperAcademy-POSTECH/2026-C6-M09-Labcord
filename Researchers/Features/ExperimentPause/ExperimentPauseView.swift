@@ -6,9 +6,9 @@
 //
 
 import ComposableArchitecture
+import LabcordDesignSystem
 import LabcordiOS
 import LabcordShared
-import LabcordDesignSystem
 import SwiftUI
 
 struct ExperimentPauseView: View {

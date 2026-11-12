@@ -112,11 +112,11 @@ struct VoiceRecordingOverlay: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("녹음하지 못했어요.")
                 .typography(Typography.title1)
-                .foregroundStyle(Color("Experiment/Label/Primary",))
+                .foregroundStyle(Color("Experiment/Label/Primary", ))
 
             Text("하단 마이크 버튼을 눌러 다시 녹음해 주세요.")
                 .typography(Typography.title3)
-                .foregroundStyle(Color("Experiment/Label/Secondary",))
+                .foregroundStyle(Color("Experiment/Label/Secondary", ))
         }
     }
 
