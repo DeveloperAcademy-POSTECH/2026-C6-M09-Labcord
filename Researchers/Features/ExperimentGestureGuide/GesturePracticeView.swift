@@ -2,7 +2,6 @@ import ComposableArchitecture
 import LabcordDesignSystem
 import LabcordiOS
 import LabcordShared
-import Lottie
 import SwiftUI
 
 struct GesturePracticeView: View {
@@ -12,6 +11,7 @@ struct GesturePracticeView: View {
     let onExit: () -> Void
 
     @Dependency(\.cameraSessionClient) private var camera
+    @Dependency(\.cameraPermissionClient) private var cameraPermission
     @Environment(\.scenePhase) private var scenePhase
     @State private var connector: CameraPreviewConnector?
     @State private var cameraOwner: UUID?
@@ -59,11 +59,16 @@ struct GesturePracticeView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color("Experiment/Background/Primary").ignoresSafeArea())
+            .accessibilityHidden(!hasPrepared)
+            .allowsHitTesting(hasPrepared)
         }
         .preferredColorScheme(.dark)
         .overlay {
             if !hasPrepared {
                 preparationContent
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color("Experiment/Background/Primary").ignoresSafeArea())
+                    .accessibilityAddTraits(.isModal)
             }
         }
         .onChange(of: device) { _, _ in
@@ -118,27 +123,14 @@ struct GesturePracticeView: View {
 
     private var preparationContent: some View {
         VStack(spacing: 8) {
-            if let cameraMessage {
-                Text(cameraMessage)
-                    .typography(Typography.body)
-                    .foregroundStyle(Color("Experiment/Label/Secondary"))
-                Button("다시 시도") { store.send(.requestPermissions) }
-                    .buttonStyle(.labcord(.plain, size: .small, colorPalette: .experiment))
-            } else if store.cameraStatus != nil && !store.permissionsGranted {
-                Text("카메라 접근을 허용하면 제스처를 연습할 수 있어요.")
-                    .typography(Typography.body)
-                    .foregroundStyle(Color("Experiment/Label/Secondary"))
-                Button("권한 확인") { store.send(.requestPermissions) }
-                    .buttonStyle(.labcord(.plain, size: .small, colorPalette: .experiment))
-            } else {
-                GesturePreparationSpinner()
-                Text("연습 화면을 준비중이에요")
-                    .typography(Typography.title3SemiBold)
-                    .foregroundStyle(Color("Experiment/Label/Primary"))
-                Text("카메라가 준비되면 자동으로 시작돼요.")
-                    .typography(Typography.body)
-                    .foregroundStyle(Color("Experiment/Label/Secondary"))
-            }
+            GesturePreparationSpinner()
+                .frame(width: 40, height: 40)
+            Text("연습 화면을 준비중이에요")
+                .typography(Typography.title3SemiBold)
+                .foregroundStyle(Color("Experiment/Label/Primary"))
+            Text("카메라가 준비되면 자동으로 시작돼요.")
+                .typography(Typography.body)
+                .foregroundStyle(Color("Experiment/Label/Secondary"))
         }
         .multilineTextAlignment(.center)
         .padding(.horizontal, 16)
@@ -165,13 +157,14 @@ struct GesturePracticeView: View {
             .clipShape(RoundedRectangle(cornerRadius: 8))
             .padding(.horizontal, 22)
         } else {
-            LottieView(
-                animation: .named(PracticeGesture(rawValue: page)?.watchAnimationName ?? "")
-            )
-            .playing(.fromProgress(0, toProgress: 1, loopMode: .loop))
-            .id(page)
-            .frame(width: 256, height: 375)
-            .accessibilityLabel("Apple Watch 제스처 안내")
+            GeometryReader { geometry in
+                WatchGestureAnimation(
+                    name: PracticeGesture(rawValue: page)?.watchAnimationName ?? ""
+                )
+                .id(page)
+                .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
+            }
+            .clipped()
         }
     }
 }
@@ -186,7 +179,10 @@ private extension GesturePracticeView {
             try await camera.activate(owner)
             if !Task.isCancelled, cameraOwner == owner {
                 let preview = await camera.previewConnector()
-                if !Task.isCancelled, cameraOwner == owner {
+                let isRunning = await camera.isRunning()
+                let permission = await cameraPermission.currentStatus()
+                if !Task.isCancelled, cameraOwner == owner, isRunning,
+                   permission == .authorized, store.permissionsGranted {
                     hasPrepared = true
                     store.send(.practiceReady)
                     if device == .iPhone {
