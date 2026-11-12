@@ -33,29 +33,11 @@ struct CapturedMediaReviewView<Content: View>: View {
     }
 
     var body: some View {
-        GeometryReader { geometry in
-            let isLandscape = geometry.size.width > geometry.size.height
-            let mediaSize = isLandscape
-                ? CGSize(
-                    width: geometry.size.width * 710 / 874,
-                    height: geometry.size.height * 362 / 402
-                )
-                : CGSize(
-                    width: geometry.size.width * 370 / 402,
-                    height: geometry.size.height * 683 / 874
-                )
-
-            ZStack {
-                Color("General/Overlay/Scrim")
-
-                content()
-                    .frame(width: mediaSize.width, height: mediaSize.height)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .overlay { reviewControls }
-            }
-            .frame(width: geometry.size.width, height: geometry.size.height)
+        CapturedMediaOverlay {
+            content()
+        } controls: {
+            reviewControls
         }
-        .ignoresSafeArea()
     }
 
     private var reviewControls: some View {
@@ -123,5 +105,36 @@ struct CapturedMediaReviewView<Content: View>: View {
             VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
         )
         .cornerRadius(LayoutTokens.radiusFull)
+    }
+}
+
+struct CapturedMediaOverlay<Content: View, Controls: View>: View {
+    @ViewBuilder let content: () -> Content
+    @ViewBuilder let controls: () -> Controls
+
+    var body: some View {
+        GeometryReader { geometry in
+            let isLandscape = geometry.size.width > geometry.size.height
+            let mediaSize = isLandscape
+                ? CGSize(
+                    width: geometry.size.width * 710 / 874,
+                    height: geometry.size.height * 362 / 402
+                )
+                : CGSize(
+                    width: geometry.size.width * 370 / 402,
+                    height: geometry.size.height * 683 / 874
+                )
+
+            ZStack {
+                Color("General/Overlay/Scrim")
+
+                content()
+                    .frame(width: mediaSize.width, height: mediaSize.height)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .overlay { controls() }
+            }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+        }
+        .ignoresSafeArea()
     }
 }

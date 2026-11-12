@@ -33,12 +33,17 @@ struct ExperimentSessionView: View {
             && voiceStore.saveError == nil
             && (voiceStore.phase != .hidden || voiceStore.hasRecordingFailure)
     }
-    private var isVideoActivityVisible: Bool {
-        guard verticalSizeClass != .compact else { return false }
+    private var isVideoRecording: Bool {
         switch videoStore.phase {
         case .starting, .recording: return true
         case .idle, .preview: return false
         }
+    }
+    private var isVideoOverlayVisible: Bool {
+        verticalSizeClass == .compact && isVideoRecording
+    }
+    private var isVideoActivityVisible: Bool {
+        verticalSizeClass != .compact && isVideoRecording
     }
 
     var body: some View {
@@ -85,7 +90,7 @@ struct ExperimentSessionView: View {
         }
         .navigationBarBackButtonHidden()
         .toolbarVisibility(
-            isPortraitVoiceActivityVisible || isVideoActivityVisible
+            isPortraitVoiceActivityVisible || isVideoActivityVisible || isVideoOverlayVisible
                 ? .hidden : .automatic,
             for: .statusBar
         )
@@ -98,6 +103,18 @@ struct ExperimentSessionView: View {
                     onClose: { captureStore.send(.photo(.retakeRequested)) },
                     onSave: { captureStore.send(.photo(.saveRequested)) }
                 )
+            }
+        }
+        .overlay {
+            if isVideoOverlayVisible,
+               let connector = captureStore.previewConnector {
+                VideoOverlay(
+                    connector: connector,
+                    onCancel: { captureStore.send(.video(.cancelRequested)) },
+                    onStop: { captureStore.send(.video(.stopRequested)) }
+                )
+                .id(videoStore.sessionID)
+                .transaction { $0.disablesAnimations = true }
             }
         }
         .overlay {

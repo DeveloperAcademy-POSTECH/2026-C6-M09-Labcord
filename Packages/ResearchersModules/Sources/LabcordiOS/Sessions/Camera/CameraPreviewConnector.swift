@@ -52,6 +52,16 @@ extension CameraPreviewConnector: Equatable {
 }
 
 nonisolated private final class CameraPreviewStorage: @unchecked Sendable {
+    private final class Attachment {
+        weak var view: UIView?
+        var showsHandOverlay: Bool
+
+        init(view: UIView, showsHandOverlay: Bool) {
+            self.view = view
+            self.showsHandOverlay = showsHandOverlay
+        }
+    }
+
     private let session: AVCaptureSession
     private let handOverlayHub: CameraHandOverlayHub
     private var device: AVCaptureDevice?
@@ -69,6 +79,7 @@ nonisolated private final class CameraPreviewStorage: @unchecked Sendable {
     )
     @MainActor private var rotationCoordinator: AVCaptureDevice.RotationCoordinator?
     @MainActor private var rotationObservation: NSKeyValueObservation?
+    @MainActor private var attachments: [Attachment] = []
 
     init(
         session: AVCaptureSession,
@@ -82,6 +93,14 @@ nonisolated private final class CameraPreviewStorage: @unchecked Sendable {
 
     @MainActor
     func attach(to view: UIView, showsHandOverlay: Bool) {
+        attachments.removeAll { $0.view == nil }
+        if let attachment = attachments.first(where: { $0.view === view }) {
+            attachment.showsHandOverlay = showsHandOverlay
+            guard attachments.last === attachment else { return }
+        } else {
+            attachments.append(Attachment(view: view, showsHandOverlay: showsHandOverlay))
+        }
+
         let layer: AVCaptureVideoPreviewLayer
         if let previewLayer {
             layer = previewLayer
@@ -133,7 +152,12 @@ nonisolated private final class CameraPreviewStorage: @unchecked Sendable {
 
     @MainActor
     func detach(from view: UIView) {
+        attachments.removeAll { $0.view == nil || $0.view === view }
         guard previewLayer?.superlayer === view.layer else { return }
+        if let previous = attachments.last, let previousView = previous.view {
+            attach(to: previousView, showsHandOverlay: previous.showsHandOverlay)
+            return
+        }
         rotationObservation = nil
         rotationCoordinator = nil
         overlayTask?.cancel()
