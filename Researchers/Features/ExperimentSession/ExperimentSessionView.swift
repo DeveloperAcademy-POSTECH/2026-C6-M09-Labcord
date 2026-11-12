@@ -90,8 +90,7 @@ struct ExperimentSessionView: View {
             for: .statusBar
         )
         .overlay {
-            if verticalSizeClass != .compact,
-               let data = captureStore.capturedPhotoData {
+            if let data = captureStore.capturedPhotoData {
                 CapturedPhotoView(
                     photoData: data,
                     isSaving: captureStore.photo.isSaving,
@@ -102,8 +101,7 @@ struct ExperimentSessionView: View {
             }
         }
         .overlay {
-            if verticalSizeClass != .compact,
-               case let .preview(url) = captureStore.videoPhase,
+            if case let .preview(url) = captureStore.videoPhase,
                let recordID = captureStore.video.recordID {
                 CapturedVideoView(
                     videoURL: url,
