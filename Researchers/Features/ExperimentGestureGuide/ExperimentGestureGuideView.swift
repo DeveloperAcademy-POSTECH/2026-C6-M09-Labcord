@@ -5,6 +5,7 @@
 //  Created by 정홍섭 on 11/5/26.
 //
 
+import Foundation
 import LabcordDesignSystem
 import LabcordiOS
 import SwiftUI
@@ -51,7 +52,7 @@ struct ExperimentGestureGuideView: View {
         GestureGuide(
             imageName: "gesture_watch_audio",
             title: "음성 녹음",
-            description: "엄지와 검지를 빠르게 두 번 탭 하기"
+            description: "엄지와 검지를 빠르게\n두 번 탭 하기"
         ),
         GestureGuide(
             imageName: "gesture_watch_photo",
@@ -75,24 +76,32 @@ struct ExperimentGestureGuideView: View {
 
             GeometryReader { geometry in
                 let isCompactHeight = geometry.size.height < 700
-                let separator = geometry.size.width > geometry.size.height ? " " : "\n"
+                let isLandscape = geometry.size.width > geometry.size.height
+                let separator = isLandscape ? " " : "\n"
+                let gestureLayout = isLandscape
+                    ? AnyLayout(HStackLayout(spacing: 12))
+                    : AnyLayout(VStackLayout(spacing: 12))
+                let tabSpacing: CGFloat = isLandscape ? 16 : 20
+                let bottomPadding: CGFloat = isLandscape ? 20 : 16
+                let headerSpacing: CGFloat = isLandscape ? 8 : 0
+                let titleSpacing: CGFloat = isLandscape ? 12 : 0
 
-                VStack(spacing: 0) {
+                VStack(spacing: headerSpacing) {
                     NavigationPageTitle(
                         "제스처 가이드",
                         foregroundColor: Color("Experiment/Label/Primary"),
                         onBack: onClose
                     )
 
-                    VStack(spacing: 0) {
+                    VStack(spacing: titleSpacing) {
                         Text("제스처로 음성 녹음, 사진, 영상을\(separator)빠르게 기록하세요.")
-                            .padding(.top, isCompactHeight ? 20 : 55)
-                            .padding(.bottom, isCompactHeight ? 24 : 57)
+                            .padding(.top, isLandscape ? 0 : (isCompactHeight ? 20 : 55))
+                            .padding(.bottom, isLandscape ? 0 : (isCompactHeight ? 24 : 57))
                             .multilineTextAlignment(.center)
                             .typography(Typography.body)
                             .foregroundStyle(Color("Experiment/Label/Primary"))
 
-                        VStack(alignment: .center, spacing: 20) {
+                        VStack(alignment: .center, spacing: tabSpacing) {
                             TimerTabs(
                                 selection: $selectedGestureTab,
                                 style: .pill,
@@ -100,11 +109,15 @@ struct ExperimentGestureGuideView: View {
                                 rightTitle: "Apple Watch 제스처"
                             )
 
-                            VStack(alignment: .center, spacing: 12) {
+                            gestureLayout {
                                 ForEach(selectedGestures) { gesture in
                                     GestureGuideItem(
                                         title: gesture.title,
-                                        description: gesture.description
+                                        description: isLandscape ? gesture.description
+                                            : gesture.description.replacingOccurrences(
+                                                of: "\n", with: " "
+                                            ),
+                                        layout: isLandscape ? .portrait : .landscape
                                     ) {
                                         Image(gesture.imageName)
                                             .resizable()
@@ -115,7 +128,7 @@ struct ExperimentGestureGuideView: View {
                         }
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.bottom, 16)
+                    .padding(.bottom, bottomPadding)
                 }
                 .padding(.top, 16)
             }
