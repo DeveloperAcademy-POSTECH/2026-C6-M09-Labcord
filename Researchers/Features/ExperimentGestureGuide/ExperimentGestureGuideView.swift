@@ -81,19 +81,15 @@ struct ExperimentGestureGuideView: View {
                 let gestureLayout = isLandscape
                     ? AnyLayout(HStackLayout(spacing: 12))
                     : AnyLayout(VStackLayout(spacing: 12))
-                let tabSpacing: CGFloat = isLandscape ? 16 : 20
-                let bottomPadding: CGFloat = isLandscape ? 20 : 16
-                let headerSpacing: CGFloat = isLandscape ? 8 : 0
-                let titleSpacing: CGFloat = isLandscape ? 12 : 0
 
-                VStack(spacing: headerSpacing) {
+                VStack(spacing: isLandscape ? 8 : 0) {
                     NavigationPageTitle(
                         "제스처 가이드",
                         foregroundColor: Color("Experiment/Label/Primary"),
                         onBack: onClose
                     )
 
-                    VStack(spacing: titleSpacing) {
+                    VStack(spacing: isLandscape ? 12 : 0) {
                         Text("제스처로 음성 녹음, 사진, 영상을\(separator)빠르게 기록하세요.")
                             .padding(.top, isLandscape ? 0 : (isCompactHeight ? 20 : 55))
                             .padding(.bottom, isLandscape ? 0 : (isCompactHeight ? 24 : 57))
@@ -101,7 +97,7 @@ struct ExperimentGestureGuideView: View {
                             .typography(Typography.body)
                             .foregroundStyle(Color("Experiment/Label/Primary"))
 
-                        VStack(alignment: .center, spacing: tabSpacing) {
+                        VStack(spacing: isLandscape ? 16 : 20) {
                             TimerTabs(
                                 selection: $selectedGestureTab,
                                 style: .pill,
@@ -128,7 +124,7 @@ struct ExperimentGestureGuideView: View {
                         }
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.bottom, bottomPadding)
+                    .padding(.bottom, isLandscape ? 20 : 16)
                 }
                 .padding(.top, 16)
             }
