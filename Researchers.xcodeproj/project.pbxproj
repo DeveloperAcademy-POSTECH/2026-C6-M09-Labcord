@@ -13,6 +13,7 @@
 		8E98D1AF30884D4F00E68666 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 8E98D1AE30884D4F00E68666 /* ComposableArchitecture */; };
 		A10C00103000000000000001 /* LabcordiOS in Frameworks */ = {isa = PBXBuildFile; productRef = A10C00103000000000000002 /* LabcordiOS */; };
 		A10C00103000000000000003 /* LabcordWatchOS in Frameworks */ = {isa = PBXBuildFile; productRef = A10C00103000000000000004 /* LabcordWatchOS */; };
+		C17600000000000000000001 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = C17600000000000000000002 /* Lottie */; };
 		D5C00000000000000000000B /* LabcordKit in Frameworks */ = {isa = PBXBuildFile; productRef = D5C00000000000000000000A /* LabcordKit */; };
 /* End PBXBuildFile section */
 
@@ -89,6 +90,7 @@
 		8E0691123080743D0081547E /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
+				C17600000000000000000001 /* Lottie in Frameworks */,
 				8E98D1AD30884D1500E68666 /* ComposableArchitecture in Frameworks */,
 				8E1069BC308A7AAD00BF375F /* LabcordKit in Frameworks */,
 				A10C00103000000000000001 /* LabcordiOS in Frameworks */,
@@ -160,6 +162,7 @@
 			);
 			name = Researchers;
 			packageProductDependencies = (
+				C17600000000000000000002 /* Lottie */,
 				8E98D1AC30884D1500E68666 /* ComposableArchitecture */,
 				8E1069BB308A7AAD00BF375F /* LabcordKit */,
 				A10C00103000000000000002 /* LabcordiOS */,
@@ -242,6 +245,7 @@
 			mainGroup = 8E06910C3080743D0081547E;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				C17600000000000000000003 /* XCRemoteSwiftPackageReference "lottie-spm" */,
 				8E3F0AEF3085C6E200F857AB /* XCRemoteSwiftPackageReference "swift-composable-architecture" */,
 				8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */,
 			);
@@ -698,6 +702,14 @@
 				minimumVersion = 1.26.2;
 			};
 		};
+		C17600000000000000000003 /* XCRemoteSwiftPackageReference "lottie-spm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/airbnb/lottie-spm.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.6.1;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -725,6 +737,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */;
 			productName = LabcordWatchOS;
+		};
+		C17600000000000000000002 /* Lottie */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C17600000000000000000003 /* XCRemoteSwiftPackageReference "lottie-spm" */;
+			productName = Lottie;
 		};
 		D5C00000000000000000000A /* LabcordKit */ = {
 			isa = XCSwiftPackageProductDependency;

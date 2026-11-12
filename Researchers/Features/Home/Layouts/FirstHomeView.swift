@@ -13,10 +13,13 @@ struct FirstHomeView: View {
             FirstHomeEmptyContent {
                 store.send(.firstHomeRegisterTapped)
             }
+            .allowsHitTesting(!store.requiresGesturePractice)
+            .accessibilityHidden(store.requiresGesturePractice)
 
             if store.isGuideVisible {
                 Color.black.opacity(0.4)
                     .ignoresSafeArea()
+                    .allowsHitTesting(!store.requiresGesturePractice)
                     .onTapGesture {
                         store.send(.firstHomeGuideDismissed)
                     }
@@ -25,6 +28,7 @@ struct FirstHomeView: View {
             VStack(alignment: .trailing, spacing: 0) {
                 if store.isGuideVisible {
                     FirstHomeGuideTooltip()
+                        .allowsHitTesting(false)
                 }
 
                 FirstHomeHelpButton {
@@ -33,6 +37,7 @@ struct FirstHomeView: View {
             }
             .padding(.trailing, 20)
             .padding(.bottom, 17)
+            .zIndex(1)
         }
         .task {
             store.send(.firstHomeAppeared)

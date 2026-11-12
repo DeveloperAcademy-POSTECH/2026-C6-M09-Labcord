@@ -10,6 +10,14 @@ enum PracticeGesture: Int, CaseIterable, Identifiable {
 
     var id: Int { rawValue }
 
+    var watchAnimationName: String {
+        switch self {
+        case .voice: "gesture_watch_voice"
+        case .photo: "gesture_watch_photo"
+        case .video: "gesture_watch_video"
+        }
+    }
+
     func nextIncomplete(in completed: Set<PracticeGesture>) -> PracticeGesture? {
         let allGestures = Self.allCases
         guard let current = allGestures.firstIndex(of: self) else { return nil }

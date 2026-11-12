@@ -26,6 +26,7 @@ struct AppView: View {
 
                     case .gesturePractice(let store):
                         GesturePracticeView(
+                            store: store,
                             device: Binding(
                                 get: { store.device },
                                 set: { store.send(.deviceChanged($0)) }

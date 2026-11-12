@@ -27,6 +27,11 @@ extension AppFeature {
                 guard state.path.ids.last == id else { return .none }
                 state.path.pop(from: id)
                 return .none
+            case let .path(.element(id: id, action: .gesturePractice(.practiceReady))):
+                guard state.path.ids.last == id else { return .none }
+                state.home.$requiresGesturePractice.withLock { $0 = false }
+                state.home.isGuideVisible = false
+                return .none
             case let .path(.element(id: id, action: .gesturePractice(.exitTapped))):
                 guard state.path.ids.last == id,
                       let guideID = state.path.ids.dropLast().last,
