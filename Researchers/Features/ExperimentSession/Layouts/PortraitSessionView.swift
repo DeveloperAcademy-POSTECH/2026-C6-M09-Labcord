@@ -61,6 +61,7 @@ struct PortraitSessionView: View {
                                 }
                             },
                             onSwitchCamera: { store.send(.cameraSwitchRequested) },
+                            onRotate: { SessionOrientation.toggle() },
                             showsRunningTimerButton: !isSidePanelExpanded
                                 && timerStore.timerCollection.hasRunningTimers,
                             canSwitchCamera: store.canSwitchCamera

@@ -45,8 +45,6 @@ struct ExperimentSessionView: View {
         Group {
             if verticalSizeClass == .compact {
                 LandscapeSessionView(
-                    store: captureStore,
-                    timerStore: timerStore,
                     sessionStore: store
                 )
             } else {
@@ -63,26 +61,14 @@ struct ExperimentSessionView: View {
         }
         .backgroundPreferenceValue(CameraPreviewAnchorKey.self) { anchor in
             GeometryReader { geometry in
-                if let connector = captureStore.previewConnector {
+                if verticalSizeClass != .compact,
+                   let connector = captureStore.previewConnector {
                     let frame = previewFrame(anchor: anchor, geometry: geometry)
                     CameraPreviewView(connector: connector, showsHandOverlay: false)
                         .frame(width: frame.width, height: frame.height)
-                        .clipShape(
-                            RoundedRectangle(
-                                cornerRadius: verticalSizeClass == .compact ? 15 : 0
-                            )
-                        )
                         .overlay {
                             if let endsAt = captureStore.photo.countdownEndAt {
                                 PhotoCaptureCountdownView(endsAt: endsAt)
-                            }
-                        }
-                        .overlay(alignment: .topLeading) {
-                            if verticalSizeClass == .compact,
-                               case let .recording(startedAt) = captureStore.videoPhase {
-                                VideoRecordingIndicator(startedAt: startedAt)
-                                    .padding(.leading, 16)
-                                    .padding(.top, verticalSizeClass == .compact ? 16 : 130)
                             }
                         }
                         .position(x: frame.midX, y: frame.midY)
@@ -93,7 +79,9 @@ struct ExperimentSessionView: View {
             .ignoresSafeArea()
         }
         .overlay(alignment: .top) {
-            WatchVoiceRecordingIndicator(experimentID: store.experimentID)
+            if verticalSizeClass != .compact {
+                WatchVoiceRecordingIndicator(experimentID: store.experimentID)
+            }
         }
         .navigationBarBackButtonHidden()
         .toolbarVisibility(
@@ -102,7 +90,8 @@ struct ExperimentSessionView: View {
             for: .statusBar
         )
         .overlay {
-            if let data = captureStore.capturedPhotoData {
+            if verticalSizeClass != .compact,
+               let data = captureStore.capturedPhotoData {
                 CapturedPhotoView(
                     photoData: data,
                     isSaving: captureStore.photo.isSaving,
@@ -113,7 +102,8 @@ struct ExperimentSessionView: View {
             }
         }
         .overlay {
-            if case let .preview(url) = captureStore.videoPhase,
+            if verticalSizeClass != .compact,
+               case let .preview(url) = captureStore.videoPhase,
                let recordID = captureStore.video.recordID {
                 CapturedVideoView(
                     videoURL: url,
@@ -128,11 +118,7 @@ struct ExperimentSessionView: View {
             }
         }
         .overlay {
-            if verticalSizeClass == .compact {
-                if voiceStore.phase != .hidden {
-                    VoiceRecordingView(store: voiceStore)
-                }
-            } else if isPortraitVoiceActivityVisible {
+            if isPortraitVoiceActivityVisible {
                 GeometryReader { geometry in
                     VoiceLiveActivityView(
                         store: voiceStore,
@@ -174,7 +160,8 @@ struct ExperimentSessionView: View {
             )
         )
         .overlay {
-            if !store.isReady && !store.isRemotePreview {
+            if verticalSizeClass != .compact,
+               !store.isReady && !store.isRemotePreview {
                 ExperimentSetupView(
                     failureMessage: store.setupFailureMessage
                 ) { store.send(.setupRetryCameraTapped) }
@@ -192,13 +179,13 @@ struct ExperimentSessionView: View {
             }
         }
         .overlay {
-            if store.isRemotePreview {
+            if verticalSizeClass != .compact && store.isRemotePreview {
                 RemoteExperimentPreparation(store: store)
             }
         }
         .modifier(PauseOverlay(store: store))
         .overlay {
-            if store.isGestureGuidePresented {
+            if verticalSizeClass != .compact && store.isGestureGuidePresented {
                 ExperimentGestureGuideView {
                     store.send(.gestureGuidePresented(false))
                 }
@@ -210,10 +197,12 @@ struct ExperimentSessionView: View {
             }
         }
         .onAppear {
+            SessionOrientation.reset()
             UIApplication.shared.isIdleTimerDisabled = true
             captureStore.send(.cameraViewAppeared)
         }
         .onDisappear {
+            SessionOrientation.reset()
             UIApplication.shared.isIdleTimerDisabled = false
             if store.isReturningHome {
                 captureStore.send(.video(.cancelRequested))
@@ -236,10 +225,6 @@ struct ExperimentSessionView: View {
         guard let anchor else { return fullFrame }
 
         let anchoredFrame = geometry[anchor]
-        if verticalSizeClass == .compact {
-            return anchoredFrame
-        }
-
         let previewOverlap: CGFloat = 50 + (store.isSidePanelExpanded ? 0 : 30)
         return CGRect(
             x: 0,

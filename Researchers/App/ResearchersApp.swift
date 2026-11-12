@@ -5,6 +5,8 @@ import UserNotifications
 
 @main
 struct ResearchersApp: App {
+    @UIApplicationDelegateAdaptor(OrientationAppDelegate.self) private var orientationDelegate
+
     @State private var isSplashActive = true
     private let notificationDelegate = ForegroundNotificationDelegate()
 

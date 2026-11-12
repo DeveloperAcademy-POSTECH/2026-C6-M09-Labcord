@@ -9,42 +9,22 @@ import ComposableArchitecture
 import SwiftUI
 
 struct LandscapeSessionView: View {
-    let store: StoreOf<CameraCaptureFeature>
-    let timerStore: StoreOf<SessionTimerFeature>
     let sessionStore: StoreOf<ExperimentSessionFeature>
 
     var body: some View {
         ZStack(alignment: .topLeading) {
             Color.clear
+                .ignoresSafeArea()
 
-            VStack(alignment: .leading, spacing: 20) {
-                HeaderView(store: sessionStore)
-
-                HStack(alignment: .top, spacing: 20) {
-                    CameraCaptureView(store: store)
-
-                    Spacer()
-
-                    SessionTimerView(store: timerStore)
-                }
-            }
-            .padding(.vertical, 30)
-            .padding(.leading, 80)
-            .padding(.trailing, 36)
-            .foregroundStyle(.white)
+            HeaderView(store: sessionStore)
+                .padding(.top, 20)
+                .padding(.leading, 3)
         }
-        .ignoresSafeArea()
     }
 }
 
 #Preview {
     LandscapeSessionView(
-        store: Store(initialState: CameraCaptureFeature.State(experimentID: UUID())) {
-            CameraCaptureFeature()
-        },
-        timerStore: Store(initialState: SessionTimerFeature.State()) {
-            SessionTimerFeature()
-        },
         sessionStore: Store(
             initialState: ExperimentSessionFeature.State(experimentID: UUID())
         ) {
