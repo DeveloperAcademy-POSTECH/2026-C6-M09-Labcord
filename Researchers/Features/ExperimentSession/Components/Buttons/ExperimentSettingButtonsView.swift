@@ -10,6 +10,8 @@ import LabcordiOS
 import SwiftUI
 
 struct ExperimentSettingButtonsView: View {
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
     let onShowGestureGuide: () -> Void
     let onShowRunningTimers: () -> Void
     let onSwitchCamera: () -> Void
@@ -59,7 +61,7 @@ struct ExperimentSettingButtonsView: View {
                 .cornerRadius(LayoutTokens.radiusFull)
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, verticalSizeClass == .compact ? 0 : 16)
     }
 }
 
