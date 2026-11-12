@@ -185,7 +185,7 @@ struct ExperimentSessionView: View {
         }
         .modifier(PauseOverlay(store: store))
         .overlay {
-            if verticalSizeClass != .compact && store.isGestureGuidePresented {
+            if store.isGestureGuidePresented {
                 ExperimentGestureGuideView {
                     store.send(.gestureGuidePresented(false))
                 }

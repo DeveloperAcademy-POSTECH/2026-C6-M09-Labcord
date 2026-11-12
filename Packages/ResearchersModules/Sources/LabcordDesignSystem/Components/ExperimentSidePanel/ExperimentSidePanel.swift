@@ -9,6 +9,7 @@ public struct ExperimentSidePanel<Content: View>: View {
     @Binding private var isExpanded: Bool
 
     private let layout: Layout
+    private let landscapeTrailingInset: CGFloat
     private let content: () -> Content
 
     @Environment(\.isEnabled) private var isEnabled
@@ -19,10 +20,12 @@ public struct ExperimentSidePanel<Content: View>: View {
     public init(
         layout: Layout = .landscape,
         isExpanded: Binding<Bool>,
+        landscapeTrailingInset: CGFloat = LayoutTokens.spacing16,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.layout = layout
         _isExpanded = isExpanded
+        self.landscapeTrailingInset = landscapeTrailingInset
         self.content = content
     }
 
@@ -146,13 +149,13 @@ public struct ExperimentSidePanel<Content: View>: View {
     private var landscapeBody: some View {
         ZStack(alignment: .trailing) {
             Color.clear
-                .frame(width: isExpanded ? nil : 62, height: 402)
+                .frame(width: isExpanded ? nil : landscapeTrailingInset, height: 402)
 
             if isExpanded {
                 content()
                     .frame(maxWidth: .infinity, minHeight: 322)
                     .padding(.leading, LayoutTokens.spacing16)
-                    .padding(.trailing, 62)
+                    .padding(.trailing, landscapeTrailingInset)
                     .padding(.top, 80)
                     .frame(maxWidth: .infinity, minHeight: 402)
                     .transition(contentTransition(edge: .trailing))
@@ -188,7 +191,7 @@ public struct ExperimentSidePanel<Content: View>: View {
     }
 
     private var landscapeWidth: CGFloat {
-        isExpanded ? 400 : 62 + scaledIconSize + LayoutTokens.spacing4
+        isExpanded ? 400 : landscapeTrailingInset + scaledIconSize + LayoutTokens.spacing4
     }
 
     private var shadowColor: Color {
