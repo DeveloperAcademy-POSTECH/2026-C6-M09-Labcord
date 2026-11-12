@@ -39,10 +39,12 @@ struct LandscapeSessionView: View {
                             .padding(.top, 20)
                             .padding(.leading, 3)
 
-                        ExperimentRecordButtonsView(
-                            store: sessionStore.scope(state: \.capture, action: \.capture),
-                            isDisabled: areRecordButtonsDisabled
-                        )
+                        if !sessionStore.isSidePanelExpanded {
+                            ExperimentRecordButtonsView(
+                                store: sessionStore.scope(state: \.capture, action: \.capture),
+                                isDisabled: areRecordButtonsDisabled
+                            )
+                        }
                     }
                     .padding(.top, 10)
                     .padding(.trailing, -extraSpacerWidth)
