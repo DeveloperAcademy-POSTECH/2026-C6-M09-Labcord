@@ -57,11 +57,12 @@ nonisolated private final class CameraPreviewStorage: @unchecked Sendable {
     private var device: AVCaptureDevice?
 
     @MainActor private var previewLayer: AVCaptureVideoPreviewLayer?
-    @MainActor private var tipLayer: CAShapeLayer?
+    @MainActor private var skeletonLayer: CAShapeLayer?
     @MainActor private var overlayTask: Task<Void, Never>?
     @MainActor private var showsHandOverlay = true
     @MainActor private var latestFrame = CameraHandOverlayHub.Frame(
-        tips: [],
+        segments: [],
+        joints: [],
         imageSize: .zero,
         videoRotationAngle: 0,
         isVideoMirrored: false
@@ -93,16 +94,19 @@ nonisolated private final class CameraPreviewStorage: @unchecked Sendable {
         if layer.superlayer !== view.layer {
             view.layer.addSublayer(layer)
         }
-        let dots: CAShapeLayer
-        if let tipLayer {
-            dots = tipLayer
+        let skeleton: CAShapeLayer
+        if let skeletonLayer {
+            skeleton = skeletonLayer
         } else {
-            dots = CAShapeLayer()
-            dots.fillColor = UIColor.systemCyan.cgColor
-            tipLayer = dots
+            skeleton = CAShapeLayer()
+            skeleton.strokeColor = UIColor.white.cgColor
+            skeleton.fillColor = UIColor.white.cgColor
+            skeleton.lineWidth = 1.5
+            skeleton.lineCap = .round
+            skeletonLayer = skeleton
         }
-        if dots.superlayer !== view.layer {
-            view.layer.addSublayer(dots)
+        if skeleton.superlayer !== view.layer {
+            view.layer.addSublayer(skeleton)
         }
         view.clipsToBounds = true
         updateHandOverlayVisibility(showsHandOverlay)
@@ -118,9 +122,10 @@ nonisolated private final class CameraPreviewStorage: @unchecked Sendable {
         rotationObservation = nil
         rotationCoordinator = nil
         latestFrame = .init(
-            tips: [], imageSize: .zero, videoRotationAngle: 0, isVideoMirrored: false
+            segments: [], joints: [], imageSize: .zero,
+            videoRotationAngle: 0, isVideoMirrored: false
         )
-        drawTips()
+        drawSkeleton()
         if let previewLayer {
             configureRotationIfNeeded(for: previewLayer)
         }
@@ -134,10 +139,11 @@ nonisolated private final class CameraPreviewStorage: @unchecked Sendable {
         overlayTask?.cancel()
         overlayTask = nil
         latestFrame = .init(
-            tips: [], imageSize: .zero, videoRotationAngle: 0, isVideoMirrored: false
+            segments: [], joints: [], imageSize: .zero,
+            videoRotationAngle: 0, isVideoMirrored: false
         )
-        tipLayer?.removeFromSuperlayer()
-        tipLayer = nil
+        skeletonLayer?.removeFromSuperlayer()
+        skeletonLayer = nil
         previewLayer?.removeFromSuperlayer()
         previewLayer = nil
     }
@@ -148,42 +154,52 @@ nonisolated private final class CameraPreviewStorage: @unchecked Sendable {
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         previewLayer.frame = view.bounds
-        tipLayer?.frame = view.bounds
-        drawTips()
+        skeletonLayer?.frame = view.bounds
+        drawSkeleton()
         CATransaction.commit()
     }
 
     @MainActor
-    private func drawTips() {
-        guard let previewLayer, let tipLayer else { return }
+    private func drawSkeleton() {
+        guard let previewLayer, let skeletonLayer else { return }
         guard showsHandOverlay else {
-            tipLayer.path = nil
+            skeletonLayer.path = nil
             return
         }
         let path = UIBezierPath()
-        for tip in latestFrame.tips {
-            guard let point = previewPoint(for: tip, in: previewLayer) else { continue }
+        for segment in latestFrame.segments {
+            guard let start = previewPoint(for: segment.start, in: previewLayer),
+                  let end = previewPoint(for: segment.end, in: previewLayer) else { continue }
+            path.move(to: start)
+            path.addLine(to: end)
+        }
+        for joint in latestFrame.joints {
+            guard let point = previewPoint(for: joint, in: previewLayer) else { continue }
             path.append(UIBezierPath(ovalIn: CGRect(
-                x: point.x - 5,
-                y: point.y - 5,
-                width: 10,
-                height: 10
+                x: point.x - 2,
+                y: point.y - 2,
+                width: 4,
+                height: 4
             )))
         }
-        tipLayer.path = path.cgPath
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        skeletonLayer.path = path.cgPath
+        CATransaction.commit()
     }
 
     @MainActor
     private func updateHandOverlayVisibility(_ isVisible: Bool) {
         showsHandOverlay = isVisible
-        tipLayer?.isHidden = !isVisible
+        skeletonLayer?.isHidden = !isVisible
         guard isVisible else {
             overlayTask?.cancel()
             overlayTask = nil
             latestFrame = .init(
-                tips: [], imageSize: .zero, videoRotationAngle: 0, isVideoMirrored: false
+                segments: [], joints: [], imageSize: .zero,
+                videoRotationAngle: 0, isVideoMirrored: false
             )
-            tipLayer?.path = nil
+            skeletonLayer?.path = nil
             return
         }
         guard overlayTask == nil else { return }
@@ -191,14 +207,14 @@ nonisolated private final class CameraPreviewStorage: @unchecked Sendable {
             for await frame in handOverlayHub.stream() {
                 guard !Task.isCancelled, let self, self.showsHandOverlay else { continue }
                 self.latestFrame = frame
-                self.drawTips()
+                self.drawSkeleton()
             }
         }
     }
 
     @MainActor
     private func previewPoint(
-        for tip: CGPoint,
+        for joint: CGPoint,
         in layer: AVCaptureVideoPreviewLayer
     ) -> CGPoint? {
         guard let connection = layer.connection,
@@ -207,7 +223,7 @@ nonisolated private final class CameraPreviewStorage: @unchecked Sendable {
 
         let dataTurns = quarterTurns(for: latestFrame.videoRotationAngle)
         let previewTurns = quarterTurns(for: connection.videoRotationAngle)
-        var point = CGPoint(x: tip.x, y: 1 - tip.y)
+        var point = CGPoint(x: joint.x, y: 1 - joint.y)
         if latestFrame.isVideoMirrored {
             point.x = 1 - point.x
         }
@@ -281,6 +297,6 @@ nonisolated private final class CameraPreviewStorage: @unchecked Sendable {
               connection.isVideoRotationAngleSupported(angle),
               connection.videoRotationAngle != angle else { return }
         connection.videoRotationAngle = angle
-        drawTips()
+        drawSkeleton()
     }
 }

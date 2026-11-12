@@ -4,7 +4,8 @@ import Vision
 nonisolated enum HandPoseClassifier {
     struct Analysis {
         let pose: HandPose?
-        let extendedTips: [CGPoint]
+        let segments: [CameraHandOverlayHub.Segment]
+        let joints: [CGPoint]
     }
 
     private enum FingerBend {
@@ -14,14 +15,11 @@ nonisolated enum HandPoseClassifier {
 
     private struct FingerDetection {
         let bend: FingerBend
-        let tip: CGPoint?
     }
 
     private struct FingerSummary {
         var curled = 0
         var extended = 0
-        var extendedTips: [CGPoint] = []
-
         mutating func add(_ detection: FingerDetection?) {
             guard let detection else { return }
             switch detection.bend {
@@ -29,7 +27,6 @@ nonisolated enum HandPoseClassifier {
                 curled += 1
             case .extended:
                 extended += 1
-                if let tip = detection.tip { extendedTips.append(tip) }
             }
         }
     }
@@ -50,14 +47,33 @@ nonisolated enum HandPoseClassifier {
         .init(tip: .ringTip, distal: .ringDIP, middle: .ringPIP, base: .ringMCP),
         .init(tip: .littleTip, distal: .littleDIP, middle: .littlePIP, base: .littleMCP)
     ]
+    private static let skeletonChains: [[HumanHandPoseObservation.JointName]] = [
+        [.wrist, .thumbCMC, .thumbMP, .thumbIP, .thumbTip],
+        [.wrist, .indexMCP, .indexPIP, .indexDIP, .indexTip],
+        [.wrist, .middleMCP, .middlePIP, .middleDIP, .middleTip],
+        [.wrist, .ringMCP, .ringPIP, .ringDIP, .ringTip],
+        [.wrist, .littleMCP, .littlePIP, .littleDIP, .littleTip]
+    ]
 
-    static func analyze(_ hand: HumanHandPoseObservation) -> Analysis? {
+    static func analyze(_ hand: HumanHandPoseObservation) -> Analysis {
         let points = hand.allJoints()
+        let visibleJoints = points.compactMapValues { joint in
+            joint.confidence >= confidenceThreshold ? joint.location.cgPoint : nil
+        }
+        var segments: [CameraHandOverlayHub.Segment] = []
+        for chain in skeletonChains {
+            for (start, end) in zip(chain, chain.dropFirst()) {
+                guard let startPoint = visibleJoints[start],
+                      let endPoint = visibleJoints[end] else { continue }
+                segments.append(.init(start: startPoint, end: endPoint))
+            }
+        }
+        let joints = Array(visibleJoints.values)
         guard let wrist = points[.wrist], wrist.confidence >= confidenceThreshold,
               let indexMCP = points[.indexMCP], indexMCP.confidence >= confidenceThreshold,
               let littleMCP = points[.littleMCP],
               littleMCP.confidence >= confidenceThreshold else {
-            return nil
+            return Analysis(pose: nil, segments: segments, joints: joints)
         }
 
         var summary = FingerSummary()
@@ -70,7 +86,7 @@ nonisolated enum HandPoseClassifier {
             summary.add(fingerDetection(finger, in: points, wrist: wrist.location.cgPoint))
         }
 
-        return Analysis(pose: pose(for: summary), extendedTips: summary.extendedTips)
+        return Analysis(pose: pose(for: summary), segments: segments, joints: joints)
     }
 
     private static func thumbDetection(
@@ -123,7 +139,7 @@ nonisolated enum HandPoseClassifier {
                 anchor: anchor,
                 extensionMargin: extensionMargin
             ) else { return nil }
-            return FingerDetection(bend: fingerBend, tip: tip.location.cgPoint)
+            return FingerDetection(bend: fingerBend)
         }
 
         guard let distal,
@@ -133,7 +149,7 @@ nonisolated enum HandPoseClassifier {
                   anchor: anchor,
                   extensionMargin: extensionMargin * 0.5
               ) else { return nil }
-        return FingerDetection(bend: fingerBend, tip: nil)
+        return FingerDetection(bend: fingerBend)
     }
 
     private static func pose(for summary: FingerSummary) -> HandPose? {
