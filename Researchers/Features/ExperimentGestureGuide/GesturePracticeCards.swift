@@ -69,7 +69,7 @@ struct GesturePracticeCards: View {
                     .typography(Typography.subheadline)
             }
             .foregroundStyle(
-                Color("Experiment/Fill/White", bundle: LabcordDesignSystemResources.bundle)
+                Color("Experiment/Label/Primary", bundle: LabcordDesignSystemResources.bundle)
             )
             .frame(maxWidth: .infinity, alignment: .leading)
 
