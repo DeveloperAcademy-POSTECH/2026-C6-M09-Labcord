@@ -123,7 +123,10 @@ struct GesturePracticeView: View {
 
     private var preparationContent: some View {
         VStack(spacing: 8) {
-            GesturePreparationSpinner()
+            ProgressView()
+                .progressViewStyle(.circular)
+                .controlSize(.large)
+                .tint(Color("Experiment/Label/Brand"))
                 .frame(width: 40, height: 40)
             Text("연습 화면을 준비중이에요")
                 .typography(Typography.title3SemiBold)
