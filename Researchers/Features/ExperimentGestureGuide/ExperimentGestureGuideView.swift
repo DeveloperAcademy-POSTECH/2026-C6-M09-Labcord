@@ -75,6 +75,7 @@ struct ExperimentGestureGuideView: View {
 
             GeometryReader { geometry in
                 let isCompactHeight = geometry.size.height < 700
+                let separator = geometry.size.width > geometry.size.height ? " " : "\n"
 
                 VStack(spacing: 0) {
                     NavigationPageTitle(
@@ -84,7 +85,7 @@ struct ExperimentGestureGuideView: View {
                     )
 
                     VStack(spacing: 0) {
-                        Text("제스처로 음성 녹음, 사진, 영상을\n빠르게 기록하세요")
+                        Text("제스처로 음성 녹음, 사진, 영상을\(separator)빠르게 기록하세요.")
                             .padding(.top, isCompactHeight ? 20 : 55)
                             .padding(.bottom, isCompactHeight ? 24 : 57)
                             .multilineTextAlignment(.center)
