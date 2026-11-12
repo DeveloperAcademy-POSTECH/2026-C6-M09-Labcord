@@ -53,6 +53,10 @@ extension AppFeature {
 
     func screenSnapshot(_ state: State) -> WatchScreenSnapshot {
         guard let id = state.path.ids.last else { return .init(destination: .home) }
+        if state.path[id: id, case: \.gestureGuide] != nil
+            || state.path[id: id, case: \.gesturePractice] != nil {
+            return .init(destination: .home)
+        }
         if let session = state.path[id: id, case: \.session] {
             let remote = PhoneWatchAudioService.shared.screenRecording
             return session.screenSnapshot(
