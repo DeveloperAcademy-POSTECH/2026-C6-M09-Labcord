@@ -87,7 +87,7 @@ final class WatchIntentRuntime {
             let selectedID = canRestoreSelection ? store.selectedID : selectionBeforeActivation
             try validateLease(practice: startedInPractice, selectedID: selectedID)
             if startedInPractice {
-                return try performPractice(kind)
+                throw WatchIntentRuntimeError.notReady
             }
             if kind == .voice, let stop = WatchIntentRouting.localVoiceStop(
                 state: store.withState { $0 }
@@ -277,17 +277,6 @@ private extension WatchIntentRuntime {
             }
             try await pause(until: deadline)
         }
-    }
-}
-
-private extension WatchIntentRuntime {
-    func performPractice(_ kind: WatchRecordPresentation.Kind) throws -> String {
-        _ = try WatchIntentRouting.action(for: kind, state: store.withState { $0 })
-        store.send(.practiceRecord(kind))
-        guard let feedback = store.practice.feedback else {
-            throw WatchIntentRuntimeError.notReady
-        }
-        return feedback
     }
 
     private func waitForRecordingIntegration(

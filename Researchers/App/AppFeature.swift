@@ -64,6 +64,7 @@ struct AppFeature {
     var body: some Reducer<State, Action> {
         Scope(state: \.home, action: \.home) { HomeFeature() }
         watchReducer
+        gestureGuideReducer
         screenNavigationReducer
         settingsReturnReducer
 

@@ -11,6 +11,9 @@ extension AppFeature {
         case .onboarding(.delegate(.finished)):
             state.onboarding = nil
             state.$hasCompletedOnboarding.withLock { $0 = true }
+            if state.home.isFirstHome {
+                state.home.$requiresGesturePractice.withLock { $0 = true }
+            }
 
         default:
             break
