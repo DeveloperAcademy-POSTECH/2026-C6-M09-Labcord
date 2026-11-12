@@ -23,7 +23,7 @@ struct ExperimentResultView: View {
                 VStack(spacing: 0) {
                     Group {
                         if store.recordTimeline == nil && store.loadMessage == nil {
-                            ExperimentProcessingView()
+                            ExperimentProcessingView(isOpenedFromHome: store.isOpenedFromHome)
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                         } else {
                             ScrollView {
@@ -168,7 +168,13 @@ struct ExperimentResultView: View {
                         set: { if $0 == nil { store.send(.recordSaveMessageDismissed) } }
                     ),
                     canSave: store.canSaveRecord,
-                    onDismiss: { store.send(.timelineSheetDismissed) },
+                    isDiscardConfirmationPresented: Binding(
+                        get: { store.isRecordDiscardConfirmationPresented },
+                        set: { if !$0 { store.send(.recordDiscardCancelled) } }
+                    ),
+                    onDismiss: { store.send(.timelineSheetDismissRequested) },
+                    onConfirmDiscard: { store.send(.recordDiscardConfirmed) },
+                    onCancelDiscard: { store.send(.recordDiscardCancelled) },
                     onSave: { store.send(.recordSaveTapped) },
                     onDelete: { store.send(.recordDeleteTapped) },
                     onConfirmDelete: { store.send(.recordDeleteConfirmed) },

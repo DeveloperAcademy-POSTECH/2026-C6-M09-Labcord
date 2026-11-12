@@ -27,7 +27,7 @@ public final class SpeechRecordingSession {
     var audioActivationPending = false
     var ownsAudioSession = false
     var isStopping = false
-    var transcriptSegments: [TranscriptSegment] = []
+    var transcriptAccumulator = SpeechTranscriptAccumulator()
     var transcript = ""
     var termMatcher = SpeechTermMatcher(replacements: [:])
     var unitNormalizer = SpeechUnitNormalizer(units: [])
@@ -195,7 +195,7 @@ public final class SpeechRecordingSession {
         let (inputStream, inputContinuation) = AsyncStream<AnalyzerInput>.makeStream()
         analyzerInputContinuation = inputContinuation
 
-        transcriptSegments = []
+        transcriptAccumulator = SpeechTranscriptAccumulator()
         transcript = ""
         transcriptionIncomplete = false
         isStopping = false
@@ -319,11 +319,6 @@ extension SpeechRecordingSession {
         }
     }
 
-}
-
-struct TranscriptSegment {
-    var start: Double
-    var text: String
 }
 
 private final class ConverterBox: @unchecked Sendable {

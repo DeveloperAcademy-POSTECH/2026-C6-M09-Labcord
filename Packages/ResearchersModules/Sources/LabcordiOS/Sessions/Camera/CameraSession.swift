@@ -36,8 +36,9 @@ public actor CameraSession {
         handEventHub = hub
         handOverlayHub = overlayHub
         handDetector = CameraHandDetector(
+            queue: handTrackingQueue,
             onHold: { hub.emit($0) },
-            onTips: { overlayHub.emit($0) }
+            onOverlay: { overlayHub.emit($0) }
         )
     }
 
@@ -173,7 +174,8 @@ public actor CameraSession {
 
     private func resetHandTracking() {
         handOverlayHub.emit(.init(
-            tips: [],
+            segments: [],
+            joints: [],
             imageSize: .zero,
             videoRotationAngle: 0,
             isVideoMirrored: false

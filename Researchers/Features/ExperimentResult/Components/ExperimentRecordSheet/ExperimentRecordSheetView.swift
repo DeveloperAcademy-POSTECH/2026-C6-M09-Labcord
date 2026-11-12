@@ -10,7 +10,6 @@ struct ExperimentRecordSheetView: View {
     @Binding var note: String
     @Binding var transcript: String
     let canSave: Bool
-    let onDismiss: () -> Void
     let onSave: () -> Void
     let onDelete: () -> Void
     let onScrollTargetChange: (RecordBottomSheetScrollTarget?) -> Void
@@ -32,7 +31,6 @@ struct ExperimentRecordSheetView: View {
                 transcript: $transcript,
                 note: $note,
                 mediaContent: mediaContent(for: presentation),
-                onDismiss: onDismiss,
                 onScrollTargetChange: onScrollTargetChange,
                 onSave: onSave,
                 onDelete: onDelete,

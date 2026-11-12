@@ -15,7 +15,7 @@ final class WatchAudioTranscriber {
     private var timeout: Task<Void, Never>?
     private var waiter: CheckedContinuation<String, Error>?
     private var terminal: Result<String, Error>?
-    private var segments: [TranscriptSegment] = []
+    private var transcriptAccumulator = SpeechTranscriptAccumulator()
     private var transcript = ""
     private var revision: UInt64 = 0
     private var throughSample: Int64 = 0
@@ -139,19 +139,10 @@ final class WatchAudioTranscriber {
 
     private func receive(_ result: DictationTranscriber.Result) {
         guard terminal == nil else { return }
-        let selected = termMatcher.bestCandidate(
-            primary: String(result.text.characters),
-            alternatives: result.alternatives.lazy.map { String($0.characters) }
-        )
-        guard !selected.isEmpty else { return }
-        let start = result.range.start.seconds
-        if let index = segments.lastIndex(where: { abs($0.start - start) < 0.01 }) {
-            segments[index].text = selected
-        } else {
-            segments.append(TranscriptSegment(start: start, text: selected))
-        }
-        let raw = segments.map(\.text).joined(separator: " ")
-        transcript = unitNormalizer.normalize(termMatcher.restore(raw).text)
+        guard let text = transcriptAccumulator.accept(
+            result, termMatcher: &termMatcher, unitNormalizer: unitNormalizer
+        ) else { return }
+        transcript = text
         publish(isFinal: false)
     }
 

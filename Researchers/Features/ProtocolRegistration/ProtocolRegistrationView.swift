@@ -4,7 +4,6 @@ import LabcordiOS
 import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
-
 struct ProtocolRegistrationView: View {
     @Bindable var store: StoreOf<ProtocolRegistrationFeature>
     @State private var photoPickerPresented = false
@@ -13,33 +12,34 @@ struct ProtocolRegistrationView: View {
     @State private var importFailed = false
     @Environment(\.scenePhase) private var scenePhase
     @State private var showReviewConfirmation = false
-    @State private var showSkipConfirmation = false
     @State private var showExitConfirmation = false
+    @State private var showAnalysisExitConfirmation = false
     @State private var showDiscardConfirmation = false
-
     private var input: ProtocolInputAnalysisFeature.State { store.inputAnalysis }
-
-    var body: some View {
+    private var registrationContent: some View {
         Group {
             if input.analysisID != nil {
                 ProtocolAnalysisProgressView(
-                    phase: input.analysisPhase,
-                    inputName: input.analysisInput?.name,
-                    inputNumber: input.analysisInputNumber,
-                    inputCount: input.selectedInputs.count,
-                    startedAt: input.analysisStartedAt,
+                    store: store.scope(state: \.analysisProgress, action: \.analysisProgress),
+                    progress: input.analysisProgress,
+                    scanCompleted: !input.selectedInputs.isEmpty
+                        && input.pendingParsingInputs.isEmpty,
+                    extractionCompleted: !input.selectedInputs.isEmpty
+                        && input.pendingInputs.isEmpty,
                     isCancelling: input.analysisCancellationRequested,
                     notice: input.analysisMessage
-                ) {
-                    showSkipConfirmation = true
-                }
+                )
                 .background(Color(
-                    "General/Background/Primary", bundle: LabcordDesignSystemResources.bundle
+                    "General/Background/Primary"
                 ))
             } else if input.showsAnalysisCompletion && input.invalidatingJobID == nil {
-                ProtocolAnalysisCompletionView(onReview: requestReview)
+                ProtocolAnalysisCompletionView(
+                    store: store.scope(state: \.analysisCompletion, action: \.analysisCompletion),
+                    requiresReviewConfirmation: input.requiresReviewConfirmation,
+                    reviewConfirmationMessage: reviewConfirmationMessage
+                )
                     .background(Color(
-                        "General/Background/Primary", bundle: LabcordDesignSystemResources.bundle
+                        "General/Background/Primary"
                     ))
             } else {
                 setupContent
@@ -78,13 +78,13 @@ struct ProtocolRegistrationView: View {
         } message: {
             Text(reviewConfirmationMessage)
         }
-        .alert("분석을 건너뛸까요?", isPresented: $showSkipConfirmation) {
-            Button("건너뛰기", role: .destructive) {
-                store.send(.skipTapped)
+        .alert("프로토콜 분석을 종료할까요?", isPresented: $showAnalysisExitConfirmation) {
+            Button("분석 종료", role: .destructive) {
+                store.send(.inputAnalysis(.backTapped))
             }
             Button("취소", role: .cancel) { }
         } message: {
-            Text("분석 결과는 초기화되고 프로토콜 없이 실험을 시작해요.")
+            Text("분석을 종료하면 분석 결과가 초기화 돼요.")
         }
         .alert("실험 등록을 종료할까요?", isPresented: $showExitConfirmation) {
             Button("실험 등록 종료", role: .destructive) { store.send(.inputAnalysis(.backTapped)) }
@@ -100,9 +100,13 @@ struct ProtocolRegistrationView: View {
         } message: {
             Text("선택한 파일과 분석 결과가 초기화돼요. 원본 파일은 삭제되지 않아요.")
         }
+    }
+    var body: some View {
+        registrationContent
         .photosPicker(
             isPresented: $photoPickerPresented,
             selection: $photoSelection,
+            maxSelectionCount: max(1, 10 - input.importedPhotos.count),
             matching: .images
         )
         .onChange(of: photoSelection) { _, selection in
@@ -126,62 +130,49 @@ struct ProtocolRegistrationView: View {
         .navigationBarBackButtonHidden()
         .toolbar(.hidden, for: .navigationBar)
         .safeAreaInset(edge: .top, spacing: 0) {
-            if input.analysisID == nil {
-                NavigationPageTitle(input.showsAnalysisCompletion ? "" : "실험 등록") {
-                    if input.selectedInputs.isEmpty {
-                        store.send(.inputAnalysis(.backTapped))
-                    } else {
-                        showExitConfirmation = true
-                    }
+            NavigationPageTitle(
+                input.analysisID != nil || input.showsAnalysisCompletion ? "" : "실험 등록"
+            ) {
+                if input.analysisID != nil {
+                    store.send(.analysisProgress(.backTapped))
+                } else if input.showsAnalysisCompletion && input.invalidatingJobID == nil {
+                    store.send(.analysisCompletion(.backTapped))
+                } else if input.analysisStarting || input.showsAnalysisCompletion {
+                    showAnalysisExitConfirmation = true
+                } else if input.selectedInputs.isEmpty {
+                    store.send(.inputAnalysis(.backTapped))
+                } else {
+                    showExitConfirmation = true
                 }
-                .disabled(input.restoringAnalysis || store.isSaving || input.importing
-                          || input.analysisID != nil || input.invalidatingJobID != nil
-                          || input.analysisStarting)
-                .accessibilityIdentifier("entry-back")
             }
+            .disabled(input.restoringAnalysis || store.isSaving || input.importing
+                      || input.invalidatingJobID != nil || input.analysisCancellationRequested)
+            .accessibilityIdentifier("entry-back")
         }
     }
-
 }
-
 private extension ProtocolRegistrationView {
     var setupContent: some View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(spacing: 8) {
                     ProtocolUploadButton(
-                        "사진", description: "PNG, JPG",
+                        "사진", description: "PNG, JPG · 최대 10장",
                         state: input.importedPhotos.isEmpty ? .default : .selected
                     ) {
-                        photoPickerPresented = true
+                        if input.importedPhotos.count < 10 {
+                            photoPickerPresented = true
+                        }
                     }
                     .accessibilityHint("사진을 선택합니다")
                     .accessibilityIdentifier("entry-source-photos")
-
                     ProtocolUploadButton(
-                        "파일", description: "PDF, XLSX, DOCX",
+                        "파일", description: "PDF, XLSX, DOCX · 최대 1GB",
                         state: input.importedFile == nil ? .default : .selected
                     ) {
                         filePickerPresented = true
                     }
                     .accessibilityIdentifier("entry-source-file")
-
-                    if let importedFile = input.importedFile {
-                        HStack {
-                            Text(importedFile.name).lineLimit(1)
-                            Spacer()
-                            Button("삭제", systemImage: "xmark") {
-                                store.send(.inputAnalysis(.removeFile))
-                            }
-                                .labelStyle(.iconOnly)
-                        }
-                        .padding(.horizontal, 16)
-                    }
-
-                    if input.importing {
-                        ProgressView("파일을 가져오고 있어요")
-                    }
-
                     ProtocolUploadButton(
                         "최근 사용한 프로토콜", description: "", state: .default,
                         showDescription: false
@@ -196,19 +187,26 @@ private extension ProtocolRegistrationView {
                 .padding(.horizontal, 16)
                 .padding(.top, 16)
             }
-
-            VStack(spacing: 8) {
+            VStack(spacing: 16) {
+                if let importedFile = input.importedFile {
+                    importedFileRow(importedFile)
+                        .disabled(store.isSaving || input.importing || input.analysisID != nil
+                                  || input.invalidatingJobID != nil || input.analysisStarting)
+                }
+                if input.importing {
+                    ProgressView("파일을 가져오고 있어요")
+                }
                 if !input.importedPhotos.isEmpty {
-                    ScrollView(.horizontal) {
-                        HStack(spacing: 8) {
-                            ForEach(input.importedPhotos) { photo in
-                                ProtocolPhotoItem {
-                                    store.send(.inputAnalysis(.removePhoto(photo.id)))
-                                } content: {
-                                    ProtocolPhotoThumbnail(url: photo.url)
-                                }
+                    RegistrationAttachmentScrollView {
+                        ForEach(input.importedPhotos) { photo in
+                            ProtocolPhotoItem {
+                                store.send(.inputAnalysis(.removePhoto(photo.id)))
+                            } content: {
+                                ProtocolPhotoThumbnail(url: photo.url)
                             }
-                            ProtocolPhotoItem { photoPickerPresented = true }
+                        }
+                        ProtocolPhotoItem(isDisabled: input.importedPhotos.count >= 10) {
+                            photoPickerPresented = true
                         }
                     }
                     .disabled(store.isSaving || input.importing || input.analysisID != nil
@@ -248,11 +246,7 @@ private extension ProtocolRegistrationView {
                         .disabled(input.invalidatingJobID != nil || input.analysisStarting)
                 }
                 Button {
-                    if input.selectedInputs.isEmpty {
-                        store.send(.skipTapped)
-                    } else {
-                        showSkipConfirmation = true
-                    }
+                    store.send(.skipTapped)
                 } label: {
                     HStack(spacing: 6) {
                         if store.isSaving {
@@ -268,7 +262,6 @@ private extension ProtocolRegistrationView {
                 .disabled(store.isSaving || input.importing || input.analysisID != nil
                           || input.invalidatingJobID != nil || input.analysisStarting)
                 .accessibilityIdentifier("entry-skip")
-
                 EntryNextButton(
                     enabled: (!input.pendingInputs.isEmpty || input.analysisPaused)
                         && !input.importing
@@ -279,9 +272,51 @@ private extension ProtocolRegistrationView {
                 )
             }
             .padding(.horizontal, 16)
+            .padding(.top, 16)
         }
     }
-
+}
+private extension ProtocolRegistrationView {
+    func importedFileRow(_ file: ImportedProtocolInput) -> some View {
+        HStack(spacing: 16) {
+            FileTypeIcon(fileIconKind(for: file.name))
+                .padding(4)
+                .accessibilityHidden(true)
+            Text(file.name)
+                .typography(Typography.footnote)
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Button {
+                store.send(.inputAnalysis(.removeFile))
+            } label: {
+                Image(labcordIcon: .xCircle)
+                    .resizable()
+                    .frame(width: 16, height: 16)
+            }
+            .buttonStyle(.labcordIcon(.quaternary, size: .medium))
+            .accessibilityLabel("파일 삭제")
+        }
+        .padding(12)
+        .background(Color(
+            "General/Fill/Light"
+        ), in: RoundedRectangle(cornerRadius: 8))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(Color(
+                    "General/Border/Default"
+                ), lineWidth: 0.75)
+                .allowsHitTesting(false)
+        }
+    }
+    func fileIconKind(for name: String) -> FileTypeIcon.Kind {
+        switch (name as NSString).pathExtension.lowercased() {
+        case "pdf": .pdf
+        case "docx": .docx
+        case "xlsx": .xls
+        default: .pdf
+        }
+    }
     var protocolFileTypes: [UTType] {
         [.pdf] + ["xlsx", "docx"].compactMap { UTType(filenameExtension: $0) }
     }

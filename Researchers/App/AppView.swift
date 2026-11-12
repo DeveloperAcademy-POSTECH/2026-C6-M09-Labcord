@@ -11,43 +11,50 @@ struct AppView: View {
     var body: some View {
         @Bindable var store = store
 
-        NavigationStack(path: $store.scope(\.path, action: \.path)) {
-            HomeView(store: store.scope(state: \.home, action: \.home))
-        } destination: { store in
-            switch store.case {
-            case .registration(let store):
-                ProtocolRegistrationView(store: store)
-                    .navigationSwipeBackEnabled(!store.isSaving)
+        Group {
+            if let onboardingStore = store.scope(state: \.onboarding, action: \.onboarding) {
+                OnboardingView(store: onboardingStore)
+            } else {
+                NavigationStack(path: $store.scope(\.path, action: \.path)) {
+                    HomeView(store: store.scope(state: \.home, action: \.home))
+                } destination: { store in
+                    switch store.case {
+                    case .registration(let store):
+                        ProtocolRegistrationView(store: store)
+                            .navigationSwipeBackEnabled(!store.isSaving)
 
-            case .recent(let store):
-                RecentProtocolView(store: store)
+                    case .recent(let store):
+                        RecentProtocolView(store: store)
 
-            case .review(let store):
-                ProtocolReviewView(store: store)
-                    .disabled(self.store.savedReview != nil)
-                    .overlay(alignment: .bottom) {
-                        if self.store.savedReview != nil {
-                            VStack {
-                                Button("정리 다시 시도") { self.store.send(.retryReviewSave) }
-                                Button("저장된 실험으로 이동") { self.store.send(.openSavedReview) }
+                    case .review(let store):
+                        ProtocolReviewView(store: store)
+                            .disabled(self.store.savedReview != nil)
+                            .overlay(alignment: .bottom) {
+                                if self.store.savedReview != nil {
+                                    VStack {
+                                        Button("정리 다시 시도") { self.store.send(.retryReviewSave) }
+                                        Button("저장된 실험으로 이동") { self.store.send(.openSavedReview) }
+                                    }
+                                    .padding()
+                                    .background(.regularMaterial, in: Capsule())
+                                    .padding()
+                                }
                             }
-                            .padding()
-                            .background(.regularMaterial, in: Capsule())
-                            .padding()
-                        }
+                            .navigationSwipeBackEnabled(false)
+
+                    case .session(let store):
+                        ExperimentSessionView(store: store)
+                            .navigationSwipeBackEnabled(false)
+
+                    case .result(let store):
+                        ExperimentResultView(store: store)
+                            .navigationSwipeBackEnabled(store.isOpenedFromHome)
                     }
-                    .navigationSwipeBackEnabled(false)
-
-            case .session(let store):
-                ExperimentSessionView(store: store)
-                    .navigationSwipeBackEnabled(false)
-
-            case .result(let store):
-                ExperimentResultView(store: store)
-                    .navigationSwipeBackEnabled(store.isOpenedFromHome)
+                }
             }
         }
         .task { await store.send(.watchTask).finish() }
+.task { store.send(.appeared) }
         .onAppear {
             store.send(.restoreSettingsSession)
             store.send(.watchSceneChanged(scenePhase == .active))
@@ -90,14 +97,14 @@ struct AppView: View {
         } message: {
             Text("이 분석으로 저장한 실험이 있어요. 이번에 편집한 내용은 반영되지 않아요.")
         }
-        .alert("결과 편집을 종료할까요?", isPresented: Binding(
+        .alert("실험 등록을 종료할까요?", isPresented: Binding(
             get: { store.reviewExitRequested },
             set: { if !$0 { store.send(.cancelReviewExit) } }
         )) {
-            Button("계속 편집", role: .cancel) { store.send(.cancelReviewExit) }
-            Button("종료", role: .destructive) { store.send(.confirmReviewExit) }
+            Button("취소", role: .cancel) { store.send(.cancelReviewExit) }
+            Button("실험 등록 종료", role: .destructive) { store.send(.confirmReviewExit) }
         } message: {
-            Text("편집한 내용은 저장되지 않아요.")
+            Text("이 화면을 나가면 분석 결과가 초기화 돼요.")
         }
         .onAppear {
             notificationDelegate.onTimerCompletionTap = { experimentID in

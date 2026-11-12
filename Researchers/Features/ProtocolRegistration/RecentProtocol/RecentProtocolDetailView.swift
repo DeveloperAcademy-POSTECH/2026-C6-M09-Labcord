@@ -1,34 +1,30 @@
+import ComposableArchitecture
 import LabcordDesignSystem
-import LabcordiOS
 import SwiftUI
 
 struct RecentProtocolDetailView: View {
-    let entry: RecentProtocolEntry
+    @State private var store: StoreOf<RecentProtocolDetailFeature>
     let select: () -> Void
-    @State private var expandedGroups: Set<String> = []
 
-    private var groups: [(String, [String])] {
-        [
-            ("시약·재료", entry.materials), ("샘플·분석 대상", entry.samples),
-            ("실험 용어", entry.glossaryTerms), ("단위", entry.units)
-        ]
+    init(store: StoreOf<RecentProtocolDetailFeature>, select: @escaping () -> Void) {
+        _store = State(initialValue: store)
+        self.select = select
     }
 
     var body: some View {
         ScrollView {
                 VStack(alignment: .leading, spacing: 32) {
-                    Text(entry.title).typography(Typography.title3)
+                    Text(store.title).typography(Typography.title2Bold)
                     VStack(alignment: .leading, spacing: 8) {
                         HStack(spacing: 12) {
                             Text("타이머").typography(Typography.calloutSemiBold)
-                            Text("\(entry.timerSeconds.count)")
+                            Text("\(store.timerSeconds.count)")
                                 .typography(Typography.subheadline)
                                 .foregroundStyle(Color(
-                                    "General/Label/Tertiary",
-                                    bundle: LabcordDesignSystemResources.bundle
+                                    "General/Label/Tertiary"
                                 ))
                         }
-                        if entry.timerSeconds.isEmpty {
+                        if store.timerSeconds.isEmpty {
                             Text("타이머가 없어요")
                         } else {
                             LazyVGrid(
@@ -38,21 +34,13 @@ struct RecentProtocolDetailView: View {
                                 spacing: 12
                             ) {
                                 ForEach(
-                                    Array(entry.timerSeconds.enumerated()), id: \.offset
+                                    Array(store.timerSeconds.enumerated()), id: \.offset
                                 ) { item in
-                                    Text(Duration.seconds(item.element), format: .labcordDuration)
-                                        .typography(Typography.body)
-                                        .padding(.horizontal, 8)
-                                        .frame(
-                                            maxWidth: .infinity, minHeight: 56, alignment: .leading
-                                        )
-                                        .background(
-                                            Color(
-                                                "General/Fill/Primary",
-                                                bundle: LabcordDesignSystemResources.bundle
-                                            ),
-                                            in: RoundedRectangle(cornerRadius: 8)
-                                        )
+                                    ProtocolTimerRow(
+                                        duration: .seconds(item.element),
+                                        rows: item.element >= 3_600 ? .two : .one,
+                                        showEditButton: false
+                                    )
                                 }
                             }
                         }
@@ -62,41 +50,33 @@ struct RecentProtocolDetailView: View {
                         Text("프로토콜에서 추출한 전문 용어를 음성 인식에 반영해요.")
                             .typography(Typography.subheadline)
                             .foregroundStyle(Color(
-                                "General/Label/Secondary",
-                                bundle: LabcordDesignSystemResources.bundle
+                                "General/Label/Secondary"
                             ))
-                        ForEach(groups, id: \.0) { title, terms in
-                            Accordion(title, count: terms.count, isExpanded: Binding(
-                                get: { expandedGroups.contains(title) },
-                                set: { isExpanded in
-                                    if isExpanded {
-                                        expandedGroups.insert(title)
-                                    } else {
-                                        expandedGroups.remove(title)
-                                    }
-                                }
+                        ForEach(store.groups, id: \.title) { group in
+                            Accordion(group.title, count: group.terms.count, isExpanded: Binding(
+                                get: { store.expandedGroups.contains(group.title) },
+                                set: { store.send(.expandedChanged(group.title, $0)) }
                             )) {
-                                if terms.isEmpty {
+                                if group.terms.isEmpty {
                                     Text("용어가 없어요").typography(Typography.subheadline)
                                 } else {
                                     RecentTermFlow(spacing: 12) {
-                                        ForEach(Array(terms.enumerated()), id: \.offset) { term in
+                                        ForEach(
+                                            Array(group.terms.enumerated()), id: \.offset
+                                        ) { term in
                                             Text(term.element)
                                                 .typography(Typography.subheadline)
                                                 .foregroundStyle(Color(
-                                                    "General/Label/Brand",
-                                                    bundle: LabcordDesignSystemResources.bundle
+                                                    "General/Label/Brand"
                                                 ))
                                                 .padding(.horizontal, 12)
                                                 .padding(.vertical, 7)
                                                 .background(Color(
-                                                    "General/Fill/Selected",
-                                                    bundle: LabcordDesignSystemResources.bundle
+                                                    "General/Fill/Selected"
                                                 ), in: Capsule())
                                                 .overlay {
                                                     Capsule().strokeBorder(Color(
-                                                        "General/Border/Focused",
-                                                        bundle: LabcordDesignSystemResources.bundle
+                                                        "General/Border/Focused"
                                                     ))
                                                 }
                                         }
@@ -118,6 +98,7 @@ struct RecentProtocolDetailView: View {
             }
             .navigationTitle("프로토콜 상세")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.visible, for: .navigationBar)
     }
 }
 
@@ -174,4 +155,25 @@ private struct RecentTermFlow: Layout {
         if !indices.isEmpty { result.append((indices, height)) }
         return result
     }
+}
+
+#Preview("최근 프로토콜 상세") {
+    let fontRegistration = FontRegistration.register()
+    NavigationStack {
+        RecentProtocolDetailView(
+            store: Store(initialState: RecentProtocolDetailFeature.State(
+                title: "촉매 반응 조건 비교 실험",
+                timerSeconds: [600, 30, 60, 86_399],
+                groups: [
+                    .init(title: "시약·재료", terms: ["시약", "완충액"]),
+                    .init(title: "샘플·분석 대상", terms: ["샘플"]),
+                    .init(title: "실험 용어", terms: ["촉매"]),
+                    .init(title: "단위", terms: ["mL"])
+                ]
+            )) {
+                RecentProtocolDetailFeature()
+            }
+        ) {}
+    }
+    .id(fontRegistration)
 }

@@ -1,6 +1,6 @@
 import SwiftUI
 
-extension View {
+public extension View {
     func recordEditDiscardAlert(
         isPresented: Binding<Bool>,
         onDiscard: @escaping () -> Void,

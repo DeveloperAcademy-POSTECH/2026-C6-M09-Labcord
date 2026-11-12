@@ -1,6 +1,7 @@
 import ComposableArchitecture
 import Foundation
 import LabcordiOS
+import LabcordShared
 
 extension ExperimentResultFeature.State {
     var selectedRecord: ExperimentResultDetail.Record? {
@@ -15,11 +16,20 @@ extension ExperimentResultFeature.State {
         draftNote.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    var hasUnsavedRecordChanges: Bool {
+        guard let selectedEntry else { return false }
+        return draftNote != selectedEntry.note
+            || (selectedRecord?.type == .audio
+                && draftTranscript != (selectedRecord?.transcript ?? ""))
+    }
+
     var canSaveRecord: Bool {
         guard !isRecordSaving, selectedRecord != nil else { return false }
+        let transcript = editedTranscript
+        guard transcript?.isEmpty != true else { return false }
         let noteChanged = normalizedNote
             != (selectedEntry?.note ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        return (noteChanged || editedTranscript != nil)
+        return (noteChanged || transcript != nil)
             && draftNote.count <= 300
     }
 

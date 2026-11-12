@@ -75,7 +75,7 @@ private struct ProtocolUploadButtonStyle: ButtonStyle {
             .foregroundStyle(foregroundColor)
             .frame(
                 maxWidth: .infinity,
-                minHeight: showDescription ? (effectiveState == .disabled ? 97 : 99) : nil,
+                minHeight: showDescription ? 79 : 55,
                 alignment: .topLeading
             )
             .background {

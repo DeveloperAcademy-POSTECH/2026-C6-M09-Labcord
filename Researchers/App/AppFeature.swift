@@ -5,17 +5,10 @@ import LabcordShared
 
 @Reducer
 struct AppFeature {
-    @Reducer
-    enum Path {
-        case registration(ProtocolRegistrationFeature)
-        case recent(RecentProtocolFeature)
-        case review(ProtocolReviewFeature)
-        case session(ExperimentSessionFeature)
-        case result(ExperimentResultFeature)
-    }
-
     @ObservableState
     struct State: Equatable {
+        @Shared(.appStorage("onboardingHasCompleted")) var hasCompletedOnboarding = false
+        var onboarding: OnboardingFeature.State?
         var watchPendingStartID: UUID?
         var screenNavigation: WatchExperimentCommand?
         var watchIsActive = false
@@ -35,6 +28,8 @@ struct AppFeature {
     }
 
     enum Action {
+        case appeared
+        case onboarding(OnboardingFeature.Action)
         case screenNavigationLoaded(UUID, WatchExperimentState?, WatchExperimentError?)
         case watchTask
         case watchEvent(PhoneWatchExperimentCoordinator.Event)
@@ -48,8 +43,7 @@ struct AppFeature {
         case showResult(StackElementID)
         case returnHome(StackElementID)
         case reviewSaved(
-            StackElementID, Result<ExperimentListEntry, ProtocolRegistrationFeature.SaveFailure>
-        )
+            StackElementID, Result<ExperimentListEntry, ProtocolRegistrationFeature.SaveFailure>)
         case reviewCleanupFinished(StackElementID, Bool)
         case reviewPreviouslySaved(StackElementID, ExperimentListEntry)
         case confirmAlreadySaved
@@ -73,8 +67,14 @@ struct AppFeature {
         screenNavigationReducer
         settingsReturnReducer
 
+        Reduce { _, _ in .none }
+            .ifLet(\.onboarding, action: \.onboarding) { OnboardingFeature() }
+
         Reduce { state, action in
             switch action {
+            case .appeared, .onboarding:
+                return handleLaunch(&state, action)
+
             case .screenNavigationLoaded, .timerNotificationTapped, .timerNotificationLoaded,
                  .watchTask, .watchEvent, .watchSceneChanged,
                  .restoreSettingsSession, .settingsSessionLoaded: return .none
@@ -174,13 +174,7 @@ struct AppFeature {
                 return .none
 
             case .confirmReviewExit:
-                state.reviewExitRequested = false
-                guard !state.reviewSaving, state.savedReview == nil,
-                      let id = state.path.ids.last,
-                      state.path[id: id, case: \.review] != nil else { return .none }
-                state.reviewPendingID = nil
-                state.path.pop(from: id)
-                return .none
+                return confirmReviewExit(&state)
 
             case .cancelReviewExit:
                 state.reviewExitRequested = false
@@ -330,18 +324,24 @@ extension AppFeature {
 }
 
 private extension AppFeature {
-    func openResumedSession(_ state: inout State, id: StackElementID) -> Effect<Action> {
-        guard var result = state.path[id: id, case: \.result], result.isResuming else {
-            return .none
+    func confirmReviewExit(_ state: inout State) -> Effect<Action> {
+        state.reviewExitRequested = false
+        guard !state.reviewSaving, state.savedReview == nil,
+              let id = state.path.ids.last,
+              state.path[id: id, case: \.review] != nil else { return .none }
+        state.reviewPendingID = nil
+        state.path.pop(from: id)
+        state.reviewAnalysisJobID = nil
+        guard let registrationID = state.path.ids.first(where: {
+            state.path[id: $0, case: \.registration] != nil
+        }) else { return .none }
+        if let lastID = state.path.ids.last, lastID != registrationID {
+            state.path.pop(from: lastID)
         }
-        guard state.path.ids.last == id else {
-            result.isResuming = false
-            state.path[id: id, case: \.result] = result
-            return .none
-        }
-        state.path.removeAll()
-        state.path.append(.session(.init(experimentID: result.experimentID)))
-        return .none
+        state.recentRegistrationID = nil
+        return .send(.path(.element(
+            id: registrationID, action: .registration(.inputAnalysis(.backTapped))
+        )))
     }
 
     func registerReview(_ state: inout State, id: StackElementID) -> Effect<Action> {
@@ -393,5 +393,3 @@ private extension AppFeature {
         }
     }
 }
-
-extension AppFeature.Path.State: Equatable {}

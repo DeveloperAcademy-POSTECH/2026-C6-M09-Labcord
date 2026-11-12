@@ -22,6 +22,7 @@ struct ProtocolInputAnalysisFeature {
         var analysisStarting = false
         var analysisResuming = false
         var afterStart: AfterInvalidation?
+        var analysisProgress = 0.0
         var analysisPhase = ProtocolAnalysisPhase.reading
         var analysisStartedAt: Date?
         var analysisInputID: UUID?
@@ -150,7 +151,8 @@ struct ProtocolInputAnalysisFeature {
 
             case .backTapped:
                 guard !state.restoringAnalysis, !state.isSaving, !state.importing,
-                      state.analysisID == nil, state.invalidatingJobID == nil else { return .none }
+                      state.invalidatingJobID == nil,
+                      !state.analysisCancellationRequested else { return .none }
                 return invalidateAnalysis(into: &state, then: .back)
 
             case .skipTapped:
@@ -330,6 +332,7 @@ private extension ProtocolInputAnalysisFeature.State {
         analysisResults = [:]
         analysisTerms = [:]
         analysisFailed = false
+        analysisProgress = 0
         analysisPhase = .reading
     }
 

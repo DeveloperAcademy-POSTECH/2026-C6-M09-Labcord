@@ -6,6 +6,7 @@
 //
 
 import LabcordDesignSystem
+import LabcordiOS
 import SwiftUI
 
 struct ExperimentSettingButtonsView: View {

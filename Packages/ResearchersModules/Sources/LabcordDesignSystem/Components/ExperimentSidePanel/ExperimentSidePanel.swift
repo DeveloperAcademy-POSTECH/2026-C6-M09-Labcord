@@ -81,7 +81,7 @@ public struct ExperimentSidePanel<Content: View>: View {
     private var handle: some View {
         Button(action: toggle) {
             handleLabel
-                .background(Color(.Experiment.Fill.dark), in: panelShape)
+                .background(Color(.Experiment.Background.primary), in: panelShape)
                 .contentShape(panelShape)
         }
         .buttonStyle(PressFeedbackButtonStyle())
@@ -115,7 +115,7 @@ public struct ExperimentSidePanel<Content: View>: View {
             relativeTo: .body
         )
         .foregroundStyle(Color(.Experiment.Label.brand))
-        .rotationEffect(.degrees(layout == .landscape && !isExpanded ? 180 : 0))
+        .rotationEffect(.degrees(isExpanded ? 0 : 180))
     }
 
     private var portraitBody: some View {
@@ -139,7 +139,7 @@ public struct ExperimentSidePanel<Content: View>: View {
                     .transition(contentTransition(edge: .bottom))
             }
         }
-        .background(Color(.Experiment.Fill.dark), in: panelShape)
+        .background(Color(.Experiment.Background.primary), in: panelShape)
         .clipShape(panelShape)
     }
 
@@ -158,7 +158,7 @@ public struct ExperimentSidePanel<Content: View>: View {
                     .transition(contentTransition(edge: .trailing))
             }
         }
-        .background(Color(.Experiment.Fill.dark), in: panelShape)
+        .background(Color(.Experiment.Background.primary), in: panelShape)
         .clipShape(panelShape)
     }
 

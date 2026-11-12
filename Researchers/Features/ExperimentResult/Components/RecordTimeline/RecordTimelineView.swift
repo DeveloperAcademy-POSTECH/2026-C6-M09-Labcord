@@ -24,6 +24,7 @@ struct RecordTimelineView: View {
                 }
 
                 RecordTimelineEntryView(entry: entry, timerIdentities: timerIdentities)
+                    .contentShape(Rectangle())
                     .simultaneousGesture(TapGesture().onEnded { onSelectEntry(entry) })
             }
         }

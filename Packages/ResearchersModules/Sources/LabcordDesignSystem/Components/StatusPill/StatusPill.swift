@@ -21,7 +21,7 @@ public struct StatusPill: View {
 
     public var body: some View {
         ViewThatFits(in: .horizontal) {
-            messageContent.frame(minWidth: 195)
+            messageContent.frame(minWidth: 169)
             messageContent
         }
             .frame(minHeight: 45)
