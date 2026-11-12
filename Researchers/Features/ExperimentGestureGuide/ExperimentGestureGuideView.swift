@@ -66,7 +66,7 @@ struct ExperimentGestureGuideView: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            Color("Experiment/Overlay/Scrim", bundle: LabcordDesignSystemResources.bundle)
+            Color("Experiment/Overlay/Scrim")
                 .background(
                     VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
                 )

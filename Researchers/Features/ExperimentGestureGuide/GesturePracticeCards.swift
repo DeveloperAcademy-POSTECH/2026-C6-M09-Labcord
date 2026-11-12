@@ -69,7 +69,7 @@ struct GesturePracticeCards: View {
                     .typography(Typography.subheadline)
             }
             .foregroundStyle(
-                Color("Experiment/Label/Primary", bundle: LabcordDesignSystemResources.bundle)
+                Color("Experiment/Label/Primary")
             )
             .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -80,10 +80,7 @@ struct GesturePracticeCards: View {
                     .scaledToFit()
                     .frame(width: 34, height: 34)
                     .foregroundStyle(
-                        Color(
-                            "Experiment/Brand/Primary",
-                            bundle: LabcordDesignSystemResources.bundle
-                        )
+                        Color("Experiment/Brand/Primary")
                     )
                     .accessibilityLabel("인식 완료")
             }
@@ -91,7 +88,7 @@ struct GesturePracticeCards: View {
         .padding(.horizontal, LayoutTokens.spacing16)
         .padding(.vertical, LayoutTokens.spacing12)
         .background(
-            Color("Experiment/Fill/Secondary", bundle: LabcordDesignSystemResources.bundle),
+            Color("Experiment/Fill/Secondary"),
             in: RoundedRectangle(cornerRadius: LayoutTokens.radiusSm)
         )
         .accessibilityElement(children: .combine)

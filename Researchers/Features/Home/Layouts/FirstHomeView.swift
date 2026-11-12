@@ -6,29 +6,31 @@ struct FirstHomeView: View {
     let store: StoreOf<HomeFeature>
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
+        ZStack {
             Color("General/Background/Primary")
                 .ignoresSafeArea()
 
             FirstHomeEmptyContent {
                 store.send(.firstHomeRegisterTapped)
             }
-            .allowsHitTesting(!store.requiresGesturePractice)
+            .disabled(store.requiresGesturePractice)
             .accessibilityHidden(store.requiresGesturePractice)
 
             if store.isGuideVisible {
-                Color.black.opacity(0.4)
-                    .ignoresSafeArea()
-                    .allowsHitTesting(!store.requiresGesturePractice)
-                    .onTapGesture {
-                        store.send(.firstHomeGuideDismissed)
-                    }
+                if store.requiresGesturePractice {
+                    Color.black.opacity(0.4).ignoresSafeArea()
+                } else {
+                    Color.black.opacity(0.4)
+                        .ignoresSafeArea()
+                        .onTapGesture { store.send(.firstHomeGuideDismissed) }
+                }
             }
 
+        }
+        .overlay(alignment: .bottomTrailing) {
             VStack(alignment: .trailing, spacing: 0) {
                 if store.isGuideVisible {
                     FirstHomeGuideTooltip()
-                        .allowsHitTesting(false)
                 }
 
                 FirstHomeHelpButton {
@@ -37,7 +39,6 @@ struct FirstHomeView: View {
             }
             .padding(.trailing, 20)
             .padding(.bottom, 17)
-            .zIndex(1)
         }
         .task {
             store.send(.firstHomeAppeared)

@@ -78,17 +78,14 @@ struct GestureGuideFlowView: View {
             Text(title)
                 .typography(isSelected ? Typography.bodySemiBold : Typography.body)
                 .foregroundStyle(
-                    Color("General/Label/Brand", bundle: LabcordDesignSystemResources.bundle)
+                    Color("General/Label/Brand")
                 )
                 .padding(.horizontal, isSelected ? LayoutTokens.spacing16 : LayoutTokens.spacing12)
                 .padding(.vertical, LayoutTokens.spacing8)
                 .background {
                     if isSelected {
                         Capsule().fill(
-                            Color(
-                                "General/Fill/Selected",
-                                bundle: LabcordDesignSystemResources.bundle
-                            )
+                            Color("General/Fill/Selected")
                         )
                     }
                 }
