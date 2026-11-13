@@ -45,6 +45,7 @@ public struct ExperimentClient: Sendable {
     public var cancelVideoSave: @MainActor @Sendable (UUID, UUID, URL) throws -> Void
     public var cancelAudioSave: @MainActor @Sendable (UUID, UUID, URL) throws -> Void
     public var complete: @MainActor @Sendable (UUID, Date) throws -> Void
+    public var resumeCompleted: @MainActor @Sendable (UUID, Date) throws -> Void
     public var delete: @MainActor @Sendable (UUID) throws -> Void
 
     public init(
@@ -71,6 +72,7 @@ public struct ExperimentClient: Sendable {
         cancelVideoSave: @escaping @MainActor @Sendable (UUID, UUID, URL) throws -> Void,
         cancelAudioSave: @escaping @MainActor @Sendable (UUID, UUID, URL) throws -> Void,
         complete: @escaping @MainActor @Sendable (UUID, Date) throws -> Void,
+        resumeCompleted: @escaping @MainActor @Sendable (UUID, Date) throws -> Void,
         delete: @escaping @MainActor @Sendable (UUID) throws -> Void,
         loadRecentProtocols: @escaping @MainActor @Sendable () throws -> [RecentProtocolEntry] = {
             throw RecentProtocolAccessError.notConfigured
@@ -118,6 +120,7 @@ public struct ExperimentClient: Sendable {
         self.cancelVideoSave = cancelVideoSave
         self.cancelAudioSave = cancelAudioSave
         self.complete = complete
+        self.resumeCompleted = resumeCompleted
         self.delete = delete
     }
     @MainActor
@@ -179,6 +182,9 @@ extension ExperimentClient: DependencyKey {
             )
         },
         complete: { try ExperimentSessionRepository.shared.complete(id: $0, at: $1) },
+        resumeCompleted: {
+            try ExperimentSessionRepository.shared.resumeCompleted(id: $0, at: $1)
+        },
         delete: { try ExperimentListRepository.shared.delete(id: $0) },
         loadRecentProtocols: { try RecentProtocolRepository.load() },
         createWithProtocol: {
