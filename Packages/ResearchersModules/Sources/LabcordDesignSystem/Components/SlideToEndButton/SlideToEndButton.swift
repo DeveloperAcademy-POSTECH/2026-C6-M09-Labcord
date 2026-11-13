@@ -22,22 +22,27 @@ public struct SlideToEndButton: View {
             let thumbWidth = min(height, availableWidth)
             let travel = max(availableWidth - thumbWidth - 2, 0)
             let progress = isTriggered ? 1 : (travel > 0 ? min(dragDistance / travel, 1) : 0)
+            let labelWidth = max(availableWidth - thumbWidth - 10, 0)
 
-            HStack(spacing: 8) {
+            HStack(spacing: LayoutTokens.spacing8) {
                 IconArtwork(icon: .stop, size: 24)
                     .foregroundStyle(Color(.General.Action.Destructive.foreground))
                     .frame(width: thumbWidth, height: height)
                     .background(Color(.General.Action.Destructive.background), in: Circle())
 
                 if progress == 0 {
-                    Text("밀어서 실험 종료")
-                        .typography(Typography.subheadline)
-                        .foregroundStyle(Color(.Experiment.Label.primary))
-                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
-                        .frame(
-                            width: max(availableWidth - thumbWidth - 10, 0),
-                            alignment: .leading
-                        )
+                    if dynamicTypeSize < .large {
+                        label
+                            .environment(\.dynamicTypeSize, .large)
+                            .fixedSize(horizontal: true, vertical: false)
+                            .hidden()
+                            .overlay {
+                                label.fixedSize(horizontal: true, vertical: false)
+                            }
+                            .frame(width: labelWidth, alignment: .leading)
+                    } else {
+                        label.frame(width: labelWidth, alignment: .leading)
+                    }
                 }
             }
             .padding(.horizontal, 1)
@@ -72,6 +77,13 @@ public struct SlideToEndButton: View {
 
     private var preferredWidth: CGFloat {
         dynamicTypeSize.isAccessibilitySize ? height + scaledLabelWidth + 10 : 170
+    }
+
+    private var label: some View {
+        Text("밀어서 실험 종료")
+            .typography(Typography.subheadline)
+            .foregroundStyle(Color(.Experiment.Label.primary))
+            .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
     }
 
     private func dragGesture(travel: CGFloat) -> some Gesture {

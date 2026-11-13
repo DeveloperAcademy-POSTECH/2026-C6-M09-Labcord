@@ -14,6 +14,12 @@ import SwiftUI
 struct TitleEditOverlayView: View {
     let store: StoreOf<TitleEditOverlayFeature>
     @FocusState private var isTitleFocused: Bool
+    @State private var inputTitle: String
+
+    init(store: StoreOf<TitleEditOverlayFeature>) {
+        self.store = store
+        _inputTitle = State(initialValue: store.title)
+    }
 
     var body: some View {
         ZStack {
@@ -42,18 +48,24 @@ struct TitleEditOverlayView: View {
                 }
 
                 VStack(alignment: .trailing, spacing: LayoutTokens.spacing8) {
-                    TextField("", text: Binding(
-                        get: { store.title },
-                        set: { store.send(.titleChanged($0)) }
-                    ))
+                    TextField("", text: $inputTitle)
                         .labcordTextFieldStyle(
-                            text: store.title,
+                            text: inputTitle,
                             focus: $isTitleFocused
                         )
                         .submitLabel(.done)
                         .disabled(store.isSaving)
+                        .onChange(of: inputTitle) { _, updatedTitle in
+                            let limitedTitle = String(
+                                updatedTitle.prefix(TitleEditOverlayFeature.maximumTitleLength)
+                            )
+                            if updatedTitle != limitedTitle {
+                                inputTitle = limitedTitle
+                            }
+                            store.send(.titleChanged(limitedTitle))
+                        }
 
-                    Text("\(store.title.count)/60")
+                    Text("\(store.title.count)/\(TitleEditOverlayFeature.maximumTitleLength)")
                         .typography(Typography.subheadline)
                         .foregroundStyle(Color("General/Label/Tertiary"))
                 }

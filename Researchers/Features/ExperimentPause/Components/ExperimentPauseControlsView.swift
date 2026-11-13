@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import LabcordDesignSystem
+import LabcordiOS
 import SwiftUI
 
 struct ExperimentPauseControlsView: View {
@@ -15,6 +16,10 @@ struct ExperimentPauseControlsView: View {
                     .foregroundStyle(Color("Experiment/Label/Primary"))
             }
             .buttonStyle(.labcordIcon(.neutral, size: .large))
+            .background(
+                VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
+            )
+            .cornerRadius(LayoutTokens.radiusFull)
 
             Button {
                 store.send(.returnHomeTapped)
