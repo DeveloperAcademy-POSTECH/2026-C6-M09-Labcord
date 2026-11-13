@@ -4,6 +4,8 @@ import LabcordiOS
 
 @Reducer
 struct TitleEditOverlayFeature {
+    static let maximumTitleLength = 60
+
     @ObservableState
     struct State: Equatable {
         let experimentID: UUID
@@ -49,7 +51,7 @@ struct TitleEditOverlayFeature {
             switch action {
             case let .titleChanged(title):
                 guard !state.isSaving else { return .none }
-                state.title = String(title.prefix(60))
+                state.title = String(title.prefix(Self.maximumTitleLength))
                 return .none
 
             case .dismissRequested:
