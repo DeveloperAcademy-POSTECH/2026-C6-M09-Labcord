@@ -13,31 +13,46 @@ struct OnboardingView: View {
     let store: StoreOf<OnboardingFeature>
 
     var body: some View {
-        ZStack(alignment: .bottom) {
+        ZStack {
             OnboardingBackground(showsLabImage: store.page == .second)
 
-            VStack(alignment: .leading, spacing: 0) {
-                OnboardingSkipRow(store: store)
-                OnboardingHeader(store: store)
-                    .padding(.top, 19)
+            VStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 0) {
+                    OnboardingSkipRow(store: store)
+                    OnboardingHeader(store: store)
+                        .padding(.top, 19)
 
-                if store.page != .second {
-                    OnboardingCard(imageName: cardImageName, currentPage: store.page.rawValue + 1)
-                        .padding(.top, LayoutTokens.spacing24)
-                } else {
-                    Spacer(minLength: 0)
+                    if store.page != .second {
+                        OnboardingCard(imageName: cardImageName)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .padding(.top, LayoutTokens.spacing24)
+                            .overlay(alignment: .bottom) {
+                                pageControl
+                            }
+                    } else {
+                        Spacer(minLength: 0)
+                        pageControl
+                    }
                 }
-            }
-            .padding(.horizontal, LayoutTokens.spacing16)
-            .padding(.top, 19)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .padding(.horizontal, LayoutTokens.spacing16)
+                .padding(.top, 19)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
 
-            OnboardingFooter(store: store)
+                OnboardingFooter(store: store)
+            }
         }
     }
 
     private var cardImageName: String {
         store.page == .first ? "onboarding_protocol2" : "onboarding_result2"
+    }
+
+    private var pageControl: some View {
+        PageControl(
+            pageCount: 3,
+            selection: .constant(store.page.rawValue + 1),
+            appearance: .general
+        )
     }
 }
 
