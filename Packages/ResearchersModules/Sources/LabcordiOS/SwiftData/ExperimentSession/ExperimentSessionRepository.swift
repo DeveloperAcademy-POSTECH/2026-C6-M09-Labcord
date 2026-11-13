@@ -251,7 +251,10 @@ final class ExperimentSessionRepository {
             }
     }
 
-    private func activeTimers(
+}
+
+private extension ExperimentSessionRepository {
+    func activeTimers(
         in experiment: Experiment, at date: Date, persistExpiry: Bool = true
     ) -> [ExperimentTimer] {
         experiment.records
@@ -281,9 +284,7 @@ final class ExperimentSessionRepository {
             }
             .sorted { $0.startedAt < $1.startedAt }
     }
-}
 
-private extension ExperimentSessionRepository {
     func upsertTimer(
         _ timer: ExperimentTimer, endedAt: Date?, in experiment: Experiment
     ) {

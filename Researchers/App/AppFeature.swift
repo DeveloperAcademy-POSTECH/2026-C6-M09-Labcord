@@ -289,10 +289,7 @@ struct AppFeature {
 }
 
 extension AppFeature {
-    func loadNotificationExperiment(
-        _ state: inout State,
-        experimentID: UUID
-    ) -> Effect<Action> {
+    func loadNotificationExperiment(_ state: inout State, experimentID: UUID) -> Effect<Action> {
         let token = uuid()
         state.watchNotificationGate.begin(experimentID: experimentID, token: token)
         return .run { send in

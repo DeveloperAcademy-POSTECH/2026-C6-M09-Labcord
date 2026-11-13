@@ -263,20 +263,7 @@ struct ExperimentResultFeature {
                 return .none
 
             case .resumeTapped:
-                guard state.canRefreshExternalRecords,
-                      state.recordTimeline?.detail.status == .completed else { return .none }
-                state.isResuming = true
-                state.resumeFailed = false
-                let experimentID = state.experimentID
-                let resumedAt = now
-                return .run { send in
-                    do {
-                        try await experimentClient.resumeCompleted(experimentID, resumedAt)
-                        await send(.resumeSucceeded)
-                    } catch {
-                        await send(.resumeFailed)
-                    }
-                }
+                return resumeExperiment(state: &state)
 
             case .resumeSucceeded:
                 state.isResuming = false
@@ -304,6 +291,23 @@ struct ExperimentResultFeature {
 }
 
 private extension ExperimentResultFeature {
+    func resumeExperiment(state: inout State) -> Effect<Action> {
+        guard state.canRefreshExternalRecords,
+              state.recordTimeline?.detail.status == .completed else { return .none }
+        state.isResuming = true
+        state.resumeFailed = false
+        let experimentID = state.experimentID
+        let resumedAt = now
+        return .run { send in
+            do {
+                try await experimentClient.resumeCompleted(experimentID, resumedAt)
+                await send(.resumeSucceeded)
+            } catch {
+                await send(.resumeFailed)
+            }
+        }
+    }
+
     func loadResultDetail(state: inout State) -> Effect<Action> {
         state.isInitialLoadPending = true
         state.recordTimeline = nil
