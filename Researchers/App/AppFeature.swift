@@ -262,7 +262,17 @@ struct AppFeature {
                 return .none
 
             case let .path(.element(id: id, action: .result(.homeTapped))):
+                guard state.path[id: id, case: \.result]?.isResuming == false else { return .none }
                 return .send(.returnHome(id))
+
+            case let .path(.element(id: id, action: .result(.resumeSucceeded))):
+                guard state.path.ids.last == id,
+                      let experimentID = state.path[id: id, case: \.result]?.experimentID else {
+                    return .none
+                }
+                state.path.removeAll()
+                state.path.append(.session(.init(experimentID: experimentID)))
+                return .send(.home(.list(.load)))
 
             case let .returnHome(id):
                 guard state.path.ids.last == id else { return .none }
