@@ -55,7 +55,6 @@ extension AppFeature {
         let date = now
         let title = review.title.trimmingCharacters(in: .whitespacesAndNewlines)
         let shouldMakeTitleUnique = state.recentRegistrationID != nil
-            && !review.recentTitleWasEdited
         return .run { send in
             do {
                 let experiments = shouldMakeTitleUnique ? try await experimentClient.load() : []

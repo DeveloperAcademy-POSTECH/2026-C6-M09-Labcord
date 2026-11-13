@@ -16,7 +16,6 @@ struct ProtocolReviewFeature {
         var termInput = ""
         var termError: String?
         var attemptedRegistration = false
-        var recentTitleWasEdited = false
 
         var titleValid: Bool {
             !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -66,7 +65,6 @@ struct ProtocolReviewFeature {
         Reduce { state, action in
             switch action {
             case let .titleChanged(title):
-                if state.title != title { state.recentTitleWasEdited = true }
                 state.title = title
             case let .expandedChanged(category, isExpanded):
                 if isExpanded {
