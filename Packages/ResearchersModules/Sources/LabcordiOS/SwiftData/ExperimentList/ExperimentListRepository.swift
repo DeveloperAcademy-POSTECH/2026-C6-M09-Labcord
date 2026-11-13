@@ -59,10 +59,15 @@ final class ExperimentListRepository {
         }
 
         let defaults = UserDefaults.standard
-        let nextNumber = defaults.integer(forKey: "lastExperimentNumber") + 1
+        let titles = Set(try context.fetch(FetchDescriptor<Experiment>()).map(\.title))
+        let nextNumber = ExperimentTitle.availableNumber(
+            for: "새 실험",
+            startingAt: defaults.integer(forKey: "lastExperimentNumber") + 1,
+            existing: titles
+        )
         let experiment = Experiment(
             id: id,
-            title: "새 실험 (\(nextNumber))",
+            title: ExperimentTitle.numbered("새 실험", number: nextNumber),
             createdAt: date,
             mode: .free,
         )
