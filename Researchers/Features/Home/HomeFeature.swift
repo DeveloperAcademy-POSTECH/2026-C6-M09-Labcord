@@ -41,7 +41,7 @@ struct HomeFeature {
                 return .none
 
             case .firstHomeGuideDismissed:
-                guard !state.requiresGesturePractice else { return .none }
+                state.$requiresGesturePractice.withLock { $0 = false }
                 state.isGuideVisible = false
                 return .none
 
