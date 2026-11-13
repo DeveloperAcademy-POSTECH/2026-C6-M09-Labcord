@@ -34,7 +34,7 @@ extension ExperimentResultFeature.State {
     }
 
     var canRefreshExternalRecords: Bool {
-        !isRecordSaving && selectedEntry == nil && titleEditOverlay == nil && !isResuming
+        !isRecordSaving && selectedEntry == nil && titleEditOverlay == nil
             && !isInitialLoadPending
     }
 }

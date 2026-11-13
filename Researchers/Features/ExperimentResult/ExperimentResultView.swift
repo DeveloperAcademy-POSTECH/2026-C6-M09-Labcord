@@ -82,12 +82,11 @@ struct ExperimentResultView: View {
                         HStack(spacing: LayoutTokens.spacing16) {
                             if store.recordTimeline != nil {
                                 Button {
-                                    store.send(.resumeTapped)
+                                    // 재개 동작은 제거했지만 버튼은 화면에 유지한다.
                                 } label: {
                                     Text("실험 재개")
                                 }
                                 .buttonStyle(.labcord(.plain, size: .large))
-                                .disabled(store.isResuming)
                             }
 
                             Button {
@@ -97,16 +96,10 @@ struct ExperimentResultView: View {
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(.labcord(.filled, size: .large))
-                            .disabled(store.isResuming)
                         }
                         .padding(.horizontal, LayoutTokens.spacing16)
                         .padding(.top, LayoutTokens.spacing12)
                         .padding(.bottom, max(34 - geometry.safeAreaInsets.bottom, 0))
-                        if let resumeMessage = store.resumeMessage {
-                            Text(resumeMessage)
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                        }
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -131,14 +124,6 @@ struct ExperimentResultView: View {
                     .opacity(store.selectedEntry == nil ? 0 : 1)
                     .animation(.easeInOut(duration: 0.2), value: store.selectedEntry != nil)
                     .allowsHitTesting(false)
-            }
-            .alert("실험을 재개할까요?", isPresented: Binding(
-                get: { store.isResumeConfirmationPresented },
-                set: { if !$0 { store.send(.resumeConfirmationCancelled) } }
-            )) {
-                Button("취소", role: .cancel) { store.send(.resumeConfirmationCancelled) }
-                Button("재개") { store.send(.resumeTapped) }
-                    .disabled(store.recordTimeline == nil || store.isResuming)
             }
             .fullScreenCover(item: Binding(
                 get: { store.selectedEntry },
