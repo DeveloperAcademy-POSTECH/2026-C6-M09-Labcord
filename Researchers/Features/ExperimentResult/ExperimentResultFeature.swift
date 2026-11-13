@@ -43,6 +43,8 @@ struct ExperimentResultFeature {
         var isRecordDiscardConfirmationPresented = false
         var isRecordDeleteConfirmationPresented = false
         var recordSaveMessage: String?
+        var isResuming = false
+        var resumeFailed = false
         var titleEditOverlay: TitleEditOverlayFeature.State?
 
         var editedTranscript: String? {
@@ -85,9 +87,14 @@ struct ExperimentResultFeature {
         case editTapped
         case titleEditOverlay(TitleEditOverlayFeature.Action)
         case homeTapped
+        case resumeTapped
+        case resumeSucceeded
+        case resumeFailed
+        case resumeFailureDismissed
     }
 
     @Dependency(\.experimentClient) var experimentClient
+    @Dependency(\.date.now) var now
 
     var body: some Reducer<State, Action> {
         Reduce { state, action in
@@ -253,6 +260,35 @@ struct ExperimentResultFeature {
                 return .none
 
             case .homeTapped:
+                return .none
+
+            case .resumeTapped:
+                guard state.canRefreshExternalRecords,
+                      state.recordTimeline?.detail.status == .completed else { return .none }
+                state.isResuming = true
+                state.resumeFailed = false
+                let experimentID = state.experimentID
+                let resumedAt = now
+                return .run { send in
+                    do {
+                        try await experimentClient.resumeCompleted(experimentID, resumedAt)
+                        await send(.resumeSucceeded)
+                    } catch {
+                        await send(.resumeFailed)
+                    }
+                }
+
+            case .resumeSucceeded:
+                state.isResuming = false
+                return .none
+
+            case .resumeFailed:
+                state.isResuming = false
+                state.resumeFailed = true
+                return .none
+
+            case .resumeFailureDismissed:
+                state.resumeFailed = false
                 return .none
 
             }
