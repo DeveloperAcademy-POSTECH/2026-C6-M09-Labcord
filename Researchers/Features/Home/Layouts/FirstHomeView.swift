@@ -19,16 +19,14 @@ struct FirstHomeView: View {
             if store.isGuideVisible {
                 Color.black.opacity(0.4)
                     .ignoresSafeArea()
-                    .onTapGesture {
-                        if !store.requiresGesturePractice {
-                            store.send(.firstHomeGuideDismissed)
-                        }
-                    }
+                    .onTapGesture { store.send(.firstHomeGuideDismissed) }
             }
 
             VStack(alignment: .trailing, spacing: 3) {
                 if store.isGuideVisible {
                     FirstHomeGuideTooltip()
+                        .contentShape(Rectangle())
+                        .onTapGesture { }
                 }
 
                 FirstHomeHelpButton(isGuideVisible: store.isGuideVisible) {
