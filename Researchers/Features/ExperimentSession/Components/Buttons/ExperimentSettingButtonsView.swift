@@ -10,9 +10,12 @@ import LabcordiOS
 import SwiftUI
 
 struct ExperimentSettingButtonsView: View {
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
     let onShowGestureGuide: () -> Void
     let onShowRunningTimers: () -> Void
     let onSwitchCamera: () -> Void
+    let onRotate: () -> Void
     let showsRunningTimerButton: Bool
     let canSwitchCamera: Bool
 
@@ -21,7 +24,6 @@ struct ExperimentSettingButtonsView: View {
             ExperimentControlButton(action: onShowGestureGuide) {
                 Image(labcordIcon: .questionmark)
             }
-            .accessibilityLabel("제스처 안내")
             .background(
                 VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
             )
@@ -44,23 +46,22 @@ struct ExperimentSettingButtonsView: View {
                 ) {
                     Image(labcordIcon: .arrowsCounterClockwise)
                 }
-                .accessibilityLabel("카메라 전환")
                 .background(
                     VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
                 )
                 .cornerRadius(LayoutTokens.radiusFull)
 
-                ExperimentControlButton(
-                    action: {},
-                    icon: { Image(labcordIcon: .rectanglePortraitRotate) }
-                )
+                ExperimentControlButton(action: onRotate) {
+                    Image(labcordIcon: .rectanglePortraitRotate)
+                }
+                .accessibilityLabel("화면 회전")
                 .background(
                     VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
                 )
                 .cornerRadius(LayoutTokens.radiusFull)
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, verticalSizeClass == .compact ? 0 : 16)
     }
 }
 
@@ -69,6 +70,7 @@ struct ExperimentSettingButtonsView: View {
         onShowGestureGuide: {},
         onShowRunningTimers: {},
         onSwitchCamera: {},
+        onRotate: {},
         showsRunningTimerButton: true,
         canSwitchCamera: true
     )

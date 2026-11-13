@@ -34,9 +34,10 @@ public struct GestureGuideItem<Media: View>: View {
         arrangedContent
             .padding(LayoutTokens.spacing12)
             .frame(
-                idealWidth: layout == .portrait ? 130 : nil,
-                maxWidth: layout == .portrait ? 130 : .infinity
+                idealWidth: layout == .portrait ? 192 : nil,
+                maxWidth: layout == .portrait ? 192 : .infinity
             )
+            .frame(minHeight: layout == .portrait ? 208 : nil, alignment: .center)
             .background(
                 appearance == .general
                     ? Color(.General.Background.Grouped.primary)

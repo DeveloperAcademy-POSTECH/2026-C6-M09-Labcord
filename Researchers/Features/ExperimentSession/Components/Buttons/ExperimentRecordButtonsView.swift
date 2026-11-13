@@ -11,11 +11,18 @@ import LabcordiOS
 import SwiftUI
 
 struct ExperimentRecordButtonsView: View {
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
     let store: StoreOf<CameraCaptureFeature>
     let isDisabled: Bool
 
     var body: some View {
-        VStack(spacing: 24) {
+        let isLandscape = verticalSizeClass == .compact
+        let layout = isLandscape
+            ? AnyLayout(HStackLayout(spacing: 24))
+            : AnyLayout(VStackLayout(spacing: 24))
+
+        layout {
             RecordButton(
                 type: .audio,
                 state: isDisabled ? .disabled : .default
@@ -43,7 +50,8 @@ struct ExperimentRecordButtonsView: View {
             )
             .cornerRadius(LayoutTokens.radiusFull)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, isLandscape ? 0 : 16)
+        .padding(.top, isLandscape ? 20 : 0)
     }
 }
 

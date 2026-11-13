@@ -229,7 +229,7 @@ struct SessionTimerView: View {
                 Text("타이머 실행")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.labcord(.primary, size: .large))
+            .buttonStyle(.labcord(.primary, size: .large, colorPalette: .experiment))
             .disabled(durationSeconds == 0 || !canStartTimer)
         }
     }
