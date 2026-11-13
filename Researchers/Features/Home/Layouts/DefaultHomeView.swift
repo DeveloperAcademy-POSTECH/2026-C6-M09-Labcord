@@ -12,7 +12,7 @@ struct DefaultHomeView: View {
             .overlay(alignment: .bottomTrailing) {
                 VStack(spacing: LayoutTokens.spacing12) {
                     Button {
-                        // 가이드 화면 이동 구현
+                        store.send(.gestureGuideTapped)
                     } label: {
                         Image(labcordIcon: .questionmark)
                     }

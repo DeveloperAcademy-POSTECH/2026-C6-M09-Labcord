@@ -5,8 +5,6 @@ import LabcordShared
 extension WatchExperimentFeature {
     func reduceTools(state: inout State, action: Action) -> Effect<Action> {
         switch action {
-        case let .practiceRecord(kind):
-            return practiceRecord(kind, state: &state)
         case .timersTapped:
             return navigateToStage(.timers, state: &state)
         case .timerEditorTapped:

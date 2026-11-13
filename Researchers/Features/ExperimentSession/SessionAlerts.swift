@@ -24,8 +24,8 @@ struct SessionAlerts: ViewModifier {
 
     func body(content: Content) -> some View {
         let initialAlerts = permissionAndCameraAlerts(on: content)
-        let recordingAlerts = voiceAndPhotoAlerts(on: initialAlerts)
-        return videoAndTimerAlerts(on: recordingAlerts)
+        let recordingAlerts = voiceAlerts(on: initialAlerts)
+        return timerAlerts(on: recordingAlerts)
     }
 
     private func permissionAndCameraAlerts<V: View>(on content: V) -> some View {
@@ -74,14 +74,15 @@ struct SessionAlerts: ViewModifier {
         .modifier(DetailLoadFailureAlert(store: store))
     }
 
-    private func voiceAndPhotoAlerts<V: View>(on content: V) -> some View {
+    private func voiceAlerts<V: View>(on content: V) -> some View {
         content
         .alert(
             "음성 기록 오류",
             isPresented: Binding(
                 get: {
                     voiceStore.errorMessage != nil
-                        && (verticalSizeClass == .compact || !voiceStore.hasRecordingFailure)
+                        && verticalSizeClass != .compact
+                        && !voiceStore.hasRecordingFailure
                 },
                 set: { if !$0 { voiceStore.send(.errorDismissed) } }
             )
@@ -92,42 +93,10 @@ struct SessionAlerts: ViewModifier {
         } message: {
             Text(voiceStore.errorMessage ?? "")
         }
-        .alert(
-            "사진 저장 실패",
-            isPresented: Binding(
-                get: { captureStore.photo.saveError != nil },
-                set: { if !$0 { captureStore.send(.photo(.saveErrorDismissed)) } }
-            )
-        ) {
-            Button("다시 시도") {
-                captureStore.send(.photo(.saveRequested))
-            }
-            Button("닫기", role: .cancel) {
-                captureStore.send(.photo(.saveErrorDismissed))
-            }
-        } message: {
-            Text(captureStore.photo.saveError ?? "사진을 저장하지 못했습니다.")
-        }
     }
 
-    private func videoAndTimerAlerts<V: View>(on content: V) -> some View {
+    private func timerAlerts<V: View>(on content: V) -> some View {
         content
-        .alert(
-            "영상 저장 실패",
-            isPresented: Binding(
-                get: { captureStore.video.saveError != nil },
-                set: { if !$0 { captureStore.send(.video(.saveErrorDismissed)) } }
-            )
-        ) {
-            Button("다시 시도") {
-                captureStore.send(.video(.saveRequested))
-            }
-            Button("닫기", role: .cancel) {
-                captureStore.send(.video(.saveErrorDismissed))
-            }
-        } message: {
-            Text(captureStore.video.saveError ?? "영상을 저장하지 못했습니다.")
-        }
         .alert(
             "타이머 저장 실패",
             isPresented: Binding(

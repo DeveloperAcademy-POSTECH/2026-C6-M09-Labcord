@@ -1,5 +1,5 @@
 {
-  "originHash" : "6175b656d2e253e073b5a36fd63b381dbc041dae49893f313ba9df5d4f3dbe56",
+  "originHash" : "381216a9555dc211d9d38cc13668584c89087fd2d417948452e434850e6651cb",
   "pins" : [
     {
       "identity" : "combine-schedulers",
@@ -26,6 +26,15 @@
       "state" : {
         "revision" : "eebe90d160b3d437b97d0bb1ea7a5752f419f225",
         "version" : "0.19.0"
+      }
+    },
+    {
+      "identity" : "lottie-spm",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/airbnb/lottie-spm.git",
+      "state" : {
+        "revision" : "0aff16288f8dc1e3dab35cbf5cf45979673fd3df",
+        "version" : "4.6.1"
       }
     },
     {

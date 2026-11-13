@@ -6,6 +6,8 @@ struct HomeFeature {
     struct State: Equatable {
         @Shared(.appStorage("firstHomeCompleted")) var hasCompletedFirstHome = false
         @Shared(.appStorage("firstHomeHasShownGuide")) var hasShownGuide = false
+        @Shared(.appStorage("firstHomeRequiresGesturePractice"))
+        var requiresGesturePractice = false
         var isGuideVisible = false
         var list = ExperimentListFeature.State()
 
@@ -14,6 +16,7 @@ struct HomeFeature {
 
     enum Action {
         case list(ExperimentListFeature.Action)
+        case gestureGuideTapped
         case addTapped
         case settingsTapped
         case firstHomeAppeared
@@ -27,20 +30,30 @@ struct HomeFeature {
         Reduce { state, action in
             switch action {
             case .firstHomeAppeared:
+                if state.isFirstHome && state.requiresGesturePractice {
+                    state.$hasShownGuide.withLock { $0 = true }
+                    state.isGuideVisible = true
+                    return .none
+                }
                 guard state.isFirstHome, !state.hasShownGuide else { return .none }
                 state.$hasShownGuide.withLock { $0 = true }
                 state.isGuideVisible = true
                 return .none
 
             case .firstHomeGuideDismissed:
+                state.$requiresGesturePractice.withLock { $0 = false }
                 state.isGuideVisible = false
                 return .none
 
             case .firstHomeRegisterTapped:
-                guard state.isFirstHome else { return .none }
+                guard state.isFirstHome, !state.requiresGesturePractice else { return .none }
                 state.$hasCompletedFirstHome.withLock { $0 = true }
                 state.isGuideVisible = false
                 return .send(.addTapped)
+
+            case .gestureGuideTapped:
+                if !state.requiresGesturePractice { state.isGuideVisible = false }
+                return .none
 
             case .addTapped, .settingsTapped, .list:
                 return .none

@@ -19,6 +19,24 @@ struct AppView: View {
                     HomeView(store: store.scope(state: \.home, action: \.home))
                 } destination: { store in
                     switch store.case {
+                    case .gestureGuide(let store):
+                        GestureGuideFlowView(store: store)
+                            .navigationBarBackButtonHidden()
+                            .navigationSwipeBackEnabled(true)
+
+                    case .gesturePractice(let store):
+                        GesturePracticeView(
+                            store: store,
+                            device: Binding(
+                                get: { store.device },
+                                set: { store.send(.deviceChanged($0)) }
+                            ),
+                            onBack: { store.send(.backTapped) },
+                            onExit: { store.send(.exitTapped) }
+                        )
+                        .navigationBarBackButtonHidden()
+                        .navigationSwipeBackEnabled(true)
+
                     case .registration(let store):
                         ProtocolRegistrationView(store: store)
                             .navigationSwipeBackEnabled(!store.isSaving)
@@ -50,6 +68,9 @@ struct AppView: View {
                         ExperimentResultView(store: store)
                             .navigationSwipeBackEnabled(store.isOpenedFromHome)
                     }
+                }
+                .onChange(of: store.path.ids.last) { _, _ in
+                    SessionOrientation.reset()
                 }
             }
         }

@@ -55,7 +55,6 @@ struct VoiceRecordingFeature {
         case autoSaveElapsed(UUID)
         case saved(UUID)
         case saveFailed(UUID, String)
-        case saveErrorDismissed
         case vocabularyLoaded(SpeechSessionVocabulary)
         case languageModelHintLoaded(SpeechLanguageModelHint?)
         case cancelCleanupFailed(String)
@@ -225,10 +224,6 @@ struct VoiceRecordingFeature {
                 state.saveError = message
                 return .none
 
-            case .saveErrorDismissed:
-                state.saveError = nil
-                return .none
-
             case let .vocabularyLoaded(vocabulary):
                 state.contextualStrings = vocabulary.contextualStrings
                 state.phoneticReplacements = vocabulary.replacements
@@ -243,7 +238,7 @@ struct VoiceRecordingFeature {
                 return .none
 
             case .closeRequested:
-                guard state.phase != .hidden else { return .none }
+                guard state.phase != .hidden || state.hasRecordingFailure else { return .none }
                 let savingRecordID = state.isSaving ? state.recordID : nil
                 let sourceURL = state.recording?.audioURL
                 let experimentID = state.experimentID

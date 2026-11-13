@@ -13,21 +13,25 @@ struct FirstHomeView: View {
             FirstHomeEmptyContent {
                 store.send(.firstHomeRegisterTapped)
             }
+            .allowsHitTesting(!store.isGuideVisible)
+            .accessibilityHidden(store.isGuideVisible)
 
             if store.isGuideVisible {
                 Color.black.opacity(0.4)
                     .ignoresSafeArea()
-                    .onTapGesture {
-                        store.send(.firstHomeGuideDismissed)
-                    }
+                    .onTapGesture { store.send(.firstHomeGuideDismissed) }
             }
 
-            VStack(alignment: .trailing, spacing: 0) {
+            VStack(alignment: .trailing, spacing: 3) {
                 if store.isGuideVisible {
                     FirstHomeGuideTooltip()
+                        .contentShape(Rectangle())
+                        .onTapGesture { }
                 }
 
-                FirstHomeHelpButton {}
+                FirstHomeHelpButton(isGuideVisible: store.isGuideVisible) {
+                    store.send(.gestureGuideTapped)
+                }
             }
             .padding(.trailing, 20)
             .padding(.bottom, 17)
