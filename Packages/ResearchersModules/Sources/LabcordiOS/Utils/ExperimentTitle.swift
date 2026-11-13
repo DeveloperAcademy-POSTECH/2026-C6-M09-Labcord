@@ -5,6 +5,16 @@ public enum ExperimentTitle {
         "\(title) (\(number))"
     }
 
+    public static func availableNumber(
+        for title: String, startingAt start: Int, existing: Set<String>
+    ) -> Int {
+        var number = start
+        while existing.contains(numbered(title, number: number)) {
+            number += 1
+        }
+        return number
+    }
+
     public static func unique(_ title: String, existing: Set<String>) -> String {
         guard existing.contains(title) else { return title }
         var base = title
