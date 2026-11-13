@@ -18,6 +18,7 @@ struct PhotoFeature {
         var isSaving = false
         var isSessionClosing = false
         var saveError: String?
+        var lastSavedRecordID: UUID?
         var countdownEndAt: Date?
         var requestedRecordID: UUID?
         var pendingWatchCaptureID: UUID?
@@ -210,6 +211,7 @@ struct PhotoFeature {
 
             case let .saved(id):
                 guard state.recordID == id else { return .none }
+                state.lastSavedRecordID = id
                 state.requestedRecordID = nil
                 state.isSaving = false
                 state.capturedData = nil

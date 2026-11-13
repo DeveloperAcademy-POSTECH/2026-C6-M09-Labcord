@@ -23,6 +23,7 @@ struct VideoFeature {
         var isSaving = false
         var isSessionClosing = false
         var saveError: String?
+        var lastSavedRecordID: UUID?
         var hasPlaybackFinished = false
         var isAutoSavePending = false
         var shouldSaveOnStop = false
@@ -185,6 +186,7 @@ struct VideoFeature {
 
             case let .saved(id):
                 guard state.recordID == id else { return .none }
+                state.lastSavedRecordID = id
                 state.phase = .idle
                 resetReview(state: &state)
                 return .none

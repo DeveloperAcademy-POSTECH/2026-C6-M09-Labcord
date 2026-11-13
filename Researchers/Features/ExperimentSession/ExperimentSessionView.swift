@@ -30,7 +30,6 @@ struct ExperimentSessionView: View {
     }
     private var isPortraitVoiceActivityVisible: Bool {
         verticalSizeClass != .compact
-            && voiceStore.saveError == nil
             && (voiceStore.phase != .hidden || voiceStore.hasRecordingFailure)
     }
     private var isLandscapeVoiceOverlayVisible: Bool {
@@ -179,6 +178,8 @@ struct ExperimentSessionView: View {
         .modifier(
             VoiceRecordToastOverlay(
                 voiceStore: voiceStore,
+                photoStore: captureStore.scope(state: \.photo, action: \.photo),
+                videoStore: videoStore,
                 sessionStore: store,
                 presentation: $voiceToast
             )
