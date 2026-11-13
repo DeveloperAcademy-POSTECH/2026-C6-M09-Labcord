@@ -25,7 +25,7 @@ struct VoiceRecordToastOverlay: ViewModifier {
     @Binding var presentation: VoiceToastPresentation?
 
     func body(content: Content) -> some View {
-        content
+        let toastLayer = content
             .overlay(alignment: .bottom) {
                 if let presentation {
                     toast(for: presentation)
@@ -38,6 +38,12 @@ struct VoiceRecordToastOverlay: ViewModifier {
                 }
             }
             .animation(reduceMotion ? nil : .easeOut(duration: 0.25), value: presentation?.id)
+
+        return observeFailures(on: observeSuccesses(on: toastLayer))
+    }
+
+    private func observeSuccesses<V: View>(on content: V) -> some View {
+        content
             .onChange(of: voiceStore.phase) { _, phase in
                 if phase == .starting {
                     presentation = nil
@@ -58,6 +64,10 @@ struct VoiceRecordToastOverlay: ViewModifier {
                     presentation = VoiceToastPresentation(kind: .success)
                 }
             }
+    }
+
+    private func observeFailures<V: View>(on content: V) -> some View {
+        content
             .onChange(of: photoStore.saveError) { _, error in
                 if error != nil {
                     presentation = VoiceToastPresentation(kind: .photoSaveFailure)
