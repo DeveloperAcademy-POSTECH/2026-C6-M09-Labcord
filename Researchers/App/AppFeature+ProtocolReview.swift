@@ -54,19 +54,18 @@ extension AppFeature {
         state.reviewSaveFailed = false
         let date = now
         let title = review.title.trimmingCharacters(in: .whitespacesAndNewlines)
-        let shouldMakeTitleUnique = state.recentRegistrationID != nil
         return .run { send in
             do {
-                let experiments = shouldMakeTitleUnique ? try await experimentClient.load() : []
+                let experiments = try await experimentClient.load()
                 if jobID != nil, let existing = try await experimentClient.load().first(where: {
                     $0.id == identifier
                 }) {
                     await send(.reviewPreviouslySaved(id, existing))
                     return
                 }
-                let savedTitle = shouldMakeTitleUnique ? ExperimentTitle.unique(
+                let savedTitle = ExperimentTitle.unique(
                     title, existing: Set(experiments.filter { $0.id != identifier }.map(\.title))
-                ) : title
+                )
                 let entry = try await experimentClient.createWithProtocol(
                     identifier, date, savedTitle, procedure)
                 await send(.reviewSaved(id, .success(entry)))
