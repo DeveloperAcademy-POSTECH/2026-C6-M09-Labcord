@@ -36,11 +36,20 @@ extension AppFeature {
                 guard state.path.ids.last == id,
                       let guideID = state.path.ids.dropLast().last,
                       state.path[id: guideID, case: \.gestureGuide] != nil else { return .none }
+                state.home.$requiresGesturePractice.withLock { $0 = false }
+                state.home.isGuideVisible = false
                 state.path.pop(from: guideID)
                 return .none
             case let .path(.element(id: id, action: .gestureGuide(.exitTapped))):
                 guard state.path.ids.last == id else { return .none }
+                state.home.$requiresGesturePractice.withLock { $0 = false }
+                state.home.isGuideVisible = false
                 state.path.pop(from: id)
+                return .none
+            case let .path(.popFrom(id: id)):
+                guard state.path[id: id, case: \.gestureGuide] != nil else { return .none }
+                state.home.$requiresGesturePractice.withLock { $0 = false }
+                state.home.isGuideVisible = false
                 return .none
             default:
                 return .none
