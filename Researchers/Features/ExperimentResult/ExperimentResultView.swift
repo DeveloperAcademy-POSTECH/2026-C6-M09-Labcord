@@ -80,13 +80,14 @@ struct ExperimentResultView: View {
 
                     if store.recordTimeline != nil || store.loadMessage != nil {
                         HStack(spacing: LayoutTokens.spacing16) {
-                            if store.recordTimeline != nil {
+                            if store.recordTimeline?.detail.status == .completed {
                                 Button {
-                                    // 재개 동작은 제거했지만 버튼은 화면에 유지한다.
+                                    store.send(.resumeTapped)
                                 } label: {
                                     Text("실험 재개")
                                 }
                                 .buttonStyle(.labcord(.plain, size: .large))
+                                .disabled(store.isResuming)
                             }
 
                             Button {
@@ -96,6 +97,7 @@ struct ExperimentResultView: View {
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(.labcord(.filled, size: .large))
+                            .disabled(store.isResuming)
                         }
                         .padding(.horizontal, LayoutTokens.spacing16)
                         .padding(.top, LayoutTokens.spacing12)
@@ -117,6 +119,14 @@ struct ExperimentResultView: View {
                 ) {
                     TitleEditOverlayView(store: overlayStore)
                 }
+            }
+            .alert("실험을 재개하지 못했어요", isPresented: Binding(
+                get: { store.resumeFailed },
+                set: { if !$0 { store.send(.resumeFailureDismissed) } }
+            )) {
+                Button("확인", role: .cancel) { store.send(.resumeFailureDismissed) }
+            } message: {
+                Text("다시 시도해 주세요.")
             }
             .overlay {
                 Overlay()
