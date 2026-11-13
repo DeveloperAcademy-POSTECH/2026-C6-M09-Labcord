@@ -62,7 +62,7 @@ final class ExperimentListRepository {
         let nextNumber = defaults.integer(forKey: "lastExperimentNumber") + 1
         let experiment = Experiment(
             id: id,
-            title: "새 실험 (\(nextNumber))",
+            title: ExperimentTitle.numbered("새 실험", number: nextNumber),
             createdAt: date,
             mode: .free,
         )
