@@ -10,29 +10,24 @@ import SwiftUI
 
 struct OnboardingCard: View {
     let imageName: String
-    let currentPage: Int
 
     var body: some View {
-        Color.clear
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .overlay(alignment: .top) {
-                Image(imageName)
-                    .resizable()
-                    .aspectRatio(402.0 / 597.0, contentMode: .fit)
-                    .frame(maxWidth: .infinity)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .overlay(alignment: .bottom) {
-                PageControl(pageCount: 3, selection: .constant(currentPage), appearance: .general)
-                    .frame(height: 32)
-                    .padding(.bottom, 8)
-            }
-            .clipped()
-            .clipShape(RoundedRectangle(cornerRadius: LayoutTokens.radiusLg, style: .continuous))
-            .shadow(
-                color: Color("General/Effect/Shadow/Medium/Color"),
-                radius: EffectTokens().shadowMediumRadius,
-                y: EffectTokens().shadowMediumOffsetY
-            )
+        GeometryReader { geometry in
+            Image(imageName)
+                .resizable()
+                .scaledToFill()
+                .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
+                .clipped()
+                .clipShape(UnevenRoundedRectangle(
+                    topLeadingRadius: LayoutTokens.radiusLg,
+                    topTrailingRadius: LayoutTokens.radiusLg,
+                    style: .continuous
+                ))
+                .shadow(
+                    color: Color("General/Effect/Shadow/Medium/Color"),
+                    radius: EffectTokens().shadowMediumRadius,
+                    y: EffectTokens().shadowMediumOffsetY
+                )
+        }
     }
 }
