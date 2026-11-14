@@ -5,7 +5,7 @@ import LabcordWatchOS
 
 extension WatchExperimentFeature.State {
     var snapshot: WatchExperimentSnapshot? { selectedID.flatMap { snapshots[$0] } }
-    var canResume: Bool { [.paused, .completed].contains(snapshot?.experiment.status) }
+    var canResume: Bool { snapshot?.experiment.status == .paused }
 
     var selectedTitle: String {
         snapshot?.experiment.title

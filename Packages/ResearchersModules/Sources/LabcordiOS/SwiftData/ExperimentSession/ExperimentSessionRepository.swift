@@ -12,14 +12,6 @@ final class ExperimentSessionRepository {
 
     private init() {}
 
-    func resumeCompleted(id: UUID, at date: Date) throws {
-        let context = try store.makeContext()
-        guard let experiment = try store.find(id: id, in: context),
-              experiment.status == .completed else { throw WatchExperimentError.invalidState }
-        experiment.resumeCompleted(at: date)
-        try context.save()
-    }
-
     func enterSessionAndLoadDetail(id: UUID) throws -> ExperimentSessionDetail? {
         try loadDetail(id: id, recordEntry: true)
     }
@@ -193,13 +185,41 @@ final class ExperimentSessionRepository {
         guard let experiment = try store.find(id: id, in: context) else {
             throw ExperimentStore.StoreError.experimentNotFound
         }
-        _ = activeTimers(in: experiment, at: date)
-        for record in experiment.records
-            where record.type == .timer && record.timerEndedAt == nil {
-            record.timerEndedAt = date
+        let timers = activeTimers(in: experiment, at: date)
+        for var timer in timers where timer.status == .running {
+            timer.pause(at: date)
+            upsertTimer(timer, endedAt: nil, in: experiment)
         }
         experiment.complete(at: date)
         try context.save()
+    }
+
+    func resumeCompleted(id: UUID, at date: Date) throws {
+        let context = try store.makeContext()
+        guard let experiment = try store.find(id: id, in: context) else {
+            throw ExperimentStore.StoreError.experimentNotFound
+        }
+        guard let completedAt = experiment.resumeCompleted(at: date) else {
+            throw ResumeError.invalidState
+        }
+        for record in experiment.records where record.type == .timer {
+            if record.timerEndedAt == completedAt {
+                record.timerEndedAt = nil
+                if !record.timerPauses.contains(where: { $0.resumedAt == nil }) {
+                    record.timerPauses.append(Pause(pausedAt: completedAt, resumedAt: date))
+                }
+            }
+            guard record.timerEndedAt == nil else { continue }
+            guard let pause = record.timerPauses.first(where: {
+                $0.pausedAt == completedAt && $0.resumedAt == nil
+            }) else { continue }
+            pause.resumedAt = date
+        }
+        try context.save()
+    }
+
+    private enum ResumeError: Error {
+        case invalidState
     }
 
     private func watchTimers(
@@ -231,7 +251,10 @@ final class ExperimentSessionRepository {
             }
     }
 
-    private func activeTimers(
+}
+
+private extension ExperimentSessionRepository {
+    func activeTimers(
         in experiment: Experiment, at date: Date, persistExpiry: Bool = true
     ) -> [ExperimentTimer] {
         experiment.records
@@ -261,9 +284,7 @@ final class ExperimentSessionRepository {
             }
             .sorted { $0.startedAt < $1.startedAt }
     }
-}
 
-private extension ExperimentSessionRepository {
     func upsertTimer(
         _ timer: ExperimentTimer, endedAt: Date?, in experiment: Experiment
     ) {

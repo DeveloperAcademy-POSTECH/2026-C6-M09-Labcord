@@ -23,7 +23,7 @@ struct RecordTimelineEntryView: View {
         case .ended:
             TimelineExperimentState("실험 종료", timestamp: timestamp)
         case .paused:
-            TimelineExperimentState("실험 일시 중지", timestamp: timestamp)
+            TimelineExperimentState("실험 일시정지", timestamp: timestamp)
         case .resumed:
             TimelineExperimentState("실험 재개", timestamp: timestamp)
         case let .record(record):

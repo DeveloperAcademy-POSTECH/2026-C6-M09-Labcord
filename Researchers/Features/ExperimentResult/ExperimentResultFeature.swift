@@ -34,9 +34,6 @@ struct ExperimentResultFeature {
         var externalReloadID: UUID?
         var recordTimeline: RecordTimelineFeature.State?
         var loadMessage: String?
-        var isResuming = false
-        var resumeMessage: String?
-        var isResumeConfirmationPresented = false
         var selectedType: RecordFilter = .all
         var selectedSort: RecordSort = .oldest
         var selectedEntry: ExperimentResultDetail.TimelineEntry?
@@ -46,6 +43,8 @@ struct ExperimentResultFeature {
         var isRecordDiscardConfirmationPresented = false
         var isRecordDeleteConfirmationPresented = false
         var recordSaveMessage: String?
+        var isResuming = false
+        var resumeFailed = false
         var titleEditOverlay: TitleEditOverlayFeature.State?
 
         var editedTranscript: String? {
@@ -89,9 +88,9 @@ struct ExperimentResultFeature {
         case titleEditOverlay(TitleEditOverlayFeature.Action)
         case homeTapped
         case resumeTapped
-        case resumeConfirmationCancelled
-        case resumeFinished(Bool)
-        case resumeReady
+        case resumeSucceeded
+        case resumeFailed
+        case resumeFailureDismissed
     }
 
     @Dependency(\.experimentClient) var experimentClient
@@ -264,18 +263,21 @@ struct ExperimentResultFeature {
                 return .none
 
             case .resumeTapped:
-                state.isResumeConfirmationPresented = false
                 return resumeExperiment(state: &state)
 
-            case .resumeConfirmationCancelled:
-                state.isResumeConfirmationPresented = false
+            case .resumeSucceeded:
+                state.isResuming = false
                 return .none
 
-            case let .resumeFinished(success):
-                return finishResume(success, state: &state)
-
-            case .resumeReady:
+            case .resumeFailed:
+                state.isResuming = false
+                state.resumeFailed = true
                 return .none
+
+            case .resumeFailureDismissed:
+                state.resumeFailed = false
+                return .none
+
             }
         }
         .ifLet(\.titleEditOverlay, action: \.titleEditOverlay) {
@@ -289,6 +291,23 @@ struct ExperimentResultFeature {
 }
 
 private extension ExperimentResultFeature {
+    func resumeExperiment(state: inout State) -> Effect<Action> {
+        guard state.canRefreshExternalRecords,
+              state.recordTimeline?.detail.status == .completed else { return .none }
+        state.isResuming = true
+        state.resumeFailed = false
+        let experimentID = state.experimentID
+        let resumedAt = now
+        return .run { send in
+            do {
+                try await experimentClient.resumeCompleted(experimentID, resumedAt)
+                await send(.resumeSucceeded)
+            } catch {
+                await send(.resumeFailed)
+            }
+        }
+    }
+
     func loadResultDetail(state: inout State) -> Effect<Action> {
         state.isInitialLoadPending = true
         state.recordTimeline = nil
@@ -323,34 +342,6 @@ private extension ExperimentResultFeature {
                 await send(.resultDetailLoaded(detail))
             }
         }
-    }
-
-    func resumeExperiment(state: inout State) -> Effect<Action> {
-        guard state.recordTimeline?.detail.status == .completed,
-              state.canRefreshExternalRecords,
-              !PhoneWatchAudioService.shared.hasUnsettledRecording() else { return .none }
-        state.isResuming = true
-        state.resumeMessage = nil
-        let id = state.experimentID
-        let date = now
-        return .run { send in
-            do {
-                try await experimentClient.resumeCompleted(id, date)
-                await send(.resumeFinished(true))
-            } catch {
-                await send(.resumeFinished(false))
-            }
-        }
-    }
-
-    func finishResume(_ success: Bool, state: inout State) -> Effect<Action> {
-        guard state.isResuming else { return .none }
-        guard success else {
-            state.isResuming = false
-            state.resumeMessage = "실험을 재개하지 못했어요. 다시 시도해주세요."
-            return .none
-        }
-        return .send(.resumeReady)
     }
 }
 

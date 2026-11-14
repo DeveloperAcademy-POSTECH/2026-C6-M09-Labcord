@@ -66,7 +66,9 @@ struct AppView: View {
 
                     case .result(let store):
                         ExperimentResultView(store: store)
-                            .navigationSwipeBackEnabled(store.isOpenedFromHome)
+                            .navigationSwipeBackEnabled(
+                                store.isOpenedFromHome && !store.isResuming
+                            )
                     }
                 }
                 .onChange(of: store.path.ids.last) { _, _ in

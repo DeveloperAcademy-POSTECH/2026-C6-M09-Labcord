@@ -68,16 +68,23 @@ public final class Experiment {
         statusHistory.append(ExperimentStatusEntry(status: .running, date: date))
     }
 
-    public func resumeCompleted(at date: Date) {
-        guard status == .completed else { return }
-        status = .running
-        statusHistory.append(ExperimentStatusEntry(status: .running, date: date))
-    }
-
     public func complete(at date: Date) {
         guard status != .completed else { return }
         endedAt.append(date)
         status = .completed
         statusHistory.append(ExperimentStatusEntry(status: .completed, date: date))
+    }
+
+    public func resumeCompleted(at date: Date) -> Date? {
+        guard status == .completed,
+              let completedAt = endedAt.last,
+              let lastEntry = statusHistory.first(where: {
+                  $0.status == .completed && $0.date == completedAt
+              }) else { return nil }
+        endedAt.removeLast()
+        lastEntry.status = .paused
+        status = .paused
+        recordEntry(at: date)
+        return completedAt
     }
 }
