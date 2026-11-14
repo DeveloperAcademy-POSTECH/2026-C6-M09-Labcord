@@ -24,7 +24,6 @@ struct AppFeature {
         var reviewAnalysisJobID: UUID?
         var recentRegistrationID: StackElementID?
         var savedReview: ExperimentListEntry?
-        var watchNotificationGate = WatchNotificationGate()
     }
 
     enum Action {
@@ -52,8 +51,6 @@ struct AppFeature {
         case dismissReviewSaveFailure
         case confirmReviewExit
         case cancelReviewExit
-        case timerNotificationTapped(UUID)
-        case timerNotificationLoaded(UUID, UUID, ExperimentListEntry?)
     }
 
     @Dependency(\.experimentClient) var experimentClient
@@ -76,8 +73,7 @@ struct AppFeature {
             case .appeared, .onboarding:
                 return handleLaunch(&state, action)
 
-            case .screenNavigationLoaded, .timerNotificationTapped, .timerNotificationLoaded,
-                 .watchTask, .watchEvent, .watchSceneChanged,
+            case .screenNavigationLoaded, .watchTask, .watchEvent, .watchSceneChanged,
                  .restoreSettingsSession, .settingsSessionLoaded: return .none
 
             case .home(.addTapped):
@@ -286,43 +282,4 @@ struct AppFeature {
         watchCompletionNavigationReducer
         watchContextReducer
     }
-}
-
-extension AppFeature {
-    func loadNotificationExperiment(_ state: inout State, experimentID: UUID) -> Effect<Action> {
-        let token = uuid()
-        state.watchNotificationGate.begin(experimentID: experimentID, token: token)
-        return .run { send in
-            let entry = try? await experimentClient.load().first { $0.id == experimentID }
-            await send(.timerNotificationLoaded(experimentID, token, entry))
-        }
-    }
-
-    func openNotificationExperiment(
-        _ state: inout State,
-        experimentID: UUID,
-        token: UUID,
-        entry: ExperimentListEntry?
-    ) -> Effect<Action> {
-        guard state.watchNotificationGate.receive(
-            experimentID: experimentID, token: token,
-            watchRequestPending: watchWorkPending(state)
-        ) == .open else { return .none }
-        guard let entry, !state.reviewSaving else { return .none }
-        if entry.status == .completed {
-            if state.path.ids.last.flatMap({ state.path[id: $0, case: \.result] })?
-                .experimentID == experimentID { return .none }
-            state.path.removeAll()
-            state.path.append(.result(.init(
-                experimentID: experimentID, isOpenedFromHome: true
-            )))
-        } else {
-            if state.path.ids.last.flatMap({ state.path[id: $0, case: \.session] })?
-                .experimentID == experimentID { return .none }
-            state.path.removeAll()
-            state.path.append(.session(.init(experimentID: experimentID)))
-        }
-        return .send(.home(.list(.cancelLoad)))
-    }
-
 }

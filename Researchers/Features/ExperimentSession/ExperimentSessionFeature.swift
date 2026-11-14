@@ -87,8 +87,6 @@ struct ExperimentSessionFeature {
     @Dependency(\.uuid) var uuid
     @Dependency(\.cameraSessionClient) var cameraSessionClient
     @Dependency(\.speechRecordingClient) var speechRecordingClient
-    @Dependency(\.notificationPermissionClient) var notificationPermissionClient
-    @Dependency(\.timerCompletionNotificationClient) var timerCompletionNotificationClient
 
     var body: some Reducer<State, Action> {
         watchReducer
@@ -238,10 +236,6 @@ private extension ExperimentSessionFeature {
                 state.homeExitAttempt.begin(attemptID)
                 let exitedAt = now
                 let ownerID = state.capture.camera.ownerID
-                let title = state.detail?.title ?? "실험"
-                let runningTimers = state.timer.timerCollection.timers.filter {
-                    $0.status == .running && $0.remainingSeconds(at: exitedAt) > 0
-                }
                 return .concatenate(
                     .send(.pause(.homeExitStarted)),
                     .run { send in
@@ -250,19 +244,6 @@ private extension ExperimentSessionFeature {
                         } catch {
                             await send(.homeExitFailed(attemptID, requestID))
                             return
-                        }
-                        if !runningTimers.isEmpty,
-                           let status = try? await notificationPermissionClient.requestAccess() {
-                            switch status {
-                            case .authorized, .provisional, .ephemeral:
-                                for timer in runningTimers {
-                                    try? await timerCompletionNotificationClient.schedule(
-                                        experimentID, title, timer
-                                    )
-                                }
-                            case .notDetermined, .denied, .unknown:
-                                break
-                            }
                         }
                         await send(.voice(.closeRequested))
                         await cameraSessionClient.cancelVideoRecording()

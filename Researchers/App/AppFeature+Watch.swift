@@ -8,14 +8,6 @@ extension AppFeature {
     var watchReducer: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
-            case let .timerNotificationTapped(id):
-                return loadNotificationExperiment(&state, experimentID: id)
-
-            case let .timerNotificationLoaded(id, token, entry):
-                return openNotificationExperiment(
-                    &state, experimentID: id, token: token, entry: entry
-                )
-
             case .watchTask:
                 return .run { send in
                     let coordinator = await PhoneWatchExperimentCoordinator.shared
@@ -78,7 +70,7 @@ extension AppFeature {
                 guard state.watchRequestID == id else { return .none }
                 state.watchRequestID = nil
                 state.watchCloseGate = nil
-                return replayWatchNotification(&state)
+                return .none
 
             case let .path(.element(id, action: .session(.watchRecordResponse(response)))):
                 guard let experimentID = state.path[id: id, case: \.session]?.experimentID else {
@@ -91,9 +83,6 @@ extension AppFeature {
                    response.phase == .completed || response.phase == .failed
                     || response.record != nil {
                     state.watchRequestID = nil
-                }
-                if response.phase == .completed || response.phase == .failed {
-                    return replayWatchNotification(&state)
                 }
                 return .none
 
@@ -127,21 +116,6 @@ extension AppFeature {
             coordinator.refresh()
             return .none
         }
-    }
-
-    func watchWorkPending(_ state: State) -> Bool {
-        if state.watchRequestID != nil || !canLeaveCurrentScreen(state) { return true }
-        guard let id = state.path.ids.last,
-              let session = state.path[id: id, case: \.session] else { return false }
-        let capture = session.capture
-        return capture.watchPhotoRequest != nil || capture.watchVideoRequest != nil
-            || capture.watchReviewRequest != nil || capture.watchStopRequest != nil
-    }
-
-    func replayWatchNotification(_ state: inout State) -> Effect<Action> {
-        guard !watchWorkPending(state),
-              let id = state.watchNotificationGate.takeDeferredExperiment() else { return .none }
-        return loadNotificationExperiment(&state, experimentID: id)
     }
 
     var watchCompletionNavigationReducer: some Reducer<State, Action> {
@@ -178,7 +152,7 @@ extension AppFeature {
         finishWatchRequest(&state, requestID: requestID, sessionID: sessionID, kind: kind)
         let navigation: Action = kind == .complete
             ? .showResult(sessionID) : .returnHome(sessionID)
-        return .concatenate(.send(navigation), replayWatchNotification(&state))
+        return .send(navigation)
     }
 
     func finishWatchRequest(

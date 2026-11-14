@@ -3,7 +3,6 @@ import LabcordiOS
 import SwiftUI
 
 struct AppView: View {
-    let notificationDelegate: ForegroundNotificationDelegate
     @Environment(\.scenePhase) private var scenePhase
     @State private var store = PhoneIntentRuntime.shared.store
     @State private var intentRuntime = PhoneIntentRuntime.shared
@@ -128,17 +127,6 @@ struct AppView: View {
             Button("실험 등록 종료", role: .destructive) { store.send(.confirmReviewExit) }
         } message: {
             Text("이 화면을 나가면 분석 결과가 초기화 돼요.")
-        }
-        .onAppear {
-            notificationDelegate.onTimerCompletionTap = { experimentID in
-                store.send(.timerNotificationTapped(experimentID))
-            }
-            if let experimentID = notificationDelegate.takePendingExperimentID() {
-                store.send(.timerNotificationTapped(experimentID))
-            }
-        }
-        .onDisappear {
-            notificationDelegate.onTimerCompletionTap = nil
         }
     }
 }

@@ -1,21 +1,18 @@
 import LabcordDesignSystem
 import LabcordiOS
 import SwiftUI
-import UserNotifications
 
 @main
 struct ResearchersApp: App {
     @UIApplicationDelegateAdaptor(OrientationAppDelegate.self) private var orientationDelegate
 
     @State private var isSplashActive = true
-    private let notificationDelegate = ForegroundNotificationDelegate()
 
     init() {
         PhoneWatchExperimentCoordinator.shared.activate()
         PhoneWatchAudioService.shared.activate()
         PhoneWatchExperimentCoordinator.shared.configureRecordHandling()
         FontRegistration.register()
-        UNUserNotificationCenter.current().delegate = notificationDelegate
     }
 
     var body: some Scene {
@@ -30,7 +27,7 @@ struct ResearchersApp: App {
                         }
                     }
             } else {
-                AppView(notificationDelegate: notificationDelegate)
+                AppView()
             }
         }
     }
