@@ -6,75 +6,149 @@
 //
 
 import ActivityKit
-import WidgetKit
+import ComposableArchitecture
+import LabcordDesignSystem
+import LabcordShared
 import SwiftUI
-
-struct LabcordWidgetAttributes: ActivityAttributes {
-    public struct ContentState: Codable, Hashable {
-        // Dynamic stateful properties about your activity go here!
-        var emoji: String
-    }
-
-    // Fixed non-changing properties about your activity go here!
-    var name: String
-}
+import WidgetKit
 
 struct LabcordWidgetLiveActivity: Widget {
     var body: some WidgetConfiguration {
-        ActivityConfiguration(for: LabcordWidgetAttributes.self) { context in
-            // Lock screen/banner UI goes here
+        ActivityConfiguration(for: TimerActivityAttributes.self) { context in
             VStack {
-                Text("Hello \(context.state.emoji)")
+                Text(context.attributes.experimentTitle)
             }
             .activityBackgroundTint(Color.cyan)
             .activitySystemActionForegroundColor(Color.black)
 
         } dynamicIsland: { context in
-            DynamicIsland {
-                // Expanded UI goes here.  Compose the expanded UI through
-                // various regions, like leading/trailing/center/bottom
+            let store = Store(
+                initialState: TimerLiveActivityFeature.State(
+                    attributes: context.attributes,
+                    contentState: context.state
+                )
+            ) {
+                TimerLiveActivityFeature()
+            }
+
+            return DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    Text("Leading")
+                    Text("진행 중")
+                        .foregroundStyle(Color("Experiment/Feedback/Warning/Foreground"))
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text("Trailing")
+                    TimerIslandIconView()
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    Text("Bottom \(context.state.emoji)")
-                    // more content
+                    TimerLiveActivityExpandedView(store: store)
                 }
             } compactLeading: {
-                Text("L")
+                TimerIslandIconView()
             } compactTrailing: {
-                Text("T \(context.state.emoji)")
+                CompactTimerView(timer: context.state)
             } minimal: {
-                Text(context.state.emoji)
+                TimerIslandIconView()
             }
-            .widgetURL(URL(string: "http://www.apple.com"))
-            .keylineTint(Color.red)
         }
     }
 }
 
-extension LabcordWidgetAttributes {
-    fileprivate static var preview: LabcordWidgetAttributes {
-        LabcordWidgetAttributes(name: "World")
+private struct CompactTimerView: View {
+    let timer: TimerActivityAttributes.ContentState
+
+    private var widthReference: String {
+        let hours = timer.durationSeconds / 3600
+        let minutes = timer.durationSeconds / 60
+        if hours > 0 {
+            return String(repeating: "8", count: String(hours).count) + ":88:88"
+        }
+        return String(repeating: "8", count: String(minutes).count) + ":88"
+    }
+
+    var body: some View {
+        Text(widthReference)
+            .monospacedDigit()
+            .hidden()
+            .overlay {
+                Text(
+                    timerInterval:
+                        timer.endsAt.addingTimeInterval(
+                            -TimeInterval(timer.durationSeconds)
+                        )...timer.endsAt,
+                    countsDown: true
+                )
+                .monospacedDigit()
+                .multilineTextAlignment(.center)
+                .lineLimit(1)
+            }
+            .frame(minWidth: 30)
+            .foregroundStyle(Color("Experiment/Feedback/Warning/Foreground"))
     }
 }
 
-extension LabcordWidgetAttributes.ContentState {
-    fileprivate static var smiley: LabcordWidgetAttributes.ContentState {
-        LabcordWidgetAttributes.ContentState(emoji: "😀")
-     }
-     
-     fileprivate static var starEyes: LabcordWidgetAttributes.ContentState {
-         LabcordWidgetAttributes.ContentState(emoji: "🤩")
-     }
+private struct TimerLiveActivityExpandedView: View {
+    let store: StoreOf<TimerLiveActivityFeature>
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("타이머가 진행 중이에요")
+                .font(.headline)
+
+            Text(store.experimentTitle)
+                .foregroundStyle(.secondary)
+
+            Text(
+                timerInterval:
+                    store.timer.endsAt.addingTimeInterval(
+                        -TimeInterval(store.timer.durationSeconds)
+                    )...store.timer.endsAt,
+                countsDown: true
+            )
+            .font(.title2)
+            .monospacedDigit()
+            .foregroundStyle(Color("Experiment/Feedback/Warning/Foreground"))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
 }
 
-#Preview("Notification", as: .content, using: LabcordWidgetAttributes.preview) {
-   LabcordWidgetLiveActivity()
+private struct TimerIslandIconView: View {
+    var body: some View {
+        Image(labcordIcon: .timer)
+            .resizable()
+            .scaledToFit()
+            .frame(width: 24, height: 24)
+            .foregroundStyle(Color("Experiment/Feedback/Warning/Foreground"))
+    }
+}
+
+private enum TimerLiveActivityPreview {
+    static let attributes = TimerActivityAttributes(
+        experimentID: UUID(),
+        experimentTitle: "촉매 반응 실험"
+    )
+
+    static let state = TimerActivityAttributes.ContentState(
+        timerID: UUID(),
+        endsAt: Date.now.addingTimeInterval(180),
+        durationSeconds: 180
+    )
+}
+
+#Preview("확장형", as: .dynamicIsland(.expanded), using: TimerLiveActivityPreview.attributes) {
+    LabcordWidgetLiveActivity()
 } contentStates: {
-    LabcordWidgetAttributes.ContentState.smiley
-    LabcordWidgetAttributes.ContentState.starEyes
+    TimerLiveActivityPreview.state
+}
+
+#Preview("축소형", as: .dynamicIsland(.compact), using: TimerLiveActivityPreview.attributes) {
+    LabcordWidgetLiveActivity()
+} contentStates: {
+    TimerLiveActivityPreview.state
+}
+
+#Preview("최소형", as: .dynamicIsland(.minimal), using: TimerLiveActivityPreview.attributes) {
+    LabcordWidgetLiveActivity()
+} contentStates: {
+    TimerLiveActivityPreview.state
 }

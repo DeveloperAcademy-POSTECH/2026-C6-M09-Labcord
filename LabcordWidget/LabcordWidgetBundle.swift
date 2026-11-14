@@ -11,7 +11,6 @@ import SwiftUI
 @main
 struct LabcordWidgetBundle: WidgetBundle {
     var body: some Widget {
-        LabcordWidget()
         LabcordWidgetLiveActivity()
     }
 }

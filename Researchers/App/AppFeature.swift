@@ -57,6 +57,7 @@ struct AppFeature {
     @Dependency(\.protocolAnalysisJobManager) var jobManager
     @Dependency(\.uuid) var uuid
     @Dependency(\.date.now) var now
+    @Dependency(\.timerLiveActivityClient) var timerLiveActivityClient
 
     var body: some Reducer<State, Action> {
         Scope(state: \.home, action: \.home) { HomeFeature() }
@@ -272,8 +273,22 @@ struct AppFeature {
 
             case let .returnHome(id):
                 guard state.path.ids.last == id else { return .none }
+                let session = state.path[id: id, case: \.session]
                 state.path.removeAll()
-                return .send(.home(.list(.load)))
+                guard let session, session.homeExitAttempt.lastAcceptedID != nil else {
+                    return .send(.home(.list(.load)))
+                }
+                let experimentID = session.experimentID
+                let experimentTitle = session.detail?.title ?? ""
+                let timer = earliestRunningTimer(in: session.timer.timerCollection, at: now)
+                return .merge(
+                    .send(.home(.list(.load))),
+                    .run { _ in
+                        await timerLiveActivityClient.synchronize(
+                            experimentID, experimentTitle, timer
+                        )
+                    }
+                )
 
             case .home, .path: return .none
             }
@@ -281,5 +296,31 @@ struct AppFeature {
         .forEach(\.path, action: \.path)
         watchCompletionNavigationReducer
         watchContextReducer
+    }
+}
+
+private extension AppFeature {
+    func earliestRunningTimer(
+        in collection: ExperimentTimerCollection, at date: Date
+    ) -> TimerActivityAttributes.ContentState? {
+        collection.timers.compactMap { timer in
+            guard timer.status == .running else { return nil }
+            let pausedDuration = timer.pauseIntervals.reduce(0.0) { total, interval in
+                total + max(0, interval.resumedAt?.timeIntervalSince(interval.pausedAt) ?? 0)
+            }
+            let endsAt = timer.startedAt.addingTimeInterval(
+                TimeInterval(timer.durationSeconds) + pausedDuration
+            )
+            guard endsAt > date else { return nil }
+            return TimerActivityAttributes.ContentState(
+                timerID: timer.id,
+                endsAt: endsAt,
+                durationSeconds: timer.durationSeconds
+            )
+        }
+        .min { left, right in
+            if left.endsAt != right.endsAt { return left.endsAt < right.endsAt }
+            return left.timerID.uuidString < right.timerID.uuidString
+        }
     }
 }
