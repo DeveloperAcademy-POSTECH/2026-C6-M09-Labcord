@@ -147,8 +147,9 @@ struct ProtocolRegistrationView: View {
                     showExitConfirmation = true
                 }
             }
-            .disabled(input.restoringAnalysis || store.isSaving || input.importing
-                      || input.invalidatingJobID != nil || input.analysisCancellationRequested)
+            .disabled(input.restoringAnalysis || store.isSaving || store.requestingPhotoAccess
+                      || input.importing || input.invalidatingJobID != nil
+                      || input.analysisCancellationRequested)
             .accessibilityIdentifier("entry-back")
         }
     }
@@ -322,7 +323,6 @@ private extension ProtocolRegistrationView {
     var protocolFileTypes: [UTType] {
         [.pdf] + ["xlsx", "docx"].compactMap { UTType(filenameExtension: $0) }
     }
-
     var reviewConfirmationMessage: String {
         var messages: [String] = []
         if !input.pendingParsingInputs.isEmpty {
