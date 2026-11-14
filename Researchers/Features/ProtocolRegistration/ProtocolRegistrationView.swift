@@ -6,7 +6,6 @@ import SwiftUI
 import UniformTypeIdentifiers
 struct ProtocolRegistrationView: View {
     @Bindable var store: StoreOf<ProtocolRegistrationFeature>
-    @State private var photoPickerPresented = false
     @State private var filePickerPresented = false
     @State private var photoSelection: [PhotosPickerItem] = []
     @State private var importFailed = false
@@ -49,7 +48,7 @@ struct ProtocolRegistrationView: View {
             "General/Background/Primary", bundle: LabcordDesignSystemResources.bundle
         ).ignoresSafeArea())
         .environment(\.colorScheme, .light)
-        .disabled(input.restoringAnalysis)
+        .disabled(input.restoringAnalysis || store.requestingPhotoAccess)
         .alert("실험을 저장하지 못했어요", isPresented: Binding(
             get: { store.hasFailed },
             set: { if !$0 { store.send(.dismissFailure) } }
@@ -103,8 +102,11 @@ struct ProtocolRegistrationView: View {
     }
     var body: some View {
         registrationContent
+        .modifier(PhotoAccessAlert(store: store))
         .photosPicker(
-            isPresented: $photoPickerPresented,
+            isPresented: Binding(get: { store.photoPickerPresented }, set: {
+                if !$0 { store.send(.photoPickerDismissed) }
+            }),
             selection: $photoSelection,
             maxSelectionCount: max(1, 10 - input.importedPhotos.count),
             matching: .images
@@ -161,7 +163,7 @@ private extension ProtocolRegistrationView {
                         state: input.importedPhotos.isEmpty ? .default : .selected
                     ) {
                         if input.importedPhotos.count < 10 {
-                            photoPickerPresented = true
+                            store.send(.photosTapped)
                         }
                     }
                     .accessibilityHint("사진을 선택합니다")
@@ -206,7 +208,7 @@ private extension ProtocolRegistrationView {
                             }
                         }
                         ProtocolPhotoItem(isDisabled: input.importedPhotos.count >= 10) {
-                            photoPickerPresented = true
+                            store.send(.photosTapped)
                         }
                     }
                     .disabled(store.isSaving || input.importing || input.analysisID != nil
@@ -352,7 +354,6 @@ private extension ProtocolRegistrationView {
             store.send(.showReview)
         }
     }
-
     func analyze() {
         guard input.analysisID == nil, input.invalidatingJobID == nil, !input.analysisStarting,
               !input.importing, !store.isSaving else { return }
@@ -384,7 +385,6 @@ private extension ProtocolRegistrationView {
             importFailed = failed
         }
     }
-
     func importFile(_ url: URL) {
         store.send(.inputAnalysis(.importStarted))
         Task {

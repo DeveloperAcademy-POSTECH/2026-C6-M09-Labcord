@@ -1,6 +1,7 @@
 import ComposableArchitecture
 import Foundation
 import LabcordiOS
+import Photos
 
 nonisolated enum ProtocolSource: String, Equatable, Sendable {
     case recent
@@ -15,10 +16,18 @@ nonisolated enum ProtocolAnalysisPhase: Equatable, Sendable {
 
 @Reducer
 struct ProtocolRegistrationFeature {
+    enum PhotoAccessIssue: Equatable {
+        case denied
+        case restricted
+    }
+
     @ObservableState
     struct State: Equatable {
         var pendingID: UUID?
         var hasFailed = false
+        var requestingPhotoAccess = false
+        var photoPickerPresented = false
+        var photoAccessIssue: PhotoAccessIssue?
         var inputAnalysis = ProtocolInputAnalysisFeature.State()
         var analysisProgress = ProtocolAnalysisProgressFeature.State()
         var analysisCompletion = ProtocolAnalysisCompletionFeature.State()
@@ -48,6 +57,10 @@ struct ProtocolRegistrationFeature {
         case retryTapped
         case dismissFailure
         case sourceTapped(ProtocolSource)
+        case photosTapped
+        case photoAccessRequested(PHAuthorizationStatus)
+        case dismissPhotoAccessIssue
+        case photoPickerDismissed
         case showReview
     }
 
@@ -71,6 +84,36 @@ struct ProtocolRegistrationFeature {
         }
         Reduce { state, action in
             switch action {
+            case .photosTapped:
+                guard !state.requestingPhotoAccess, !state.photoPickerPresented,
+                      !state.isSaving, !state.importing, state.analysisID == nil,
+                      state.invalidatingJobID == nil, !state.analysisStarting,
+                      state.inputAnalysis.importedPhotos.count < 10 else { return .none }
+                state.requestingPhotoAccess = true
+                return .run { send in
+                    let status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
+                    await send(.photoAccessRequested(status))
+                }
+            case let .photoAccessRequested(status):
+                guard state.requestingPhotoAccess else { return .none }
+                state.requestingPhotoAccess = false
+                switch status {
+                case .authorized, .limited:
+                    state.photoPickerPresented = true
+                case .denied:
+                    state.photoAccessIssue = .denied
+                case .restricted, .notDetermined:
+                    state.photoAccessIssue = .restricted
+                @unknown default:
+                    state.photoAccessIssue = .restricted
+                }
+                return .none
+            case .dismissPhotoAccessIssue:
+                state.photoAccessIssue = nil
+                return .none
+            case .photoPickerDismissed:
+                state.photoPickerPresented = false
+                return .none
             case .analysisProgress(.delegate(.skip)):
                 return .send(.skipTapped)
             case .analysisProgress(.delegate(.exit)), .analysisCompletion(.delegate(.exit)):
