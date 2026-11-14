@@ -34,7 +34,7 @@ struct OnboardingFooter: View {
         .frame(maxWidth: .infinity)
         .background {
             if store.page != .second {
-                Color("General/Background/Primary")
+                Color("General/Background/Primary", bundle: LabcordDesignSystemResources.bundle)
                     .ignoresSafeArea(edges: .bottom)
             }
         }

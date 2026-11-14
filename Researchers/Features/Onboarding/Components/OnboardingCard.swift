@@ -24,7 +24,10 @@ struct OnboardingCard: View {
                     style: .continuous
                 ))
                 .shadow(
-                    color: Color("General/Effect/Shadow/Medium/Color"),
+                    color: Color(
+                        "General/Effect/Shadow/Medium/Color",
+                        bundle: LabcordDesignSystemResources.bundle
+                    ),
                     radius: EffectTokens().shadowMediumRadius,
                     y: EffectTokens().shadowMediumOffsetY
                 )

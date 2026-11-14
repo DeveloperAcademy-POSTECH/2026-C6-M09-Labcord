@@ -41,6 +41,7 @@ struct OnboardingView: View {
                 OnboardingFooter(store: store)
             }
         }
+        .environment(\.colorScheme, .light)
     }
 
     private var cardImageName: String {
