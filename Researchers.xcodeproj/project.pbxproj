@@ -11,6 +11,7 @@
 		8E1BA53830A84FFD00544554 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E1BA53730A84FFD00544554 /* WidgetKit.framework */; };
 		8E1BA53A30A84FFD00544554 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E1BA53930A84FFD00544554 /* SwiftUI.framework */; };
 		8E1BA54730A84FFE00544554 /* LabcordWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8E1BA53630A84FFD00544554 /* LabcordWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		8E1BA54E30A855DF00544554 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 8E1BA54D30A855DF00544554 /* ComposableArchitecture */; };
 		8E2E27333084877E0043EEB3 /* ResearchWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8E98D1AD30884D1500E68666 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 8E98D1AC30884D1500E68666 /* ComposableArchitecture */; };
 		8E98D1AF30884D4F00E68666 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 8E98D1AE30884D4F00E68666 /* ComposableArchitecture */; };
@@ -138,6 +139,7 @@
 			files = (
 				8E1BA53A30A84FFD00544554 /* SwiftUI.framework in Frameworks */,
 				8E1BA53830A84FFD00544554 /* WidgetKit.framework in Frameworks */,
+				8E1BA54E30A855DF00544554 /* ComposableArchitecture in Frameworks */,
 			);
 		};
 		8E2E27263084877E0043EEB3 /* Frameworks */ = {
@@ -235,6 +237,9 @@
 				8E1BA53B30A84FFD00544554 /* LabcordWidget */,
 			);
 			name = LabcordWidgetExtension;
+			packageProductDependencies = (
+				8E1BA54D30A855DF00544554 /* ComposableArchitecture */,
+			);
 			productName = LabcordWidgetExtension;
 			productReference = 8E1BA53630A84FFD00544554 /* LabcordWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -878,6 +883,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */;
 			productName = LabcordKit;
+		};
+		8E1BA54D30A855DF00544554 /* ComposableArchitecture */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E3F0AEF3085C6E200F857AB /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
+			productName = ComposableArchitecture;
 		};
 		8E98D1AC30884D1500E68666 /* ComposableArchitecture */ = {
 			isa = XCSwiftPackageProductDependency;
