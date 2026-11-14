@@ -24,10 +24,14 @@ struct AppFeature {
         var reviewAnalysisJobID: UUID?
         var recentRegistrationID: StackElementID?
         var savedReview: ExperimentListEntry?
+        var pendingLiveActivityExperimentID: UUID?
+        var readyLiveActivityExperimentID: UUID?
     }
 
     enum Action {
         case appeared
+        case openLiveActivityExperiment(UUID)
+        case liveActivityExperimentLoaded(UUID, Bool)
         case onboarding(OnboardingFeature.Action)
         case screenNavigationLoaded(UUID, WatchExperimentState?, WatchExperimentError?)
         case watchTask
@@ -74,7 +78,28 @@ struct AppFeature {
             case .appeared, .onboarding:
                 return handleLaunch(&state, action)
 
-            case .screenNavigationLoaded, .watchTask, .watchEvent, .watchSceneChanged,
+            case let .openLiveActivityExperiment(experimentID):
+                guard state.hasCompletedOnboarding else { return .none }
+                state.pendingLiveActivityExperimentID = experimentID
+                state.readyLiveActivityExperimentID = nil
+                return .run { send in
+                    let exists = (try? await experimentClient.load())?.contains {
+                        $0.id == experimentID && $0.status != .completed
+                    } == true
+                    await send(.liveActivityExperimentLoaded(experimentID, exists))
+                }
+
+            case let .liveActivityExperimentLoaded(experimentID, exists):
+                guard state.pendingLiveActivityExperimentID == experimentID else { return .none }
+                state.pendingLiveActivityExperimentID = nil
+                guard exists else { return .none }
+                state.readyLiveActivityExperimentID = experimentID
+                return openReadyLiveActivityExperiment(&state)
+
+            case let .watchSceneChanged(active):
+                return active ? openReadyLiveActivityExperiment(&state) : .none
+
+            case .screenNavigationLoaded, .watchTask, .watchEvent,
                  .restoreSettingsSession, .settingsSessionLoaded: return .none
 
             case .home(.addTapped):
@@ -290,6 +315,13 @@ struct AppFeature {
                     }
                 )
 
+            case let .path(.element(id: id, action: .session(.detailLoaded(_)))):
+                guard let experimentID = state.path[id: id, case: \.session]?.experimentID
+                else { return .none }
+                return .run { _ in
+                    await timerLiveActivityClient.dismissCompleted(experimentID)
+                }
+
             case .home, .path: return .none
             }
         }
@@ -300,6 +332,21 @@ struct AppFeature {
 }
 
 private extension AppFeature {
+    func openReadyLiveActivityExperiment(_ state: inout State) -> Effect<Action> {
+        guard state.watchIsActive,
+              let experimentID = state.readyLiveActivityExperimentID else { return .none }
+        state.readyLiveActivityExperimentID = nil
+        guard !state.reviewSaving, state.watchRequestID == nil,
+              state.watchPendingStartID == nil else { return .none }
+        if let id = state.path.ids.last,
+           state.path[id: id, case: \.session]?.experimentID == experimentID {
+            return .none
+        }
+        state.path.removeAll()
+        state.path.append(.session(.init(experimentID: experimentID)))
+        return .send(.home(.list(.cancelLoad)))
+    }
+
     func earliestRunningTimer(
         in collection: ExperimentTimerCollection, at date: Date
     ) -> TimerActivityAttributes.ContentState? {

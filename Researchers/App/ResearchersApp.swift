@@ -1,5 +1,7 @@
+import ComposableArchitecture
 import LabcordDesignSystem
 import LabcordiOS
+import LabcordShared
 import SwiftUI
 
 @main
@@ -17,17 +19,26 @@ struct ResearchersApp: App {
 
     var body: some Scene {
         WindowGroup {
-            if isSplashActive {
-                SplashView()
-                    .onAppear {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                            withAnimation {
-                                self.isSplashActive = false
+            Group {
+                if isSplashActive {
+                    SplashView()
+                        .onAppear {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                withAnimation {
+                                    self.isSplashActive = false
+                                }
                             }
                         }
-                    }
-            } else {
-                AppView()
+                } else {
+                    AppView()
+                }
+            }
+            .onOpenURL { url in
+                guard let experimentID = ExperimentLiveActivityURL.experimentID(from: url)
+                else { return }
+                Task { @MainActor in
+                    PhoneIntentRuntime.shared.store.send(.openLiveActivityExperiment(experimentID))
+                }
             }
         }
     }

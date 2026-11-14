@@ -15,11 +15,29 @@ import WidgetKit
 struct LabcordWidgetLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: TimerActivityAttributes.self) { context in
-            VStack {
-                Text(context.attributes.experimentTitle)
+            let store = Store(
+                initialState: TimerLiveActivityFeature.State(
+                    attributes: context.attributes,
+                    contentState: context.state
+                )
+            ) {
+                TimerLiveActivityFeature()
             }
-            .activityBackgroundTint(Color.cyan)
-            .activitySystemActionForegroundColor(Color.black)
+            let destination = ExperimentLiveActivityURL.url(
+                for: context.attributes.experimentID
+            )
+
+            return TimerLiveActivityDetailsView(
+                store: store,
+                isCompleted: context.isStale || context.state.endsAt <= .now,
+                destination: destination
+            )
+            .padding(.vertical, 16)
+            .activityBackgroundTint(.black)
+            .activitySystemActionForegroundColor(
+                Color("Experiment/Feedback/Warning/Foreground")
+            )
+            .widgetURL(destination)
 
         } dynamicIsland: { context in
             let store = Store(
@@ -30,31 +48,111 @@ struct LabcordWidgetLiveActivity: Widget {
             ) {
                 TimerLiveActivityFeature()
             }
+            let isCompleted = context.isStale || context.state.endsAt <= .now
+            let destination = ExperimentLiveActivityURL.url(
+                for: context.attributes.experimentID
+            )
 
             return DynamicIsland {
-                DynamicIslandExpandedRegion(.leading) {
-                    Text("진행 중")
-                        .foregroundStyle(Color("Experiment/Feedback/Warning/Foreground"))
-                }
-                DynamicIslandExpandedRegion(.trailing) {
-                    TimerIslandIconView()
-                }
                 DynamicIslandExpandedRegion(.bottom) {
-                    TimerLiveActivityExpandedView(store: store)
+                    TimerLiveActivityDetailsView(
+                        store: store,
+                        isCompleted: isCompleted,
+                        destination: destination
+                    )
+                    .offset(y: -10)
                 }
             } compactLeading: {
                 TimerIslandIconView()
             } compactTrailing: {
-                CompactTimerView(timer: context.state)
+                CompactTimerView(timer: context.state, isCompleted: isCompleted)
             } minimal: {
                 TimerIslandIconView()
             }
+            .widgetURL(destination)
         }
+    }
+}
+
+private struct TimerLiveActivityDetailsView: View {
+    let store: StoreOf<TimerLiveActivityFeature>
+    let isCompleted: Bool
+    let destination: URL?
+
+    var body: some View {
+        VStack(spacing: 10) {
+            HStack(alignment: .center) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(isCompleted ? "완료" : "진행 중")
+                        .typography(Typography.footnote)
+                        .foregroundStyle(Color("Experiment/Feedback/Warning/Foreground"))
+
+                    VStack(alignment: .leading) {
+                        if isCompleted {
+                            Text("타이머가 종료됐어요")
+                                .typography(Typography.callout)
+                                .foregroundStyle(
+                                    Color("Experiment/Feedback/Warning/OnStrong")
+                                )
+                        } else {
+                            Text(
+                                timerInterval:
+                                    store.timer.endsAt.addingTimeInterval(
+                                        -TimeInterval(store.timer.durationSeconds)
+                                    )...store.timer.endsAt,
+                                countsDown: true
+                            )
+                            .typography(Typography.callout)
+                            .monospacedDigit()
+                            .foregroundStyle(
+                                Color("Experiment/Feedback/Warning/OnStrong")
+                            )
+                        }
+
+                        Text(store.experimentTitle)
+                            .typography(Typography.footnote)
+                            .foregroundStyle(Color("General/LiveActivity/Label"))
+                    }
+                }
+
+                Spacer()
+
+                if isCompleted {
+                    LiveActivityStatusIndicator(
+                        status: .timerCompleted,
+                        color: Color("Experiment/Feedback/Warning/Foreground")
+                    )
+                } else {
+                    Image(labcordIcon: .timer)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 48, height: 48)
+                        .foregroundStyle(Color("Experiment/Feedback/Warning/Foreground"))
+                }
+            }
+
+            if let destination {
+                Link(destination: destination) {
+                    Text("실험으로 돌아가기")
+                        .typography(Typography.callout)
+                        .foregroundStyle(Color("Experiment/Feedback/Warning/OnStrong"))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 41)
+                        .background(
+                            Color("General/LiveActivity/Secondary"),
+                            in: Capsule()
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 12)
     }
 }
 
 private struct CompactTimerView: View {
     let timer: TimerActivityAttributes.ContentState
+    let isCompleted: Bool
 
     private var widthReference: String {
         let hours = timer.durationSeconds / 3600
@@ -66,49 +164,28 @@ private struct CompactTimerView: View {
     }
 
     var body: some View {
-        Text(widthReference)
-            .monospacedDigit()
-            .hidden()
-            .overlay {
-                Text(
-                    timerInterval:
-                        timer.endsAt.addingTimeInterval(
-                            -TimeInterval(timer.durationSeconds)
-                        )...timer.endsAt,
-                    countsDown: true
-                )
-                .monospacedDigit()
-                .multilineTextAlignment(.center)
-                .lineLimit(1)
+        Group {
+            if isCompleted {
+                Text("완료")
+            } else {
+                Text(widthReference)
+                    .hidden()
+                    .overlay {
+                        Text(
+                            timerInterval:
+                                timer.endsAt.addingTimeInterval(
+                                    -TimeInterval(timer.durationSeconds)
+                                )...timer.endsAt,
+                            countsDown: true
+                        )
+                        .multilineTextAlignment(.center)
+                        .lineLimit(1)
+                    }
             }
-            .frame(minWidth: 30)
-            .foregroundStyle(Color("Experiment/Feedback/Warning/Foreground"))
-    }
-}
-
-private struct TimerLiveActivityExpandedView: View {
-    let store: StoreOf<TimerLiveActivityFeature>
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("타이머가 진행 중이에요")
-                .font(.headline)
-
-            Text(store.experimentTitle)
-                .foregroundStyle(.secondary)
-
-            Text(
-                timerInterval:
-                    store.timer.endsAt.addingTimeInterval(
-                        -TimeInterval(store.timer.durationSeconds)
-                    )...store.timer.endsAt,
-                countsDown: true
-            )
-            .font(.title2)
-            .monospacedDigit()
-            .foregroundStyle(Color("Experiment/Feedback/Warning/Foreground"))
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .monospacedDigit()
+        .frame(minWidth: 30)
+        .foregroundStyle(Color("Experiment/Feedback/Warning/Foreground"))
     }
 }
 
@@ -130,9 +207,27 @@ private enum TimerLiveActivityPreview {
 
     static let state = TimerActivityAttributes.ContentState(
         timerID: UUID(),
-        endsAt: Date.now.addingTimeInterval(180),
-        durationSeconds: 180
+        endsAt: Date.now.addingTimeInterval(10),
+        durationSeconds: 10
     )
+
+    static let completedState = TimerActivityAttributes.ContentState(
+        timerID: UUID(),
+        endsAt: Date.now.addingTimeInterval(-1),
+        durationSeconds: 10
+    )
+}
+
+#Preview("잠금 화면", as: .content, using: TimerLiveActivityPreview.attributes) {
+    LabcordWidgetLiveActivity()
+} contentStates: {
+    TimerLiveActivityPreview.state
+}
+
+#Preview("잠금 화면 완료", as: .content, using: TimerLiveActivityPreview.attributes) {
+    LabcordWidgetLiveActivity()
+} contentStates: {
+    TimerLiveActivityPreview.completedState
 }
 
 #Preview("확장형", as: .dynamicIsland(.expanded), using: TimerLiveActivityPreview.attributes) {
@@ -141,10 +236,22 @@ private enum TimerLiveActivityPreview {
     TimerLiveActivityPreview.state
 }
 
+#Preview("완료", as: .dynamicIsland(.expanded), using: TimerLiveActivityPreview.attributes) {
+    LabcordWidgetLiveActivity()
+} contentStates: {
+    TimerLiveActivityPreview.completedState
+}
+
 #Preview("축소형", as: .dynamicIsland(.compact), using: TimerLiveActivityPreview.attributes) {
     LabcordWidgetLiveActivity()
 } contentStates: {
     TimerLiveActivityPreview.state
+}
+
+#Preview("완료 축소형", as: .dynamicIsland(.compact), using: TimerLiveActivityPreview.attributes) {
+    LabcordWidgetLiveActivity()
+} contentStates: {
+    TimerLiveActivityPreview.completedState
 }
 
 #Preview("최소형", as: .dynamicIsland(.minimal), using: TimerLiveActivityPreview.attributes) {
