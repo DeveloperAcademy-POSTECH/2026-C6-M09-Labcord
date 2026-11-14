@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		8E1069BC308A7AAD00BF375F /* LabcordKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8E1069BB308A7AAD00BF375F /* LabcordKit */; };
+		8E1BA53830A84FFD00544554 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E1BA53730A84FFD00544554 /* WidgetKit.framework */; };
+		8E1BA53A30A84FFD00544554 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E1BA53930A84FFD00544554 /* SwiftUI.framework */; };
+		8E1BA54730A84FFE00544554 /* LabcordWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8E1BA53630A84FFD00544554 /* LabcordWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8E2E27333084877E0043EEB3 /* ResearchWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8E98D1AD30884D1500E68666 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 8E98D1AC30884D1500E68666 /* ComposableArchitecture */; };
 		8E98D1AF30884D4F00E68666 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 8E98D1AE30884D4F00E68666 /* ComposableArchitecture */; };
@@ -18,6 +21,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		8E1BA54530A84FFE00544554 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8E06910D3080743D0081547E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E1BA53530A84FFD00544554;
+			remoteInfo = LabcordWidgetExtension;
+		};
 		8E2E27313084877E0043EEB3 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 8E06910D3080743D0081547E /* Project object */;
@@ -28,6 +38,15 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		8E1BA54C30A84FFE00544554 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			dstPath = "";
+			dstSubfolder = PlugIns;
+			files = (
+				8E1BA54730A84FFE00544554 /* LabcordWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+		};
 		8E2E27343084877E0043EEB3 /* Embed Watch Content */ = {
 			isa = PBXCopyFilesBuildPhase;
 			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
@@ -41,11 +60,21 @@
 
 /* Begin PBXFileReference section */
 		8E0691153080743D0081547E /* Researchers.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Researchers.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8E1BA53630A84FFD00544554 /* LabcordWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LabcordWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		8E1BA53730A84FFD00544554 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		8E1BA53930A84FFD00544554 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ResearchWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D5C000000000000000000002 /* LabcordDesignSystemApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LabcordDesignSystemApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		8E1BA54B30A84FFE00544554 /* Exceptions for "LabcordWidget" folder in "LabcordWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 8E1BA53530A84FFD00544554 /* LabcordWidgetExtension */;
+		};
 		BA1300013000000000000001 /* Exceptions for "Researchers" folder in "Researchers" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -69,6 +98,14 @@
 				BA1300013000000000000001 /* Exceptions for "Researchers" folder in "Researchers" target */,
 			);
 			path = Researchers;
+			sourceTree = "<group>";
+		};
+		8E1BA53B30A84FFD00544554 /* LabcordWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				8E1BA54B30A84FFE00544554 /* Exceptions for "LabcordWidget" folder in "LabcordWidgetExtension" target */,
+			);
+			path = LabcordWidget;
 			sourceTree = "<group>";
 		};
 		8E2E272A3084877E0043EEB3 /* ResearchWatchApp */ = {
@@ -96,6 +133,13 @@
 				A10C00103000000000000001 /* LabcordiOS in Frameworks */,
 			);
 		};
+		8E1BA53330A84FFD00544554 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+				8E1BA53A30A84FFD00544554 /* SwiftUI.framework in Frameworks */,
+				8E1BA53830A84FFD00544554 /* WidgetKit.framework in Frameworks */,
+			);
+		};
 		8E2E27263084877E0043EEB3 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
@@ -118,6 +162,7 @@
 				8E0691173080743D0081547E /* Researchers */,
 				8E2E272A3084877E0043EEB3 /* ResearchWatchApp */,
 				D5C000000000000000000003 /* LabcordDesignSystemApp */,
+				8E1BA53B30A84FFD00544554 /* LabcordWidget */,
 				8E98D1AB30884D1500E68666 /* Frameworks */,
 				8E0691163080743D0081547E /* Products */,
 			);
@@ -129,6 +174,7 @@
 				8E0691153080743D0081547E /* Researchers.app */,
 				8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */,
 				D5C000000000000000000002 /* LabcordDesignSystemApp.app */,
+				8E1BA53630A84FFD00544554 /* LabcordWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -136,6 +182,8 @@
 		8E98D1AB30884D1500E68666 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				8E1BA53730A84FFD00544554 /* WidgetKit.framework */,
+				8E1BA53930A84FFD00544554 /* SwiftUI.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -151,11 +199,13 @@
 				8E0691123080743D0081547E /* Frameworks */,
 				8E0691133080743D0081547E /* Resources */,
 				8E2E27343084877E0043EEB3 /* Embed Watch Content */,
+				8E1BA54C30A84FFE00544554 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				8E2E27323084877E0043EEB3 /* PBXTargetDependency */,
+				8E1BA54630A84FFE00544554 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8E0691173080743D0081547E /* Researchers */,
@@ -170,6 +220,24 @@
 			productName = Researchers;
 			productReference = 8E0691153080743D0081547E /* Researchers.app */;
 			productType = "com.apple.product-type.application";
+		};
+		8E1BA53530A84FFD00544554 /* LabcordWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8E1BA54830A84FFE00544554 /* Build configuration list for PBXNativeTarget "LabcordWidgetExtension" */;
+			buildPhases = (
+				8E1BA53230A84FFD00544554 /* Sources */,
+				8E1BA53330A84FFD00544554 /* Frameworks */,
+				8E1BA53430A84FFD00544554 /* Resources */,
+			);
+			buildRules = (
+			);
+			fileSystemSynchronizedGroups = (
+				8E1BA53B30A84FFD00544554 /* LabcordWidget */,
+			);
+			name = LabcordWidgetExtension;
+			productName = LabcordWidgetExtension;
+			productReference = 8E1BA53630A84FFD00544554 /* LabcordWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 		8E2E27283084877E0043EEB3 /* ResearchWatch Watch App */ = {
 			isa = PBXNativeTarget;
@@ -221,11 +289,14 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2700;
+				LastSwiftUpdateCheck = 2720;
 				LastUpgradeCheck = 2700;
 				TargetAttributes = {
 					8E0691143080743D0081547E = {
 						CreatedOnToolsVersion = 27.0;
+					};
+					8E1BA53530A84FFD00544554 = {
+						CreatedOnToolsVersion = 27.2;
 					};
 					8E2E27283084877E0043EEB3 = {
 						CreatedOnToolsVersion = 27.0;
@@ -257,12 +328,18 @@
 				8E0691143080743D0081547E /* Researchers */,
 				8E2E27283084877E0043EEB3 /* ResearchWatch Watch App */,
 				D5C000000000000000000001 /* LabcordDesignSystemApp */,
+				8E1BA53530A84FFD00544554 /* LabcordWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		8E0691133080743D0081547E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		8E1BA53430A84FFD00544554 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
 			);
@@ -285,6 +362,11 @@
 			files = (
 			);
 		};
+		8E1BA53230A84FFD00544554 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
 		8E2E27253084877E0043EEB3 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			files = (
@@ -298,6 +380,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		8E1BA54630A84FFE00544554 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8E1BA53530A84FFD00544554 /* LabcordWidgetExtension */;
+			targetProxy = 8E1BA54530A84FFE00544554 /* PBXContainerItemProxy */;
+		};
 		8E2E27323084877E0043EEB3 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 8E2E27283084877E0043EEB3 /* ResearchWatch Watch App */;
@@ -513,6 +600,70 @@
 			};
 			name = Release;
 		};
+		8E1BA54930A84FFE00544554 /* Debug configuration for PBXNativeTarget "LabcordWidgetExtension" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = HJGS4LQ7XH;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = LabcordWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = LabcordWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 27.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.researchers.Researchers.LabcordWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		8E1BA54A30A84FFE00544554 /* Release configuration for PBXNativeTarget "LabcordWidgetExtension" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = HJGS4LQ7XH;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = LabcordWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = LabcordWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 27.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.researchers.Researchers.LabcordWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		8E2E27353084877E0043EEB3 /* Debug configuration for PBXNativeTarget "ResearchWatch Watch App" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -665,6 +816,14 @@
 			buildConfigurations = (
 				8E0691213080743E0081547E /* Debug configuration for PBXNativeTarget "Researchers" */,
 				8E0691223080743E0081547E /* Release configuration for PBXNativeTarget "Researchers" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		8E1BA54830A84FFE00544554 /* Build configuration list for PBXNativeTarget "LabcordWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8E1BA54930A84FFE00544554 /* Debug configuration for PBXNativeTarget "LabcordWidgetExtension" */,
+				8E1BA54A30A84FFE00544554 /* Release configuration for PBXNativeTarget "LabcordWidgetExtension" */,
 			);
 			defaultConfigurationName = Release;
 		};
