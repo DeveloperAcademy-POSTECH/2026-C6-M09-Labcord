@@ -206,14 +206,9 @@ final class ExperimentSessionRepository {
             if record.timerEndedAt == completedAt {
                 record.timerEndedAt = nil
                 if !record.timerPauses.contains(where: { $0.resumedAt == nil }) {
-                    record.timerPauses.append(Pause(pausedAt: completedAt, resumedAt: date))
+                    record.timerPauses.append(Pause(pausedAt: completedAt))
                 }
             }
-            guard record.timerEndedAt == nil else { continue }
-            guard let pause = record.timerPauses.first(where: {
-                $0.pausedAt == completedAt && $0.resumedAt == nil
-            }) else { continue }
-            pause.resumedAt = date
         }
         try context.save()
     }
