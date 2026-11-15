@@ -5,6 +5,7 @@
 //  Created by lwc0113 on 11/4/26.
 //
 
+import LabcordDesignSystem
 import SwiftUI
 
 struct OnboardingBackground: View {
