@@ -16,6 +16,7 @@
 		8E2E27333084877E0043EEB3 /* ResearchWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8E98D1AD30884D1500E68666 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 8E98D1AC30884D1500E68666 /* ComposableArchitecture */; };
 		8E98D1AF30884D4F00E68666 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 8E98D1AE30884D4F00E68666 /* ComposableArchitecture */; };
+		8EDC202A30AA1D8500AC75E4 /* LabcordKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8EDC202930AA1D8500AC75E4 /* LabcordKit */; };
 		A10C00103000000000000001 /* LabcordiOS in Frameworks */ = {isa = PBXBuildFile; productRef = A10C00103000000000000002 /* LabcordiOS */; };
 		A10C00103000000000000003 /* LabcordWatchOS in Frameworks */ = {isa = PBXBuildFile; productRef = A10C00103000000000000004 /* LabcordWatchOS */; };
 		C17600000000000000000001 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = C17600000000000000000002 /* Lottie */; };
@@ -77,6 +78,14 @@
 			);
 			target = 8E1BA53530A84FFD00544554 /* LabcordWidgetExtension */;
 		};
+		8EDC202530AA1A0600AC75E4 /* Exceptions for "ResearchWatchApp" folder in "Researchers" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Features/SelectExperiment/SelectExperimentFeature.swift,
+				Features/SelectExperiment/SelectExperimentView.swift,
+			);
+			target = 8E0691143080743D0081547E /* Researchers */;
+		};
 		BA1300013000000000000001 /* Exceptions for "Researchers" folder in "Researchers" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -113,6 +122,7 @@
 		8E2E272A3084877E0043EEB3 /* ResearchWatchApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
+				8EDC202530AA1A0600AC75E4 /* Exceptions for "ResearchWatchApp" folder in "Researchers" target */,
 				BA1300013000000000000002 /* Exceptions for "ResearchWatchApp" folder in "ResearchWatch Watch App" target */,
 			);
 			path = ResearchWatchApp;
@@ -148,6 +158,7 @@
 			isa = PBXFrameworksBuildPhase;
 			files = (
 				8E98D1AF30884D4F00E68666 /* ComposableArchitecture in Frameworks */,
+				8EDC202A30AA1D8500AC75E4 /* LabcordKit in Frameworks */,
 				A10C00103000000000000003 /* LabcordWatchOS in Frameworks */,
 			);
 		};
@@ -264,6 +275,7 @@
 			packageProductDependencies = (
 				8E98D1AE30884D4F00E68666 /* ComposableArchitecture */,
 				A10C00103000000000000004 /* LabcordWatchOS */,
+				8EDC202930AA1D8500AC75E4 /* LabcordKit */,
 			);
 			productName = "ResearchWatch Watch App";
 			productReference = 8E2E27293084877E0043EEB3 /* ResearchWatch Watch App.app */;
@@ -906,6 +918,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8E3F0AEF3085C6E200F857AB /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
 			productName = ComposableArchitecture;
+		};
+		8EDC202930AA1D8500AC75E4 /* LabcordKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E1069223089B5F400BF375F /* XCLocalSwiftPackageReference "Packages/ResearchersModules" */;
+			productName = LabcordKit;
 		};
 		A10C00103000000000000002 /* LabcordiOS */ = {
 			isa = XCSwiftPackageProductDependency;
