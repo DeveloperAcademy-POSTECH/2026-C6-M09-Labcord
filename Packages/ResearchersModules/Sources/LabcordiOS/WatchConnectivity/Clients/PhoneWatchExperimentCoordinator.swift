@@ -152,9 +152,7 @@ public final class PhoneWatchExperimentCoordinator {
         }
         if command.operation == .list {
             do {
-                let summaries = try client.load().compactMap { entry in
-                    try client.watchState(entry.id)?.experiment
-                }
+                let summaries = try pausedExperiments()
                 return WatchExperimentResponse(
                     requestID: command.requestID, phase: .completed, experiments: summaries,
                     screen: refreshedScreen()
@@ -170,6 +168,12 @@ public final class PhoneWatchExperimentCoordinator {
             } catch { return failure(command, error as? WatchExperimentError ?? .storageFailed) }
         }
         return nil
+    }
+
+    func pausedExperiments() throws -> [WatchExperimentSummary] {
+        try client.load().compactMap { entry in
+            try client.watchState(entry.id)?.experiment
+        }.filter { $0.status == .paused }
     }
 
     func requestStatus(_ command: WatchExperimentCommand) -> WatchExperimentResponse {
