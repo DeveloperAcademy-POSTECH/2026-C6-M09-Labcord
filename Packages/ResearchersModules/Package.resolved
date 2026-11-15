@@ -11,15 +11,6 @@
       }
     },
     {
-      "identity" : "devicekit",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/devicekit/DeviceKit",
-      "state" : {
-        "revision" : "19528aa07e1426626ea9fb2c4a161edf43c4f9e8",
-        "version" : "5.9.0"
-      }
-    },
-    {
       "identity" : "hwp-swift",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/sboh1214/hwp-swift.git",

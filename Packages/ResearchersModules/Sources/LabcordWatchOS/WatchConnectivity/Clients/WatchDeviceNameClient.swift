@@ -6,9 +6,8 @@
 //
 
 import ComposableArchitecture
-import DeviceKit
-import Foundation
 import LabcordShared
+import WatchKit
 
 public final class WatchDeviceNameClient {
     private let responder: WatchRequestResponder
@@ -18,10 +17,7 @@ public final class WatchDeviceNameClient {
             connectivity: connectivity,
             requestKey: WatchDeviceNameMessage.requestKey
         ) {
-            let modelName = Device.realDevice(from: .current).description
-                .replacingOccurrences(of: #"\d+mm$"#, with: "", options: .regularExpression)
-
-            return [WatchDeviceNameMessage.nameKey: modelName]
+            return [WatchDeviceNameMessage.nameKey: WKInterfaceDevice.current().model]
         }
     }
 
