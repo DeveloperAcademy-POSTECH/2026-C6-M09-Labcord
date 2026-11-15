@@ -5,8 +5,8 @@
 //  Created by 정홍섭 on 11/14/26.
 //
 
-import WidgetKit
 import SwiftUI
+import WidgetKit
 
 @main
 struct LabcordWidgetBundle: WidgetBundle {
