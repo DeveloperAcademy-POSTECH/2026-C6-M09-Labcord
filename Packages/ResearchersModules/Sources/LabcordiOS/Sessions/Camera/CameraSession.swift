@@ -286,8 +286,10 @@ public actor CameraSession {
         }
         microphoneInput = input
     }
+}
 
-    private func configureCaptureRotation(for connection: AVCaptureConnection?) {
+private extension CameraSession {
+    func configureCaptureRotation(for connection: AVCaptureConnection?) {
         guard let connection, let activeCamera else { return }
         let coordinator = AVCaptureDevice.RotationCoordinator(
             device: activeCamera,

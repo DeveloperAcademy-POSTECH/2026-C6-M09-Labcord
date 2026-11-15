@@ -251,8 +251,10 @@ struct ExperimentSessionView: View {
         .background(.black)
         .modifier(SessionAlerts(store: store))
     }
+}
 
-    private func previewFrame(anchor: Anchor<CGRect>?, geometry: GeometryProxy) -> CGRect {
+private extension ExperimentSessionView {
+    func previewFrame(anchor: Anchor<CGRect>?, geometry: GeometryProxy) -> CGRect {
         let fullFrame = CGRect(origin: .zero, size: geometry.size)
         guard let anchor else { return fullFrame }
 
@@ -265,7 +267,6 @@ struct ExperimentSessionView: View {
             height: min(geometry.size.height, max(0, anchoredFrame.minY + previewOverlap))
         )
     }
-
 }
 
 #Preview {

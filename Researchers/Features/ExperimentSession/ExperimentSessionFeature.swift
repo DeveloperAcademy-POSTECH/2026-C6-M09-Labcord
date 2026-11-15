@@ -45,7 +45,6 @@ struct ExperimentSessionFeature {
             self.capture = CameraCaptureFeature.State(experimentID: experimentID)
             self.pause = ExperimentPauseFeature.State(experimentID: experimentID)
         }
-
     }
 
     enum Action: Equatable {
@@ -373,7 +372,6 @@ private extension ExperimentSessionFeature {
         case .recording: return .send(.voice(.stopRequested))
         case .starting, .stopping, .finished: return .none
         }
-
     }
 
     func prepareVoiceRecording(state: inout State) -> Effect<Action> {
