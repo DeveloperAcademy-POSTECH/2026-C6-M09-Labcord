@@ -42,6 +42,7 @@ struct AppView: View {
 
                     case .recent(let store):
                         RecentProtocolView(store: store)
+                            .navigationSwipeBackEnabled(true)
 
                     case .review(let store):
                         ProtocolReviewView(store: store)
