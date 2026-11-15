@@ -66,7 +66,7 @@ extension AppFeature {
         if let result = state.path[id: id, case: \.result] {
             return .init(
                 destination: .result, experimentID: result.experimentID,
-                stage: result.isResumeConfirmationPresented ? .resumeConfirmation : .completed
+                stage: .completed
             )
         }
         return .init(destination: .registration)
@@ -149,16 +149,13 @@ extension AppFeature {
         if detail.experiment.status == .completed {
             if let id = state.path.ids.last,
                state.path[id: id, case: \.result]?.experimentID == detail.experiment.id {
-                state.path[id: id, case: \.result]?.isResumeConfirmationPresented =
-                    screen.stage == .resumeConfirmation
                 completeNavigation(requestID, state: state)
                 return .none
             }
             state.path.removeAll()
-            var result = ExperimentResultFeature.State(
+            let result = ExperimentResultFeature.State(
                 experimentID: detail.experiment.id, isOpenedFromHome: true
             )
-            result.isResumeConfirmationPresented = screen.stage == .resumeConfirmation
             state.path.append(.result(result))
         } else {
             showSynchronizedSession(command, detail: detail, state: &state)

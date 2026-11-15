@@ -23,7 +23,9 @@ final class ExperimentResultRepository {
         guard let experiment = try store.find(id: id, in: context) else {
             throw ExperimentStore.StoreError.experimentNotFound
         }
-        experiment.title = title
+        let experiments = try context.fetch(FetchDescriptor<Experiment>())
+        let existing = Set(experiments.filter { $0.id != id }.map(\.title))
+        experiment.title = ExperimentTitle.unique(title, existing: existing)
         try context.save()
         return Self.resultDetail(experiment)
     }

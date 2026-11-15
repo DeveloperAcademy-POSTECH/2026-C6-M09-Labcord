@@ -237,15 +237,24 @@ struct ExperimentSessionView: View {
             }
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active {
+            switch phase {
+            case .active:
                 store.send(.appBecameActive)
+            case .background:
+                store.send(.appEnteredBackground)
+            case .inactive:
+                break
+            @unknown default:
+                break
             }
         }
         .background(.black)
         .modifier(SessionAlerts(store: store))
     }
+}
 
-    private func previewFrame(anchor: Anchor<CGRect>?, geometry: GeometryProxy) -> CGRect {
+private extension ExperimentSessionView {
+    func previewFrame(anchor: Anchor<CGRect>?, geometry: GeometryProxy) -> CGRect {
         let fullFrame = CGRect(origin: .zero, size: geometry.size)
         guard let anchor else { return fullFrame }
 
@@ -258,7 +267,6 @@ struct ExperimentSessionView: View {
             height: min(geometry.size.height, max(0, anchoredFrame.minY + previewOverlap))
         )
     }
-
 }
 
 #Preview {

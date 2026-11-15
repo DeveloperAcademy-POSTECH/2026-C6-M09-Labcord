@@ -85,15 +85,11 @@ extension PhoneWatchExperimentCoordinator {
         if current.experiment.status != .running {
             try consumeToken(command, experimentID: id)
             guard permissionGranted else { throw WatchExperimentError.permissionDenied }
-            if current.experiment.status == .completed, command.operation == .resume {
-                try client.resumeCompleted(id, .now)
-            } else {
-                guard [.ready, .paused].contains(current.experiment.status) else {
-                    throw WatchExperimentError.invalidState
-                }
-                guard try client.enterSessionAndLoadDetail(id) != nil else {
-                    throw WatchExperimentError.experimentNotFound
-                }
+            guard [.ready, .paused].contains(current.experiment.status) else {
+                throw WatchExperimentError.invalidState
+            }
+            guard try client.enterSessionAndLoadDetail(id) != nil else {
+                throw WatchExperimentError.experimentNotFound
             }
         }
         pendingStartID = id

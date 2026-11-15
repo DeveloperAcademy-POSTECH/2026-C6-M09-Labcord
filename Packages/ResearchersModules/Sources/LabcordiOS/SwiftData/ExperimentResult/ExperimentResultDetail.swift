@@ -24,6 +24,15 @@ public struct ExperimentResultDetail: Equatable, Sendable {
         public let date: Date
         public let kind: TimelineKind
 
+        fileprivate var sortPriority: Int {
+            switch kind {
+            case .status(.ready): 0
+            case .timer(_, .paused): 1
+            case .ended: 2
+            default: 3
+            }
+        }
+
         public var note: String {
             switch kind {
             case let .record(record):
@@ -182,8 +191,9 @@ public struct ExperimentResultDetail: Equatable, Sendable {
 
         return events.sorted {
             if $0.date != $1.date { return $0.date < $1.date }
-            if $0.kind == .status(.ready) { return true }
-            if $1.kind == .status(.ready) { return false }
+            if $0.sortPriority != $1.sortPriority {
+                return $0.sortPriority < $1.sortPriority
+            }
             return $0.id < $1.id
         }
     }

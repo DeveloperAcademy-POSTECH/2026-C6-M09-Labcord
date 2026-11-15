@@ -73,11 +73,8 @@ extension WatchExperimentFeature {
         timerDraftSeconds: Int? = nil, discardTimerDraft: Bool = false, state: inout State
     ) -> Effect<Action> {
         guard let id = state.selectedID else { return .none }
-        let destination: WatchScreenSnapshot.Destination =
-            stage == .resumeConfirmation && state.snapshot?.experiment.status == .completed
-                ? .result : .experiment
         return navigate(.init(
-            destination: destination, experimentID: id, stage: stage,
+            destination: .experiment, experimentID: id, stage: stage,
             countdownEndsAt: countdownEndsAt, timerDraftSeconds: timerDraftSeconds
         ), discardTimerDraft: discardTimerDraft, state: &state)
     }
@@ -123,7 +120,7 @@ extension WatchExperimentFeature {
         let invalid: Bool = switch state.screen {
         case .permission, .countdown: status != .ready
         case .confirmPause, .timerEditor: status != .running
-        case .confirmResume: status != .paused && status != .completed
+        case .confirmResume: status != .paused
         case .confirmComplete: status == .ready || status == .completed
         case .recordCleanup: status != .completed && state.pending?.command.operation != .complete
         default: false

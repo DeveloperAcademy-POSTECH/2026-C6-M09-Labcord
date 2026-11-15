@@ -19,7 +19,6 @@ extension ExperimentSessionFeature {
                 await send(.detailLoaded(detail))
                 return
             }
-            await timerCompletionNotificationClient.cancelForExperiment(experimentID)
             guard let detail = try? await experimentClient.enterSessionAndLoadDetail(
                 experimentID
             ) else {

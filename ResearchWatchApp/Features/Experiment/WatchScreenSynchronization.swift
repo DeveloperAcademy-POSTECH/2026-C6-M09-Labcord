@@ -135,7 +135,7 @@ extension WatchExperimentFeature {
             state.screen = .phoneRegistration
             state.cleanupRequestID = nil
         case .result:
-            state.screen = screen.stage == .resumeConfirmation ? .confirmResume : .recordCleanup
+            state.screen = .recordCleanup
         case .experiment:
             state.screen = watchScreen(for: screen.stage)
         }

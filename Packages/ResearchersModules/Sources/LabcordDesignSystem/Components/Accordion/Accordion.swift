@@ -92,7 +92,7 @@ public struct Accordion<Content: View>: View {
 
             if isOpen {
                 content()
-                    .frame(maxWidth: .infinity, minHeight: 80, alignment: .topLeading)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
                     .transition(.opacity)
             }
         }
@@ -203,4 +203,24 @@ private struct DisabledAccordionPreviewContent: View {
     return DisabledAccordionPreviewContent()
         .frame(width: 370)
         .padding()
+}
+
+private struct AccordionPreviewItem: Identifiable {
+    let id: String
+}
+
+#Preview("아코디언 · 빈 칩과 여러 줄") {
+    _ = FontRegistration.register()
+    let items = ["endpoint recognition", "EEOLLO", "mg/L", "pH", "mL", "g"]
+        .map { AccordionPreviewItem(id: $0) }
+    return VStack(spacing: LayoutTokens.spacing12) {
+        Accordion("샘플·분석 대상", count: 0, isExpanded: .constant(true)) {
+            ChipGroup([AccordionPreviewItem](), label: \.id, onRemove: { _ in }, onAdd: {})
+        }
+        Accordion("실험 용어", count: items.count, isExpanded: .constant(true)) {
+            ChipGroup(items, label: \.id, onRemove: { _ in }, onAdd: {})
+        }
+    }
+    .frame(width: 370)
+    .padding()
 }

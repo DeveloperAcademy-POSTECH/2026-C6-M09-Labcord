@@ -21,11 +21,6 @@ extension PhoneWatchExperimentCoordinator {
             if [.startTimer, .pauseTimer, .resumeTimer, .deleteTimer].contains(command.operation),
                visibleExperimentID != command.experimentID {
                 try client.applyWatchTimer(command)
-                do {
-                    try await enqueueTimerNotificationSync(command)?.value
-                } catch {
-                    throw WatchExperimentError.resultUnknown
-                }
                 return
             }
             guard let commandSubscriber else { throw WatchExperimentError.phoneBusy }

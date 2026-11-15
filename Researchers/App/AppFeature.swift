@@ -24,11 +24,14 @@ struct AppFeature {
         var reviewAnalysisJobID: UUID?
         var recentRegistrationID: StackElementID?
         var savedReview: ExperimentListEntry?
-        var watchNotificationGate = WatchNotificationGate()
+        var pendingLiveActivityExperimentID: UUID?
+        var readyLiveActivityExperimentID: UUID?
     }
 
     enum Action {
         case appeared
+        case openLiveActivityExperiment(UUID)
+        case liveActivityExperimentLoaded(UUID, Bool)
         case onboarding(OnboardingFeature.Action)
         case screenNavigationLoaded(UUID, WatchExperimentState?, WatchExperimentError?)
         case watchTask
@@ -52,14 +55,13 @@ struct AppFeature {
         case dismissReviewSaveFailure
         case confirmReviewExit
         case cancelReviewExit
-        case timerNotificationTapped(UUID)
-        case timerNotificationLoaded(UUID, UUID, ExperimentListEntry?)
     }
 
     @Dependency(\.experimentClient) var experimentClient
     @Dependency(\.protocolAnalysisJobManager) var jobManager
     @Dependency(\.uuid) var uuid
     @Dependency(\.date.now) var now
+    @Dependency(\.timerLiveActivityClient) var timerLiveActivityClient
 
     var body: some Reducer<State, Action> {
         Scope(state: \.home, action: \.home) { HomeFeature() }
@@ -71,13 +73,42 @@ struct AppFeature {
         Reduce { _, _ in .none }
             .ifLet(\.onboarding, action: \.onboarding) { OnboardingFeature() }
 
+        appReducer
+            .forEach(\.path, action: \.path)
+        watchCompletionNavigationReducer
+        watchContextReducer
+    }
+}
+
+private extension AppFeature {
+    var appReducer: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
             case .appeared, .onboarding:
                 return handleLaunch(&state, action)
 
-            case .screenNavigationLoaded, .timerNotificationTapped, .timerNotificationLoaded,
-                 .watchTask, .watchEvent, .watchSceneChanged,
+            case let .openLiveActivityExperiment(experimentID):
+                guard state.hasCompletedOnboarding else { return .none }
+                state.pendingLiveActivityExperimentID = experimentID
+                state.readyLiveActivityExperimentID = nil
+                return .run { send in
+                    let exists = (try? await experimentClient.load())?.contains {
+                        $0.id == experimentID && $0.status != .completed
+                    } == true
+                    await send(.liveActivityExperimentLoaded(experimentID, exists))
+                }
+
+            case let .liveActivityExperimentLoaded(experimentID, exists):
+                guard state.pendingLiveActivityExperimentID == experimentID else { return .none }
+                state.pendingLiveActivityExperimentID = nil
+                guard exists else { return .none }
+                state.readyLiveActivityExperimentID = experimentID
+                return openReadyLiveActivityExperiment(&state)
+
+            case let .watchSceneChanged(active):
+                return active ? openReadyLiveActivityExperiment(&state) : .none
+
+            case .screenNavigationLoaded, .watchTask, .watchEvent,
                  .restoreSettingsSession, .settingsSessionLoaded: return .none
 
             case .home(.addTapped):
@@ -265,132 +296,83 @@ struct AppFeature {
                 guard state.path[id: id, case: \.result]?.isResuming == false else { return .none }
                 return .send(.returnHome(id))
 
-            case let .path(.element(id: id, action: .result(.resumeReady))):
-                return openResumedSession(&state, id: id)
+            case let .path(.element(id: id, action: .result(.resumeSucceeded))):
+                guard state.path.ids.last == id,
+                      let experimentID = state.path[id: id, case: \.result]?.experimentID else {
+                    return .none
+                }
+                state.path.removeAll()
+                state.path.append(.session(.init(experimentID: experimentID)))
+                return .send(.home(.list(.load)))
 
             case let .returnHome(id):
                 guard state.path.ids.last == id else { return .none }
+                let session = state.path[id: id, case: \.session]
                 state.path.removeAll()
-                return .send(.home(.list(.load)))
+                guard let session, session.homeExitAttempt.lastAcceptedID != nil else {
+                    return .send(.home(.list(.load)))
+                }
+                let experimentID = session.experimentID
+                let experimentTitle = session.detail?.title ?? ""
+                let timers = runningTimers(in: session.timer.timerCollection, at: now)
+                return .merge(
+                    .send(.home(.list(.load))),
+                    .run { _ in
+                        await timerLiveActivityClient.synchronize(
+                            experimentID, experimentTitle, timers
+                        )
+                    }
+                )
+
+            case let .path(.element(id: id, action: .session(.detailLoaded(_)))):
+                guard let experimentID = state.path[id: id, case: \.session]?.experimentID
+                else { return .none }
+                return .run { _ in
+                    await timerLiveActivityClient.dismissCompleted(experimentID)
+                }
 
             case .home, .path: return .none
             }
         }
-        .forEach(\.path, action: \.path)
-        watchCompletionNavigationReducer
-        watchContextReducer
-    }
-}
-
-extension AppFeature {
-    func loadNotificationExperiment(
-        _ state: inout State,
-        experimentID: UUID
-    ) -> Effect<Action> {
-        let token = uuid()
-        state.watchNotificationGate.begin(experimentID: experimentID, token: token)
-        return .run { send in
-            let entry = try? await experimentClient.load().first { $0.id == experimentID }
-            await send(.timerNotificationLoaded(experimentID, token, entry))
-        }
     }
 
-    func openNotificationExperiment(
-        _ state: inout State,
-        experimentID: UUID,
-        token: UUID,
-        entry: ExperimentListEntry?
-    ) -> Effect<Action> {
-        guard state.watchNotificationGate.receive(
-            experimentID: experimentID, token: token,
-            watchRequestPending: watchWorkPending(state)
-        ) == .open else { return .none }
-        guard let entry, !state.reviewSaving else { return .none }
-        if entry.status == .completed {
-            if state.path.ids.last.flatMap({ state.path[id: $0, case: \.result] })?
-                .experimentID == experimentID { return .none }
-            state.path.removeAll()
-            state.path.append(.result(.init(
-                experimentID: experimentID, isOpenedFromHome: true
-            )))
-        } else {
-            if state.path.ids.last.flatMap({ state.path[id: $0, case: \.session] })?
-                .experimentID == experimentID { return .none }
-            state.path.removeAll()
-            state.path.append(.session(.init(experimentID: experimentID)))
+    func openReadyLiveActivityExperiment(_ state: inout State) -> Effect<Action> {
+        guard state.watchIsActive,
+              let experimentID = state.readyLiveActivityExperimentID else { return .none }
+        state.readyLiveActivityExperimentID = nil
+        guard !state.reviewSaving, state.watchRequestID == nil,
+              state.watchPendingStartID == nil else { return .none }
+        if let id = state.path.ids.last,
+           state.path[id: id, case: \.session]?.experimentID == experimentID {
+            return .none
         }
+        state.path.removeAll()
+        state.path.append(.session(.init(experimentID: experimentID)))
         return .send(.home(.list(.cancelLoad)))
     }
 
-}
-
-private extension AppFeature {
-    func confirmReviewExit(_ state: inout State) -> Effect<Action> {
-        state.reviewExitRequested = false
-        guard !state.reviewSaving, state.savedReview == nil,
-              let id = state.path.ids.last,
-              state.path[id: id, case: \.review] != nil else { return .none }
-        state.reviewPendingID = nil
-        state.path.pop(from: id)
-        state.reviewAnalysisJobID = nil
-        guard let registrationID = state.path.ids.first(where: {
-            state.path[id: $0, case: \.registration] != nil
-        }) else { return .none }
-        if let lastID = state.path.ids.last, lastID != registrationID {
-            state.path.pop(from: lastID)
-        }
-        state.recentRegistrationID = nil
-        return .send(.path(.element(
-            id: registrationID, action: .registration(.inputAnalysis(.backTapped))
-        )))
-    }
-
-    func registerReview(_ state: inout State, id: StackElementID) -> Effect<Action> {
-        guard !state.reviewSaving, state.path.ids.last == id,
-              let review = state.path[id: id, case: \.review], review.titleValid,
-              review.timersValid, !review.hasUncommittedTerm else { return .none }
-        if state.savedReview != nil {
-            state.reviewSaving = true
-            let jobID = state.reviewAnalysisJobID
-            return .run { send in
-                let success = if let jobID {
-                    await jobManager.cancel(id: jobID)
-                } else {
-                    true
+    func runningTimers(
+        in collection: ExperimentTimerCollection, at date: Date
+    ) -> [TimerActivityAttributes.ContentState] {
+        let timers: [TimerActivityAttributes.ContentState] =
+            collection.timers.compactMap { timer in
+                guard timer.status == .running else { return nil }
+                let pausedDuration = timer.pauseIntervals.reduce(0.0) { total, interval in
+                    total + max(0, interval.resumedAt?.timeIntervalSince(interval.pausedAt) ?? 0)
                 }
-                await send(.reviewCleanupFinished(id, success))
-            }
-        }
-        let procedure = ExperimentProtocol(
-            timerSeconds: review.timerSeconds,
-            materials: review.terms[.materials, default: []].map(\.value),
-            samples: review.terms[.samples, default: []].map(\.value),
-            glossaryTerms: review.terms[.glossary, default: []].map(\.value),
-            units: review.terms[.units, default: []].map(\.value)
-        )
-        let jobID = state.reviewAnalysisJobID
-        let identifier = state.reviewPendingID ?? jobID ?? uuid()
-        state.reviewPendingID = identifier
-        state.reviewSaving = true
-        state.reviewSaveFailed = false
-        let date = now
-        let title = review.title.trimmingCharacters(in: .whitespacesAndNewlines)
-        return .run { send in
-            do {
-                if jobID != nil,
-                   let existing = try await experimentClient.load().first(where: {
-                       $0.id == identifier
-                   }) {
-                    await send(.reviewPreviouslySaved(id, existing))
-                    return
-                }
-                let entry = try await experimentClient.createWithProtocol(
-                    identifier, date, title, procedure
+                let endsAt = timer.startedAt.addingTimeInterval(
+                    TimeInterval(timer.durationSeconds) + pausedDuration
                 )
-                await send(.reviewSaved(id, .success(entry)))
-            } catch {
-                await send(.reviewSaved(id, .failure(.saving)))
+                guard endsAt > date else { return nil }
+                return TimerActivityAttributes.ContentState(
+                    timerID: timer.id,
+                    endsAt: endsAt,
+                    durationSeconds: timer.durationSeconds
+                )
             }
+        return timers.sorted { left, right in
+            if left.endsAt != right.endsAt { return left.endsAt < right.endsAt }
+            return left.timerID.uuidString < right.timerID.uuidString
         }
     }
 }

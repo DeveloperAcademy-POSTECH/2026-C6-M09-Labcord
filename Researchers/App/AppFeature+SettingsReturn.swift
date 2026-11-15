@@ -54,19 +54,3 @@ extension AppFeature {
         }
     }
 }
-
-extension AppFeature {
-    func openResumedSession(_ state: inout State, id: StackElementID) -> Effect<Action> {
-        guard var result = state.path[id: id, case: \.result], result.isResuming else {
-            return .none
-        }
-        guard state.path.ids.last == id else {
-            result.isResuming = false
-            state.path[id: id, case: \.result] = result
-            return .none
-        }
-        state.path.removeAll()
-        state.path.append(.session(.init(experimentID: result.experimentID)))
-        return .none
-    }
-}
