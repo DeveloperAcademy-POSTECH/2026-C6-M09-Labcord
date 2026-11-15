@@ -42,7 +42,6 @@ public final class PhoneWatchExperimentCoordinator {
     var commandSubscriber: AsyncStream<Event>.Continuation?
     var completions: [UUID: CheckedContinuation<Void, Error>] = [:]
     var refreshTask: Task<Void, Never>?
-    var timerNotificationTask: Task<Void, Error>?
 
     public init() {
         @Dependency(\.watchConnectivitySession) var connectivity
@@ -68,7 +67,6 @@ public final class PhoneWatchExperimentCoordinator {
         journal = try? WatchExperimentRequestJournal(
             url: directory.appendingPathComponent("requests.json")
         )
-        reconcileJournalTimerNotifications()
         pendingStartID = journal?.entries.values
             .compactMap { $0.response.snapshot }
             .max { $0.recordedAt < $1.recordedAt }
