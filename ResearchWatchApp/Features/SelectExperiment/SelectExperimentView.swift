@@ -1,70 +1,52 @@
-//
-//  SelectExperimentView.swift
-//  Researchers
-//
-//  Created by 정홍섭 on 11/16/26.
-//
-
-import SwiftUI
+import ComposableArchitecture
 import LabcordDesignSystem
+import LabcordShared
+import SwiftUI
 
 struct SelectExperimentView: View {
-    private let experiments = [
-        "촉매 반응 조건 비교 실험 A",
-        "Catalyst Reaction Temperature Comparison",
-        "Catalyst Reaction Temperature Comparison",
-        "배양 시간별 세포 상태 관찰"
-    ]
+    @State private var store = Store(initialState: SelectExperimentFeature.State()) {
+        SelectExperimentFeature()
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("내 실험")
-                .padding(.horizontal, 9.5)
                 .font(.system(size: 24, weight: .medium))
                 .foregroundStyle(Color("General/Brand/Primary"))
+                .padding(.horizontal, 9.5)
 
-            ScrollView {
-                VStack(spacing: 10) {
-                    ForEach(experiments.indices, id: \.self) { index in
-                        HStack(alignment: .center) {
-                            Text(experiments[index])
-                                .font(.footnote)
-                                .foregroundStyle(Color(.Colors.Grays.white))
-                                .lineLimit(2)
-                                .truncationMode(.tail)
-                                .frame(
-                                    maxWidth: .infinity,
-                                    minHeight: 34,
-                                    alignment: .topLeading
-                                )
-                            
-                            Spacer(minLength: 6)
-                            
-                            Button {
-                            } label: {
-                                Image(systemName: "play.fill")
-                                    .font(.system(size: 12))
-                                    .foregroundStyle(.white)
-                                    .frame(width: 24, height: 24)
-                                    .background(
-                                        Color("General/Brand/Primary"),
-                                        in: Circle()
-                                    )
-                            }
-                            .buttonStyle(.plain)
+            if let errorMessage = store.errorMessage, store.experiments.isEmpty {
+                Text(errorMessage)
+                    .foregroundStyle(Color("Experiment/Label/Light"))
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 10)
+                    .multilineTextAlignment(.center)
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .padding(.top, 26)
+            } else if store.experiments.isEmpty {
+                Text("진행 중인\n실험이 없어요")
+                    .foregroundStyle(Color("Experiment/Label/Light"))
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 10)
+                    .multilineTextAlignment(.center)
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .padding(.top, 26)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 10) {
+                        ForEach(store.experiments) { experiment in
+                            ExperimentRow(title: experiment.title)
                         }
-                        .padding(.vertical, 4)
-                        .padding(.horizontal, 9.5)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 44)
-                        .background(Color("General/LiveActivity/Secondary"))
-                        .cornerRadius(8.5)
                     }
                 }
+                .padding(.horizontal, 2)
             }
-            .padding(.horizontal, 2)
         }
-        .padding(.top, -30)
+        .padding(.top, -25)
+        .task { store.send(.appeared) }
+        .onDisappear { store.send(.disappeared) }
     }
 }
 

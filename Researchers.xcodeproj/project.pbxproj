@@ -78,14 +78,6 @@
 			);
 			target = 8E1BA53530A84FFD00544554 /* LabcordWidgetExtension */;
 		};
-		8EDC202530AA1A0600AC75E4 /* Exceptions for "ResearchWatchApp" folder in "Researchers" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Features/SelectExperiment/SelectExperimentFeature.swift,
-				Features/SelectExperiment/SelectExperimentView.swift,
-			);
-			target = 8E0691143080743D0081547E /* Researchers */;
-		};
 		BA1300013000000000000001 /* Exceptions for "Researchers" folder in "Researchers" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -122,7 +114,6 @@
 		8E2E272A3084877E0043EEB3 /* ResearchWatchApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				8EDC202530AA1A0600AC75E4 /* Exceptions for "ResearchWatchApp" folder in "Researchers" target */,
 				BA1300013000000000000002 /* Exceptions for "ResearchWatchApp" folder in "ResearchWatch Watch App" target */,
 			);
 			path = ResearchWatchApp;
