@@ -350,7 +350,8 @@ private extension AppFeature {
     func runningTimers(
         in collection: ExperimentTimerCollection, at date: Date
     ) -> [TimerActivityAttributes.ContentState] {
-        let timers: [TimerActivityAttributes.ContentState] = collection.timers.compactMap { timer in
+        let timers = collection.timers.compactMap {
+            timer -> TimerActivityAttributes.ContentState? in
             guard timer.status == .running else { return nil }
             let pausedDuration = timer.pauseIntervals.reduce(0.0) { total, interval in
                 total + max(0, interval.resumedAt?.timeIntervalSince(interval.pausedAt) ?? 0)
