@@ -5,6 +5,9 @@ import WatchConnectivity
 public final class WatchExperimentTransport {
     public static let commandKey = "experiment.command.v1"
     public static let responseKey = "experiment.response.v1"
+    public nonisolated static let backgroundCommandKey = "experiment.background.command.v1"
+    public nonisolated static let backgroundResponseKey = "experiment.background.response.v1"
+    public nonisolated static let listSnapshotKey = "experiment.list.snapshot.v1"
     public static let snapshotKey = "experiment.snapshot.v1"
     public nonisolated static let screenKey = "screen.snapshot.v1"
 
