@@ -11,5 +11,6 @@ ProtocolUploadButton("프로토콜", description: "파일을 선택해 주세요
 - 파일 가져오기 화면·확장자/용량 검증·업로드는 `selectFile` 호출부가 처리합니다.
 - `.disabled` 상태와 부모의 `.disabled(...)`를 존중합니다. 기본 상태는 `.default`입니다.
 - 보조 설명이 필요하지 않으면 `showDescription: false`를 전달합니다.
+- 카드 높이는 콘텐츠와 내부 패딩에 따라 정해지며 긴 문구와 큰 글자에 맞춰 늘어납니다.
 
 [구현](../../../../../Packages/ResearchersModules/Sources/LabcordDesignSystem/Components/ProtocolUploadButton/ProtocolUploadButton.swift)

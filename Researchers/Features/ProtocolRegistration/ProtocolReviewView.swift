@@ -220,7 +220,11 @@ private extension ProtocolReviewView {
                                     }
                                 }
                                 .buttonStyle(.labcord(.accent, size: .small))
-                                .disabled(store.hasUncommittedTerm)
+                                .disabled(
+                                    store.hasUncommittedTerm
+                                        || store.terms[category, default: []].count
+                                            >= ProtocolReviewFeature.maximumTermsPerCategory
+                                )
                                 .labcordKeyboardDismissalDisabled()
                             }
                         }
@@ -246,7 +250,7 @@ private extension ProtocolReviewView {
             .submitLabel(.done)
             .onSubmit {
                 store.send(.addTerm)
-                termFocused = true
+                termFocused = store.inputCategory != nil
             }
             HStack {
                 if let error = store.termError { Text(error) }
@@ -349,6 +353,26 @@ private struct TermFlowLayout: Layout {
         ProtocolReviewView(
             store: Store(initialState: ProtocolReviewFeature.State(
                 title: "", timerSeconds: [], terms: [:]
+            )) {
+                ProtocolReviewFeature()
+            }
+        )
+    }
+    .id(fontRegistration)
+}
+
+#Preview("프로토콜 분석 결과 · 용어 개수 제한") {
+    let fontRegistration = FontRegistration.register()
+    let terms: [ProtocolTermCategory: [ProtocolReviewTerm]] = [
+        .materials: (1...19).map { ProtocolReviewTerm(id: UUID(), value: "시약 \($0)") },
+        .samples: (1...20).map { ProtocolReviewTerm(id: UUID(), value: "샘플 \($0)") },
+        .glossary: (1...21).map { ProtocolReviewTerm(id: UUID(), value: "용어 \($0)") }
+    ]
+    NavigationStack {
+        ProtocolReviewView(
+            store: Store(initialState: ProtocolReviewFeature.State(
+                title: "용어 개수 확인", timerSeconds: [], terms: terms,
+                expanded: [.materials, .samples, .glossary]
             )) {
                 ProtocolReviewFeature()
             }
