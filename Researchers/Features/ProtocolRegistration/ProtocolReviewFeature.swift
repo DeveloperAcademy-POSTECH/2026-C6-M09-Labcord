@@ -5,6 +5,7 @@ import LabcordiOS
 @Reducer
 struct ProtocolReviewFeature {
     static let maximumTimerSeconds = Int(Double(Int.max).nextDown)
+    static let maximumTermsPerCategory = 20
 
     @ObservableState
     struct State: Equatable {
@@ -38,6 +39,10 @@ struct ProtocolReviewFeature {
 
         var termCharacterCount: Int {
             trimmedTermInput.filter { !$0.isWhitespace }.count
+        }
+
+        func canAddTerm(in category: ProtocolTermCategory) -> Bool {
+            terms[category, default: []].count < ProtocolReviewFeature.maximumTermsPerCategory
         }
 
         var titleError: String? {
@@ -77,7 +82,9 @@ struct ProtocolReviewFeature {
                     if state.inputCategory == category { state.inputCategory = nil }
                 }
             case let .editTerm(category):
-                guard !state.hasUncommittedTerm else { return .none }
+                guard !state.hasUncommittedTerm, state.canAddTerm(in: category) else {
+                    return .none
+                }
                 state.inputCategory = category
                 state.termInput = ""
                 state.termError = nil
@@ -97,6 +104,10 @@ struct ProtocolReviewFeature {
                 }
             case .addTerm:
                 guard let category = state.inputCategory else { return .none }
+                guard state.canAddTerm(in: category) else {
+                    state.termError = "항목별 용어는 최대 20개까지 추가할 수 있어요."
+                    return .none
+                }
                 let value = state.trimmedTermInput
                 guard !value.isEmpty else {
                     state.termError = "용어를 입력해 주세요."
@@ -117,6 +128,7 @@ struct ProtocolReviewFeature {
                 state.terms[category, default: []].append(.init(id: uuid(), value: value))
                 state.termInput = ""
                 state.termError = nil
+                if !state.canAddTerm(in: category) { state.inputCategory = nil }
             case .endTermEditing:
                 guard !state.hasUncommittedTerm else { return .none }
                 state.inputCategory = nil
