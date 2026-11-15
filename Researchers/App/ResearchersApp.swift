@@ -33,6 +33,7 @@ struct ResearchersApp: App {
                     AppView()
                 }
             }
+            .preferredColorScheme(.light)
             .onOpenURL { url in
                 guard let experimentID = ExperimentLiveActivityURL.experimentID(from: url)
                 else { return }
