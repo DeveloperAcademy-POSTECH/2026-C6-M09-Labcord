@@ -57,7 +57,7 @@ public struct ProtocolUploadButton: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(LayoutTokens.spacing16)
         }
-        .buttonStyle(ProtocolUploadButtonStyle(state: state, showDescription: showDescription))
+        .buttonStyle(ProtocolUploadButtonStyle(state: state))
         .disabled(state == .disabled)
         .accessibilityHint(Text("프로토콜 파일을 선택합니다"))
     }
@@ -66,18 +66,12 @@ public struct ProtocolUploadButton: View {
 
 private struct ProtocolUploadButtonStyle: ButtonStyle {
     let state: ProtocolUploadButtonState
-    let showDescription: Bool
-
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .foregroundStyle(foregroundColor)
-            .frame(
-                maxWidth: .infinity,
-                minHeight: showDescription ? 79 : 55,
-                alignment: .topLeading
-            )
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background {
                 RoundedRectangle(cornerRadius: LayoutTokens.radiusSm)
                     .fill(backgroundColor)
@@ -149,6 +143,18 @@ private struct ProtocolUploadButtonStyle: ButtonStyle {
         ProtocolUploadButton(state: .default)
         ProtocolUploadButton(state: .disabled)
         ProtocolUploadButton(showDescription: false)
+    }
+    .frame(width: 370)
+    .padding()
+}
+
+#Preview("실험 등록 · 사진과 파일") {
+    _ = FontRegistration.register()
+    return VStack(spacing: LayoutTokens.spacing8) {
+        ProtocolUploadButton("사진", description: "PNG, JPG · 최대 10장", state: .default) {}
+        ProtocolUploadButton("파일", description: "PDF, XLSX, DOCX · 최대 1GB", state: .selected) {}
+        ProtocolUploadButton("최근 사용한 프로토콜", description: "", state: .default,
+                             showDescription: false) {}
     }
     .frame(width: 370)
     .padding()
