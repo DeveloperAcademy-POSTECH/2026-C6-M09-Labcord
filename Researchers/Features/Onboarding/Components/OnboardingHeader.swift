@@ -18,17 +18,13 @@ struct OnboardingHeader: View {
                 Text(titleText)
             }
             .typography(Typography.title1Bold)
-            .foregroundStyle(
-                Color("General/Label/Primary", bundle: LabcordDesignSystemResources.bundle)
-            )
+            .foregroundStyle(Color("General/Label/Primary"))
 
             VStack(alignment: .leading, spacing: 0) {
                 Text(bodyText)
             }
             .typography(Typography.body)
-            .foregroundStyle(
-                Color("General/Label/Secondary", bundle: LabcordDesignSystemResources.bundle)
-            )
+            .foregroundStyle(Color("General/Label/Secondary"))
         }
     }
 

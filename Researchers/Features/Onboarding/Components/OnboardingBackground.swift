@@ -12,7 +12,7 @@ struct OnboardingBackground: View {
     let showsLabImage: Bool
 
     var body: some View {
-        Color("General/Background/Primary", bundle: LabcordDesignSystemResources.bundle)
+        Color("General/Background/Primary")
             .overlay(alignment: .bottom) {
                 if showsLabImage {
                     Image("onboarding_lab")
