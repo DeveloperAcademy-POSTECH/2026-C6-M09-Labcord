@@ -37,8 +37,6 @@ struct LabcordWidgetLiveActivity: Widget {
             .activitySystemActionForegroundColor(
                 Color("Experiment/Feedback/Warning/Foreground")
             )
-            .widgetURL(destination)
-
         } dynamicIsland: { context in
             let store = Store(
                 initialState: TimerLiveActivityFeature.State(
@@ -69,7 +67,6 @@ struct LabcordWidgetLiveActivity: Widget {
             } minimal: {
                 TimerIslandIconView()
             }
-            .widgetURL(destination)
         }
     }
 }

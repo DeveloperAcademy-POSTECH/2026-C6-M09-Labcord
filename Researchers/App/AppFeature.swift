@@ -305,12 +305,12 @@ struct AppFeature {
                 }
                 let experimentID = session.experimentID
                 let experimentTitle = session.detail?.title ?? ""
-                let timer = earliestRunningTimer(in: session.timer.timerCollection, at: now)
+                let timers = runningTimers(in: session.timer.timerCollection, at: now)
                 return .merge(
                     .send(.home(.list(.load))),
                     .run { _ in
                         await timerLiveActivityClient.synchronize(
-                            experimentID, experimentTitle, timer
+                            experimentID, experimentTitle, timers
                         )
                     }
                 )
@@ -347,10 +347,10 @@ private extension AppFeature {
         return .send(.home(.list(.cancelLoad)))
     }
 
-    func earliestRunningTimer(
+    func runningTimers(
         in collection: ExperimentTimerCollection, at date: Date
-    ) -> TimerActivityAttributes.ContentState? {
-        collection.timers.compactMap { timer in
+    ) -> [TimerActivityAttributes.ContentState] {
+        let timers: [TimerActivityAttributes.ContentState] = collection.timers.compactMap { timer in
             guard timer.status == .running else { return nil }
             let pausedDuration = timer.pauseIntervals.reduce(0.0) { total, interval in
                 total + max(0, interval.resumedAt?.timeIntervalSince(interval.pausedAt) ?? 0)
@@ -365,7 +365,7 @@ private extension AppFeature {
                 durationSeconds: timer.durationSeconds
             )
         }
-        .min { left, right in
+        return timers.sorted { left, right in
             if left.endsAt != right.endsAt { return left.endsAt < right.endsAt }
             return left.timerID.uuidString < right.timerID.uuidString
         }
