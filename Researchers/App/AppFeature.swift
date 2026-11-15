@@ -73,6 +73,15 @@ struct AppFeature {
         Reduce { _, _ in .none }
             .ifLet(\.onboarding, action: \.onboarding) { OnboardingFeature() }
 
+        appReducer
+            .forEach(\.path, action: \.path)
+        watchCompletionNavigationReducer
+        watchContextReducer
+    }
+}
+
+private extension AppFeature {
+    var appReducer: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
             case .appeared, .onboarding:
@@ -325,13 +334,8 @@ struct AppFeature {
             case .home, .path: return .none
             }
         }
-        .forEach(\.path, action: \.path)
-        watchCompletionNavigationReducer
-        watchContextReducer
     }
-}
 
-private extension AppFeature {
     func openReadyLiveActivityExperiment(_ state: inout State) -> Effect<Action> {
         guard state.watchIsActive,
               let experimentID = state.readyLiveActivityExperimentID else { return .none }
@@ -350,22 +354,22 @@ private extension AppFeature {
     func runningTimers(
         in collection: ExperimentTimerCollection, at date: Date
     ) -> [TimerActivityAttributes.ContentState] {
-        let timers = collection.timers.compactMap {
-            timer -> TimerActivityAttributes.ContentState? in
-            guard timer.status == .running else { return nil }
-            let pausedDuration = timer.pauseIntervals.reduce(0.0) { total, interval in
-                total + max(0, interval.resumedAt?.timeIntervalSince(interval.pausedAt) ?? 0)
+        let timers: [TimerActivityAttributes.ContentState] =
+            collection.timers.compactMap { timer in
+                guard timer.status == .running else { return nil }
+                let pausedDuration = timer.pauseIntervals.reduce(0.0) { total, interval in
+                    total + max(0, interval.resumedAt?.timeIntervalSince(interval.pausedAt) ?? 0)
+                }
+                let endsAt = timer.startedAt.addingTimeInterval(
+                    TimeInterval(timer.durationSeconds) + pausedDuration
+                )
+                guard endsAt > date else { return nil }
+                return TimerActivityAttributes.ContentState(
+                    timerID: timer.id,
+                    endsAt: endsAt,
+                    durationSeconds: timer.durationSeconds
+                )
             }
-            let endsAt = timer.startedAt.addingTimeInterval(
-                TimeInterval(timer.durationSeconds) + pausedDuration
-            )
-            guard endsAt > date else { return nil }
-            return TimerActivityAttributes.ContentState(
-                timerID: timer.id,
-                endsAt: endsAt,
-                durationSeconds: timer.durationSeconds
-            )
-        }
         return timers.sorted { left, right in
             if left.endsAt != right.endsAt { return left.endsAt < right.endsAt }
             return left.timerID.uuidString < right.timerID.uuidString
