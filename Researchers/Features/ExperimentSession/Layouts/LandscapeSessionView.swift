@@ -12,6 +12,8 @@ import LabcordShared
 import SwiftUI
 
 struct LandscapeSessionView: View {
+    @ScaledMetric(relativeTo: .body) private var scaledPanelHandleIconSize: CGFloat = 28
+
     let sessionStore: StoreOf<ExperimentSessionFeature>
 
     private var areRecordButtonsDisabled: Bool {
@@ -25,7 +27,9 @@ struct LandscapeSessionView: View {
     }
 
     private var extraSpacerWidth: CGFloat {
-        sessionStore.isSidePanelExpanded ? 0 : 32
+        sessionStore.isSidePanelExpanded
+            ? 0
+            : scaledPanelHandleIconSize + LayoutTokens.spacing4
     }
 
     private var recordButtons: some View {

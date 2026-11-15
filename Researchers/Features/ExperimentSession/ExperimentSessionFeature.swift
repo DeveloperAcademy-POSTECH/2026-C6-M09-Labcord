@@ -45,7 +45,6 @@ struct ExperimentSessionFeature {
             self.capture = CameraCaptureFeature.State(experimentID: experimentID)
             self.pause = ExperimentPauseFeature.State(experimentID: experimentID)
         }
-
     }
 
     enum Action: Equatable {
@@ -73,6 +72,7 @@ struct ExperimentSessionFeature {
         case photoStartRequested(UUID?)
         case videoStartRequested
         case appBecameActive
+        case appEnteredBackground
         case setupLeaveTapped
         case setupRetryCameraTapped
         case cameraPreparationTimedOut
@@ -87,8 +87,6 @@ struct ExperimentSessionFeature {
     @Dependency(\.uuid) var uuid
     @Dependency(\.cameraSessionClient) var cameraSessionClient
     @Dependency(\.speechRecordingClient) var speechRecordingClient
-    @Dependency(\.notificationPermissionClient) var notificationPermissionClient
-    @Dependency(\.timerCompletionNotificationClient) var timerCompletionNotificationClient
 
     var body: some Reducer<State, Action> {
         watchReducer
@@ -161,6 +159,8 @@ private extension ExperimentSessionFeature {
                     state.permissionRequestGeneration += 1
                 }
                 return .send(.capture(.camera(.resumeIfNeeded)))
+            case .appEnteredBackground:
+                return .send(.capture(.camera(.appEnteredBackground)))
             case .setupLeaveTapped:
                 return .merge(
                     .send(.permissions(.cancelRequest)),
@@ -238,10 +238,6 @@ private extension ExperimentSessionFeature {
                 state.homeExitAttempt.begin(attemptID)
                 let exitedAt = now
                 let ownerID = state.capture.camera.ownerID
-                let title = state.detail?.title ?? "실험"
-                let runningTimers = state.timer.timerCollection.timers.filter {
-                    $0.status == .running && $0.remainingSeconds(at: exitedAt) > 0
-                }
                 return .concatenate(
                     .send(.pause(.homeExitStarted)),
                     .run { send in
@@ -250,19 +246,6 @@ private extension ExperimentSessionFeature {
                         } catch {
                             await send(.homeExitFailed(attemptID, requestID))
                             return
-                        }
-                        if !runningTimers.isEmpty,
-                           let status = try? await notificationPermissionClient.requestAccess() {
-                            switch status {
-                            case .authorized, .provisional, .ephemeral:
-                                for timer in runningTimers {
-                                    try? await timerCompletionNotificationClient.schedule(
-                                        experimentID, title, timer
-                                    )
-                                }
-                            case .notDetermined, .denied, .unknown:
-                                break
-                            }
                         }
                         await send(.voice(.closeRequested))
                         await cameraSessionClient.cancelVideoRecording()
@@ -370,7 +353,6 @@ private extension ExperimentSessionFeature {
         case .recording: return .send(.voice(.stopRequested))
         case .starting, .stopping, .finished: return .none
         }
-
     }
 
     func prepareVoiceRecording(state: inout State) -> Effect<Action> {

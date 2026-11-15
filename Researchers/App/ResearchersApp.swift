@@ -1,36 +1,44 @@
+import ComposableArchitecture
 import LabcordDesignSystem
 import LabcordiOS
+import LabcordShared
 import SwiftUI
-import UserNotifications
 
 @main
 struct ResearchersApp: App {
     @UIApplicationDelegateAdaptor(OrientationAppDelegate.self) private var orientationDelegate
 
     @State private var isSplashActive = true
-    private let notificationDelegate = ForegroundNotificationDelegate()
 
     init() {
         PhoneWatchExperimentCoordinator.shared.activate()
         PhoneWatchAudioService.shared.activate()
         PhoneWatchExperimentCoordinator.shared.configureRecordHandling()
         FontRegistration.register()
-        UNUserNotificationCenter.current().delegate = notificationDelegate
     }
 
     var body: some Scene {
         WindowGroup {
-            if isSplashActive {
-                SplashView()
-                    .onAppear {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                            withAnimation {
-                                self.isSplashActive = false
+            Group {
+                if isSplashActive {
+                    SplashView()
+                        .onAppear {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                withAnimation {
+                                    self.isSplashActive = false
+                                }
                             }
                         }
-                    }
-            } else {
-                AppView(notificationDelegate: notificationDelegate)
+                } else {
+                    AppView()
+                }
+            }
+            .onOpenURL { url in
+                guard let experimentID = ExperimentLiveActivityURL.experimentID(from: url)
+                else { return }
+                Task { @MainActor in
+                    PhoneIntentRuntime.shared.store.send(.openLiveActivityExperiment(experimentID))
+                }
             }
         }
     }

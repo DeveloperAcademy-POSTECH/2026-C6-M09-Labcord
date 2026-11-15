@@ -4,15 +4,22 @@ public struct LiveActivityStatusIndicator: View {
     public enum Status: Sendable {
         case audioSaving
         case audioSaved
+        case timerCompleted
         case watchConnected
     }
 
     private let status: Status
     private let progress: Double
+    private let color: Color
 
-    public init(status: Status, progress: Double = 0) {
+    public init(
+        status: Status,
+        progress: Double = 0,
+        color: Color? = nil
+    ) {
         self.status = status
         self.progress = progress
+        self.color = color ?? Color(.General.Brand.primary)
     }
 
     public var body: some View {
@@ -22,18 +29,18 @@ public struct LiveActivityStatusIndicator: View {
                 Circle()
                     .trim(from: 0, to: normalizedProgress)
                     .stroke(
-                        Color(.General.Brand.primary),
+                        color,
                         style: StrokeStyle(lineWidth: 4, lineCap: .round)
                     )
                     .padding(2)
                     .rotationEffect(.degrees(-90))
-            } else if status == .audioSaved {
-                Circle().strokeBorder(Color(.General.Brand.primary), lineWidth: 4)
+            } else if status == .audioSaved || status == .timerCompleted {
+                Circle().strokeBorder(color, lineWidth: 4)
             }
 
             IconArtwork(icon: status == .watchConnected ? .watchCheck : .checkBold,
                                size: status == .watchConnected ? 48 : 24)
-                .foregroundStyle(Color(.General.Brand.primary))
+                .foregroundStyle(color)
         }
         .frame(width: 48, height: 48)
         .accessibilityElement(children: .ignore)
@@ -49,6 +56,7 @@ public struct LiveActivityStatusIndicator: View {
         switch status {
         case .audioSaving: "음성 저장 중"
         case .audioSaved: "음성 저장 완료"
+        case .timerCompleted: "타이머 종료"
         case .watchConnected: "Apple Watch 연결됨"
         }
     }

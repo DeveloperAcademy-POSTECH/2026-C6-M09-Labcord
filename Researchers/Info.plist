@@ -6,6 +6,19 @@
 	<array>
 		<string>$(PRODUCT_BUNDLE_IDENTIFIER).analysis.*</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.researchers.Researchers.liveactivity</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.researchers.researchers</string>
+			</array>
+		</dict>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>processing</string>
