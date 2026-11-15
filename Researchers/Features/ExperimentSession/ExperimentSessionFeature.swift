@@ -73,6 +73,7 @@ struct ExperimentSessionFeature {
         case photoStartRequested(UUID?)
         case videoStartRequested
         case appBecameActive
+        case appEnteredBackground
         case setupLeaveTapped
         case setupRetryCameraTapped
         case cameraPreparationTimedOut
@@ -161,6 +162,8 @@ private extension ExperimentSessionFeature {
                     state.permissionRequestGeneration += 1
                 }
                 return .send(.capture(.camera(.resumeIfNeeded)))
+            case .appEnteredBackground:
+                return .send(.capture(.camera(.appEnteredBackground)))
             case .setupLeaveTapped:
                 return .merge(
                     .send(.permissions(.cancelRequest)),

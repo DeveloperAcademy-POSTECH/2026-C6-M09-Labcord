@@ -101,7 +101,9 @@ public actor CameraSession {
         if !session.isRunning {
             session.startRunning()
         }
-        guard session.isRunning else { throw CameraSessionError.cameraUnavailable }
+        guard session.isRunning || session.isInterrupted else {
+            throw CameraSessionError.cameraUnavailable
+        }
         activeOwners.insert(owner)
     }
 
@@ -117,6 +119,12 @@ public actor CameraSession {
                 return
             }
         }
+    }
+
+    public func suspend() {
+        guard !activeOwners.isEmpty, session.isRunning else { return }
+        session.stopRunning()
+        resetHandTracking()
     }
 
     private func stopIfUnused() {

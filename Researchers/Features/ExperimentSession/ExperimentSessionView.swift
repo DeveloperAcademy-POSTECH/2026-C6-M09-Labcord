@@ -237,8 +237,15 @@ struct ExperimentSessionView: View {
             }
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active {
+            switch phase {
+            case .active:
                 store.send(.appBecameActive)
+            case .background:
+                store.send(.appEnteredBackground)
+            case .inactive:
+                break
+            @unknown default:
+                break
             }
         }
         .background(.black)

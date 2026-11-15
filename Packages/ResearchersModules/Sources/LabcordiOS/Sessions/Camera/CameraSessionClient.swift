@@ -12,6 +12,7 @@ public struct CameraSessionClient: Sendable {
     public var activate: @Sendable (UUID) async throws -> Void
     public var isRunning: @Sendable () async -> Bool
     public var deactivate: @Sendable (UUID) async -> Void
+    public var suspend: @Sendable () async -> Void
     public var switchCamera: @Sendable () async throws -> Void
     public var previewConnector: @Sendable () async -> CameraPreviewConnector
     public var handEvents: @Sendable () async -> AsyncStream<CameraHandEvent>
@@ -26,6 +27,7 @@ public struct CameraSessionClient: Sendable {
         activate: @escaping @Sendable (UUID) async throws -> Void,
         isRunning: @escaping @Sendable () async -> Bool,
         deactivate: @escaping @Sendable (UUID) async -> Void,
+        suspend: @escaping @Sendable () async -> Void,
         switchCamera: @escaping @Sendable () async throws -> Void,
         previewConnector: @escaping @Sendable () async -> CameraPreviewConnector,
         handEvents: @escaping @Sendable () async -> AsyncStream<CameraHandEvent>,
@@ -39,6 +41,7 @@ public struct CameraSessionClient: Sendable {
         self.activate = activate
         self.isRunning = isRunning
         self.deactivate = deactivate
+        self.suspend = suspend
         self.switchCamera = switchCamera
         self.previewConnector = previewConnector
         self.handEvents = handEvents
@@ -58,6 +61,7 @@ extension CameraSessionClient: DependencyKey {
             activate: { try await session.activate(owner: $0) },
             isRunning: { await session.isRunning() },
             deactivate: { await session.deactivate(owner: $0) },
+            suspend: { await session.suspend() },
             switchCamera: { try await session.switchCamera() },
             previewConnector: { await session.previewConnector() },
             handEvents: { await session.handEvents() },
