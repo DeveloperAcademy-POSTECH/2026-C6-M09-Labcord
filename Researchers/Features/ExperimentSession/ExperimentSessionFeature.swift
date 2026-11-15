@@ -45,7 +45,6 @@ struct ExperimentSessionFeature {
             self.capture = CameraCaptureFeature.State(experimentID: experimentID)
             self.pause = ExperimentPauseFeature.State(experimentID: experimentID)
         }
-
     }
 
     enum Action: Equatable {
@@ -73,6 +72,7 @@ struct ExperimentSessionFeature {
         case photoStartRequested(UUID?)
         case videoStartRequested
         case appBecameActive
+        case appEnteredBackground
         case setupLeaveTapped
         case setupRetryCameraTapped
         case cameraPreparationTimedOut
@@ -161,6 +161,8 @@ private extension ExperimentSessionFeature {
                     state.permissionRequestGeneration += 1
                 }
                 return .send(.capture(.camera(.resumeIfNeeded)))
+            case .appEnteredBackground:
+                return .send(.capture(.camera(.appEnteredBackground)))
             case .setupLeaveTapped:
                 return .merge(
                     .send(.permissions(.cancelRequest)),
@@ -370,7 +372,6 @@ private extension ExperimentSessionFeature {
         case .recording: return .send(.voice(.stopRequested))
         case .starting, .stopping, .finished: return .none
         }
-
     }
 
     func prepareVoiceRecording(state: inout State) -> Effect<Action> {

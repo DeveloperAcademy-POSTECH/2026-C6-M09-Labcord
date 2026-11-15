@@ -17,8 +17,8 @@ struct CameraFeature {
     enum Action: Equatable {
         case viewAppeared
         case viewDisappeared
+        case appEnteredBackground
         case resumeIfNeeded
-        case resumeChecked(UUID, Bool)
         case activationRequested
         case started(UUID, CameraPreviewConnector)
         case startFailed(UUID, String)
@@ -37,6 +37,7 @@ struct CameraFeature {
 
     private nonisolated enum CancelID: Hashable, Sendable {
         case handTracking
+        case cameraSuspension
     }
 
     @Dependency(\.cameraSessionClient) var cameraSessionClient
@@ -57,21 +58,24 @@ struct CameraFeature {
                 let ownerID = state.ownerID
                 return .merge(
                     .cancel(id: CancelID.handTracking),
+                    .cancel(id: CancelID.cameraSuspension),
                     .run { _ in await cameraSessionClient.deactivate(ownerID) }
                 )
 
+            case .appEnteredBackground:
+                guard state.isViewVisible, state.previewConnector != nil else { return .none }
+                return .run { _ in
+                    guard !Task.isCancelled else { return }
+                    await cameraSessionClient.suspend()
+                }
+                .cancellable(id: CancelID.cameraSuspension, cancelInFlight: true)
+
             case .resumeIfNeeded:
                 guard state.isViewVisible, state.previewConnector != nil else { return .none }
-                let ownerID = state.ownerID
-                return .run { send in
-                    let isRunning = await cameraSessionClient.isRunning()
-                    await send(.resumeChecked(ownerID, isRunning))
-                }
-
-            case let .resumeChecked(ownerID, isRunning):
-                guard state.isViewVisible, ownerID == state.ownerID,
-                      !isRunning else { return .none }
-                return .send(.activationRequested)
+                return .concatenate(
+                    .cancel(id: CancelID.cameraSuspension),
+                    .send(.activationRequested)
+                )
 
             case .activationRequested:
                 guard state.isViewVisible else { return .none }
