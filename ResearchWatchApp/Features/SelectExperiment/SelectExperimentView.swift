@@ -24,39 +24,42 @@ struct SelectExperimentView: View {
                 .foregroundStyle(Color("General/Brand/Primary"))
 
             ScrollView {
-                ForEach(experiments, id: \.self) { experiment in
-                    HStack(alignment: .center) {
-                        Text(experiment)
-                            .font(.footnote)
-                            .foregroundStyle(Color(.Colors.Grays.white))
-                            .lineLimit(2)
-                            .truncationMode(.tail)
-                            .frame(
-                                maxWidth: .infinity,
-                                alignment: .leading
-                            )
-
-                        Spacer(minLength: 6)
-
-                        Button {
-                        } label: {
-                            Image(systemName: "play.fill")
-                                .font(.system(size: 12))
-                                .foregroundStyle(.white)
-                                .frame(width: 24, height: 24)
-                                .background(
-                                    Color("General/Brand/Primary"),
-                                    in: Circle()
+                VStack(spacing: 10) {
+                    ForEach(experiments.indices, id: \.self) { index in
+                        HStack(alignment: .center) {
+                            Text(experiments[index])
+                                .font(.footnote)
+                                .foregroundStyle(Color(.Colors.Grays.white))
+                                .lineLimit(2)
+                                .truncationMode(.tail)
+                                .frame(
+                                    maxWidth: .infinity,
+                                    minHeight: 34,
+                                    alignment: .topLeading
                                 )
+                            
+                            Spacer(minLength: 6)
+                            
+                            Button {
+                            } label: {
+                                Image(systemName: "play.fill")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(.white)
+                                    .frame(width: 24, height: 24)
+                                    .background(
+                                        Color("General/Brand/Primary"),
+                                        in: Circle()
+                                    )
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 9.5)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .background(Color("General/LiveActivity/Secondary"))
+                        .cornerRadius(8.5)
                     }
-                    .padding(.vertical, 4)
-                    .padding(.horizontal, 9.5)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 44)
-                    .background(.gray)
-                    .cornerRadius(8.5)
                 }
             }
             .padding(.horizontal, 2)
