@@ -5,8 +5,6 @@ import LabcordWatchOS
 
 @main
 struct ResearchWatchApp: App {
-    @Dependency(\.watchBatteryClient) private var batteryClient
-    @Dependency(\.watchDeviceNameClient) private var deviceNameClient
     @Dependency(\.watchConnectivitySession) var connectivity
 
     init() {
@@ -14,8 +12,6 @@ struct ResearchWatchApp: App {
             await WatchRemoteIntentReceiver.shared.receive(request)
         }
         WatchRecordingService.shared.activate()
-        batteryClient.start()
-        deviceNameClient.start()
     }
 
     var body: some Scene {
