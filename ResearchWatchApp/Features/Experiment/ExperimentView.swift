@@ -9,6 +9,12 @@ struct ExperimentView: View {
     @State private var store: StoreOf<ExperimentFeature>
     @State private var selectedPage = 1
 
+    private var showsTimerAddButton: Bool {
+        guard selectedPage == 2 else { return false }
+        return store.snapshot?.mode != .procedure ||
+            store.snapshot?.timers.contains { $0.status == .running } == true
+    }
+
     init(experiment: WatchExperimentSummary) {
         self.experiment = experiment
         _store = State(initialValue: Store(
@@ -43,6 +49,18 @@ struct ExperimentView: View {
         .padding(.top, 24.5)
         .padding(.horizontal, 6)
         .ignoresSafeArea()
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                if showsTimerAddButton {
+                    Button {} label: {
+                        Image(systemName: "plus")
+                    }
+                } else {
+                    Color.clear
+                        .frame(width: 1, height: 1)
+                }
+            }
+        }
         .onAppear { store.send(.appeared) }
         .onDisappear { store.send(.disappeared) }
     }
