@@ -52,6 +52,7 @@ struct ProtocolAnalysisProgressView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 16)
             }
+            .scrollBounceBehavior(.basedOnSize)
 
             VStack(spacing: 12) {
                 Text("분석을 건너뛰고, 실험을 시작할 수 있어요.")
