@@ -36,22 +36,21 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
     public func loadExperiments() async throws -> [WatchExperimentSummary] {
         activate()
         guard let session else { throw WatchExperimentError.notReachable }
-        for _ in 0..<30 where session.activationState != .activated {
-            try await Task.sleep(for: .milliseconds(100))
-        }
-        guard session.activationState == .activated else {
-            throw WatchExperimentError.notReachable
-        }
-        if !session.isReachable,
-           let data = session.receivedApplicationContext[
-               WatchExperimentTransport.listSnapshotKey
-           ] as? Data,
+        if let data = session.receivedApplicationContext[
+            WatchExperimentTransport.listSnapshotKey
+        ] as? Data,
            let summaries = try? JSONDecoder().decode(
                [WatchExperimentSummary].self, from: data
            ) {
             return summaries.filter { $0.status == .paused }
         }
 
+        for _ in 0..<30 where session.activationState != .activated {
+            try await Task.sleep(for: .milliseconds(100))
+        }
+        guard session.activationState == .activated else {
+            throw WatchExperimentError.notReachable
+        }
         let command = WatchExperimentCommand(operation: .list)
         let response: WatchExperimentResponse
         if session.isReachable {
