@@ -62,7 +62,6 @@ struct GesturePracticeView: View {
             .accessibilityHidden(!hasPrepared)
             .allowsHitTesting(hasPrepared)
         }
-        .preferredColorScheme(.dark)
         .overlay {
             if !hasPrepared {
                 preparationContent

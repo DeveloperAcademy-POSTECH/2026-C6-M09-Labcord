@@ -87,6 +87,10 @@ struct AppView: View {
             guard !Task.isCancelled else { return }
             store.send(.watchSplashChanged(true))
         }
+        .preferredColorScheme(
+            store.path.ids.last.map { store.path[id: $0, case: \.gesturePractice] != nil } == true
+                ? .dark : .light
+        )
         .task { await store.send(.watchTask).finish() }
 .task { store.send(.appeared) }
         .onAppear {

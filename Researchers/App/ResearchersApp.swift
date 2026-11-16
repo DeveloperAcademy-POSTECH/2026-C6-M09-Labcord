@@ -29,6 +29,13 @@ struct ResearchersApp: App {
                             guard !Task.isCancelled else { return }
                             withAnimation { isSplashActive = false }
                             PhoneIntentRuntime.shared.store.send(.watchSplashChanged(true))
+                        .preferredColorScheme(.light)
+                        .onAppear {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                withAnimation {
+                                    self.isSplashActive = false
+                                }
+                            }
                         }
                 } else {
                     AppView()
