@@ -44,8 +44,11 @@ nonisolated public enum ProtocolTimerExtractor {
             "[ \\t]*=[ \\t]*[+−-]?\(durationPattern)"
         let recorded = regex(recordedPattern)?.matches(in: text, range: fullRange)
             .map(\.range) ?? []
+        let nonTimerPattern = "\(durationPattern)[ \\t]*(?:지연|놓침|남음)"
+        let nonTimers = regex(nonTimerPattern)?.matches(in: text, range: fullRange)
+            .map(\.range) ?? []
         let excluded = reviewRanges(text, physical: physical) + physical + clocks.map(\.range)
-            + recorded
+            + recorded + nonTimers
         var tokens = itemRegex.matches(in: text, range: fullRange).compactMap { match -> Token? in
             guard !excluded.contains(where: { NSIntersectionRange($0, match.range).length > 0 }),
                   !isFalsePositive(text, range: match.range),
@@ -144,27 +147,35 @@ nonisolated public enum ProtocolTimerExtractor {
 
     private static func isClockTime(_ text: String, range: NSRange) -> Bool {
         let source = text as NSString
-        let line = source.substring(with: source.lineRange(for: range))
         let prefixStart = max(source.lineRange(for: range).location, range.location - 24)
         let prefix = source.substring(with: NSRange(
             location: prefixStart, length: range.location - prefixStart
         ))
         let suffix = source.substring(with: NSRange(
-            location: NSMaxRange(range), length: min(20, source.length - NSMaxRange(range))
+            location: NSMaxRange(range), length: min(40, source.length - NSMaxRange(range))
         ))
+        let options: String.CompareOptions = [.regularExpression, .caseInsensitive]
+        if prefix.range(of: "(?:elapsed|deviation)[ \\t]*=[ \\t]*$", options: options) != nil {
+            return true
+        }
         if prefix.range(of: "(?:duration|기간|소요시간|타이머)[ \\t]*[=:]?[ \\t]*$",
-                        options: [.regularExpression, .caseInsensitive]) != nil { return false }
-        return line.range(of: "^[ \\t•]*[0-9]{1,2}:[0-5][0-9]:[0-5][0-9]" +
-                          "[ \\t]+[A-Z][0-9]{2}\\b",
-                          options: [.regularExpression, .caseInsensitive]) != nil
-            || line.range(of: "(?:시각|촬영|재촬영|목표|session\\.|" +
-                          "timer\\.(?:started|completed)|photo\\.|voice\\.|" +
-                          "transcript\\.|result\\.)",
-                          options: [.regularExpression, .caseInsensitive]) != nil
+                        options: options) != nil
+            || suffix.range(of: "^[ \\t]*(?:동안|간|후|경과)", options: options) != nil {
+            return false
+        }
+        let startsLine = prefix.range(of: "^[ \\t•]*$", options: options) != nil
+        let eventAfterClock = suffix.range(
+            of: "^[ \\t]+(?:[A-Z]+[0-9]+\\b|[A-Za-z_]+\\.[A-Za-z_]+\\b|실험[ \\t]+시작)",
+            options: options
+        ) != nil
+        return (startsLine && eventAfterClock)
+            || prefix.range(of: "(?:시각|시각은|촬영|촬영이|촬영은|재촬영이|재촬영은|" +
+                            "목표[ \\t]+[A-Za-z0-9]+(?:은|는|이|가))" +
+                            "[ \\t]*[=:]?[ \\t]*$", options: options) != nil
             || prefix.range(of: "(?:오전|오후|[0-9]{4}-[0-9]{2}-[0-9]{2}[ T])\\s*$",
-                            options: [.regularExpression, .caseInsensitive]) != nil
-            || suffix.range(of: "^(?:\\.[0-9]+|\\s*(?:AM|PM|기록|시각|[/·⋅*^]))",
-                            options: [.regularExpression, .caseInsensitive]) != nil
+                            options: options) != nil
+            || suffix.range(of: "^(?:\\.[0-9]+|\\s*(?:AM|PM|기록|시각|촬영|[/·⋅*^]))",
+                            options: options) != nil
     }
 
     private static func isFalsePositive(_ text: String, range: NSRange) -> Bool {
@@ -191,14 +202,12 @@ nonisolated public enum ProtocolTimerExtractor {
         let suffix = source.substring(with: NSRange(
             location: NSMaxRange(range), length: min(32, source.length - NSMaxRange(range))
         ))
-        if suffix.range(of: "^[ \\t]*(?:지연|놓침|간격|연장|남음)",
-                        options: .regularExpression) != nil { return true }
         if suffix.range(of: "^[ \\t]*(?:[/·⋅*^]|[−-][0-9]|당|의|protein|proteasome|" +
                         "ribosomal|rRNA|단백질|길이|높이|거리|너비)",
                         options: [.regularExpression, .caseInsensitive]) != nil { return true }
         guard let first = suffix.unicodeScalars.first,
               (0xAC00...0xD7A3).contains(first.value) else { return false }
-        return suffix.range(of: "^(?:간|동안|후|전|이상|이하|이내|정도|가량|까지|씩|을|를|에|은|는|이|가|으로|로)",
+        return suffix.range(of: "^(?:간|동안|후|전|마다|이상|이하|이내|정도|가량|까지|씩|을|를|에|은|는|이|가|으로|로)",
                             options: .regularExpression) == nil
     }
 
