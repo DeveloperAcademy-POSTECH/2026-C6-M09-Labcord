@@ -1,6 +1,6 @@
 import Foundation
 
-public struct WatchExperimentSummary: Codable, Equatable, Identifiable, Sendable {
+public struct WatchExperimentSummary: Codable, Hashable, Identifiable, Sendable {
     public let id: UUID
     public let title: String
     public let status: ExperimentStatus

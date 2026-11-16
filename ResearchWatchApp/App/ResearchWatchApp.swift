@@ -6,31 +6,28 @@ import SwiftUI
 @main
 struct ResearchWatchApp: App {
     private enum Route: Hashable {
-        case start
-        case experiment
+        case start(WatchExperimentSummary)
+        case experiment(WatchExperimentSummary)
     }
 
     @Dependency(\.watchConnectivitySession) var connectivity
     @State private var path: [Route] = []
-    @State private var selectedExperiment: WatchExperimentSummary?
 
     var body: some Scene {
         WindowGroup {
             NavigationStack(path: $path) {
                 SelectExperimentView { experiment in
-                    selectedExperiment = experiment
-                    path = [.start]
+                    path = [.start(experiment)]
                 }
                 .navigationDestination(for: Route.self) { route in
-                    if let selectedExperiment {
-                        switch route {
-                        case .start:
-                            ExperimentStartView(experiment: selectedExperiment) {
-                                path = [.experiment]
-                            }
-                        case .experiment:
-                            ExperimentView(experiment: selectedExperiment)
+                    switch route {
+                    case let .start(experiment):
+                        ExperimentStartView(experiment: experiment) {
+                            path = [.experiment(experiment)]
                         }
+                        .id(experiment.id)
+                    case let .experiment(experiment):
+                        ExperimentView(experiment: experiment)
                     }
                 }
             }
