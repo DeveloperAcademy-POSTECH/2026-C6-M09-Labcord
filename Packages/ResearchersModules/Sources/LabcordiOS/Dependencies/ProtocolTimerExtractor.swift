@@ -5,17 +5,18 @@ nonisolated public enum ProtocolTimerExtractor {
         "(?:hours?|hrs?|hr|h|minutes?|mins?|min|m|seconds?|secs?|sec|s|시간|분|초)"
     private static let number = "(?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(?:\\.[0-9]+)?"
     private static let horizontalSpace = "[ \\t]*"
+    private static let componentSeparator = "(?:[ \\t]+and[ \\t]+|[ \\t]*)"
     private static let itemPattern =
         "(?<![0-9.,:])(\(number))\(horizontalSpace)(\(units))(?![A-Za-z])"
     private static let rangePattern =
         "(?<![0-9.,:])\(number)\(horizontalSpace)\(units)?" +
-        "(?:\(horizontalSpace)\(number)\(horizontalSpace)\(units)){0,2}" +
+        "(?:\(componentSeparator)\(number)\(horizontalSpace)\(units)){0,2}" +
         "\(horizontalSpace)(?:~|〜|–|—|-|\\bto\\b|에서|부터)\(horizontalSpace)" +
         "\(number)\(horizontalSpace)\(units)" +
-        "(?:\(horizontalSpace)\(number)\(horizontalSpace)\(units)){0,2}(?![A-Za-z])"
+        "(?:\(componentSeparator)\(number)\(horizontalSpace)\(units)){0,2}(?![A-Za-z])"
     private static let durationPattern =
         "(?<![0-9.,:])\(number)\(horizontalSpace)\(units)" +
-        "(?:\(horizontalSpace)\(number)\(horizontalSpace)\(units)){0,2}(?![A-Za-z])"
+        "(?:\(componentSeparator)\(number)\(horizontalSpace)\(units)){0,2}(?![A-Za-z])"
     private static let conditionPatterns = [
         "\(durationPattern)\(horizontalSpace)(?:이상|이하|이내|미만|초과|정도|가량|내외|전후)",
         "(?<![가-힣A-Za-z])(?:최소|최대|적어도|길어도|약)" +
@@ -29,7 +30,8 @@ nonisolated public enum ProtocolTimerExtractor {
         "\(number)\(horizontalSpace)[A-Za-zµμ]+(?:\\^?[+−-]?[0-9]+)?" +
         "\(horizontalSpace)(?:[/·⋅*]\(horizontalSpace)[A-Za-zµμ]+" +
         "(?:\\^?[+−-]?[0-9]+)?|[ \\t]+[A-Za-zµμ]+(?:\\^[+−-]?[0-9]+|[−-][0-9]+)" +
-        "|\\^[+−-]?[0-9]+|[−-][0-9]+|[23](?![0-9A-Za-z]))"
+        "|\\^[+−-]?[0-9]+|[−-][0-9]+|[23](?![0-9A-Za-z]|" +
+        "[ \\t]+(?:minutes?|mins?|min|seconds?|secs?|sec|s)\\b))"
     private static let clockPattern =
         "(?<![0-9:])([0-9]{1,3}):([0-5][0-9]):([0-5][0-9])(?![0-9:])"
 
@@ -44,7 +46,8 @@ nonisolated public enum ProtocolTimerExtractor {
             "[ \\t]*=[ \\t]*[+−-]?\(durationPattern)"
         let recorded = regex(recordedPattern)?.matches(in: text, range: fullRange)
             .map(\.range) ?? []
-        let nonTimerPattern = "\(durationPattern)[ \\t]*(?:지연|놓침|남음)"
+        let nonTimerPattern = "\(durationPattern)(?:[ \\t]*(?:지연|놓침|남음)|" +
+            "[ \\t]+(?:remaining|left|late|delayed)\\b)"
         let nonTimers = regex(nonTimerPattern)?.matches(in: text, range: fullRange)
             .map(\.range) ?? []
         let excluded = reviewRanges(text, physical: physical) + physical + clocks.map(\.range)
@@ -131,7 +134,9 @@ nonisolated public enum ProtocolTimerExtractor {
                     location: NSMaxRange(previous.range),
                     length: token.range.location - NSMaxRange(previous.range)
                 )
-                joins = source.substring(with: gap).allSatisfy { $0 == " " || $0 == "\t" }
+                let separator = source.substring(with: gap)
+                joins = separator.range(of: "^[ \\t]*(?:and[ \\t]+)?$",
+                                        options: [.regularExpression, .caseInsensitive]) != nil
             } else {
                 joins = false
             }
@@ -158,9 +163,9 @@ nonisolated public enum ProtocolTimerExtractor {
         if prefix.range(of: "(?:elapsed|deviation)[ \\t]*=[ \\t]*$", options: options) != nil {
             return true
         }
-        if prefix.range(of: "(?:duration|기간|소요시간|타이머)[ \\t]*[=:]?[ \\t]*$",
+        if prefix.range(of: "(?:duration|timer|기간|소요시간|타이머)[ \\t]*[=:]?[ \\t]*$",
                         options: options) != nil
-            || suffix.range(of: "^[ \\t]*(?:동안|간|후|경과)", options: options) != nil {
+            || suffix.range(of: "^[ \\t]*(?:동안|간|후|경과|after\\b)", options: options) != nil {
             return false
         }
         let startsLine = prefix.range(of: "^[ \\t•]*$", options: options) != nil
@@ -172,6 +177,8 @@ nonisolated public enum ProtocolTimerExtractor {
             || prefix.range(of: "(?:시각|시각은|촬영|촬영이|촬영은|재촬영이|재촬영은|" +
                             "목표[ \\t]+[A-Za-z0-9]+(?:은|는|이|가))" +
                             "[ \\t]*[=:]?[ \\t]*$", options: options) != nil
+            || prefix.range(of: "\\b(?:at|timestamp|time of day)[ \\t]*[=:]?[ \\t]*$",
+                            options: options) != nil
             || prefix.range(of: "(?:오전|오후|[0-9]{4}-[0-9]{2}-[0-9]{2}[ T])\\s*$",
                             options: options) != nil
             || suffix.range(of: "^(?:\\.[0-9]+|\\s*(?:AM|PM|기록|시각|촬영|[/·⋅*^]))",
