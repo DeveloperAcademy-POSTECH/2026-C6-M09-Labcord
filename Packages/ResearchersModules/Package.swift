@@ -25,10 +25,6 @@ let package = Package(
             from: "1.26.2"
         ),
         .package(
-            url: "https://github.com/devicekit/DeviceKit",
-            from: "5.9.0"
-        ),
-        .package(
             url: "https://github.com/hellosunghyun/swift-omni-parser",
             revision: "8403c2fc45dfa6ab946ef31bed1a509e6e35f412"
         )
@@ -69,8 +65,7 @@ let package = Package(
             name: "LabcordWatchOS",
             dependencies: [
                 "LabcordShared",
-                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-                .product(name: "DeviceKit", package: "DeviceKit")
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture")
             ],
             swiftSettings: [
                 .defaultIsolation(MainActor.self),

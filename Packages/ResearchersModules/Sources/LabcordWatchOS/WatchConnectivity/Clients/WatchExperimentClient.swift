@@ -17,6 +17,8 @@ public struct WatchExperimentClient: Sendable {
     public var isReachable: @Sendable () async -> Bool
     public var connectionStatus: @Sendable () async -> WatchConnectionStatus
     public var retryActivation: @Sendable () async -> Void
+    public var list: @Sendable () async throws -> [WatchExperimentSummary]
+    public var lists: @Sendable () async -> AsyncStream<[WatchExperimentSummary]>
 
     public init(
         send: @escaping @Sendable (WatchExperimentCommand) async throws -> WatchExperimentResponse,
@@ -24,6 +26,10 @@ public struct WatchExperimentClient: Sendable {
         isReachable: @escaping @Sendable () async -> Bool,
         connectionStatus: @escaping @Sendable () async -> WatchConnectionStatus,
         retryActivation: @escaping @Sendable () async -> Void,
+        list: @escaping @Sendable () async throws -> [WatchExperimentSummary] = { [] },
+        lists: @escaping @Sendable () async -> AsyncStream<[WatchExperimentSummary]> = {
+            AsyncStream { $0.finish() }
+        },
         screens: @escaping @Sendable () async -> AsyncStream<WatchScreenSnapshot> = {
             AsyncStream { $0.finish() }
         }
@@ -34,6 +40,8 @@ public struct WatchExperimentClient: Sendable {
         self.isReachable = isReachable
         self.connectionStatus = connectionStatus
         self.retryActivation = retryActivation
+        self.list = list
+        self.lists = lists
     }
 }
 
@@ -74,6 +82,12 @@ extension WatchExperimentClient: DependencyKey {
             },
             retryActivation: {
                 await connectivity.retryActivation()
+            },
+            list: {
+                try await connectivity.loadExperiments()
+            },
+            lists: {
+                await connectivity.experimentLists()
             },
             screens: {
                 await connectivity.activate()
@@ -135,7 +149,8 @@ extension WatchExperimentClient: DependencyKey {
         connectionStatus: unimplemented(
             "WatchExperimentClient.connectionStatus", placeholder: .unsupported
         ),
-        retryActivation: unimplemented("WatchExperimentClient.retryActivation")
+        retryActivation: unimplemented("WatchExperimentClient.retryActivation"),
+        list: unimplemented("WatchExperimentClient.list", placeholder: [])
     )
 }
 
