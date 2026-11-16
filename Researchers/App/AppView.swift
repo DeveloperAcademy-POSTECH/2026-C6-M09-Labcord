@@ -76,6 +76,17 @@ struct AppView: View {
                 }
             }
         }
+        .overlay {
+            if store.watchSplashPhase == .showing {
+                SplashView()
+            }
+        }
+        .task(id: store.watchSplashPhase) {
+            guard store.watchSplashPhase == .showing else { return }
+            try? await Task.sleep(for: .seconds(1))
+            guard !Task.isCancelled else { return }
+            store.send(.watchSplashChanged(true))
+        }
         .task { await store.send(.watchTask).finish() }
 .task { store.send(.appeared) }
         .onAppear {
