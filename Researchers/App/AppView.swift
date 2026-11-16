@@ -76,6 +76,10 @@ struct AppView: View {
                 }
             }
         }
+        .preferredColorScheme(
+            store.path.ids.last.map { store.path[id: $0, case: \.gesturePractice] != nil } == true
+                ? .dark : .light
+        )
         .task { await store.send(.watchTask).finish() }
 .task { store.send(.appeared) }
         .onAppear {

@@ -22,6 +22,7 @@ struct ResearchersApp: App {
             Group {
                 if isSplashActive {
                     SplashView()
+                        .preferredColorScheme(.light)
                         .onAppear {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                                 withAnimation {
@@ -33,7 +34,6 @@ struct ResearchersApp: App {
                     AppView()
                 }
             }
-            .preferredColorScheme(.light)
             .onOpenURL { url in
                 guard let experimentID = ExperimentLiveActivityURL.experimentID(from: url)
                 else { return }
