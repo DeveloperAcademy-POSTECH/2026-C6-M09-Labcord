@@ -46,9 +46,6 @@ struct SelectExperimentView: View {
                                 ExperimentRow(title: experiment.title)
                             }
                             .buttonStyle(.plain)
-                            .simultaneousGesture(TapGesture().onEnded {
-                                store.send(.experimentTapped(experiment.id))
-                            })
                         }
                     }
                 }

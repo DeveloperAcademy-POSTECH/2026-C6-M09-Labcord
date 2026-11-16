@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import LabcordShared
+import LabcordWatchOS
 
 enum ExperimentStartPhase: Equatable {
     case details
@@ -33,6 +34,7 @@ struct ExperimentStartFeature {
     }
 
     @Dependency(\.microphonePermissionClient) private var microphonePermission
+    @Dependency(\.watchExperimentClient) private var watchExperimentClient
 
     var body: some Reducer<State, Action> {
         Reduce { state, action in
@@ -97,12 +99,18 @@ struct ExperimentStartFeature {
 
     private func beginCountdown(_ state: inout State) -> Effect<Action> {
         state.phase = .countdown(nil)
-        return .run { send in
-            for _ in 0..<4 {
-                try await Task.sleep(for: .seconds(1))
-                await send(.countdownTick)
+        let experimentID = state.experiment.id
+        return .merge(
+            .run { _ in
+                await watchExperimentClient.requestPhoneSession(experimentID)
+            },
+            .run { send in
+                for _ in 0..<4 {
+                    try await Task.sleep(for: .seconds(1))
+                    await send(.countdownTick)
+                }
             }
-        }
-        .cancellable(id: CancelID.countdown, cancelInFlight: true)
+            .cancellable(id: CancelID.countdown, cancelInFlight: true)
+        )
     }
 }
