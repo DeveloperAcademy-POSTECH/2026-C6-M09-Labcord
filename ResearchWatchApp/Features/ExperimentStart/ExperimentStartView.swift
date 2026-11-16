@@ -97,7 +97,7 @@ private struct CountdownRingView: View {
                     diameter: max(0, geometry.size.width - 14)
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .offset(y: -12)
+                .offset(y: -10)
             }
         }
     }
