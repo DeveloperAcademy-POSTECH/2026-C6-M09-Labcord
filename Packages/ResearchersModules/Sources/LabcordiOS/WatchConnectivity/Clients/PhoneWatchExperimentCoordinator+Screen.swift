@@ -15,7 +15,7 @@ extension PhoneWatchExperimentCoordinator {
                 if let snapshot = try? snapshot(id) { publish(snapshot) }
             }
             publishScreen()
-            publishPausedExperiments()
+            publishAvailableExperiments()
         }
     }
 
@@ -77,15 +77,18 @@ extension PhoneWatchExperimentCoordinator {
         }
     }
 
-    func publishPausedExperiments() {
+    func publishAvailableExperiments() {
         guard let session = connectivity.session, session.activationState == .activated,
-              let summaries = try? pausedExperiments(),
+              let summaries = try? availableExperiments(),
               let data = try? JSONEncoder().encode(summaries) else { return }
         let key = WatchExperimentTransport.listSnapshotKey
         guard session.applicationContext[key] as? Data != data else { return }
         var context = session.applicationContext
         context[key] = data
         try? session.updateApplicationContext(context)
+        if session.isReachable {
+            session.sendMessage([key: data], replyHandler: { _ in }, errorHandler: { _ in })
+        }
     }
 
     func navigate(_ command: WatchExperimentCommand) async throws -> WatchExperimentResponse {
