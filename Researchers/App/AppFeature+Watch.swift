@@ -5,6 +5,30 @@ import LabcordShared
 import UIKit
 
 extension AppFeature {
+    var watchPendingOpenReducer: some Reducer<State, Action> {
+        Reduce { state, _ in
+            guard state.hasCompletedOnboarding, state.watchIsActive,
+                  state.watchSplashPhase == .ready,
+                  UIApplication.shared.applicationState == .active,
+                  state.watchPendingStartID == nil, state.watchRequestID == nil,
+                  state.screenNavigation == nil else {
+                return .none
+            }
+            let coordinator = PhoneWatchExperimentCoordinator.shared
+            guard let experimentID = coordinator.pendingOpenSessionID() else { return .none }
+            if let id = state.path.ids.last,
+               state.path[id: id, case: \.session]?.experimentID == experimentID {
+                coordinator.didHandleOpenSession(experimentID)
+                return .none
+            }
+            guard canLeaveCurrentScreen(state) else { return .none }
+            coordinator.didHandleOpenSession(experimentID)
+            state.path.removeAll()
+            state.path.append(.session(.init(experimentID: experimentID)))
+            return .send(.home(.list(.cancelLoad)))
+        }
+    }
+
     var watchReducer: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
@@ -21,6 +45,12 @@ extension AppFeature {
             case let .watchEvent(.started(id)):
                 state.watchPendingStartID = id
                 return openWatchSession(&state)
+
+            case .watchEvent(.openSessionRequested):
+                if state.watchIsActive {
+                    state.watchSplashPhase = .showing
+                }
+                return .none
 
             case let .watchSceneChanged(active):
                 state.watchIsActive = active

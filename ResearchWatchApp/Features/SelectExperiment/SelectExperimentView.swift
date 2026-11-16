@@ -15,7 +15,10 @@ struct SelectExperimentView: View {
                 .foregroundStyle(Color("General/Brand/Primary"))
                 .padding(.horizontal, 9.5)
 
-            if let errorMessage = store.errorMessage, store.experiments.isEmpty {
+            if store.isLoading {
+                ProgressView()
+                    .progressViewStyle(.circular)
+            } else if let errorMessage = store.errorMessage, store.experiments.isEmpty {
                 Text(errorMessage)
                     .foregroundStyle(Color("Experiment/Label/Light"))
                     .padding(.vertical, 8)
@@ -37,7 +40,15 @@ struct SelectExperimentView: View {
                 ScrollView {
                     LazyVStack(spacing: 10) {
                         ForEach(store.experiments) { experiment in
-                            ExperimentRow(title: experiment.title)
+                            NavigationLink {
+                                ExperimentStartView(experiment: experiment)
+                            } label: {
+                                ExperimentRow(title: experiment.title)
+                            }
+                            .buttonStyle(.plain)
+                            .simultaneousGesture(TapGesture().onEnded {
+                                store.send(.experimentTapped(experiment.id))
+                            })
                         }
                     }
                 }

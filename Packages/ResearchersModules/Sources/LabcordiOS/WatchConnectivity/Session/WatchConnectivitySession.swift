@@ -54,6 +54,11 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         Task { @MainActor in
             if succeeded {
                 self.didRetryActivation = false
+                PhoneWatchExperimentCoordinator.shared.receiveOpenSessionRequest(
+                    session.receivedApplicationContext[
+                        WatchSessionOpenRequest.messageKey
+                    ] as? Data
+                )
                 self.receiveBackgroundListCommand(
                     session.receivedApplicationContext[
                         WatchExperimentTransport.backgroundCommandKey
@@ -86,6 +91,13 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         didReceiveMessage message: [String: Any],
         replyHandler: @escaping ([String: Any]) -> Void
     ) {
+        if let request = message[WatchSessionOpenRequest.messageKey] as? Data {
+            Task { @MainActor in
+                PhoneWatchExperimentCoordinator.shared.receiveOpenSessionRequest(request)
+                replyHandler([:])
+            }
+            return
+        }
         let data = message[WatchExperimentTransport.commandKey] as? Data
         let voiceStatus = message[WatchVoiceLiveStatus.messageKey] as? Data
         Task { @MainActor in
@@ -102,10 +114,12 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         let backgroundCommand = applicationContext[
             WatchExperimentTransport.backgroundCommandKey
         ] as? Data
+        let openRequest = applicationContext[WatchSessionOpenRequest.messageKey] as? Data
         let snapshot = applicationContext[WatchExperimentTransport.snapshotKey] as? Data
         let screen = applicationContext[WatchExperimentTransport.screenKey] as? Data
         let record = applicationContext[WatchRecordTransport.snapshotKey] as? Data
         Task { @MainActor in
+            PhoneWatchExperimentCoordinator.shared.receiveOpenSessionRequest(openRequest)
             receiveBackgroundListCommand(backgroundCommand)
             if let snapshot { experiments.receiveSnapshot(snapshot) }
             if let screen { experiments.receiveScreen(screen) }
@@ -148,10 +162,12 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         let backgroundCommand = userInfo[
             WatchExperimentTransport.backgroundCommandKey
         ] as? Data
+        let openRequest = userInfo[WatchSessionOpenRequest.messageKey] as? Data
         observerStore.deliverUserInfo(userInfo)
         let record = userInfo[WatchRecordTransport.snapshotKey] as? Data
         let audio = userInfo[PhoneWatchAudioService.messageKey] as? Data
         Task { @MainActor in
+            PhoneWatchExperimentCoordinator.shared.receiveOpenSessionRequest(openRequest)
             receiveBackgroundListCommand(backgroundCommand)
             if let record { records.receive(record) }
             if let audio {

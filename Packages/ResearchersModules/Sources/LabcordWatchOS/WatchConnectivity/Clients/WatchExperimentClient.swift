@@ -19,6 +19,7 @@ public struct WatchExperimentClient: Sendable {
     public var retryActivation: @Sendable () async -> Void
     public var list: @Sendable () async throws -> [WatchExperimentSummary]
     public var lists: @Sendable () async -> AsyncStream<[WatchExperimentSummary]>
+    public var requestPhoneSession: @Sendable (UUID) async -> Void
 
     public init(
         send: @escaping @Sendable (WatchExperimentCommand) async throws -> WatchExperimentResponse,
@@ -30,6 +31,7 @@ public struct WatchExperimentClient: Sendable {
         lists: @escaping @Sendable () async -> AsyncStream<[WatchExperimentSummary]> = {
             AsyncStream { $0.finish() }
         },
+        requestPhoneSession: @escaping @Sendable (UUID) async -> Void = { _ in },
         screens: @escaping @Sendable () async -> AsyncStream<WatchScreenSnapshot> = {
             AsyncStream { $0.finish() }
         }
@@ -42,6 +44,7 @@ public struct WatchExperimentClient: Sendable {
         self.retryActivation = retryActivation
         self.list = list
         self.lists = lists
+        self.requestPhoneSession = requestPhoneSession
     }
 }
 
@@ -88,6 +91,9 @@ extension WatchExperimentClient: DependencyKey {
             },
             lists: {
                 await connectivity.experimentLists()
+            },
+            requestPhoneSession: { id in
+                await connectivity.requestPhoneSession(id)
             },
             screens: {
                 await connectivity.activate()

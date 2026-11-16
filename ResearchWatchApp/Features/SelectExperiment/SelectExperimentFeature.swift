@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import Foundation
 import LabcordShared
 import LabcordWatchOS
 
@@ -13,6 +14,7 @@ struct SelectExperimentFeature {
 
     enum Action {
         case appeared
+        case experimentTapped(UUID)
         case disappeared
         case listUpdated([WatchExperimentSummary])
         case loadSucceeded([WatchExperimentSummary])
@@ -40,6 +42,10 @@ struct SelectExperimentFeature {
                     }
                     .cancellable(id: CancelID.listUpdates, cancelInFlight: true)
                 )
+            case let .experimentTapped(id):
+                return .run { _ in
+                    await watchExperimentClient.requestPhoneSession(id)
+                }
             case .disappeared:
                 state.isLoading = false
                 return .merge(

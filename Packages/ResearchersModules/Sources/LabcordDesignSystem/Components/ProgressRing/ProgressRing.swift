@@ -10,20 +10,23 @@ public struct ProgressRing: View {
     private let showPercentage: Bool
     private let centerText: String?
     private let appearance: Appearance
+    private let requestedDiameter: CGFloat?
 
-    @ScaledMetric(relativeTo: .title2) private var diameter: CGFloat = 160
+    @ScaledMetric(relativeTo: .title2) private var defaultDiameter: CGFloat = 160
     @ScaledMetric(relativeTo: .title2) private var lineWidth: CGFloat = 16
 
     public init(
         value: Double,
         showPercentage: Bool = true,
         centerText: String? = nil,
-        appearance: Appearance = .general
+        appearance: Appearance = .general,
+        diameter: CGFloat? = nil
     ) {
         self.value = value
         self.showPercentage = showPercentage
         self.centerText = centerText
         self.appearance = appearance
+        self.requestedDiameter = diameter
     }
 
     public var body: some View {
@@ -78,6 +81,10 @@ public struct ProgressRing: View {
     private var progress: Double {
         guard value.isFinite else { return 0 }
         return min(max(value, 0), 1)
+    }
+
+    private var diameter: CGFloat {
+        requestedDiameter ?? defaultDiameter
     }
 }
 
