@@ -30,6 +30,7 @@ struct ExperimentStartFeature {
     private nonisolated enum CancelID: Hashable, Sendable {
         case permission
         case countdown
+        case openSession
     }
 
     @Dependency(\.microphonePermissionClient) private var microphonePermission
@@ -78,14 +79,29 @@ struct ExperimentStartFeature {
                 return .none
 
             case .becameInactive:
-                if case .countdown = state.phase { state.phase = .details }
-                return .cancel(id: CancelID.countdown)
+                guard case .countdown = state.phase else {
+                    return .cancel(id: CancelID.countdown)
+                }
+                state.phase = .details
+                let experimentID = state.experiment.id
+                return .merge(
+                    .cancel(id: CancelID.countdown),
+                    .cancel(id: CancelID.openSession),
+                    .run { _ in await watchExperimentClient.cancelPhoneSession(experimentID) }
+                )
 
             case .disappeared:
-                if state.phase != .experiment { state.phase = .details }
+                if state.phase == .experiment {
+                    return .merge(
+                        .cancel(id: CancelID.permission),
+                        .cancel(id: CancelID.countdown)
+                    )
+                }
+                state.phase = .details
                 return .merge(
                     .cancel(id: CancelID.permission),
-                    .cancel(id: CancelID.countdown)
+                    .cancel(id: CancelID.countdown),
+                    .cancel(id: CancelID.openSession)
                 )
             }
         }
@@ -97,7 +113,8 @@ struct ExperimentStartFeature {
         return .merge(
             .run { _ in
                 await watchExperimentClient.requestPhoneSession(experimentID)
-            },
+            }
+            .cancellable(id: CancelID.openSession, cancelInFlight: true),
             .run { send in
                 for _ in 0..<4 {
                     try await Task.sleep(for: .seconds(1))
