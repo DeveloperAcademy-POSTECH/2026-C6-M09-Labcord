@@ -5,14 +5,21 @@
 //  Created by 정홍섭 on 11/17/26.
 //
 
+import LabcordShared
 import SwiftUI
 
 struct ExperimentTimerView: View {
+    let mode: ExperimentMode?
+
     var body: some View {
-        Text("타이머 화면 ㅎㅎ")
+        if mode == .procedure {
+            ProtocolModeTImerView()
+        } else {
+            FreeModeTimerView()
+        }
     }
 }
 
-#Preview {
-    ExperimentTimerView()
+#Preview("자유모드") {
+    ExperimentTimerView(mode: .free)
 }

@@ -1,3 +1,4 @@
+import ComposableArchitecture
 import LabcordDesignSystem
 import LabcordShared
 import LabcordWatchOS
@@ -5,7 +6,17 @@ import SwiftUI
 
 struct ExperimentView: View {
     let experiment: WatchExperimentSummary
+    @State private var store: StoreOf<ExperimentFeature>
     @State private var selectedPage = 1
+
+    init(experiment: WatchExperimentSummary) {
+        self.experiment = experiment
+        _store = State(initialValue: Store(
+            initialState: ExperimentFeature.State(experimentID: experiment.id)
+        ) {
+            ExperimentFeature()
+        })
+    }
 
     var body: some View {
         VStack {
@@ -18,7 +29,7 @@ struct ExperimentView: View {
                 ExperimentRecordView(title: experiment.title)
                     .tag(1)
 
-                ExperimentTimerView()
+                ExperimentTimerView(mode: store.snapshot?.mode)
                     .tag(2)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
@@ -29,6 +40,8 @@ struct ExperimentView: View {
         .padding(.top, 24.5)
         .padding(.horizontal, 6)
         .ignoresSafeArea()
+        .onAppear { store.send(.appeared) }
+        .onDisappear { store.send(.disappeared) }
     }
 }
 
