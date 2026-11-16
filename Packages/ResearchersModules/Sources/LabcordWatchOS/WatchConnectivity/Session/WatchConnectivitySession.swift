@@ -57,65 +57,81 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         if session.isReachable {
             response = try await experiments.send(command, session: session)
         } else {
-            let key = WatchExperimentTransport.backgroundResponseKey
-            var responseContinuation: AsyncStream<WatchExperimentResponse?>.Continuation?
-            let responses = AsyncStream<WatchExperimentResponse?> { continuation in
-                responseContinuation = continuation
-                let observerID = addUserInfoObserver { userInfo in
-                    if let data = userInfo[key] as? Data,
-                       let value = try? JSONDecoder().decode(
-                           WatchExperimentResponse.self, from: data
-                       ), value.requestID == command.requestID {
-                        continuation.yield(value)
-                    } else if let data = userInfo[
-                                  WatchExperimentTransport.listSnapshotKey
-                              ] as? Data,
-                              let summaries = try? JSONDecoder().decode(
-                                  [WatchExperimentSummary].self, from: data
-                              ) {
-                        continuation.yield(WatchExperimentResponse(
-                            requestID: command.requestID, phase: .completed,
-                            experiments: summaries
-                        ))
-                    }
-                }
-                continuation.onTermination = { [weak self] _ in
-                    Task { @MainActor in self?.removeUserInfoObserver(observerID) }
-                }
-            }
-            let continuation = responseContinuation
-            let timeout = Task {
-                try? await Task.sleep(for: .seconds(30))
-                if !Task.isCancelled { continuation?.yield(nil) }
-            }
-            defer {
-                timeout.cancel()
-                continuation?.finish()
-            }
-            let data = try JSONEncoder().encode(command)
-            var context = session.applicationContext
-            context[WatchExperimentTransport.backgroundCommandKey] = data
-            try? session.updateApplicationContext(context)
-            #if !targetEnvironment(simulator)
-            transferUserInfo([WatchExperimentTransport.backgroundCommandKey: data])
-            #endif
-            var iterator = responses.makeAsyncIterator()
-            let received = await withTaskCancellationHandler {
-                await iterator.next()
-            } onCancel: {
-                continuation?.yield(nil)
-            }
-            guard let result = received, let received = result else {
-                try Task.checkCancellation()
-                throw WatchExperimentError.deliveryTimeout
-            }
-            response = received
+            response = try await backgroundResponse(for: command, session: session)
         }
         guard response.version == WatchExperimentCommand.schemaVersion,
               response.phase == .completed, let summaries = response.experiments else {
             throw response.error ?? .invalidPayload
         }
         return summaries.filter { $0.status == .paused }
+    }
+
+    private func backgroundResponse(
+        for command: WatchExperimentCommand,
+        session: WCSession
+    ) async throws -> WatchExperimentResponse {
+        let (responses, continuation) = backgroundResponses(for: command)
+        let timeout = Task {
+            try? await Task.sleep(for: .seconds(30))
+            if !Task.isCancelled { continuation?.yield(nil) }
+        }
+        defer {
+            timeout.cancel()
+            continuation?.finish()
+        }
+        let data = try JSONEncoder().encode(command)
+        var context = session.applicationContext
+        context[WatchExperimentTransport.backgroundCommandKey] = data
+        try? session.updateApplicationContext(context)
+        #if !targetEnvironment(simulator)
+        transferUserInfo([WatchExperimentTransport.backgroundCommandKey: data])
+        #endif
+        var iterator = responses.makeAsyncIterator()
+        let received = await withTaskCancellationHandler {
+            await iterator.next()
+        } onCancel: {
+            continuation?.yield(nil)
+        }
+        guard let result = received, let response = result else {
+            try Task.checkCancellation()
+            throw WatchExperimentError.deliveryTimeout
+        }
+        return response
+    }
+
+    private func backgroundResponses(
+        for command: WatchExperimentCommand
+    ) -> (
+        AsyncStream<WatchExperimentResponse?>,
+        AsyncStream<WatchExperimentResponse?>.Continuation?
+    ) {
+        let key = WatchExperimentTransport.backgroundResponseKey
+        var responseContinuation: AsyncStream<WatchExperimentResponse?>.Continuation?
+        let responses = AsyncStream<WatchExperimentResponse?> { continuation in
+            responseContinuation = continuation
+            let observerID = addUserInfoObserver { userInfo in
+                if let data = userInfo[key] as? Data,
+                   let value = try? JSONDecoder().decode(
+                       WatchExperimentResponse.self, from: data
+                   ), value.requestID == command.requestID {
+                    continuation.yield(value)
+                } else if let data = userInfo[
+                              WatchExperimentTransport.listSnapshotKey
+                          ] as? Data,
+                          let summaries = try? JSONDecoder().decode(
+                              [WatchExperimentSummary].self, from: data
+                          ) {
+                    continuation.yield(WatchExperimentResponse(
+                        requestID: command.requestID, phase: .completed,
+                        experiments: summaries
+                    ))
+                }
+            }
+            continuation.onTermination = { [weak self] _ in
+                Task { @MainActor in self?.removeUserInfoObserver(observerID) }
+            }
+        }
+        return (responses, responseContinuation)
     }
 
     nonisolated private func deliveryState(
