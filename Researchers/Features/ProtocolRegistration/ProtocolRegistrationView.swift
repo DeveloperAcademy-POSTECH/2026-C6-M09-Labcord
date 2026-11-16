@@ -22,10 +22,6 @@ struct ProtocolRegistrationView: View {
                 ProtocolAnalysisProgressView(
                     store: store.scope(state: \.analysisProgress, action: \.analysisProgress),
                     progress: input.analysisProgress,
-                    scanCompleted: !input.selectedInputs.isEmpty
-                        && input.pendingParsingInputs.isEmpty,
-                    extractionCompleted: !input.selectedInputs.isEmpty
-                        && input.pendingInputs.isEmpty,
                     isCancelling: input.analysisCancellationRequested,
                     notice: input.analysisMessage
                 )

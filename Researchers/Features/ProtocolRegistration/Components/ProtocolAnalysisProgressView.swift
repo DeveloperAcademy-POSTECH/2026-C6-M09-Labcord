@@ -6,8 +6,6 @@ struct ProtocolAnalysisProgressView: View {
     @Bindable var store: StoreOf<ProtocolAnalysisProgressFeature>
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let progress: Double
-    let scanCompleted: Bool
-    let extractionCompleted: Bool
     let isCancelling: Bool
     var notice: String?
 
@@ -32,10 +30,8 @@ struct ProtocolAnalysisProgressView: View {
                     .padding(.top, 48)
 
                     VStack(spacing: 11) {
-                        StatusPill("프로토콜 스캔 중...", appearance: .general,
-                                   showIcon: scanCompleted)
-                        StatusPill("타이머 및 용어 추출 중...", appearance: .general,
-                                   showIcon: extractionCompleted)
+                        StatusPill("프로토콜 스캔 중...", appearance: .general, showIcon: false)
+                        StatusPill("타이머 및 용어 추출 중...", appearance: .general, showIcon: false)
                         StatusPill("맞춤형 실험 준비 중...", appearance: .general, showIcon: false)
                     }
                     .padding(.top, 48)
@@ -100,8 +96,6 @@ struct ProtocolAnalysisProgressView: View {
             ProtocolAnalysisProgressFeature()
         },
         progress: 0.5,
-        scanCompleted: false,
-        extractionCompleted: false,
         isCancelling: false
     )
     .id(fontRegistration)

@@ -37,7 +37,7 @@ struct TimePickerWheel: UIViewRepresentable {
 
         if coordinator.lastSelectedValue != selection.wrappedValue {
             picker.selectRow(
-                coordinator.centerRow(for: min(max(selection.wrappedValue, 0), count - 1)),
+                min(max(selection.wrappedValue, 0), count - 1),
                 inComponent: 0, animated: false
             )
             coordinator.lastSelectedValue = selection.wrappedValue
@@ -55,7 +55,6 @@ struct TimePickerWheel: UIViewRepresentable {
 
     @MainActor
     final class Coordinator: NSObject, UIPickerViewDataSource, UIPickerViewAccessibilityDelegate {
-        private let cycleCount = 9
         private var parent: TimePickerWheel
         private var color: UIColor?
         private var adjacentColor: UIColor?
@@ -81,14 +80,10 @@ struct TimePickerWheel: UIViewRepresentable {
 
         func numberOfComponents(in pickerView: UIPickerView) -> Int { 1 }
 
-        func centerRow(for value: Int) -> Int {
-            (cycleCount / 2) * parent.count + value
-        }
-
         func pickerView(
             _ pickerView: UIPickerView, numberOfRowsInComponent component: Int
         ) -> Int {
-            parent.count * cycleCount
+            parent.count
         }
 
         func pickerView(
@@ -100,7 +95,7 @@ struct TimePickerWheel: UIViewRepresentable {
         func pickerView(
             _ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int
         ) -> String? {
-            String(format: "%02d", row % parent.count)
+            String(format: "%02d", row)
         }
 
         func pickerView(
@@ -124,7 +119,7 @@ struct TimePickerWheel: UIViewRepresentable {
             paragraph.alignment = .center
             let tracking: CGFloat = distance == 0 ? -0.26 : (distance == 1 ? -0.43 : 0)
             label.attributedText = NSAttributedString(
-                string: String(format: "%02d", row % parent.count),
+                string: String(format: "%02d", row),
                 attributes: [
                     .font: font,
                     .foregroundColor: rowColor ?? UIColor.label,
@@ -138,14 +133,8 @@ struct TimePickerWheel: UIViewRepresentable {
         func pickerView(
             _ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int
         ) {
-            let value = row % parent.count
-            lastSelectedValue = value
-            parent.selection.transaction(parent.selection.transaction).wrappedValue = value
-            if row < parent.count * 2 || row >= parent.count * (cycleCount - 2) {
-                pickerView.selectRow(
-                    centerRow(for: value), inComponent: component, animated: false
-                )
-            }
+            lastSelectedValue = row
+            parent.selection.transaction(parent.selection.transaction).wrappedValue = row
             pickerView.reloadAllComponents()
         }
 
