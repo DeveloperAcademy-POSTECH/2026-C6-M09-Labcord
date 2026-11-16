@@ -6,11 +6,13 @@ import SwiftUI
 struct ExperimentStartView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var store: StoreOf<ExperimentStartFeature>
+    let onExperimentStarted: () -> Void
 
-    init(experiment: WatchExperimentSummary) {
+    init(experiment: WatchExperimentSummary, onExperimentStarted: @escaping () -> Void) {
         _store = State(initialValue: Store(initialState: .init(experiment: experiment)) {
             ExperimentStartFeature()
         })
+        self.onExperimentStarted = onExperimentStarted
     }
 
     var body: some View {
@@ -65,13 +67,8 @@ struct ExperimentStartView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .navigationDestination(
-            isPresented: Binding(
-                get: { store.phase == .experiment },
-                set: { if !$0 { store.send(.experimentDismissed) } }
-            )
-        ) {
-            ExperimentView(experiment: store.experiment)
+        .onChange(of: store.phase) { _, phase in
+            if phase == .experiment { onExperimentStarted() }
         }
         .onChange(of: scenePhase) { _, phase in
             if phase != .active { store.send(.becameInactive) }
@@ -111,6 +108,6 @@ private struct CountdownRingView: View {
                 title: "새 실험(1)",
                 status: .ready
             )
-        )
+        ) { }
     }
 }

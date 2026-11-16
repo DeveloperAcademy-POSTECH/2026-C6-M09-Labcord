@@ -23,7 +23,6 @@ struct ExperimentStartFeature {
         case permissionUpdated(PermissionStatus)
         case permissionRecheckTapped
         case countdownTick
-        case experimentDismissed
         case becameInactive
         case disappeared
     }
@@ -76,11 +75,6 @@ struct ExperimentStartFeature {
                 case 1: state.phase = .experiment
                 case let .some(value): state.phase = .countdown(value - 1)
                 }
-                return .none
-
-            case .experimentDismissed:
-                guard state.phase == .experiment else { return .none }
-                state.phase = .details
                 return .none
 
             case .becameInactive:
