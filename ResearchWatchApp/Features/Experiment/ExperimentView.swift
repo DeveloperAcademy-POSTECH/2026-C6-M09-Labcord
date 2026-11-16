@@ -9,7 +9,7 @@ struct ExperimentView: View {
 
     var body: some View {
         VStack {
-            Text("실험 중")
+            Text(selectedPage == 1 ? "실험 중" : "타이머")
                 .font(.system(size: 16, weight: .medium))
                 .foregroundStyle(Color("General/Brand/Primary"))
                 .padding(.bottom, WatchScreenMetrics.scaledHeight(4.5))
@@ -19,7 +19,6 @@ struct ExperimentView: View {
                     .tag(1)
 
                 ExperimentTimerView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .tag(2)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
