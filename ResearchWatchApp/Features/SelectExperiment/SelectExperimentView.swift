@@ -30,7 +30,7 @@ struct SelectExperimentView: View {
                     .padding(.vertical, 8)
                     .padding(.horizontal, 10)
                     .multilineTextAlignment(.center)
-                    .font(.headline)
+                    .font(.headline.weight(.semibold))
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                     .padding(.top, 26)
             } else {
