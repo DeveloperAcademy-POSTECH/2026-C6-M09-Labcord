@@ -78,6 +78,16 @@
 			);
 			target = 8E1BA53530A84FFD00544554 /* LabcordWidgetExtension */;
 		};
+		8E64FD6730AA900E00ABEF04 /* Exceptions for "ResearchWatchApp" folder in "Researchers" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Features/Experiment/ExperimentFeature.swift,
+				Features/Experiment/ExperimentView.swift,
+				Features/ExperimentStart/ExperimentStartFeature.swift,
+				Features/ExperimentStart/ExperimentStartView.swift,
+			);
+			target = 8E0691143080743D0081547E /* Researchers */;
+		};
 		BA1300013000000000000001 /* Exceptions for "Researchers" folder in "Researchers" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -114,6 +124,7 @@
 		8E2E272A3084877E0043EEB3 /* ResearchWatchApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
+				8E64FD6730AA900E00ABEF04 /* Exceptions for "ResearchWatchApp" folder in "Researchers" target */,
 				BA1300013000000000000002 /* Exceptions for "ResearchWatchApp" folder in "ResearchWatch Watch App" target */,
 			);
 			path = ResearchWatchApp;
@@ -689,7 +700,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ResearchWatchApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Labcord;
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "실험 중 음성을 녹음하고 기록하기 위해 마이크 접근이 필요합니다.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "실험 중 음성 기록을 하려면 마이크 접근이 필요해요.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.researchers.Researchers;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -724,7 +735,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ResearchWatchApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Labcord;
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "실험 중 음성을 녹음하고 기록하기 위해 마이크 접근이 필요합니다.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "실험 중 음성 기록을 하려면 마이크 접근이 필요해요.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.researchers.Researchers;
 				LD_RUNPATH_SEARCH_PATHS = (
