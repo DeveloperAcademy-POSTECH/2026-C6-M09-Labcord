@@ -9,7 +9,9 @@ struct ResearchWatchApp: App {
 
     var body: some Scene {
         WindowGroup {
-            SelectExperimentView()
+            NavigationStack {
+                SelectExperimentView()
+            }
         }
         .backgroundTask(.watchConnectivity) { [connectivity] in
             await connectivity.waitForPendingUserInfo()
