@@ -118,7 +118,7 @@ struct SessionTimerView: View {
 
             VStack(spacing: 12) {
                 ScrollView(.horizontal) {
-                    HStack(spacing: 0) {
+                    HStack(spacing: tileSpacing) {
                         ForEach(0..<pageCount, id: \.self) { page in
                             let start = page * itemsPerPage
                             let pageItems = Array(
@@ -143,7 +143,7 @@ struct SessionTimerView: View {
                     .scrollTargetLayout()
                 }
                 .scrollIndicators(.hidden)
-                .scrollTargetBehavior(.paging)
+                .scrollTargetBehavior(.viewAligned(limitBehavior: .alwaysByOne))
                 .scrollPosition(id: $selectedPage)
                 .clipped()
                 .frame(height: gridHeight)
