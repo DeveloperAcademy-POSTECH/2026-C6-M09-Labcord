@@ -7,6 +7,8 @@
 
 import SwiftUI
 import LabcordShared
+import LabcordWatchOS
+import LabcordDesignSystem
 
 struct FreeModeTimerView: View {
     let timers: [WatchTimerSnapshot]
@@ -16,12 +18,30 @@ struct FreeModeTimerView: View {
     }
 
     var body: some View {
-        if hasRunningTimer {
-            ProgressTimerView()
-        } else {
-            Text("현재 진행 중인\n타이머가 없어요.")
-                .multilineTextAlignment(.center)
+        ScrollView {
+            VStack(alignment: .leading, spacing: WatchScreenMetrics.scaledHeight(8)) {
+                Text("진행 중인 타이머")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.white)
+                    .frame(
+                        height: WatchScreenMetrics.scaledHeight(16),
+                        alignment: .topLeading
+                    )
+                
+                if hasRunningTimer {
+                    ProgressTimerView()
+                } else {
+                    Text("현재 진행 중인\n타이머가 없어요.")
+                        .foregroundStyle(Color(.Colors.Labels.secondary))
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, WatchScreenMetrics.scaledHeight(8))
+                        .font(.system(size: 15, weight: .regular))
+                        .multilineTextAlignment(.center)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .padding(.horizontal, 9.5)
     }
 }
 

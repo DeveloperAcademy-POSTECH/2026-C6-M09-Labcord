@@ -42,6 +42,7 @@ struct ExperimentRecordView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.bottom, WatchScreenMetrics.scaledHeight(23))
+
             VStack(spacing: 4) {
                 Button("일시정지", systemImage: "pause.fill", action: {})
                     .font(.system(size: 18.5, weight: .medium))
