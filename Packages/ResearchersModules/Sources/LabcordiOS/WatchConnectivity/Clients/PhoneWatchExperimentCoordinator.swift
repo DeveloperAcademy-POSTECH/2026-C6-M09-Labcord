@@ -16,6 +16,7 @@ public final class PhoneWatchExperimentCoordinator {
         case command(WatchExperimentCommand)
         case started(UUID)
         case navigation(WatchExperimentCommand)
+        case openSessionRequested
         case recordChanged(UUID)
     }
 
@@ -152,7 +153,7 @@ public final class PhoneWatchExperimentCoordinator {
         }
         if command.operation == .list {
             do {
-                let summaries = try pausedExperiments()
+                let summaries = try availableExperiments()
                 return WatchExperimentResponse(
                     requestID: command.requestID, phase: .completed, experiments: summaries,
                     screen: refreshedScreen()
@@ -170,10 +171,10 @@ public final class PhoneWatchExperimentCoordinator {
         return nil
     }
 
-    func pausedExperiments() throws -> [WatchExperimentSummary] {
+    func availableExperiments() throws -> [WatchExperimentSummary] {
         try client.load().compactMap { entry in
             try client.watchState(entry.id)?.experiment
-        }.filter { $0.status == .paused }
+        }.filter { $0.status != .completed }
     }
 
     func requestStatus(_ command: WatchExperimentCommand) -> WatchExperimentResponse {
