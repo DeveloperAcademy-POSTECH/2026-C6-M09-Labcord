@@ -22,14 +22,11 @@ struct ExperimentRow: View {
 
             Spacer(minLength: 6)
 
-            Button {} label: {
-                Image(systemName: "play.fill")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.white)
-                    .frame(width: 24, height: 24)
-                    .background(Color("General/Brand/Primary"), in: Circle())
-            }
-            .buttonStyle(.plain)
+            Image(systemName: "play.fill")
+                .font(.system(size: 12))
+                .foregroundStyle(.white)
+                .frame(width: 24, height: 24)
+                .background(Color("General/Brand/Primary"), in: Circle())
         }
         .padding(.vertical, 4)
         .padding(.horizontal, 9.5)
