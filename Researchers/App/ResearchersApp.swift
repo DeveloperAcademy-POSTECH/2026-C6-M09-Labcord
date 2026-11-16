@@ -7,6 +7,7 @@ import SwiftUI
 @main
 struct ResearchersApp: App {
     @UIApplicationDelegateAdaptor(OrientationAppDelegate.self) private var orientationDelegate
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var isSplashActive = true
 
@@ -22,18 +23,31 @@ struct ResearchersApp: App {
             Group {
                 if isSplashActive {
                     SplashView()
-                        .onAppear {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                                withAnimation {
-                                    self.isSplashActive = false
-                                }
-                            }
+                        .task(id: scenePhase) {
+                            guard scenePhase == .active else { return }
+                            try? await Task.sleep(for: .seconds(1))
+                            guard !Task.isCancelled else { return }
+                            withAnimation { isSplashActive = false }
+                            PhoneIntentRuntime.shared.store.send(.watchSplashChanged(true))
                         }
                 } else {
                     AppView()
                 }
             }
             .preferredColorScheme(.light)
+            .onChange(of: scenePhase) { _, phase in
+                let store = PhoneIntentRuntime.shared.store
+                if phase == .active {
+                    if PhoneWatchExperimentCoordinator.shared.hasPendingOpenSessionRequest {
+                        store.send(.watchSplashChanged(false))
+                        isSplashActive = true
+                    } else if !isSplashActive {
+                        store.send(.watchSplashChanged(true))
+                    }
+                } else {
+                    store.send(.watchSplashChanged(false))
+                }
+            }
             .onOpenURL { url in
                 guard let experimentID = ExperimentLiveActivityURL.experimentID(from: url)
                 else { return }
