@@ -29,7 +29,10 @@ struct ExperimentView: View {
                 ExperimentRecordView(title: experiment.title)
                     .tag(1)
 
-                ExperimentTimerView(mode: store.snapshot?.mode)
+                ExperimentTimerView(
+                    mode: store.snapshot?.mode,
+                    timers: store.snapshot?.timers ?? []
+                )
                     .tag(2)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
