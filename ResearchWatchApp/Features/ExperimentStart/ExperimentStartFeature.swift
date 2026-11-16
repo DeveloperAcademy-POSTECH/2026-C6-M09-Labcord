@@ -1,20 +1,20 @@
 import ComposableArchitecture
 import LabcordShared
 
+enum ExperimentStartPhase: Equatable {
+    case details
+    case requestingPermission
+    case permissionDenied
+    case countdown(Int?)
+    case experiment
+}
+
 @Reducer
 struct ExperimentStartFeature {
     @ObservableState
     struct State: Equatable {
-        enum Phase: Equatable {
-            case details
-            case requestingPermission
-            case permissionDenied
-            case countdown(Int?)
-            case experiment
-        }
-
         let experiment: WatchExperimentSummary
-        var phase: Phase = .details
+        var phase: ExperimentStartPhase = .details
     }
 
     enum Action {

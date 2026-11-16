@@ -3,16 +3,16 @@ import Foundation
 import LabcordiOS
 import LabcordShared
 
+enum WatchSplashPhase: Equatable {
+    case waiting
+    case showing
+    case ready
+}
+
 @Reducer
 struct AppFeature {
     @ObservableState
     struct State: Equatable {
-        enum WatchSplashPhase: Equatable {
-            case waiting
-            case showing
-            case ready
-        }
-
         @Shared(.appStorage("onboardingHasCompleted")) var hasCompletedOnboarding = false
         var onboarding: OnboardingFeature.State?
         var watchPendingStartID: UUID?

@@ -171,12 +171,6 @@ public final class PhoneWatchExperimentCoordinator {
         return nil
     }
 
-    func availableExperiments() throws -> [WatchExperimentSummary] {
-        try client.load().compactMap { entry in
-            try client.watchState(entry.id)?.experiment
-        }.filter { $0.status != .completed }
-    }
-
     func requestStatus(_ command: WatchExperimentCommand) -> WatchExperimentResponse {
         guard let id = command.targetID else { return failure(command, .invalidPayload) }
         if let original = requests[id]?.command ?? journal?.entries[id]?.command,
