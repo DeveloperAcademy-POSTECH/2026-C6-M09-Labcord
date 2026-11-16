@@ -23,25 +23,18 @@ struct ResearchersApp: App {
             Group {
                 if isSplashActive {
                     SplashView()
+                        .preferredColorScheme(.light)
                         .task(id: scenePhase) {
                             guard scenePhase == .active else { return }
                             try? await Task.sleep(for: .seconds(1))
                             guard !Task.isCancelled else { return }
                             withAnimation { isSplashActive = false }
                             PhoneIntentRuntime.shared.store.send(.watchSplashChanged(true))
-                        .preferredColorScheme(.light)
-                        .onAppear {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                                withAnimation {
-                                    self.isSplashActive = false
-                                }
-                            }
                         }
                 } else {
                     AppView()
                 }
             }
-            .preferredColorScheme(.light)
             .onChange(of: scenePhase) { _, phase in
                 let store = PhoneIntentRuntime.shared.store
                 if phase == .active {
