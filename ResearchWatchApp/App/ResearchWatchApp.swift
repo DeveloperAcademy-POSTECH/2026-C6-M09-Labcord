@@ -83,6 +83,10 @@ struct ResearchWatchApp: App {
                     }
                 }
                 .onChange(of: path) { previous, current in
+                    if case let .some(.experiment(entered)) = current.last,
+                       previous.last != current.last {
+                        Task { await watchExperimentClient.enterPhoneSession(entered.id) }
+                    }
                     if case .some(.sort) = previous.last { return }
                     if case let .some(.experiment(experiment)) = previous.last {
                         let stillInExperiment: Bool

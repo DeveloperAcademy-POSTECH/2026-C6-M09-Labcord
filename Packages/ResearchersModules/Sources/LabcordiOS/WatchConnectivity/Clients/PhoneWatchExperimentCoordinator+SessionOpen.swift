@@ -27,10 +27,14 @@ extension PhoneWatchExperimentCoordinator {
                previous.request.experimentID != request.experimentID { return }
         }
         let action = request.action ?? .open
-        storeOpenRequest(.init(request: request, handled: action != .open))
+        let opensSession = action == .open || action == .enteredExperiment
+        storeOpenRequest(.init(request: request, handled: !opensSession))
         switch action {
         case .open:
             commandSubscriber?.yield(.openSessionRequested)
+        case .enteredExperiment:
+            commandSubscriber?.yield(.openSessionRequested)
+            commandSubscriber?.yield(.watchEnteredExperiment(request.experimentID))
         case .leftExperiment:
             guard currentScreen.destination == .experiment,
                   currentScreen.experimentID == request.experimentID,

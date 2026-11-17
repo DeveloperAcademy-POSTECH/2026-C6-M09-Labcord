@@ -23,6 +23,7 @@ public final class PhoneWatchExperimentCoordinator {
         case started(UUID)
         case navigation(WatchExperimentCommand)
         case openSessionRequested
+        case watchEnteredExperiment(UUID)
         case closeCommitted(UUID, WatchExperimentCommand.Operation)
         case recordChanged(UUID)
     }

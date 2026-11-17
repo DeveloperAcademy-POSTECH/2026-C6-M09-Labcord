@@ -48,6 +48,10 @@ struct ExperimentSessionView: View {
     private var isVideoActivityVisible: Bool {
         verticalSizeClass != .compact && isVideoRecording
     }
+    private var isWatchConnectedActivityVisible: Bool {
+        verticalSizeClass != .compact && store.watchConnectedNoticeID != nil
+            && !isPortraitVoiceActivityVisible && !isVideoActivityVisible
+    }
 
     var body: some View {
         Group {
@@ -89,6 +93,7 @@ struct ExperimentSessionView: View {
         .navigationBarBackButtonHidden()
         .toolbarVisibility(
             isPortraitVoiceActivityVisible || isVideoActivityVisible || isVideoOverlayVisible
+                || isWatchConnectedActivityVisible
                 ? .hidden : .automatic,
             for: .statusBar
         )
@@ -160,6 +165,18 @@ struct ExperimentSessionView: View {
                 }
                 .ignoresSafeArea(.container, edges: .top)
                 .transition(.opacity)
+            } else if isWatchConnectedActivityVisible,
+                      let noticeID = store.watchConnectedNoticeID {
+                GeometryReader { geometry in
+                    WatchConnectedLiveActivityView(availableWidth: geometry.size.width) {
+                        store.send(.watchConnectedNoticeDismissed(noticeID))
+                    }
+                    .id(noticeID)
+                    .padding(.top, 14)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                }
+                .ignoresSafeArea(.container, edges: .top)
+                .transition(.opacity)
             }
         }
         .animation(
@@ -169,6 +186,10 @@ struct ExperimentSessionView: View {
         .animation(
             reduceMotion ? nil : .spring(duration: 0.3, bounce: 0.08),
             value: isVideoActivityVisible
+        )
+        .animation(
+            reduceMotion ? nil : .spring(duration: 0.3, bounce: 0.08),
+            value: isWatchConnectedActivityVisible
         )
         .modifier(
             VoiceRecordToastOverlay(

@@ -54,6 +54,13 @@ extension AppFeature {
             case .watchEvent(.openSessionRequested):
                 return .none
 
+            case let .watchEvent(.watchEnteredExperiment(experimentID)):
+                guard let id = state.path.ids.last,
+                      state.path[id: id, case: \.session]?.experimentID == experimentID else {
+                    return .none
+                }
+                return .send(.path(.element(id: id, action: .session(.watchConnected))))
+
             case let .watchEvent(.closeCommitted(experimentID, operation)):
                 guard let id = state.path.ids.last,
                       state.path[id: id, case: \.session]?.experimentID == experimentID else {

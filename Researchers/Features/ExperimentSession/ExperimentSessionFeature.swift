@@ -17,6 +17,7 @@ struct ExperimentSessionFeature {
         var sharedStage: WatchScreenSnapshot.Stage?
         var sharedCountdownEndsAt: Date?
         var isGestureGuidePresented = false
+        var watchConnectedNoticeID: UUID?
         var isSidePanelExpanded = true
         var lastScreenRecording: WatchScreenRecording?
         var voiceScreenElapsed: TimeInterval?
@@ -56,6 +57,8 @@ struct ExperimentSessionFeature {
         case watchControlFinished(UUID, WatchExperimentError?)
         case clearScreenRecording(UUID, WatchRecordSnapshot.Phase)
         case gestureGuidePresented(Bool)
+        case watchConnected
+        case watchConnectedNoticeDismissed(UUID)
         case sidePanelExpanded(Bool)
         case beginRemotePreview
         case cancelRemotePreview
@@ -121,6 +124,14 @@ private extension ExperimentSessionFeature {
     var sessionReducer: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
+            case .watchConnected:
+                state.watchConnectedNoticeID = uuid()
+                return .none
+            case let .watchConnectedNoticeDismissed(noticeID):
+                if state.watchConnectedNoticeID == noticeID {
+                    state.watchConnectedNoticeID = nil
+                }
+                return .none
             case .clearScreenRecording, .gestureGuidePresented, .sidePanelExpanded,
                  .beginRemotePreview, .cancelRemotePreview,
                  .watchControl, .watchResourcesReleased, .watchControlFinished,
