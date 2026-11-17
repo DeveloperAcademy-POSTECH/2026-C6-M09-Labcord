@@ -1,17 +1,25 @@
 import ComposableArchitecture
 import LabcordDesignSystem
 import LabcordShared
+import LabcordWatchOS
 import SwiftUI
 
 struct ExperimentStartView: View {
+    @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
     @State private var store: StoreOf<ExperimentStartFeature>
+    let onCountdownChanged: (Bool) -> Void
     let onExperimentStarted: () -> Void
 
-    init(experiment: WatchExperimentSummary, onExperimentStarted: @escaping () -> Void) {
+    init(
+        experiment: WatchExperimentSummary,
+        onCountdownChanged: @escaping (Bool) -> Void = { _ in },
+        onExperimentStarted: @escaping () -> Void
+    ) {
         _store = State(initialValue: Store(initialState: .init(experiment: experiment)) {
             ExperimentStartFeature()
         })
+        self.onCountdownChanged = onCountdownChanged
         self.onExperimentStarted = onExperimentStarted
     }
 
@@ -46,7 +54,7 @@ struct ExperimentStartView: View {
                 .padding(.top, 14.5)
                 .padding(.bottom, 10)
 
-            case .requestingPermission:
+            case .checkingActiveExperiment, .requestingPermission:
                 Color.clear
 
             case .permissionDenied:
@@ -68,13 +76,72 @@ struct ExperimentStartView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .overlay {
+            if store.isActiveExperimentConflictPresented {
+                ActiveExperimentConflictOverlay {
+                    closeActiveExperimentConflict()
+                }
+                .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: store.isActiveExperimentConflictPresented)
+        .navigationBarBackButtonHidden(store.isActiveExperimentConflictPresented)
+        .toolbar {
+            if store.isActiveExperimentConflictPresented {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        closeActiveExperimentConflict()
+                    } label: {
+                        Image(systemName: "xmark")
+                    }
+                    .accessibilityLabel("닫기")
+                }
+            }
+        }
         .onChange(of: store.phase) { _, phase in
+            if case .countdown = phase {
+                onCountdownChanged(true)
+            } else {
+                onCountdownChanged(false)
+            }
             if phase == .experiment { onExperimentStarted() }
         }
         .onChange(of: scenePhase) { _, phase in
             if phase != .active { store.send(.becameInactive) }
         }
         .onDisappear { store.send(.disappeared) }
+    }
+}
+
+private extension ExperimentStartView {
+    func closeActiveExperimentConflict() {
+        store.send(.activeExperimentConflictDismissed)
+        dismiss()
+    }
+}
+
+private struct ActiveExperimentConflictOverlay: View {
+    let onDismiss: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black
+                .ignoresSafeArea()
+
+            VStack(spacing: WatchScreenMetrics.scaledHeight(4)) {
+                Text("다른 실험이\n진행 중이에요")
+                    .font(.headline)
+                    .multilineTextAlignment(.center)
+
+                Spacer()
+
+                Button("확인", action: onDismiss)
+            }
+            .padding(.horizontal, 9.5)
+            .padding(.bottom, 10)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityAddTraits(.isModal)
     }
 }
 

@@ -62,6 +62,11 @@ extension PhoneWatchExperimentCoordinator {
                 didHandleOpenSession(id)
                 return nil
             }
+
+            guard try !hasRunningExperiment(otherThan: id) else {
+                didHandleOpenSession(id)
+                return nil
+            }
             return id
         } catch { return nil }
     }
@@ -71,6 +76,13 @@ extension PhoneWatchExperimentCoordinator {
               !stored.handled else { return }
         stored.handled = true
         storeOpenRequest(stored)
+    }
+
+    private func hasRunningExperiment(otherThan id: UUID) throws -> Bool {
+        try client.load().contains { entry in
+            guard entry.id != id else { return false }
+            return try client.watchState(entry.id)?.experiment.status == .running
+        }
     }
 
     private func reconcileLatestSessionOpenRequest() {

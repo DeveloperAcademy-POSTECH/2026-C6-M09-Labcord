@@ -26,6 +26,7 @@ struct ResearchWatchApp: App {
     @State private var path: [Route] = []
     @State private var remoteScreen: WatchScreenSnapshot?
     @State private var pendingPhoneReentryID: UUID?
+    @State private var countdownExperimentID: UUID?
     @State private var phoneResultReadyIDs: Set<UUID> = []
     @State private var isVoiceRecordPresented = false
     @State private var suppressLeaveNotification = false
@@ -44,9 +45,19 @@ struct ResearchWatchApp: App {
                 .navigationDestination(for: Route.self) { route in
                     switch route {
                     case let .start(experiment):
-                        ExperimentStartView(experiment: experiment) {
-                            path = [.experiment(experiment)]
-                        }
+                        ExperimentStartView(
+                            experiment: experiment,
+                            onCountdownChanged: { isCountingDown in
+                                if isCountingDown {
+                                    countdownExperimentID = experiment.id
+                                } else if countdownExperimentID == experiment.id {
+                                    countdownExperimentID = nil
+                                }
+                            },
+                            onExperimentStarted: {
+                                path = [.experiment(experiment)]
+                            }
+                        )
                         .id(experiment.id)
                     case let .experiment(experiment):
                         ExperimentView(
@@ -165,7 +176,9 @@ struct ResearchWatchApp: App {
     }
 
     private func canOpenRemoteExperiment(_ id: UUID) -> Bool {
-        if case let .some(.start(selected)) = path.last { return selected.id == id }
+        if case let .some(.start(selected)) = path.last {
+            return selected.id == id && countdownExperimentID != id
+        }
         return path.isEmpty && pendingPhoneReentryID == id
     }
 
