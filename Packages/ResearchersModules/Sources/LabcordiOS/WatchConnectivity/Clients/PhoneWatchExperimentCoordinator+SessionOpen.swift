@@ -1,6 +1,7 @@
 import Foundation
 import LabcordShared
 import UIKit
+import UserNotifications
 
 private struct StoredWatchSessionOpenRequest: Codable {
     let request: WatchSessionOpenRequest
@@ -25,9 +26,29 @@ extension PhoneWatchExperimentCoordinator {
             if request.action == .cancel,
                previous.request.experimentID != request.experimentID { return }
         }
-        let cancelled = request.action == .cancel
-        storeOpenRequest(.init(request: request, handled: cancelled))
-        if !cancelled { commandSubscriber?.yield(.openSessionRequested) }
+        let action = request.action ?? .open
+        storeOpenRequest(.init(request: request, handled: action != .open))
+        switch action {
+        case .open:
+            commandSubscriber?.yield(.openSessionRequested)
+        case .leftExperiment:
+            guard currentScreen.destination == .experiment,
+                  currentScreen.experimentID == request.experimentID,
+                  (try? client.watchState(request.experimentID)?.experiment.status) == .running
+            else { return }
+            let content = UNMutableNotificationContent()
+            content.title = "Apple Watch 연결이 끊어졌어요"
+            content.body = "iPhone에서 기록해 주세요. "
+                + "Apple Watch를 사용하려면 다시 연결해 주세요."
+            content.sound = .default
+            let notification = UNNotificationRequest(
+                identifier: "watch-left-\(request.experimentID.uuidString)",
+                content: content, trigger: nil
+            )
+            Task { try? await UNUserNotificationCenter.current().add(notification) }
+        case .cancel:
+            break
+        }
     }
 
     public func pendingOpenSessionID() -> UUID? {
