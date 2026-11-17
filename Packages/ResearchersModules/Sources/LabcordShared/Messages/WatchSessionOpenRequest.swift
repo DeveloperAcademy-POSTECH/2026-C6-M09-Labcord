@@ -4,6 +4,7 @@ public struct WatchSessionOpenRequest: Codable, Sendable {
     public enum Action: String, Codable, Sendable {
         case open
         case cancel
+        case leftExperiment
     }
 
     public nonisolated static let messageKey = "experiment.openSession.v1"
