@@ -166,10 +166,12 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         observerStore.deliverUserInfo(userInfo)
         let record = userInfo[WatchRecordTransport.snapshotKey] as? Data
         let audio = userInfo[PhoneWatchAudioService.messageKey] as? Data
+        let voiceStatus = userInfo[WatchVoiceLiveStatus.messageKey] as? Data
         Task { @MainActor in
             PhoneWatchExperimentCoordinator.shared.receiveOpenSessionRequest(openRequest)
             receiveBackgroundListCommand(backgroundCommand)
             if let record { records.receive(record) }
+            if let voiceStatus { PhoneWatchAudioService.shared.receiveLiveStatus(voiceStatus) }
             if let audio {
                 let receipt = await PhoneWatchAudioService.shared.reply(to: audio)
                 if !receipt.isEmpty {
