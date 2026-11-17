@@ -36,6 +36,7 @@ struct PhotoFeature {
         case captured(UUID, Data)
         case captureFailed(UUID, String)
         case retakeRequested
+        case watchCancelRequested(UUID)
         case saveRequested
         case autoSaveElapsed(UUID)
         case saved(UUID)
@@ -190,17 +191,15 @@ struct PhotoFeature {
 
             case .retakeRequested:
                 guard !state.isSaving else { return .none }
-                state.pendingWatchCaptureID = nil
-                state.requestedRecordID = nil
-                state.requiresExternalConfirmation = false
-                state.capturedData = nil
-                state.recordID = nil
-                state.recordedAt = nil
-                state.saveError = nil
-                return .merge(
-                    cancelScheduledCapture(in: &state),
-                    .cancel(id: CancelID.autoSave)
-                )
+                return resetPhoto(in: &state)
+
+            case let .watchCancelRequested(id):
+                guard !state.isSaving,
+                      state.requestedRecordID == id || state.recordID == id
+                        || state.capturedData != nil else {
+                    return .none
+                }
+                return resetPhoto(in: &state)
 
             case .saveRequested:
                 return savePhoto(state: &state)
@@ -239,6 +238,20 @@ struct PhotoFeature {
                 return .none
             }
         }
+    }
+
+    private func resetPhoto(in state: inout State) -> Effect<Action> {
+        state.pendingWatchCaptureID = nil
+        state.requestedRecordID = nil
+        state.requiresExternalConfirmation = false
+        state.capturedData = nil
+        state.recordID = nil
+        state.recordedAt = nil
+        state.saveError = nil
+        return .merge(
+            cancelScheduledCapture(in: &state),
+            .cancel(id: CancelID.autoSave)
+        )
     }
 
     private func savePhoto(state: inout State) -> Effect<Action> {
