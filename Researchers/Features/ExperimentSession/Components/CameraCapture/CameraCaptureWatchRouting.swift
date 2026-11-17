@@ -98,7 +98,8 @@ extension CameraCaptureFeature {
             )
         case .video(.recorded):
             let preview = watchReply(
-                command, phase: .processing, kind: .video, recordPhase: .previewing
+                command, phase: .processing, kind: .video, recordPhase: .review,
+                canAutoSave: true
             )
             return .merge(preview, finishWatchStop(state: &state))
         case .video(.playbackFinished):
@@ -218,8 +219,10 @@ extension CameraCaptureFeature {
             return .send(.video(.watchRecordRequested(id)))
         case let .stopVideo(id):
             guard state.watchVideoRequest.map(recordID) == id,
-                  state.video.phase != .idle else { throw WatchExperimentError.invalidState }
-            if case .preview = state.video.phase {
+                  state.watchStopRequest == nil else { throw WatchExperimentError.invalidState }
+            switch state.video.phase {
+            case .starting, .recording: break
+            case .idle, .preview:
                 throw WatchExperimentError.invalidState
             }
             state.watchStopRequest = command
