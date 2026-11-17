@@ -48,6 +48,7 @@ struct VoiceRecordView: View {
             case .transcript:
                 TranScriptView(
                     transcript: store.transcript,
+                    isSavePrompt: false,
                     autoSaveSeconds: store.autoSaveSeconds,
                     onRerecord: { store.send(.rerecordTapped) },
                     onSave: { store.send(.saveTapped) }
