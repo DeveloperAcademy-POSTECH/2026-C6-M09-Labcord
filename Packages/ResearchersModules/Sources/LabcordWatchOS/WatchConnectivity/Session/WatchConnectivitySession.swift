@@ -72,26 +72,31 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
     public func loadExperiments() async throws -> [WatchExperimentSummary] {
         activate()
         guard let session else { throw WatchExperimentError.notReachable }
-        if let data = session.receivedApplicationContext[
+        let cachedData = session.receivedApplicationContext[
             WatchExperimentTransport.listSnapshotKey
-        ] as? Data,
-           let summaries = try? JSONDecoder().decode(
-               [WatchExperimentSummary].self, from: data
-           ) {
-            return summaries.filter { $0.status != .completed }
+        ] as? Data
+        let cached = cachedData.flatMap {
+            try? JSONDecoder().decode([WatchExperimentSummary].self, from: $0)
         }
 
         for _ in 0..<30 where session.activationState != .activated {
             try await Task.sleep(for: .milliseconds(100))
         }
         guard session.activationState == .activated else {
+            if let cached { return cached.filter { $0.status != .completed } }
             throw WatchExperimentError.notReachable
         }
         let command = WatchExperimentCommand(operation: .list)
         let response: WatchExperimentResponse
         if session.isReachable {
-            response = try await experiments.send(command, session: session)
+            do {
+                response = try await experiments.send(command, session: session)
+            } catch {
+                if let cached { return cached.filter { $0.status != .completed } }
+                response = try await backgroundResponse(for: command, session: session)
+            }
         } else {
+            if let cached { return cached.filter { $0.status != .completed } }
             response = try await backgroundResponse(for: command, session: session)
         }
         guard response.version == WatchExperimentCommand.schemaVersion,
