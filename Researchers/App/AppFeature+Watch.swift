@@ -63,10 +63,10 @@ extension AppFeature {
                 }
                 let photo = session.capture.photo
                 watchPhotoCancelLog.info(
-                    "routed \(recordID.uuidString, privacy: .public) review \(photo.capturedData != nil)"
+                    "r \(recordID.uuidString, privacy: .public) ready \(photo.capturedData != nil)"
                 )
                 watchPhotoCancelLog.info(
-                    "state scheduled \(photo.isScheduled) watchOrigin \(photo.requiresExternalConfirmation)"
+                    "scheduled \(photo.isScheduled) external \(photo.requiresExternalConfirmation)"
                 )
                 if photo.requestedRecordID == recordID, photo.isScheduled {
                     return .send(.path(.element(

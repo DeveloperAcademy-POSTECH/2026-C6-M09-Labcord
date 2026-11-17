@@ -218,8 +218,17 @@ public final class WatchAudioRecorder {
         engine.inputNode.removeTap(onBus: 0)
         hasTap = false
     }
+}
 
-    private func consume(
+extension WatchAudioRecorder {
+    @discardableResult
+    public func cancelPendingStart() async -> Bool {
+        await startGate.cancelPending()
+    }
+}
+
+private extension WatchAudioRecorder {
+    func consume(
         _ stream: AsyncThrowingStream<Data, Error>, header: WatchAudioHeader
     ) async {
         var sequence = 0
@@ -272,7 +281,7 @@ public final class WatchAudioRecorder {
         interruptions = nil
         try? AVAudioSession.sharedInstance().setActive(false)
     }
-    private func seal(
+    func seal(
         _ header: WatchAudioHeader, sequence: Int, firstSample: Int64, failure: WatchAudioError?
     ) async -> WatchAudioError? {
         var failure = failure
@@ -294,18 +303,6 @@ public final class WatchAudioRecorder {
         return sequence == 0 ? failure ?? .invalidAudio : failure
     }
 
-}
-
-extension WatchAudioRecorder {
-
-    @discardableResult
-    public func cancelPendingStart() async -> Bool {
-        await startGate.cancelPending()
-    }
-
-}
-
-private extension WatchAudioRecorder {
     func markEmptyCaptureIfProven(_ header: WatchAudioHeader) async {
         _ = try? await archive.cancelEmptyBeforeCapture(header)
     }
