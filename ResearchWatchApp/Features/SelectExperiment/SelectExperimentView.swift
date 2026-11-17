@@ -17,17 +17,25 @@ struct SelectExperimentView: View {
                 .padding(.horizontal, 9.5)
 
             if store.isLoading {
-                ProgressView()
-                    .progressViewStyle(.circular)
+                VStack(spacing: 4) {
+                    Text("실험 불러오는 중")
+
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .fixedSize()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let errorMessage = store.errorMessage, store.experiments.isEmpty {
-                Text(errorMessage)
-                    .foregroundStyle(Color("Experiment/Label/Light"))
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 10)
-                    .multilineTextAlignment(.center)
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                    .padding(.top, 26)
+                VStack(spacing: 12) {
+                    Text(errorMessage)
+                        .foregroundStyle(Color("Experiment/Label/Light"))
+                        .multilineTextAlignment(.center)
+                        .font(.headline)
+                    Button("다시 시도") { store.send(.retryTapped) }
+                }
+                .padding(.horizontal, 10)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .padding(.top, 26)
             } else if store.experiments.isEmpty {
                 Text("진행 중인\n실험이 없어요")
                     .foregroundStyle(Color("Experiment/Label/Light"))
