@@ -54,6 +54,20 @@ extension AppFeature {
             case .watchEvent(.openSessionRequested):
                 return .none
 
+            case let .watchEvent(.closeCommitted(experimentID, operation)):
+                guard let id = state.path.ids.last,
+                      state.path[id: id, case: \.session]?.experimentID == experimentID else {
+                    return .none
+                }
+                switch operation {
+                case .complete:
+                    return .send(.showResult(id))
+                case .pause:
+                    return .send(.returnHome(id))
+                default:
+                    return .none
+                }
+
             case let .watchEvent(.photoCancellationRequested(experimentID, recordID)):
                 guard let id = state.path.ids.last,
                       let session = state.path[id: id, case: \.session],
