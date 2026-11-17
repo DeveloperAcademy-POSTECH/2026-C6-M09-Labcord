@@ -34,7 +34,8 @@ struct PhotoRecordView: View {
 
             case .review:
                 TranScriptView(
-                    transcript: "해당 장면을 저장할까요?",
+                    transcript: "해당 장면을\n저장할까요?",
+                    isSavePrompt: true,
                     autoSaveSeconds: store.autoSaveSeconds,
                     onRerecord: { store.send(.retakeTapped) },
                     onSave: { store.send(.saveTapped) }
