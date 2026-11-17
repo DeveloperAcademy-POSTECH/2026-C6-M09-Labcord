@@ -60,21 +60,32 @@ public struct ProtocolTimerRow: View {
         let parts = TimerDurationFormatStyle().formattedParts(for: duration)
         switch rows {
         case .one:
-            let value = Text(parts.value).foregroundColor(Color(.General.Label.primary))
-            let unit = Text(parts.unit).foregroundColor(Color(.General.Label.secondary))
-            Text("\(value)\(unit)")
-            .typography(Typography.body)
-            .accessibilityLabel(Text(parts.text))
-        case .two:
-            VStack(alignment: .leading, spacing: 0) {
-                Text(parts.value)
-                Text(parts.unit)
-                    .foregroundStyle(Color(.General.Label.secondary))
+            ViewThatFits(in: .horizontal) {
+                let value = Text(parts.value).foregroundColor(Color(.General.Label.primary))
+                let unit = Text(parts.unit).foregroundColor(Color(.General.Label.secondary))
+                Text("\(value)\(unit)")
+                    .typography(Typography.body)
+                    .fixedSize(horizontal: true, vertical: false)
+                twoLineDuration(parts)
             }
-            .typography(Typography.subheadline)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text(parts.text))
+        case .two:
+            twoLineDuration(parts)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(parts.text))
         }
+    }
+
+    private func twoLineDuration(_ parts: TimerDurationComponents) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(parts.value)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            Text(parts.unit)
+                .foregroundStyle(Color(.General.Label.secondary))
+        }
+        .typography(Typography.subheadline)
     }
 }
 
@@ -99,6 +110,7 @@ public struct ProtocolTimerRow: View {
         ProtocolTimerRow(duration: .seconds(600))
         ProtocolTimerRow(duration: .seconds(600), rows: .two)
         ProtocolTimerRow(duration: .seconds(86_399))
+            .frame(width: 115)
     }
     .frame(width: 179)
     .padding()
