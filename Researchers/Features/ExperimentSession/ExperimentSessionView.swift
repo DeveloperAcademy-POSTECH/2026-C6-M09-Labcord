@@ -165,18 +165,6 @@ struct ExperimentSessionView: View {
                 }
                 .ignoresSafeArea(.container, edges: .top)
                 .transition(.opacity)
-            } else if isWatchConnectedActivityVisible,
-                      let noticeID = store.watchConnectedNoticeID {
-                GeometryReader { geometry in
-                    WatchConnectedLiveActivityView(availableWidth: geometry.size.width) {
-                        store.send(.watchConnectedNoticeDismissed(noticeID))
-                    }
-                    .id(noticeID)
-                    .padding(.top, 14)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                }
-                .ignoresSafeArea(.container, edges: .top)
-                .transition(.opacity)
             }
         }
         .animation(
@@ -187,9 +175,10 @@ struct ExperimentSessionView: View {
             reduceMotion ? nil : .spring(duration: 0.3, bounce: 0.08),
             value: isVideoActivityVisible
         )
-        .animation(
-            reduceMotion ? nil : .spring(duration: 0.3, bounce: 0.08),
-            value: isWatchConnectedActivityVisible
+        .modifier(
+            WatchConnectedActivityOverlay(
+                noticeID: isWatchConnectedActivityVisible ? store.watchConnectedNoticeID : nil
+            ) { store.send(.watchConnectedNoticeDismissed($0)) }
         )
         .modifier(
             VoiceRecordToastOverlay(

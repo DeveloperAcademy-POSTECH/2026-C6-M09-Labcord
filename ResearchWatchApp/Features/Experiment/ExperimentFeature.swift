@@ -12,11 +12,11 @@ import LabcordWatchOS
 
 @Reducer
 struct ExperimentFeature {
+    enum Overlay: Equatable { case stop, end }
+    enum CloseResult: Equatable { case paused, completed }
+
     @ObservableState
     struct State: Equatable {
-        enum Overlay: Equatable { case stop, end }
-        enum CloseResult: Equatable { case paused, completed }
-
         let experimentID: UUID
         var snapshot: WatchExperimentSnapshot?
         var isLoading = true
