@@ -25,12 +25,32 @@ final class PhoneIntentRuntime {
         }
         isPerforming = true
         defer { isPerforming = false }
+        if let id = store.path.ids.last,
+           let practice = store.path[id: id, case: \.gesturePractice] {
+            return recognizePracticeGesture(kind, id: id, practice: practice)
+        }
         guard let id = store.path.ids.last,
               let initial = store.path[id: id, case: \.session] else {
             throw PhoneIntentError.openExperiment
         }
         let session = try await waitForSession(id: id, experimentID: initial.experimentID)
         return try await requestWatch(kind, experimentID: session.experimentID)
+    }
+
+    /// 제스처 연습 화면의 Apple Watch 탭에서는 기록 없이 인식 결과만 표시합니다.
+    /// iPhone 탭에서는 카메라 손동작으로 연습하므로 단축어 요청을 조용히 무시합니다.
+    private func recognizePracticeGesture(
+        _ kind: Kind, id: StackElementID, practice: GesturePracticeFeature.State
+    ) -> String {
+        guard practice.device == .appleWatch else {
+            logger.info("Practice gesture ignored: iPhone tab is selected")
+            return ""
+        }
+        store.send(.path(.element(
+            id: id, action: .gesturePractice(.watchGestureRecognized(kind.practiceGesture))
+        )))
+        logger.info("Practice gesture recognized: \(String(describing: kind), privacy: .public)")
+        return "제스처를 인식했어요."
     }
 
     private func waitForSession(
@@ -106,6 +126,14 @@ final class PhoneIntentRuntime {
 
 private extension PhoneIntentRuntime.Kind {
     var remoteKind: WatchRemoteIntentRequest.Kind {
+        switch self {
+        case .voice: .voice
+        case .photo: .photo
+        case .video: .video
+        }
+    }
+
+    var practiceGesture: PracticeGesture {
         switch self {
         case .voice: .voice
         case .photo: .photo

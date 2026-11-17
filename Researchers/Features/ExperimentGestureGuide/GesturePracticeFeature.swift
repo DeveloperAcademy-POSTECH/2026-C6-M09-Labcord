@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import Foundation
 import LabcordiOS
 import LabcordShared
 
@@ -10,14 +11,22 @@ struct GesturePracticeFeature {
         var cameraStatus: PermissionStatus?
         var isRequestingPermissions = false
         var permissionIssue: PermissionIssue?
+        /// AssistiveTouch 단축어로 인식된 마지막 Apple Watch 제스처입니다.
+        var watchGesture: WatchGestureEvent?
 
         var permissionsGranted: Bool {
             cameraStatus == .authorized
         }
     }
 
+    struct WatchGestureEvent: Equatable {
+        let id: UUID
+        let gesture: PracticeGesture
+    }
+
     enum Action {
         case deviceChanged(GestureDevice)
+        case watchGestureRecognized(PracticeGesture)
         case backTapped
         case exitTapped
         case practiceReady
@@ -30,12 +39,16 @@ struct GesturePracticeFeature {
 
     @Dependency(\.cameraPermissionClient) private var cameraPermission
     @Dependency(\.permissionSettingsClient) private var permissionSettings
+    @Dependency(\.uuid) private var uuid
 
     var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
             case let .deviceChanged(device):
                 state.device = device
+                return .none
+            case let .watchGestureRecognized(gesture):
+                state.watchGesture = WatchGestureEvent(id: uuid(), gesture: gesture)
                 return .none
             case .requestPermissions:
                 guard !state.isRequestingPermissions else { return .none }
