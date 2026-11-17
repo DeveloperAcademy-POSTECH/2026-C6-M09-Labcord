@@ -45,6 +45,7 @@ struct SettingTImerItemView: View {
                 )
                 .allowsHitTesting(false)
         }
+        .padding(.vertical, -WatchScreenMetrics.scaledHeight(4))
     }
 }
 
