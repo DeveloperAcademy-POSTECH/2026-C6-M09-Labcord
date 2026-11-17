@@ -6,6 +6,8 @@ import SwiftUI
 
 struct ExperimentView: View {
     let experiment: WatchExperimentSummary
+    let onPaused: () -> Void
+    let onCompleted: () -> Void
     @State private var store: StoreOf<ExperimentFeature>
     @State private var selectedPage = 1
     @Binding var isVoiceRecordPresented: Bool
@@ -18,8 +20,15 @@ struct ExperimentView: View {
             store.snapshot?.timers.contains { $0.status == .running } == true
     }
 
-    init(experiment: WatchExperimentSummary, isVoiceRecordPresented: Binding<Bool>) {
+    init(
+        experiment: WatchExperimentSummary,
+        isVoiceRecordPresented: Binding<Bool>,
+        onPaused: @escaping () -> Void,
+        onCompleted: @escaping () -> Void
+    ) {
         self.experiment = experiment
+        self.onPaused = onPaused
+        self.onCompleted = onCompleted
         _isVoiceRecordPresented = isVoiceRecordPresented
         _store = State(initialValue: Store(
             initialState: ExperimentFeature.State(experimentID: experiment.id)
@@ -42,6 +51,10 @@ struct ExperimentView: View {
                     isPhotoRecordPresented = true
                 } onVideoRecordTap: {
                     isVideoRecordPresented = true
+                } onPauseTap: {
+                    store.send(.pauseTapped)
+                } onEndTap: {
+                    store.send(.endTapped)
                 }
                     .tag(1)
 
@@ -74,6 +87,42 @@ struct ExperimentView: View {
         }
         .onAppear { store.send(.appeared) }
         .onDisappear { store.send(.disappeared) }
+        .onChange(of: store.closeResult) { _, result in
+            switch result {
+            case .paused: onPaused()
+            case .completed: onCompleted()
+            case nil: break
+            }
+        }
+        .sheet(isPresented: Binding(
+            get: { store.overlay == .stop },
+            set: { if !$0 { store.send(.overlayDismissed) } }
+        )) {
+            NavigationStack {
+                StopExperimentView(
+                    onStop: { store.send(.stopConfirmed) },
+                    onCancel: { store.send(.overlayDismissed) }
+                )
+            }
+            .presentationBackground(.black)
+        }
+        .sheet(isPresented: Binding(
+            get: { store.overlay == .end },
+            set: { if !$0 { store.send(.overlayDismissed) } }
+        )) {
+            NavigationStack {
+                EndExperimentView(onCancel: { store.send(.overlayDismissed) })
+            }
+            .presentationBackground(.black)
+        }
+        .alert("실험을 변경하지 못했어요", isPresented: Binding(
+            get: { store.errorMessage != nil },
+            set: { if !$0 { store.send(.overlayDismissed) } }
+        )) {
+            Button("확인", role: .cancel) { store.send(.overlayDismissed) }
+        } message: {
+            Text(store.errorMessage ?? "")
+        }
         .sheet(isPresented: $isVoiceRecordPresented) {
             NavigationStack {
                 VoiceRecordView(experimentID: experiment.id)
@@ -102,6 +151,7 @@ struct ExperimentView: View {
             title: "새 실험(1)",
             status: .running
         ),
-        isVoiceRecordPresented: .constant(false)
+        isVoiceRecordPresented: .constant(false),
+        onPaused: {}, onCompleted: {}
     )
 }
