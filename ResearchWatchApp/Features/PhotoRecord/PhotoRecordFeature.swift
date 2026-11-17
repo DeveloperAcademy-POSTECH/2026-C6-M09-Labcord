@@ -255,7 +255,8 @@ private extension WatchExperimentClient {
                 && response.record?.phase == .capturing { return response }
             try await Task.sleep(for: .milliseconds(100))
             response = try await send(WatchExperimentCommand(
-                operation: .requestStatus, targetID: command.requestID
+                operation: .requestStatus, experimentID: command.experimentID,
+                targetID: command.requestID
             ))
         }
         throw WatchExperimentError.deliveryTimeout
