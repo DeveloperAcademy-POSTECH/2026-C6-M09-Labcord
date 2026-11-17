@@ -21,6 +21,13 @@ struct ResearchWatchApp: App {
     @Dependency(\.watchConnectivitySession) var connectivity
     @Dependency(\.watchExperimentClient) var watchExperimentClient
     @State private var path: [Route] = []
+    @State private var remoteScreen: WatchScreenSnapshot?
+    @State private var isVoiceRecordPresented = false
+
+    private struct ScreenSyncKey: Hashable {
+        let revision: UInt64?
+        let isVoiceRecordPresented: Bool
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -36,7 +43,10 @@ struct ResearchWatchApp: App {
                         }
                         .id(experiment.id)
                     case let .experiment(experiment):
-                        ExperimentView(experiment: experiment)
+                        ExperimentView(
+                            experiment: experiment,
+                            isVoiceRecordPresented: $isVoiceRecordPresented
+                        )
                     }
                 }
                 .onChange(of: path) { previous, current in
@@ -46,9 +56,46 @@ struct ResearchWatchApp: App {
                     Task { await watchExperimentClient.cancelPhoneSession(experimentID) }
                 }
             }
+            .task { WatchVoiceRecordingService.shared.activate() }
+            .task {
+                for await screen in await watchExperimentClient.screens() {
+                    remoteScreen = screen
+                }
+            }
+            .task(id: ScreenSyncKey(
+                revision: remoteScreen?.revision,
+                isVoiceRecordPresented: isVoiceRecordPresented
+            )) {
+                guard !isVoiceRecordPresented,
+                      let screen = remoteScreen, screen.destination == .experiment,
+                      let experimentID = screen.experimentID,
+                      path.last?.experimentID != experimentID else { return }
+                while !Task.isCancelled, remoteScreen?.revision == screen.revision,
+                      !isVoiceRecordPresented, path.last?.experimentID != experimentID {
+                    if let experiment = await experiment(for: experimentID),
+                       !Task.isCancelled, remoteScreen?.revision == screen.revision,
+                       !isVoiceRecordPresented {
+                        path = [.experiment(experiment)]
+                        return
+                    }
+                    try? await Task.sleep(for: .seconds(2))
+                }
+            }
         }
         .backgroundTask(.watchConnectivity) { [connectivity] in
             await connectivity.waitForPendingUserInfo()
         }
+    }
+
+    private func experiment(for id: UUID) async -> WatchExperimentSummary? {
+        if let listed = try? await watchExperimentClient.list().first(where: { $0.id == id }) {
+            return listed
+        }
+        let response = try? await watchExperimentClient.send(
+            WatchExperimentCommand(operation: .snapshot, experimentID: id)
+        )
+        guard let experiment = response?.snapshot?.experiment,
+              experiment.status != .completed else { return nil }
+        return experiment
     }
 }
