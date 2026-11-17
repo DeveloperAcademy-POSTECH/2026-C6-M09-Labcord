@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct EndExperimentView: View {
+    let onCancel: () -> Void
+
     var body: some View {
         VStack(alignment: .center) {
             Spacer()
@@ -23,15 +25,15 @@ struct EndExperimentView: View {
             
             Spacer()
             
-            Button("취소", action: {})
+            Button("취소", action: onCancel)
         }
         .padding(.horizontal, 9.5)
         .padding(.bottom, 10)
+        .background(.black)
+        .preferredColorScheme(.dark)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    
-                } label: {
+                Button(action: onCancel) {
                     Image(systemName: "xmark")
                 }
             }
@@ -40,5 +42,5 @@ struct EndExperimentView: View {
 }
 
 #Preview {
-    EndExperimentView()
+    EndExperimentView(onCancel: {})
 }
