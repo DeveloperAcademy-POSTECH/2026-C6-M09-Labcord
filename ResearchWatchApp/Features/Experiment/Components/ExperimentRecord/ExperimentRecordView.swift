@@ -13,6 +13,7 @@ struct ExperimentRecordView: View {
     let title: String
     let onVoiceRecordTap: () -> Void
     let onPhotoRecordTap: () -> Void
+    let onVideoRecordTap: () -> Void
 
     private var buttonHeight: CGFloat {
         WatchScreenMetrics.scaledHeight(45)
@@ -39,7 +40,7 @@ struct ExperimentRecordView: View {
                 ) {
                     ExperimentActionButton(systemName: "microphone", action: onVoiceRecordTap)
                     ExperimentActionButton(systemName: "camera", action: onPhotoRecordTap)
-                    ExperimentActionButton(systemName: "video") { }
+                    ExperimentActionButton(systemName: "video", action: onVideoRecordTap)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -72,5 +73,8 @@ struct ExperimentRecordView: View {
 }
 
 #Preview {
-    ExperimentRecordView(title: "새 실험(1)", onVoiceRecordTap: {}, onPhotoRecordTap: {})
+    ExperimentRecordView(
+        title: "새 실험(1)", onVoiceRecordTap: {}, onPhotoRecordTap: {},
+        onVideoRecordTap: {}
+    )
 }
