@@ -82,6 +82,8 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Features/EndExperiment/EndExperimentFeature.swift,
+				Features/SortRecord/SortRecordFeature.swift,
+				Features/SortRecord/SortRecordView.swift,
 				Features/StopExperiment/StopExperimentFeature.swift,
 			);
 			target = 8E0691143080743D0081547E /* Researchers */;
