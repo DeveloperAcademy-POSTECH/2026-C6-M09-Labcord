@@ -15,6 +15,7 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         (@MainActor (WatchRemoteIntentRequest) async -> WatchRemoteIntentResponse)?
     private var audioReceiptObservers: [UUID: AsyncStream<WatchAudioReceipt>.Continuation] = [:]
     private var latestAudioReceipts: [UUID: WatchAudioReceipt] = [:]
+    private var latestSessionOpenRequests: [UUID: WatchSessionOpenRequest] = [:]
 
     public func experimentLists() -> AsyncStream<[WatchExperimentSummary]> {
         activate()
@@ -34,15 +35,28 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
     }
 
     public func requestPhoneSession(_ experimentID: UUID) async {
+        let request = WatchSessionOpenRequest(experimentID: experimentID)
+        latestSessionOpenRequests[experimentID] = request
+        await sendSessionOpenRequest(request)
+    }
+
+    public func cancelPhoneSession(_ experimentID: UUID) async {
+        let request = WatchSessionOpenRequest(experimentID: experimentID, action: .cancel)
+        latestSessionOpenRequests[experimentID] = request
+        await sendSessionOpenRequest(request)
+    }
+
+    private func sendSessionOpenRequest(_ request: WatchSessionOpenRequest) async {
         activate()
         guard let session else { return }
         for _ in 0..<30 where session.activationState != .activated {
+            guard !Task.isCancelled else { return }
             try? await Task.sleep(for: .milliseconds(100))
         }
-        guard session.activationState == .activated,
-              let data = try? JSONEncoder().encode(
-                WatchSessionOpenRequest(experimentID: experimentID)
-              ) else { return }
+        guard !Task.isCancelled,
+              latestSessionOpenRequests[request.experimentID]?.requestID == request.requestID,
+              session.activationState == .activated,
+              let data = try? JSONEncoder().encode(request) else { return }
         let key = WatchSessionOpenRequest.messageKey
         var context = session.applicationContext
         context[key] = data

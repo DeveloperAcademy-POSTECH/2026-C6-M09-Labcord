@@ -7,6 +7,7 @@ struct SelectExperimentView: View {
     @State private var store = Store(initialState: SelectExperimentFeature.State()) {
         SelectExperimentFeature()
     }
+    let onSelect: (WatchExperimentSummary) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -40,15 +41,12 @@ struct SelectExperimentView: View {
                 ScrollView {
                     LazyVStack(spacing: 10) {
                         ForEach(store.experiments) { experiment in
-                            NavigationLink {
-                                ExperimentStartView(experiment: experiment)
+                            Button {
+                                onSelect(experiment)
                             } label: {
                                 ExperimentRow(title: experiment.title)
                             }
                             .buttonStyle(.plain)
-                            .simultaneousGesture(TapGesture().onEnded {
-                                store.send(.experimentTapped(experiment.id))
-                            })
                         }
                     }
                 }
@@ -62,5 +60,5 @@ struct SelectExperimentView: View {
 }
 
 #Preview {
-    SelectExperimentView()
+    SelectExperimentView { _ in }
 }

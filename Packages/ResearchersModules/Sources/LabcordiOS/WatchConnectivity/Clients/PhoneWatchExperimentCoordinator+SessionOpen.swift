@@ -11,7 +11,8 @@ extension PhoneWatchExperimentCoordinator {
     private static var sessionOpenRequestKey: String { "watchSessionOpenRequest.v1" }
 
     public var hasPendingOpenSessionRequest: Bool {
-        storedOpenRequest()?.handled == false
+        reconcileLatestSessionOpenRequest()
+        return storedOpenRequest()?.handled == false
     }
 
     public func receiveOpenSessionRequest(_ data: Data?) {
@@ -19,14 +20,18 @@ extension PhoneWatchExperimentCoordinator {
               let request = try? JSONDecoder().decode(
                 WatchSessionOpenRequest.self, from: data
               ) else { return }
-        if let previous = storedOpenRequest(),
-           previous.request.requestID == request.requestID
-            || previous.request.requestedAt > request.requestedAt { return }
-        storeOpenRequest(.init(request: request, handled: false))
-        commandSubscriber?.yield(.openSessionRequested)
+        if let previous = storedOpenRequest() {
+            guard previous.request.requestedAt < request.requestedAt else { return }
+            if request.action == .cancel,
+               previous.request.experimentID != request.experimentID { return }
+        }
+        let cancelled = request.action == .cancel
+        storeOpenRequest(.init(request: request, handled: cancelled))
+        if !cancelled { commandSubscriber?.yield(.openSessionRequested) }
     }
 
     public func pendingOpenSessionID() -> UUID? {
+        reconcileLatestSessionOpenRequest()
         guard UIApplication.shared.isProtectedDataAvailable,
               let stored = storedOpenRequest(), !stored.handled else { return nil }
         let id = stored.request.experimentID
@@ -45,6 +50,14 @@ extension PhoneWatchExperimentCoordinator {
               !stored.handled else { return }
         stored.handled = true
         storeOpenRequest(stored)
+    }
+
+    private func reconcileLatestSessionOpenRequest() {
+        receiveOpenSessionRequest(
+            connectivity.session?.receivedApplicationContext[
+                WatchSessionOpenRequest.messageKey
+            ] as? Data
+        )
     }
 
     private func storedOpenRequest() -> StoredWatchSessionOpenRequest? {

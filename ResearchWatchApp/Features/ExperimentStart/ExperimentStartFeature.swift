@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import LabcordShared
+import LabcordWatchOS
 
 enum ExperimentStartPhase: Equatable {
     case details
@@ -22,7 +23,6 @@ struct ExperimentStartFeature {
         case permissionUpdated(PermissionStatus)
         case permissionRecheckTapped
         case countdownTick
-        case experimentDismissed
         case becameInactive
         case disappeared
     }
@@ -30,9 +30,11 @@ struct ExperimentStartFeature {
     private nonisolated enum CancelID: Hashable, Sendable {
         case permission
         case countdown
+        case openSession
     }
 
     @Dependency(\.microphonePermissionClient) private var microphonePermission
+    @Dependency(\.watchExperimentClient) private var watchExperimentClient
 
     var body: some Reducer<State, Action> {
         Reduce { state, action in
@@ -76,20 +78,30 @@ struct ExperimentStartFeature {
                 }
                 return .none
 
-            case .experimentDismissed:
-                guard state.phase == .experiment else { return .none }
-                state.phase = .details
-                return .none
-
             case .becameInactive:
-                if case .countdown = state.phase { state.phase = .details }
-                return .cancel(id: CancelID.countdown)
+                guard case .countdown = state.phase else {
+                    return .cancel(id: CancelID.countdown)
+                }
+                state.phase = .details
+                let experimentID = state.experiment.id
+                return .merge(
+                    .cancel(id: CancelID.countdown),
+                    .cancel(id: CancelID.openSession),
+                    .run { _ in await watchExperimentClient.cancelPhoneSession(experimentID) }
+                )
 
             case .disappeared:
-                if state.phase != .experiment { state.phase = .details }
+                if state.phase == .experiment {
+                    return .merge(
+                        .cancel(id: CancelID.permission),
+                        .cancel(id: CancelID.countdown)
+                    )
+                }
+                state.phase = .details
                 return .merge(
                     .cancel(id: CancelID.permission),
-                    .cancel(id: CancelID.countdown)
+                    .cancel(id: CancelID.countdown),
+                    .cancel(id: CancelID.openSession)
                 )
             }
         }
@@ -97,12 +109,19 @@ struct ExperimentStartFeature {
 
     private func beginCountdown(_ state: inout State) -> Effect<Action> {
         state.phase = .countdown(nil)
-        return .run { send in
-            for _ in 0..<4 {
-                try await Task.sleep(for: .seconds(1))
-                await send(.countdownTick)
+        let experimentID = state.experiment.id
+        return .merge(
+            .run { _ in
+                await watchExperimentClient.requestPhoneSession(experimentID)
             }
-        }
-        .cancellable(id: CancelID.countdown, cancelInFlight: true)
+            .cancellable(id: CancelID.openSession, cancelInFlight: true),
+            .run { send in
+                for _ in 0..<4 {
+                    try await Task.sleep(for: .seconds(1))
+                    await send(.countdownTick)
+                }
+            }
+            .cancellable(id: CancelID.countdown, cancelInFlight: true)
+        )
     }
 }

@@ -5,7 +5,6 @@ import LabcordShared
 
 enum WatchSplashPhase: Equatable {
     case waiting
-    case showing
     case ready
 }
 

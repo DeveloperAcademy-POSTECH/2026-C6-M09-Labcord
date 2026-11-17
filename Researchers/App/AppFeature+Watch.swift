@@ -47,9 +47,6 @@ extension AppFeature {
                 return openWatchSession(&state)
 
             case .watchEvent(.openSessionRequested):
-                if state.watchIsActive {
-                    state.watchSplashPhase = .showing
-                }
                 return .none
 
             case let .watchSceneChanged(active):
