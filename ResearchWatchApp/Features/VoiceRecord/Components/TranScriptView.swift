@@ -11,6 +11,7 @@ import SwiftUI
 
 struct TranScriptView: View {
     let transcript: String
+    let isSavePrompt: Bool
     let autoSaveSeconds: Int?
     let onRerecord: () -> Void
     let onSave: () -> Void
@@ -19,9 +20,11 @@ struct TranScriptView: View {
         VStack {
             ScrollView {
                 Text(transcript)
-                    .font(.body)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.bottom, 4)
+                    .font(isSavePrompt ? .headline : .body)
+                    .multilineTextAlignment(isSavePrompt ? .center : .leading)
+                    .frame(maxWidth: .infinity, alignment: isSavePrompt ? .center : .leading)
+                    .padding(.vertical, isSavePrompt ? 8 : 0)
+                    .padding(.bottom, isSavePrompt ? 0 : 4)
 
                 if let autoSaveSeconds {
                     Text("\(autoSaveSeconds)초 후 자동 저장돼요")
@@ -68,7 +71,7 @@ struct TranScriptView: View {
 
 #Preview {
     TranScriptView(
-        transcript: "전사전사", autoSaveSeconds: 3,
+        transcript: "전사전사", isSavePrompt: false, autoSaveSeconds: 3,
         onRerecord: {}, onSave: {}
     )
 }
