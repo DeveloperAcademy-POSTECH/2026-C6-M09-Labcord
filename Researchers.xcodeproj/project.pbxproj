@@ -85,8 +85,6 @@
 				Features/PhotoRecord/PhotoRecordView.swift,
 				Features/VideoRecord/VideoRecordFeature.swift,
 				Features/VideoRecord/VideoRecordView.swift,
-				Features/VoiceRecord/Components/VoiceWaveView.swift,
-				Features/VoiceRecord/VoiceRecordFeature.swift,
 			);
 			target = 8E0691143080743D0081547E /* Researchers */;
 		};
