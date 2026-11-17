@@ -86,11 +86,6 @@ struct ExperimentSessionView: View {
             }
             .ignoresSafeArea()
         }
-        .overlay(alignment: .top) {
-            if verticalSizeClass != .compact {
-                WatchVoiceRecordingIndicator(experimentID: store.experimentID)
-            }
-        }
         .navigationBarBackButtonHidden()
         .toolbarVisibility(
             isPortraitVoiceActivityVisible || isVideoActivityVisible || isVideoOverlayVisible
