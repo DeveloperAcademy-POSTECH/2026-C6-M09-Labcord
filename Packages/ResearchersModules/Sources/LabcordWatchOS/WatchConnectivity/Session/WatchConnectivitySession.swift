@@ -46,6 +46,14 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         await sendSessionOpenRequest(request)
     }
 
+    public func leavePhoneSession(_ experimentID: UUID) async {
+        let request = WatchSessionOpenRequest(
+            experimentID: experimentID, action: .leftExperiment
+        )
+        latestSessionOpenRequests[experimentID] = request
+        await sendSessionOpenRequest(request)
+    }
+
     private func sendSessionOpenRequest(_ request: WatchSessionOpenRequest) async {
         activate()
         guard let session else { return }
