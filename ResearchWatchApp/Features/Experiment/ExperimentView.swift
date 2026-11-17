@@ -10,6 +10,7 @@ struct ExperimentView: View {
     @State private var selectedPage = 1
     @Binding var isVoiceRecordPresented: Bool
     @State private var isPhotoRecordPresented = false
+    @State private var isVideoRecordPresented = false
 
     private var showsTimerAddButton: Bool {
         guard selectedPage == 2 else { return false }
@@ -39,6 +40,8 @@ struct ExperimentView: View {
                     isVoiceRecordPresented = true
                 } onPhotoRecordTap: {
                     isPhotoRecordPresented = true
+                } onVideoRecordTap: {
+                    isVideoRecordPresented = true
                 }
                     .tag(1)
 
@@ -80,6 +83,12 @@ struct ExperimentView: View {
         .sheet(isPresented: $isPhotoRecordPresented) {
             NavigationStack {
                 PhotoRecordView(experimentID: experiment.id)
+            }
+            .presentationBackground(.black)
+        }
+        .sheet(isPresented: $isVideoRecordPresented) {
+            NavigationStack {
+                VideoRecordView(experimentID: experiment.id)
             }
             .presentationBackground(.black)
         }
