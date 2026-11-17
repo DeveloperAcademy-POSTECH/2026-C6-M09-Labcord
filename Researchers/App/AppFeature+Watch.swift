@@ -230,10 +230,10 @@ extension AppFeature {
             state.path.append(.session(.init(experimentID: experimentID)))
             return .send(.home(.list(.cancelLoad)))
         }
-        guard state.path.isEmpty, !state.home.list.isDeleting,
-              state.home.list.pendingDeletion == nil else { return .none }
+        guard canLeaveCurrentScreen(state) else { return .none }
         state.watchPendingStartID = nil
         PhoneWatchExperimentCoordinator.shared.didOpen(experimentID)
+        state.path.removeAll()
         state.path.append(.session(.init(experimentID: experimentID)))
         return .send(.home(.list(.cancelLoad)))
     }
