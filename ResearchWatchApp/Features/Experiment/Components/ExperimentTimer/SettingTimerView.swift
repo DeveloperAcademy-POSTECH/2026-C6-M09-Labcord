@@ -48,6 +48,7 @@ struct SettingTimerView: View {
                             )
                     }
                     .buttonBorderShape(.circle)
+                    .padding(.vertical, -WatchScreenMetrics.scaledHeight(4))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
