@@ -5,11 +5,14 @@
 //  Created by 정홍섭 on 11/18/26.
 //
 
-import SwiftUI
-import LabcordWatchOS
 import LabcordDesignSystem
+import LabcordWatchOS
+import SwiftUI
 
 struct StopExperimentView: View {
+    let onStop: () -> Void
+    let onCancel: () -> Void
+
     var body: some View {
         ScrollView {
             VStack(
@@ -18,10 +21,10 @@ struct StopExperimentView: View {
             ) {
                 Spacer()
                 
-                Text("실험 중단")
+                Text("실험 일시정지")
                     .font(.headline)
                 
-                Text("지금 기록 중인 내용은\n저장되지 않아요.")
+                Text("지금까지 기록한 내용은\n저장돼요.")
                     .font(.headline)
                     .multilineTextAlignment(.center)
                     .frame(height: WatchScreenMetrics.scaledHeight(33))
@@ -30,7 +33,7 @@ struct StopExperimentView: View {
                     alignment: .center,
                     spacing: WatchScreenMetrics.scaledHeight(4)
                 ) {
-                    Button {} label: {
+                    Button(action: onStop) {
                         Text("기록 중단")
                             .foregroundStyle(.black)
                             .frame(maxWidth: .infinity)
@@ -42,17 +45,17 @@ struct StopExperimentView: View {
                     }
                     .buttonStyle(.plain)
                     
-                    Button("취소", action: {})
+                    Button("취소", action: onCancel)
                         .frame(height: WatchScreenMetrics.scaledHeight(45))
                 }
             }
         }
         .padding(.horizontal, 9.5)
+        .background(.black)
+        .preferredColorScheme(.dark)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    
-                } label: {
+                Button(action: onCancel) {
                     Image(systemName: "xmark")
                 }
             }
@@ -61,5 +64,5 @@ struct StopExperimentView: View {
 }
 
 #Preview {
-    StopExperimentView()
+    StopExperimentView(onStop: {}, onCancel: {})
 }
