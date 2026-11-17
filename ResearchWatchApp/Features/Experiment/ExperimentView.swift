@@ -8,6 +8,7 @@ struct ExperimentView: View {
     let experiment: WatchExperimentSummary
     @State private var store: StoreOf<ExperimentFeature>
     @State private var selectedPage = 1
+    @State private var isVoiceRecordPresented = false
 
     private var showsTimerAddButton: Bool {
         guard selectedPage == 2 else { return false }
@@ -32,7 +33,9 @@ struct ExperimentView: View {
                 .padding(.bottom, WatchScreenMetrics.scaledHeight(4.5))
 
             TabView(selection: $selectedPage) {
-                ExperimentRecordView(title: experiment.title)
+                ExperimentRecordView(title: experiment.title) {
+                    isVoiceRecordPresented = true
+                }
                     .tag(1)
 
                 ExperimentTimerView(
@@ -64,6 +67,12 @@ struct ExperimentView: View {
         }
         .onAppear { store.send(.appeared) }
         .onDisappear { store.send(.disappeared) }
+        .sheet(isPresented: $isVoiceRecordPresented) {
+            NavigationStack {
+                VoiceRecordView()
+            }
+            .presentationBackground(.black)
+        }
     }
 }
 

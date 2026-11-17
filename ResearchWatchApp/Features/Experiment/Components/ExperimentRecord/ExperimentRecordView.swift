@@ -11,6 +11,7 @@ import SwiftUI
 
 struct ExperimentRecordView: View {
     let title: String
+    let onVoiceRecordTap: () -> Void
 
     private var buttonHeight: CGFloat {
         WatchScreenMetrics.scaledHeight(45)
@@ -35,7 +36,7 @@ struct ExperimentRecordView: View {
                     alignment: .leading,
                     spacing: WatchScreenMetrics.scaledHeight(8)
                 ) {
-                    ExperimentActionButton(systemName: "microphone") { }
+                    ExperimentActionButton(systemName: "microphone", action: onVoiceRecordTap)
                     ExperimentActionButton(systemName: "camera") { }
                     ExperimentActionButton(systemName: "video") { }
                 }
@@ -70,5 +71,5 @@ struct ExperimentRecordView: View {
 }
 
 #Preview {
-    ExperimentRecordView(title: "새 실험(1)")
+    ExperimentRecordView(title: "새 실험(1)") { }
 }
