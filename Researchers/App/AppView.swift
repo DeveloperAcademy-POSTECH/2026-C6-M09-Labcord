@@ -38,7 +38,11 @@ struct AppView: View {
 
                     case .registration(let store):
                         ProtocolRegistrationView(store: store)
-                            .navigationSwipeBackEnabled(!store.isSaving)
+                            .navigationSwipeBackEnabled(
+                                !store.isSaving && store.inputAnalysis.analysisID == nil
+                                    && !store.inputAnalysis.showsAnalysisCompletion
+                                    && !store.inputAnalysis.analysisStarting
+                            )
 
                     case .recent(let store):
                         RecentProtocolView(store: store)
