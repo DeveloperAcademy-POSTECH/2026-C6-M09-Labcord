@@ -14,6 +14,8 @@ struct ExperimentRecordView: View {
     let onVoiceRecordTap: () -> Void
     let onPhotoRecordTap: () -> Void
     let onVideoRecordTap: () -> Void
+    let onPauseTap: () -> Void
+    let onEndTap: () -> Void
 
     private var buttonHeight: CGFloat {
         WatchScreenMetrics.scaledHeight(45)
@@ -47,7 +49,7 @@ struct ExperimentRecordView: View {
             .padding(.bottom, WatchScreenMetrics.scaledHeight(23))
 
             VStack(spacing: 4) {
-                Button("일시정지", systemImage: "pause.fill") {}
+                Button("일시정지", systemImage: "pause.fill", action: onPauseTap)
                     .font(.system(size: 18.5, weight: .medium))
                     .frame(maxWidth: .infinity)
                     .frame(height: buttonHeight)
@@ -57,7 +59,7 @@ struct ExperimentRecordView: View {
                         in: RoundedRectangle(cornerRadius: .infinity)
                     )
 
-                Button("종료", systemImage: "stop.fill") {}
+                Button("종료", systemImage: "stop.fill", action: onEndTap)
                     .font(.system(size: 18.5, weight: .medium))
                     .frame(maxWidth: .infinity)
                     .frame(height: buttonHeight)
@@ -75,6 +77,6 @@ struct ExperimentRecordView: View {
 #Preview {
     ExperimentRecordView(
         title: "새 실험(1)", onVoiceRecordTap: {}, onPhotoRecordTap: {},
-        onVideoRecordTap: {}
+        onVideoRecordTap: {}, onPauseTap: {}, onEndTap: {}
     )
 }
