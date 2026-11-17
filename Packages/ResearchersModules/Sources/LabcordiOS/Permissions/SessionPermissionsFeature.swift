@@ -35,6 +35,7 @@ public struct SessionPermissionsFeature {
     @Dependency(\.cameraPermissionClient) var cameraPermissionClient
     @Dependency(\.microphonePermissionClient) var microphonePermissionClient
     @Dependency(\.speechRecognitionPermissionClient) var speechRecognitionPermissionClient
+    @Dependency(\.notificationPermissionClient) var notificationPermissionClient
     @Dependency(\.permissionSettingsClient) var permissionSettingsClient
 
     public init() {}
@@ -62,6 +63,8 @@ public struct SessionPermissionsFeature {
                     let speechRecognition = await speechRecognitionPermissionClient.requestAccess()
                     guard !Task.isCancelled else { return }
                     await send(.speechRecognitionStatusUpdated(speechRecognition))
+                    _ = try? await notificationPermissionClient.requestAccess()
+                    guard !Task.isCancelled else { return }
                     await send(.requestFinished)
                 }
                 .cancellable(id: CancelID.request, cancelInFlight: true)
