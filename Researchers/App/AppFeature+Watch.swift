@@ -2,7 +2,12 @@ import ComposableArchitecture
 import Foundation
 import LabcordiOS
 import LabcordShared
+import OSLog
 import UIKit
+
+private let watchPhotoCancelLog = Logger(
+    subsystem: "com.researchers.Researchers", category: "WatchPhotoCancel"
+)
 
 extension AppFeature {
     var watchPendingOpenReducer: some Reducer<State, Action> {
@@ -47,6 +52,32 @@ extension AppFeature {
                 return openWatchSession(&state)
 
             case .watchEvent(.openSessionRequested):
+                return .none
+
+            case let .watchEvent(.photoCancellationRequested(experimentID, recordID)):
+                guard let id = state.path.ids.last,
+                      let session = state.path[id: id, case: \.session],
+                      session.experimentID == experimentID else {
+                    watchPhotoCancelLog.info("no matching session")
+                    return .none
+                }
+                let photo = session.capture.photo
+                watchPhotoCancelLog.info(
+                    "routed \(recordID.uuidString, privacy: .public) review \(photo.capturedData != nil)"
+                )
+                watchPhotoCancelLog.info(
+                    "state scheduled \(photo.isScheduled) watchOrigin \(photo.requiresExternalConfirmation)"
+                )
+                if photo.requestedRecordID == recordID, photo.isScheduled {
+                    return .send(.path(.element(
+                        id: id, action: .session(.capture(.photo(.watchCancelRequested(recordID))))
+                    )))
+                }
+                if photo.capturedData != nil, !photo.isSaving {
+                    return .send(.path(.element(
+                        id: id, action: .session(.capture(.photo(.retakeRequested)))
+                    )))
+                }
                 return .none
 
             case let .watchSceneChanged(active):
