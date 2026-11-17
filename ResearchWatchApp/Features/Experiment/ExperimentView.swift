@@ -37,7 +37,8 @@ struct ExperimentView: View {
 
                 ExperimentTimerView(
                     mode: store.snapshot?.mode,
-                    timers: store.snapshot?.timers ?? []
+                    timers: store.snapshot?.timers ?? [],
+                    protocolTimerSeconds: store.snapshot?.protocolTimerSeconds ?? []
                 )
                     .tag(2)
             }

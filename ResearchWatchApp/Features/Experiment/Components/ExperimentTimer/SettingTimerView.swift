@@ -10,6 +10,8 @@ import LabcordWatchOS
 import LabcordDesignSystem
 
 struct SettingTimerView: View {
+    let timerSeconds: [Int]
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
@@ -31,6 +33,10 @@ struct SettingTimerView: View {
                     alignment: .leading,
                     spacing: WatchScreenMetrics.scaledHeight(6)
                 ) {
+                    ForEach(timerSeconds.indices, id: \.self) { index in
+                        SettingTImerItemView(seconds: timerSeconds[index])
+                    }
+
                     Button {
                         // 구현 예정
                     } label: {
@@ -52,5 +58,5 @@ struct SettingTimerView: View {
 }
 
 #Preview {
-    SettingTimerView()
+    SettingTimerView(timerSeconds: [30, 90, 3_600])
 }

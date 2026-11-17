@@ -11,10 +11,14 @@ import SwiftUI
 struct ExperimentTimerView: View {
     let mode: ExperimentMode?
     let timers: [WatchTimerSnapshot]
+    let protocolTimerSeconds: [Int]
 
     var body: some View {
         if mode == .procedure {
-            ProtocolModeTimerView(timers: timers)
+            ProtocolModeTimerView(
+                timers: timers,
+                protocolTimerSeconds: protocolTimerSeconds
+            )
         } else {
             FreeModeTimerView(timers: timers)
         }
@@ -22,7 +26,7 @@ struct ExperimentTimerView: View {
 }
 
 #Preview("자유모드") {
-    ExperimentTimerView(mode: .free, timers: [])
+    ExperimentTimerView(mode: .free, timers: [], protocolTimerSeconds: [])
 }
 
 #Preview("자유모드(타이머)") {
@@ -36,12 +40,17 @@ struct ExperimentTimerView: View {
                 status: .running,
                 measuredAt: .now
             )
-        ]
+        ],
+        protocolTimerSeconds: []
     )
 }
 
 #Preview("프로토콜모드") {
-    ExperimentTimerView(mode: .procedure, timers: [])
+    ExperimentTimerView(
+        mode: .procedure,
+        timers: [],
+        protocolTimerSeconds: [30, 90, 3_600]
+    )
 }
 
 #Preview("프로토콜모드(타이머)") {
@@ -55,6 +64,7 @@ struct ExperimentTimerView: View {
                 status: .running,
                 measuredAt: .now
             )
-        ]
+        ],
+        protocolTimerSeconds: [30, 90, 3_600]
     )
 }

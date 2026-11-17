@@ -11,6 +11,7 @@ import SwiftUI
 
 struct ProtocolModeTimerView: View {
     let timers: [WatchTimerSnapshot]
+    let protocolTimerSeconds: [Int]
 
     private var hasRunningTimer: Bool {
         timers.contains { $0.status == .running }
@@ -20,7 +21,7 @@ struct ProtocolModeTimerView: View {
         if hasRunningTimer {
             ProgressTimerView()
         } else {
-            SettingTimerView()
+            SettingTimerView(timerSeconds: protocolTimerSeconds)
         }
     }
 }
@@ -35,10 +36,11 @@ struct ProtocolModeTimerView: View {
                 status: .running,
                 measuredAt: .now
             )
-        ]
+        ],
+        protocolTimerSeconds: [30, 90]
     )
 }
 
 #Preview("없음") {
-    ProtocolModeTimerView(timers: [])
+    ProtocolModeTimerView(timers: [], protocolTimerSeconds: [30, 90, 3_600])
 }
