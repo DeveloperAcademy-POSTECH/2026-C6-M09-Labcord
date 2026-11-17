@@ -11,7 +11,7 @@ import SwiftUI
 
 struct TranScriptView: View {
     let transcript: String
-    let autoSaveSeconds: Int
+    let autoSaveSeconds: Int?
     let onRerecord: () -> Void
     let onSave: () -> Void
 
@@ -23,10 +23,12 @@ struct TranScriptView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.bottom, 4)
 
-                Text("\(autoSaveSeconds)초 후 자동 저장돼요")
-                    .font(.caption)
-                    .foregroundStyle(.gray)
-                    .frame(maxWidth: .infinity)
+                if let autoSaveSeconds {
+                    Text("\(autoSaveSeconds)초 후 자동 저장돼요")
+                        .font(.caption)
+                        .foregroundStyle(.gray)
+                        .frame(maxWidth: .infinity)
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .padding(.horizontal, 10)
