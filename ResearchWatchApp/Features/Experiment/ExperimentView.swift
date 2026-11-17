@@ -9,6 +9,7 @@ struct ExperimentView: View {
     @State private var store: StoreOf<ExperimentFeature>
     @State private var selectedPage = 1
     @Binding var isVoiceRecordPresented: Bool
+    @State private var isPhotoRecordPresented = false
 
     private var showsTimerAddButton: Bool {
         guard selectedPage == 2 else { return false }
@@ -36,6 +37,8 @@ struct ExperimentView: View {
             TabView(selection: $selectedPage) {
                 ExperimentRecordView(title: experiment.title) {
                     isVoiceRecordPresented = true
+                } onPhotoRecordTap: {
+                    isPhotoRecordPresented = true
                 }
                     .tag(1)
 
@@ -71,6 +74,12 @@ struct ExperimentView: View {
         .sheet(isPresented: $isVoiceRecordPresented) {
             NavigationStack {
                 VoiceRecordView(experimentID: experiment.id)
+            }
+            .presentationBackground(.black)
+        }
+        .sheet(isPresented: $isPhotoRecordPresented) {
+            NavigationStack {
+                PhotoRecordView(experimentID: experiment.id)
             }
             .presentationBackground(.black)
         }
