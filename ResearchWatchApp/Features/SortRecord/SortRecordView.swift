@@ -76,5 +76,5 @@ struct SortRecordView: View {
 }
 
 #Preview {
-    SortRecordView(isPhoneResultReady: true, onClose: {})
+    SortRecordView(isPhoneResultReady: true) {}
 }

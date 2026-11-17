@@ -129,7 +129,7 @@ struct ExperimentView: View {
             set: { if !$0 { store.send(.overlayDismissed) } }
         )) {
             NavigationStack {
-                EndExperimentView(onCancel: { store.send(.overlayDismissed) })
+                EndExperimentView { store.send(.overlayDismissed) }
             }
             .presentationBackground(.black)
         }

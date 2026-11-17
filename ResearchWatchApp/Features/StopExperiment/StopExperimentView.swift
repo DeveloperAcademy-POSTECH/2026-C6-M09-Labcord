@@ -20,15 +20,15 @@ struct StopExperimentView: View {
                 spacing: WatchScreenMetrics.scaledHeight(8)
             ) {
                 Spacer()
-                
+
                 Text("실험 일시정지")
                     .font(.headline)
-                
+
                 Text("지금까지 기록한 내용은\n저장돼요.")
                     .font(.headline)
                     .multilineTextAlignment(.center)
                     .frame(height: WatchScreenMetrics.scaledHeight(33))
-                
+
                 VStack(
                     alignment: .center,
                     spacing: WatchScreenMetrics.scaledHeight(4)
@@ -44,7 +44,7 @@ struct StopExperimentView: View {
                             )
                     }
                     .buttonStyle(.plain)
-                    
+
                     Button("취소", action: onCancel)
                         .frame(height: WatchScreenMetrics.scaledHeight(45))
                 }

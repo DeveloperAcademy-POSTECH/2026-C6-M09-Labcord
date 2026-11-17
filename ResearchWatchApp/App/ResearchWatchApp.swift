@@ -74,12 +74,11 @@ struct ResearchWatchApp: App {
                         )
                     case let .sort(experimentID):
                         SortRecordView(
-                            isPhoneResultReady: phoneResultReadyIDs.contains(experimentID),
-                            onClose: {
+                            isPhoneResultReady: phoneResultReadyIDs.contains(experimentID)
+                        )                            {
                                 phoneResultReadyIDs.remove(experimentID)
                                 path = []
                             }
-                        )
                     }
                 }
                 .onChange(of: path) { previous, current in
