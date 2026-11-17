@@ -81,8 +81,6 @@
 		8EA88EA530ABD78A00524A51 /* Exceptions for "ResearchWatchApp" folder in "Researchers" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Features/PhotoRecord/PhotoRecordFeature.swift,
-				Features/PhotoRecord/PhotoRecordView.swift,
 				Features/VideoRecord/VideoRecordFeature.swift,
 				Features/VideoRecord/VideoRecordView.swift,
 			);
