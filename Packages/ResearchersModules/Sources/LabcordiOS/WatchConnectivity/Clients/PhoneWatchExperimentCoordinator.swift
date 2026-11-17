@@ -1,7 +1,12 @@
 import ComposableArchitecture
 import Foundation
 import LabcordShared
+import OSLog
 import UIKit
+
+private let watchPhotoCancelLog = Logger(
+    subsystem: "com.researchers.Researchers", category: "WatchPhotoCancel"
+)
 
 @MainActor
 public final class PhoneWatchExperimentCoordinator {
@@ -14,6 +19,7 @@ public final class PhoneWatchExperimentCoordinator {
 
     public enum Event: Sendable {
         case command(WatchExperimentCommand)
+        case photoCancellationRequested(UUID, UUID)
         case started(UUID)
         case navigation(WatchExperimentCommand)
         case openSessionRequested
@@ -115,6 +121,11 @@ public final class PhoneWatchExperimentCoordinator {
         }
         guard UIApplication.shared.isProtectedDataAvailable else {
             return failure(command, .phoneUnlockRequired)
+        }
+        if command.operation == .cancelRecord,
+           let experimentID = command.experimentID, let recordID = command.targetID {
+            watchPhotoCancelLog.info("received \(recordID.uuidString, privacy: .public)")
+            commandSubscriber?.yield(.photoCancellationRequested(experimentID, recordID))
         }
         loadJournal()
         if let response = existingResponse(command) { return response }
@@ -218,51 +229,6 @@ public final class PhoneWatchExperimentCoordinator {
         } catch {
             requests[command.requestID]?.response = failure(command, .resultUnknown)
         }
-    }
-
-    func snapshot(_ id: UUID) throws -> WatchExperimentSnapshot {
-        guard let state = try client.watchState(id) else {
-            throw WatchExperimentError.experimentNotFound
-        }
-        try restoreSavedRecords(id)
-        let active = visibleExperimentID == id
-        if states[id] != state || sessionVisibility[id] != active {
-            let next = try nextRevision()
-            revisions[id] = next
-            states[id] = state
-            sessionVisibility[id] = active
-        }
-        return state.snapshot(
-            revision: revisions[id] ?? 0, at: .now, phoneSessionActive: active
-        )
-    }
-
-    func nextRevision() throws -> UInt64 {
-        var previous: UInt64 = 0
-        if FileManager.default.fileExists(atPath: revisionURL.path) {
-            let data = try Data(contentsOf: revisionURL)
-            guard let value = String(data: data, encoding: .utf8).flatMap(UInt64.init) else {
-                throw WatchExperimentError.storageFailed
-            }
-            previous = value
-        }
-        guard previous < UInt64.max else { throw WatchExperimentError.storageFailed }
-        let next = previous + 1
-        try FileManager.default.createDirectory(
-            at: revisionURL.deletingLastPathComponent(), withIntermediateDirectories: true
-        )
-        try Data(String(next).utf8).write(
-            to: revisionURL, options: [.atomic, .completeFileProtection]
-        )
-        return next
-    }
-
-    func publish(_ snapshot: WatchExperimentSnapshot) {
-        guard let session = connectivity.session, session.activationState == .activated,
-              let data = try? JSONEncoder().encode(snapshot) else { return }
-        var context = session.applicationContext
-        context[WatchExperimentTransport.snapshotKey] = data
-        try? session.updateApplicationContext(context)
     }
 
     func failure(_ command: WatchExperimentCommand, _ error: WatchExperimentError)

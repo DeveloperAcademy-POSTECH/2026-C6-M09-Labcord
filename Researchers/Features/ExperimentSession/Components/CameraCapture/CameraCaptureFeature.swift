@@ -11,6 +11,7 @@ struct CameraCaptureFeature {
         var photo: PhotoFeature.State
         var video: VideoFeature.State
         var watchPhotoRequest: WatchExperimentCommand?
+        var watchPhotoCancellationRequest: WatchExperimentCommand?
         var watchVideoRequest: WatchExperimentCommand?
         var watchReviewRequest: WatchExperimentCommand?
         var watchStopRequest: WatchExperimentCommand?

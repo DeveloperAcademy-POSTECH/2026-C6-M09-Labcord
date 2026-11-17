@@ -61,6 +61,7 @@ struct ExperimentStartView: View {
 
             case let .countdown(number):
                 CountdownRingView(number: number)
+                    .padding(.horizontal, 7)
 
             case .experiment:
                 Color.clear

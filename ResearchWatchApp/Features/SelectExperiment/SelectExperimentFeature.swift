@@ -17,7 +17,8 @@ struct SelectExperimentFeature {
         case disappeared
         case listUpdated([WatchExperimentSummary])
         case loadSucceeded([WatchExperimentSummary])
-        case loadFailed
+        case loadFailed(WatchExperimentError?)
+        case retryTapped
     }
 
     private nonisolated enum CancelID: Hashable, Sendable {
@@ -59,11 +60,13 @@ struct SelectExperimentFeature {
                 state.isLoading = false
                 state.errorMessage = nil
                 return .none
-            case .loadFailed:
+            case let .loadFailed(error):
                 guard state.isLoading else { return .none }
                 state.isLoading = false
-                state.errorMessage = "실험을 불러오지 못했어요.\n다시 시도해 주세요."
+                state.errorMessage = Self.message(for: error)
                 return .none
+            case .retryTapped:
+                return load(&state)
             }
         }
     }
@@ -77,9 +80,24 @@ struct SelectExperimentFeature {
                 let experiments = try await watchExperimentClient.list()
                 await send(.loadSucceeded(experiments))
             } catch {
-                await send(.loadFailed)
+                await send(.loadFailed(error as? WatchExperimentError))
             }
         }
         .cancellable(id: CancelID.load, cancelInFlight: true)
+    }
+
+    private static func message(for error: WatchExperimentError?) -> String {
+        switch error {
+        case .notReachable:
+            "iPhone과 연결할 수 없어요."
+        case .deliveryTimeout:
+            "iPhone 응답이 늦어지고 있어요."
+        case .phoneUnlockRequired:
+            "iPhone 잠금을 해제해 주세요."
+        case .storageFailed:
+            "iPhone에서 실험을 읽지 못했어요."
+        default:
+            "실험을 불러오지 못했어요."
+        }
     }
 }

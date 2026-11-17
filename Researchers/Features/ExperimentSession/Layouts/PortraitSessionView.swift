@@ -7,6 +7,7 @@
 
 import ComposableArchitecture
 import LabcordDesignSystem
+import LabcordiOS
 import LabcordShared
 import SwiftUI
 
@@ -20,7 +21,10 @@ struct PortraitSessionView: View {
     let onShowGestureGuide: () -> Void
 
     private var areRecordButtonsDisabled: Bool {
-        sessionStore.voice.phase != .hidden
+        PhoneWatchAudioService.shared.hasUnsettledRecording(in: sessionStore.experimentID)
+            || sessionStore.watchCommand != nil
+            || sessionStore.watchMediaCommand != nil
+            || sessionStore.voice.phase != .hidden
             || store.previewConnector == nil
             || store.isCameraSwitching
             || store.isPhotoCaptureScheduled

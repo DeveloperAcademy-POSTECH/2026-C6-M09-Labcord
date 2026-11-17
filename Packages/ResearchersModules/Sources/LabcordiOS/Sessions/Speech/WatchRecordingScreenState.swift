@@ -19,13 +19,16 @@ struct WatchRecordingScreenState {
     mutating func receive(_ status: WatchVoiceLiveStatus) {
         guard terminalPhases[status.recordingID] == nil,
               status.elapsedSeconds.map({ $0.isFinite && $0 >= 0 }) ?? true else { return }
-        unsettled[status.recordingID] = status.experimentID
         let phase = status.phase ?? (status.isRecording ? .recording : .previewing)
-        let displayedPhase: WatchRecordSnapshot.Phase = [.saved, .cancelled].contains(phase)
-            ? .saving : phase
+        if phase == .failed || phase == .cancelled {
+            unsettled.removeValue(forKey: status.recordingID)
+            if phase == .cancelled { terminalPhases[status.recordingID] = .cancelled }
+        } else {
+            unsettled[status.recordingID] = status.experimentID
+        }
         update(WatchScreenRecording(
             id: status.recordingID, experimentID: status.experimentID,
-            origin: .watch, kind: .audio, phase: displayedPhase, startedAt: status.startedAt,
+            origin: .watch, kind: .audio, phase: phase, startedAt: status.startedAt,
             elapsedSeconds: status.elapsedSeconds ?? elapsedSeconds(for: status.recordingID)
         ))
     }
@@ -34,9 +37,10 @@ struct WatchRecordingScreenState {
         guard record.kind == .audio, let experimentID = record.experimentID,
               elapsedSeconds.map({ $0.isFinite && $0 >= 0 }) ?? true else { return }
         let terminal = record.phase == .saved || record.phase == .cancelled
+            || record.phase == .failed
         if terminal {
             unsettled.removeValue(forKey: record.id)
-            terminalPhases[record.id] = record.phase
+            if record.phase != .failed { terminalPhases[record.id] = record.phase }
         } else {
             guard terminalPhases[record.id] == nil else { return }
             unsettled[record.id] = experimentID
