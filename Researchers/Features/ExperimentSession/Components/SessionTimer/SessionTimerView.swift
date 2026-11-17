@@ -72,6 +72,7 @@ struct SessionTimerView: View {
                         leftTitle: "설정된 타이머",
                         rightTitle: "진행 중인 타이머"
                     )
+                    .layoutPriority(1)
                 }
 
                 Spacer()
