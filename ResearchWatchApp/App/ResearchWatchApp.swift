@@ -75,7 +75,7 @@ struct ResearchWatchApp: App {
                     case let .sort(experimentID):
                         SortRecordView(
                             isPhoneResultReady: phoneResultReadyIDs.contains(experimentID)
-                        )                            {
+                        ) {
                                 phoneResultReadyIDs.remove(experimentID)
                                 path = []
                             }
