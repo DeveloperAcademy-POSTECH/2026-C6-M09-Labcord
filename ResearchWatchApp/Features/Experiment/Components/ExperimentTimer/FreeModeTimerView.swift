@@ -5,10 +5,10 @@
 //  Created by 정홍섭 on 11/17/26.
 //
 
-import SwiftUI
+import LabcordDesignSystem
 import LabcordShared
 import LabcordWatchOS
-import LabcordDesignSystem
+import SwiftUI
 
 struct FreeModeTimerView: View {
     let timers: [WatchTimerSnapshot]
@@ -27,7 +27,7 @@ struct FreeModeTimerView: View {
                         height: WatchScreenMetrics.scaledHeight(16),
                         alignment: .topLeading
                     )
-                
+
                 if hasRunningTimer {
                     ProgressTimerView()
                 } else {

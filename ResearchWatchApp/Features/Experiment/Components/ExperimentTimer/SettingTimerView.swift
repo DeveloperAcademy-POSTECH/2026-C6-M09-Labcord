@@ -5,9 +5,9 @@
 //  Created by 정홍섭 on 11/17/26.
 //
 
-import SwiftUI
-import LabcordWatchOS
 import LabcordDesignSystem
+import LabcordWatchOS
+import SwiftUI
 
 struct SettingTimerView: View {
     let timerSeconds: [Int]

@@ -15,7 +15,7 @@ struct ExperimentRecordView: View {
     private var buttonHeight: CGFloat {
         WatchScreenMetrics.scaledHeight(45)
     }
-    
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: WatchScreenMetrics.scaledHeight(8)) {
@@ -26,7 +26,7 @@ struct ExperimentRecordView: View {
                         height: WatchScreenMetrics.scaledHeight(35),
                         alignment: .topLeading
                     )
-                
+
                 LazyVGrid(
                     columns: [
                         GridItem(.flexible(), alignment: .leading),
@@ -44,7 +44,7 @@ struct ExperimentRecordView: View {
             .padding(.bottom, WatchScreenMetrics.scaledHeight(23))
 
             VStack(spacing: 4) {
-                Button("일시정지", systemImage: "pause.fill", action: {})
+                Button("일시정지", systemImage: "pause.fill") {}
                     .font(.system(size: 18.5, weight: .medium))
                     .frame(maxWidth: .infinity)
                     .frame(height: buttonHeight)
@@ -53,8 +53,8 @@ struct ExperimentRecordView: View {
                         Color("General/LiveActivity/Secondary"),
                         in: RoundedRectangle(cornerRadius: .infinity)
                     )
-                
-                Button("종료", systemImage: "stop.fill", action: {})
+
+                Button("종료", systemImage: "stop.fill") {}
                     .font(.system(size: 18.5, weight: .medium))
                     .frame(maxWidth: .infinity)
                     .frame(height: buttonHeight)
