@@ -8,7 +8,7 @@ struct ExperimentView: View {
     let experiment: WatchExperimentSummary
     @State private var store: StoreOf<ExperimentFeature>
     @State private var selectedPage = 1
-    @State private var isVoiceRecordPresented = false
+    @Binding var isVoiceRecordPresented: Bool
 
     private var showsTimerAddButton: Bool {
         guard selectedPage == 2 else { return false }
@@ -16,8 +16,9 @@ struct ExperimentView: View {
             store.snapshot?.timers.contains { $0.status == .running } == true
     }
 
-    init(experiment: WatchExperimentSummary) {
+    init(experiment: WatchExperimentSummary, isVoiceRecordPresented: Binding<Bool>) {
         self.experiment = experiment
+        _isVoiceRecordPresented = isVoiceRecordPresented
         _store = State(initialValue: Store(
             initialState: ExperimentFeature.State(experimentID: experiment.id)
         ) {
@@ -50,7 +51,7 @@ struct ExperimentView: View {
                 PageControl(pageCount: 2, selection: $selectedPage)
             }
         }
-        .padding(.top, 24.5)
+        .padding(.top, WatchScreenMetrics.scaledHeight(24.5))
         .padding(.horizontal, 6)
         .ignoresSafeArea()
         .toolbar {
@@ -69,7 +70,7 @@ struct ExperimentView: View {
         .onDisappear { store.send(.disappeared) }
         .sheet(isPresented: $isVoiceRecordPresented) {
             NavigationStack {
-                VoiceRecordView()
+                VoiceRecordView(experimentID: experiment.id)
             }
             .presentationBackground(.black)
         }
@@ -82,6 +83,7 @@ struct ExperimentView: View {
             id: UUID(),
             title: "새 실험(1)",
             status: .running
-        )
+        ),
+        isVoiceRecordPresented: .constant(false)
     )
 }
