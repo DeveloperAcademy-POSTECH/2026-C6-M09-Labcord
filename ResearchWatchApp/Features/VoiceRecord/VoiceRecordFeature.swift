@@ -332,8 +332,8 @@ final class WatchVoiceRecordingService {
         let pending = UserDefaults.standard.data(forKey: pendingKey)
             .flatMap { try? JSONDecoder().decode([WatchAudioHeader].self, from: $0) } ?? []
         pendingConfirmations = Dictionary(
-            pending.map { ($0.recordingID, $0) }, uniquingKeysWith: { first, _ in first }
-        )
+            pending.map { ($0.recordingID, $0) }
+        ) { first, _ in first }
         requestedConfirmations = Set(pendingConfirmations.keys)
     }
 

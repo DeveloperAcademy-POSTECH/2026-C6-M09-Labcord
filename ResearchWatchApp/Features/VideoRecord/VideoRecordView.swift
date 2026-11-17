@@ -110,8 +110,7 @@ struct VideoRecordView: View {
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button {
-                    if store.phase == .saved { dismiss() }
-                    else { store.send(.closeTapped) }
+                    if store.phase == .saved { dismiss() } else { store.send(.closeTapped) }
                 } label: {
                     Image(systemName: "xmark")
                 }

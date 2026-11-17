@@ -281,9 +281,9 @@ extension PhoneWatchAudioService {
               let status = try? JSONDecoder().decode(WatchVoiceLiveStatus.self, from: data)
         else { return }
         let isCancellation = status.phase == .cancelled
-        guard (isCancellation || status.sentAt > lastLiveStatusAt),
+        guard isCancellation || status.sentAt > lastLiveStatusAt,
               status.sentAt <= receivedAt.addingTimeInterval(2),
-              (isCancellation || status.sentAt > receivedAt.addingTimeInterval(-3)),
+              isCancellation || status.sentAt > receivedAt.addingTimeInterval(-3),
               status.startedAt <= status.sentAt,
               status.elapsedSeconds.map({ $0.isFinite && $0 >= 0 }) ?? true,
               latest[status.recordingID]?.savedRecordID == nil,

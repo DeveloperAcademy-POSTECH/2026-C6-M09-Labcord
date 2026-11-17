@@ -31,7 +31,7 @@ extension CameraCaptureFeature {
 
     private func watchPhotoRetake(state: inout State, action: Action) -> Effect<Action>? {
         switch action {
-        case .photo(.retakeRequested), .photo(.watchCancelRequested(_)):
+        case .photo(.retakeRequested), .photo(.watchCancelRequested):
             break
         default:
             return nil
