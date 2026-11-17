@@ -8,11 +8,17 @@
 import ComposableArchitecture
 import LabcordDesignSystem
 import LabcordWatchOS
+import OSLog
 import SwiftUI
+
+private let shortcutLogger = Logger(
+    subsystem: "com.researchers.Researchers.watchkitapp", category: "WatchShortcut"
+)
 
 struct VoiceRecordView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var store: StoreOf<VoiceRecordFeature>
+    @State private var shortcutRegistration: WatchRecordingShortcutCenter.Registration?
 
     init(experimentID: UUID) {
         _store = State(initialValue: Store(
@@ -91,8 +97,20 @@ struct VoiceRecordView: View {
             }
         }
         .interactiveDismissDisabled(store.phase != .saved)
-        .onAppear { store.send(.appeared) }
-        .onDisappear { store.send(.disappeared) }
+        .onAppear {
+            store.send(.appeared)
+            shortcutLogger.info("VoiceRecordView appeared")
+            if shortcutRegistration == nil {
+                let center = WatchRecordingShortcutCenter.shared
+                shortcutRegistration = center.register { shortcut, id in
+                    stopRecording(for: shortcut, experimentID: id)
+                }
+            }
+        }
+        .onDisappear {
+            store.send(.disappeared)
+            shortcutLogger.info("VoiceRecordView disappeared")
+        }
         .onChange(of: store.shouldDismiss) { _, shouldDismiss in
             if shouldDismiss { dismiss() }
         }
@@ -102,6 +120,25 @@ struct VoiceRecordView: View {
             guard !Task.isCancelled, store.phase == .saved else { return }
             dismiss()
         }
+    }
+
+    /// 음성 단축어는 녹음 중일 때만 녹음을 종료하고, 다른 단계에서는 처리하지 않습니다.
+    private func stopRecording(
+        for shortcut: WatchRecordingShortcut, experimentID: UUID?
+    ) -> Bool {
+        guard shortcut == .voice else { return false }
+        let phase = String(describing: store.phase)
+        guard store.phase == .recording,
+              experimentID == nil || experimentID == store.experimentID else {
+            shortcutLogger.info("Voice stop ignored: phase=\(phase, privacy: .public)")
+            return false
+        }
+        store.send(.finishTapped)
+        let next = String(describing: store.phase)
+        shortcutLogger.info(
+            "Voice stop sent: \(phase, privacy: .public)->\(next, privacy: .public)"
+        )
+        return true
     }
 
     private var progressTitle: String {

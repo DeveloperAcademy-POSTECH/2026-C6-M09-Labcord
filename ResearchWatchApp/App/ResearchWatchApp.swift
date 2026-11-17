@@ -99,6 +99,12 @@ struct ResearchWatchApp: App {
             }
             .task { WatchVoiceRecordingService.shared.activate() }
             .task {
+                connectivity.remoteIntentHandler = { request in
+                    WatchRecordingShortcutCenter.shared.receive(request)
+                }
+                await connectivity.activate()
+            }
+            .task {
                 for await screen in await watchExperimentClient.screens() {
                     if screen.destination == .result, let id = screen.experimentID {
                         phoneResultReadyIDs.insert(id)
