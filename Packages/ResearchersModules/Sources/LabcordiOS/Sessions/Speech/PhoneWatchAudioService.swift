@@ -30,7 +30,7 @@ public final class PhoneWatchAudioService {
     public var screenRecording: WatchScreenRecording? { screenState.recording }
 
     public func hasUnsettledRecording(in experimentID: UUID? = nil) -> Bool {
-        !damagedRecordingIDs.isEmpty || screenState.hasUnsettledRecording(in: experimentID)
+        screenState.hasUnsettledRecording(in: experimentID)
     }
     private var lastLiveStatusAt: Date = .distantPast
     public private(set) var lastError: WatchAudioError?
@@ -278,15 +278,18 @@ extension PhoneWatchAudioService {
 
     public func receiveLiveStatus(_ data: Data, receivedAt: Date = .now) {
         guard data.count <= 4096,
-              let status = try? JSONDecoder().decode(WatchVoiceLiveStatus.self, from: data),
-              status.sentAt > lastLiveStatusAt,
+              let status = try? JSONDecoder().decode(WatchVoiceLiveStatus.self, from: data)
+        else { return }
+        let isCancellation = status.phase == .cancelled
+        guard isCancellation || status.sentAt > lastLiveStatusAt,
               status.sentAt <= receivedAt.addingTimeInterval(2),
-              status.sentAt > receivedAt.addingTimeInterval(-3),
+              isCancellation || status.sentAt > receivedAt.addingTimeInterval(-3),
               status.startedAt <= status.sentAt,
               status.elapsedSeconds.map({ $0.isFinite && $0 >= 0 }) ?? true,
               latest[status.recordingID]?.savedRecordID == nil,
+              latest[status.recordingID]?.failure == nil,
               latest[status.recordingID]?.isCancelled != true else { return }
-        lastLiveStatusAt = status.sentAt
+        lastLiveStatusAt = max(lastLiveStatusAt, status.sentAt)
         if status.isRecording {
             liveRecording = LiveRecording(
                 experimentID: status.experimentID, recordingID: status.recordingID,

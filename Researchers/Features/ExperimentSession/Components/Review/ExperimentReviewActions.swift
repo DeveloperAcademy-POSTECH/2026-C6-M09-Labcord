@@ -3,6 +3,8 @@ import LabcordiOS
 import SwiftUI
 
 struct ExperimentReviewActions: View {
+    @State private var remainingSeconds = 3
+
     let retakeLabel: String
     let isSaving: Bool
     let showsAutoSaveNotice: Bool
@@ -12,7 +14,18 @@ struct ExperimentReviewActions: View {
     var body: some View {
         VStack(alignment: .trailing, spacing: 12) {
             if showsAutoSaveNotice {
-                StatusPill("3초 후 자동 저장돼요", showIcon: false)
+                StatusPill("\(remainingSeconds)초 후 자동 저장돼요", showIcon: false)
+                    .task {
+                        remainingSeconds = 3
+                        for seconds in stride(from: 2, through: 1, by: -1) {
+                            do {
+                                try await Task.sleep(for: .seconds(1))
+                                remainingSeconds = seconds
+                            } catch {
+                                return
+                            }
+                        }
+                    }
             }
 
             HStack(spacing: 12) {

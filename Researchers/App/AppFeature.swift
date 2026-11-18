@@ -3,6 +3,11 @@ import Foundation
 import LabcordiOS
 import LabcordShared
 
+enum WatchSplashPhase: Equatable {
+    case waiting
+    case ready
+}
+
 @Reducer
 struct AppFeature {
     @ObservableState
@@ -10,6 +15,7 @@ struct AppFeature {
         @Shared(.appStorage("onboardingHasCompleted")) var hasCompletedOnboarding = false
         var onboarding: OnboardingFeature.State?
         var watchPendingStartID: UUID?
+        var watchSplashPhase = WatchSplashPhase.waiting
         var screenNavigation: WatchExperimentCommand?
         var watchIsActive = false
         var watchRequestID: UUID?
@@ -37,6 +43,7 @@ struct AppFeature {
         case watchTask
         case watchEvent(PhoneWatchExperimentCoordinator.Event)
         case watchSceneChanged(Bool)
+        case watchSplashChanged(Bool)
         case restoreSettingsSession
         case settingsSessionLoaded(UUID, Bool)
         case home(HomeFeature.Action)
@@ -77,6 +84,7 @@ struct AppFeature {
             .forEach(\.path, action: \.path)
         watchCompletionNavigationReducer
         watchContextReducer
+        watchPendingOpenReducer
     }
 }
 
@@ -107,6 +115,10 @@ private extension AppFeature {
 
             case let .watchSceneChanged(active):
                 return active ? openReadyLiveActivityExperiment(&state) : .none
+
+            case let .watchSplashChanged(ready):
+                state.watchSplashPhase = ready ? .ready : .waiting
+                return .none
 
             case .screenNavigationLoaded, .watchTask, .watchEvent,
                  .restoreSettingsSession, .settingsSessionLoaded: return .none

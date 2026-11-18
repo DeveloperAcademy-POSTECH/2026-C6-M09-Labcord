@@ -29,6 +29,8 @@ private struct NavigationSwipeBack: UIViewControllerRepresentable {
         private weak var gesture: UIGestureRecognizer?
         private weak var previousDelegate: UIGestureRecognizerDelegate?
         private var previousIsEnabled: Bool?
+        private weak var contentGesture: UIGestureRecognizer?
+        private var previousContentIsEnabled: Bool?
 
         func setEnabled(_ enabled: Bool) {
             shouldEnable = enabled
@@ -58,6 +60,11 @@ private struct NavigationSwipeBack: UIViewControllerRepresentable {
                         gesture = popGesture
                         previousDelegate = popGesture.delegate
                         previousIsEnabled = popGesture.isEnabled
+                        if #available(iOS 26.0, *) {
+                            contentGesture =
+                                navigationController.interactiveContentPopGestureRecognizer
+                            previousContentIsEnabled = contentGesture?.isEnabled
+                        }
                         break
                     }
                     ancestor = controller.parent
@@ -67,6 +74,7 @@ private struct NavigationSwipeBack: UIViewControllerRepresentable {
             guard let gesture else { return }
             gesture.delegate = shouldEnable ? nil : previousDelegate
             gesture.isEnabled = shouldEnable
+            contentGesture?.isEnabled = shouldEnable
         }
 
         func restore() {
@@ -75,6 +83,11 @@ private struct NavigationSwipeBack: UIViewControllerRepresentable {
             if let previousIsEnabled {
                 gesture.isEnabled = previousIsEnabled
             }
+            if let previousContentIsEnabled {
+                contentGesture?.isEnabled = previousContentIsEnabled
+            }
+            contentGesture = nil
+            previousContentIsEnabled = nil
             self.gesture = nil
             previousDelegate = nil
             previousIsEnabled = nil

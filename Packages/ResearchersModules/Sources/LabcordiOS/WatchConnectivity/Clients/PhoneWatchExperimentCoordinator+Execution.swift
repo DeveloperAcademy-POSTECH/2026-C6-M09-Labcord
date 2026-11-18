@@ -9,6 +9,9 @@ extension PhoneWatchExperimentCoordinator {
         if command.operation == .navigate { return try await navigate(command) }
         let current = try validate(command)
         let token = try await perform(command, current: current)
+        if command.operation == .pause || command.operation == .complete {
+            commandSubscriber?.yield(.closeCommitted(current.experiment.id, command.operation))
+        }
         let updated = try snapshot(current.experiment.id)
         publish(updated)
         return WatchExperimentResponse(

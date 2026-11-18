@@ -25,6 +25,7 @@ struct ProtocolAnalysisCompletionView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 16)
             }
+            .scrollBounceBehavior(.basedOnSize)
             Button {
                 store.send(.reviewTapped(requiresConfirmation: requiresReviewConfirmation))
             } label: {

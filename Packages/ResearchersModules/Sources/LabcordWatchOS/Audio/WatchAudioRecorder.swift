@@ -5,6 +5,7 @@ import WatchKit
 
 public enum WatchAudioCaptureEvent: Equatable, Sendable {
     case recording(WatchAudioHeader)
+    case levels([Float])
     case retaining(WatchAudioHeader, throughSample: Int64)
     case retained(WatchAudioManifest)
     case failed(WatchAudioError)
@@ -92,7 +93,10 @@ public final class WatchAudioRecorder {
             bufferingPolicy: .bufferingNewest(4)
         )
         events = eventContinuation
-        installTap(input: input, format: format, continuation: continuation)
+        installTap(
+            input: input, format: format, continuation: continuation,
+            events: eventContinuation
+        )
         writer = Task { await self.consume(stream, header: header) }
         interruptions = monitorInterruptions(header)
         do {
@@ -108,7 +112,8 @@ public final class WatchAudioRecorder {
 
     private func installTap(
         input: AVAudioInputNode, format: AVAudioFormat,
-        continuation: AsyncThrowingStream<Data, Error>.Continuation
+        continuation: AsyncThrowingStream<Data, Error>.Continuation,
+        events: AsyncStream<WatchAudioCaptureEvent>.Continuation
     ) {
         hasTap = true
         input.installTap(onBus: 0, bufferSize: 4096, format: format) { @Sendable buffer, _ in
@@ -119,13 +124,27 @@ public final class WatchAudioRecorder {
                 return
             }
             var data = Data(capacity: Int(buffer.frameLength) * 2)
-            for index in 0..<Int(buffer.frameLength) {
+            let frameCount = Int(buffer.frameLength)
+            var powers = [Float](repeating: 0, count: 7)
+            var sampleCounts = [Int](repeating: 0, count: 7)
+            for index in 0..<frameCount {
                 let sample = samples[index].isFinite ? samples[index] : 0
+                let barIndex = min(6, index * 7 / frameCount)
+                powers[barIndex] += sample * sample
+                sampleCounts[barIndex] += 1
                 var value = Int16(max(-1, min(1, sample)) * 32767).littleEndian
                 withUnsafeBytes(of: &value) { data.append(contentsOf: $0) }
             }
             if case .dropped = continuation.yield(data) {
                 continuation.finish(throwing: WatchAudioError.bufferOverflow)
+            } else if frameCount > 0 {
+                let levels = powers.indices.map { index -> Float in
+                    guard sampleCounts[index] > 0 else { return 0 }
+                    let rms = sqrt(powers[index] / Float(sampleCounts[index]))
+                    let decibels = 20 * log10(max(rms, 0.0001))
+                    return min(1, max(0, (decibels + 45) / 17))
+                }
+                events.yield(.levels(levels))
             }
         }
     }
@@ -199,8 +218,17 @@ public final class WatchAudioRecorder {
         engine.inputNode.removeTap(onBus: 0)
         hasTap = false
     }
+}
 
-    private func consume(
+extension WatchAudioRecorder {
+    @discardableResult
+    public func cancelPendingStart() async -> Bool {
+        await startGate.cancelPending()
+    }
+}
+
+private extension WatchAudioRecorder {
+    func consume(
         _ stream: AsyncThrowingStream<Data, Error>, header: WatchAudioHeader
     ) async {
         var sequence = 0
@@ -253,7 +281,7 @@ public final class WatchAudioRecorder {
         interruptions = nil
         try? AVAudioSession.sharedInstance().setActive(false)
     }
-    private func seal(
+    func seal(
         _ header: WatchAudioHeader, sequence: Int, firstSample: Int64, failure: WatchAudioError?
     ) async -> WatchAudioError? {
         var failure = failure
@@ -275,18 +303,6 @@ public final class WatchAudioRecorder {
         return sequence == 0 ? failure ?? .invalidAudio : failure
     }
 
-}
-
-extension WatchAudioRecorder {
-
-    @discardableResult
-    public func cancelPendingStart() async -> Bool {
-        await startGate.cancelPending()
-    }
-
-}
-
-private extension WatchAudioRecorder {
     func markEmptyCaptureIfProven(_ header: WatchAudioHeader) async {
         _ = try? await archive.cancelEmptyBeforeCapture(header)
     }

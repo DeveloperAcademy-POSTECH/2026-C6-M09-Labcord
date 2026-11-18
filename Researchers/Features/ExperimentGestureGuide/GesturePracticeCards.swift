@@ -73,7 +73,7 @@ struct GesturePracticeCards: View {
             )
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            if device == .iPhone && completed.contains(gesture) {
+            if completed.contains(gesture) {
                 Image(labcordIcon: .checkBold)
                     .renderingMode(.template)
                     .resizable()

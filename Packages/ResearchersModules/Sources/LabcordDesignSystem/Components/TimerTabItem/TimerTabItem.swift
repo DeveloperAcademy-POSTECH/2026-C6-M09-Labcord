@@ -45,6 +45,8 @@ public struct TimerTabItem: View {
                     foregroundColor
                 )
                 .multilineTextAlignment(.center)
+                .lineLimit(style == .plain ? 1 : nil)
+                .minimumScaleFactor(style == .plain ? 0.8 : 1)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, horizontalPadding)
                 .padding(

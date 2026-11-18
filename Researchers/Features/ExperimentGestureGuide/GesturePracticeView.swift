@@ -19,6 +19,7 @@ struct GesturePracticeView: View {
     @State private var hasPrepared = false
     @State private var page = 1
     @State private var completed: Set<PracticeGesture> = []
+    @State private var watchCompleted: Set<PracticeGesture> = []
     @State private var isHandOpen = false
     @State private var advanceTask: Task<Void, Never>?
 
@@ -48,7 +49,7 @@ struct GesturePracticeView: View {
                         width: geometry.size.width,
                         page: $page,
                         device: device,
-                        completed: completed
+                        completed: device == .iPhone ? completed : watchCompleted
                     ) {
                         advanceTask?.cancel()
                         advanceTask = nil
@@ -62,7 +63,6 @@ struct GesturePracticeView: View {
             .accessibilityHidden(!hasPrepared)
             .allowsHitTesting(hasPrepared)
         }
-        .preferredColorScheme(.dark)
         .overlay {
             if !hasPrepared {
                 preparationContent
@@ -85,6 +85,11 @@ struct GesturePracticeView: View {
         .task(id: "\(device)-\(store.permissionsGranted)") {
             guard store.permissionsGranted, device == .iPhone || !hasPrepared else { return }
             await runCamera()
+        }
+        .onChange(of: store.watchGesture) { _, event in
+            guard let event, device == .appleWatch, hasPrepared,
+                  watchCompleted.insert(event.gesture).inserted else { return }
+            showCompletion(of: event.gesture, in: watchCompleted, for: .appleWatch)
         }
         .onChange(of: store.permissionsGranted) { _, granted in
             if !granted { hasPrepared = false }
@@ -225,13 +230,22 @@ private extension GesturePracticeView {
             isHandOpen = false
         }
         guard device == .iPhone, let gesture, completed.insert(gesture).inserted else { return }
+        showCompletion(of: gesture, in: completed, for: .iPhone)
+    }
+
+    /// 인식한 카드로 이동하고, 잠시 뒤 아직 완료하지 않은 다음 카드로 넘어갑니다.
+    func showCompletion(
+        of gesture: PracticeGesture, in completed: Set<PracticeGesture>,
+        for practiceDevice: GestureDevice
+    ) {
         advanceTask?.cancel()
         withAnimation { page = gesture.rawValue }
         guard let next = gesture.nextIncomplete(in: completed) else { return }
         advanceTask = Task { @MainActor in
             do {
                 try await Task.sleep(for: .milliseconds(650))
-                guard !Task.isCancelled, device == .iPhone, page == gesture.rawValue else {
+                guard !Task.isCancelled, device == practiceDevice,
+                      page == gesture.rawValue else {
                     return
                 }
                 withAnimation { page = next.rawValue }

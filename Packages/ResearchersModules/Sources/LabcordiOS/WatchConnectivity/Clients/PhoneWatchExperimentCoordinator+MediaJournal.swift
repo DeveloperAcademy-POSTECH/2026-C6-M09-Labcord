@@ -77,7 +77,14 @@ extension PhoneWatchExperimentCoordinator {
         guard command.operation == .cancelRecord, let experimentID = command.experimentID,
               let targetID = command.targetID, let record = recordSnapshots[targetID],
               record.experimentID == experimentID, record.kind != .audio,
-              record.phase == .failed, record.originalRetained == false else { return false }
+              record.phase == .cancelled
+                || record.phase == .failed && record.originalRetained == false else {
+            return false
+        }
+        if record.phase == .cancelled {
+            recordResults[command.requestID] = record
+            return true
+        }
         if let activeID = executing, let active = requests[activeID]?.command,
            active.requestID != command.requestID,
            [.takePhoto, .startVideo, .stopVideo].contains(active.operation),
