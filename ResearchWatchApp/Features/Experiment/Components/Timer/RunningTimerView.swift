@@ -13,11 +13,13 @@ import SwiftUI
 struct RunningTimerView: View {
     let timer: WatchTimerSnapshot
     let isCommandPending: Bool
+    var isCreating = false
     let onPause: () -> Void
     let onResume: () -> Void
     let onDelete: () -> Void
     @State private var swipeOffset: CGFloat = 0
     @State private var isDeleteRevealed = false
+    @State private var showsCreatingIndicator = false
 
     private var canSwipeDelete: Bool {
         timer.status == .paused && !isCommandPending
@@ -48,6 +50,15 @@ struct RunningTimerView: View {
         .highPriorityGesture(swipeGesture, including: isDeleteRevealed ? .all : .subviews)
         .onChange(of: canSwipeDelete) { _, canSwipe in
             if !canSwipe { setDeleteRevealed(false) }
+        }
+        .task(id: isCreating) {
+            guard isCreating else {
+                showsCreatingIndicator = false
+                return
+            }
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
+            showsCreatingIndicator = true
         }
     }
 
@@ -122,6 +133,7 @@ struct RunningTimerView: View {
                 Spacer()
 
                 Button {
+                    guard !showsCreatingIndicator else { return }
                     if isFinished {
                         onDelete()
                     } else if timer.status == .running {
@@ -130,26 +142,33 @@ struct RunningTimerView: View {
                         onResume()
                     }
                 } label: {
-                    Image(systemName: isFinished ? "xmark" :
-                          timer.status == .running ? "pause.fill" : "play.fill")
-                        .font(.system(size: 15))
-                        .foregroundStyle(.white)
-                        .frame(width: 30, height: 30)
-                        .background(
-                            isFinished
-                                ? Color("General/Timer/Identity/04")
-                                : Color("General/Label/Primary"),
-                            in: Circle()
-                        )
-                        .overlay {
-                            TimerRingView(progress: ringProgress, isFinished: isFinished)
+                    Group {
+                        if showsCreatingIndicator {
+                            ProgressView()
+                                .controlSize(.small)
+                                .tint(.white)
+                        } else {
+                            Image(systemName: isFinished ? "xmark" :
+                                  timer.status == .running ? "pause.fill" : "play.fill")
+                                .font(.system(size: 15))
+                                .foregroundStyle(.white)
                         }
-                        .contentShape(Circle())
+                    }
+                    .frame(width: 30, height: 30)
+                    .background(
+                        isFinished
+                            ? Color("General/Timer/Identity/04")
+                            : Color("General/Label/Primary"),
+                        in: Circle()
+                    )
+                    .overlay {
+                        TimerRingView(progress: ringProgress, isFinished: isFinished)
+                    }
+                    .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
-                .disabled(isCommandPending)
-                .accessibilityLabel(isFinished ? "타이머 삭제" :
-                                    timer.status == .running ? "타이머 일시정지" : "타이머 재개")
+                .disabled(isCommandPending && !showsCreatingIndicator)
+                .accessibilityLabel(accessibilityLabel(isFinished: isFinished))
             }
             .padding(.horizontal, WatchScreenMetrics.scaledWidth(9.5))
             .padding(.vertical, WatchScreenMetrics.scaledHeight(8))
@@ -160,6 +179,12 @@ struct RunningTimerView: View {
             )
             .cornerRadius(8.5)
         }
+    }
+
+    private func accessibilityLabel(isFinished: Bool) -> String {
+        if showsCreatingIndicator { return "타이머 생성 중" }
+        if isFinished { return "타이머 삭제" }
+        return timer.status == .running ? "타이머 일시정지" : "타이머 재개"
     }
 
     private func progress(at date: Date) -> Double {
