@@ -12,20 +12,27 @@ import SwiftUI
 struct ProgressTimerView: View {
     let timers: [WatchTimerSnapshot]
     let pendingTimerIDs: Set<UUID>
+    var creatingTimerIDs: Set<UUID> = []
     let onTimerCommand: (UUID, WatchExperimentCommand.Operation) -> Void
+
+    var showsTitle = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("진행 중인 타이머")
-                .padding(.bottom, WatchScreenMetrics.scaledHeight(4))
-                .padding(.bottom, WatchScreenMetrics.scaledWidth(9.5))
-            
+            if showsTitle {
+                Text("진행 중인 타이머")
+                    .font(.system(size: 13, weight: .medium))
+                    .padding(.bottom, WatchScreenMetrics.scaledHeight(4))
+                    .padding(.horizontal, WatchScreenMetrics.scaledWidth(9.5))
+            }
+
             TimelineView(.periodic(from: .now, by: 1)) { context in
                 VStack(spacing: 4) {
                     ForEach(sortedTimers(at: context.date)) { timer in
                         RunningTimerView(
                             timer: timer,
                             isCommandPending: pendingTimerIDs.contains(timer.id),
+                            isCreating: creatingTimerIDs.contains(timer.id),
                             onPause: { onTimerCommand(timer.id, .pauseTimer) },
                             onResume: { onTimerCommand(timer.id, .resumeTimer) },
                             onDelete: { onTimerCommand(timer.id, .deleteTimer) }
