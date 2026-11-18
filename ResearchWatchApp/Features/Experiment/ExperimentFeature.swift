@@ -85,77 +85,10 @@ struct ExperimentFeature {
                 let experimentID = state.experimentID
                 state.isLoading = state.snapshot == nil
                 state.localTimers = WatchPendingTimerStore.shared.timers(for: experimentID)
-                return .merge(
-                    .run { send in
-                        for await snapshot in await watchExperimentClient.snapshots() {
-                            await send(.snapshotReceived(snapshot))
-                        }
-                    }
-                    .cancellable(id: CancelID.snapshots, cancelInFlight: true),
-                    .run { send in
-                        do {
-                            let response = try await watchExperimentClient.send(
-                                WatchExperimentCommand(
-                                    operation: .snapshot,
-                                    experimentID: experimentID
-                                )
-                            )
-                            guard response.phase == .completed,
-                                  let snapshot = response.snapshot else {
-                                await send(.snapshotRequestFailed)
-                                return
-                            }
-                            await send(.snapshotReceived(snapshot))
-                        } catch {
-                            await send(.snapshotRequestFailed)
-                        }
-                    }
-                    .cancellable(id: CancelID.initialSnapshot, cancelInFlight: true),
-                    .run { send in
-                        while !Task.isCancelled {
-                            await send(.retryPendingTimer)
-                            try? await Task.sleep(for: .seconds(2))
-                        }
-                    }
-                    .cancellable(id: CancelID.pendingTimerRetry, cancelInFlight: true)
-                )
+                return observeExperiment(experimentID: experimentID)
 
             case let .snapshotReceived(snapshot):
-                guard snapshot.experiment.id == state.experimentID,
-                      state.snapshot.map({ current in
-                          snapshot.revision > current.revision
-                              || snapshot.revision == current.revision
-                                  && snapshot.recordedAt >= current.recordedAt
-                      }) ?? true else { return .none }
-                state.snapshot = snapshot
-                state.isLoading = false
-                let remoteIDs = Set(snapshot.timers.map(\.id))
-                for pending in state.localTimers where remoteIDs.contains(pending.id) {
-                    WatchPendingTimerStore.shared.remove(pending.id)
-                }
-                state.localTimers.removeAll { remoteIDs.contains($0.id) }
-                let available = max(0, ExperimentTimerCollection.maximumCount
-                    - snapshot.timers.count)
-                if state.localTimers.count > available {
-                    for pending in state.localTimers.dropFirst(available) {
-                        WatchPendingTimerStore.shared.remove(pending.id)
-                    }
-                    state.localTimers = Array(state.localTimers.prefix(available))
-                    state.errorMessage = "iPhone 타이머가 우선되어 Watch 타이머 일부를 제거했어요."
-                }
-                switch snapshot.experiment.status {
-                case .running:
-                    state.hasObservedRunning = true
-                case .paused where state.hasObservedRunning:
-                    state.closeResult = .paused
-                    state.overlay = nil
-                case .completed where state.hasObservedRunning:
-                    state.closeResult = .completed
-                    state.overlay = nil
-                default:
-                    break
-                }
-                return state.localTimers.isEmpty ? .none : .send(.retryPendingTimer)
+                return receiveSnapshot(snapshot, state: &state)
 
             case .pauseTapped:
                 guard state.overlay == nil, !state.isClosing else { return .none }
@@ -317,6 +250,83 @@ struct ExperimentFeature {
 }
 
 private extension ExperimentFeature {
+    func observeExperiment(experimentID: UUID) -> Effect<Action> {
+        .merge(
+            .run { send in
+                for await snapshot in await watchExperimentClient.snapshots() {
+                    await send(.snapshotReceived(snapshot))
+                }
+            }
+            .cancellable(id: CancelID.snapshots, cancelInFlight: true),
+            .run { send in
+                do {
+                    let response = try await watchExperimentClient.send(
+                        WatchExperimentCommand(
+                            operation: .snapshot,
+                            experimentID: experimentID
+                        )
+                    )
+                    guard response.phase == .completed,
+                          let snapshot = response.snapshot else {
+                        await send(.snapshotRequestFailed)
+                        return
+                    }
+                    await send(.snapshotReceived(snapshot))
+                } catch {
+                    await send(.snapshotRequestFailed)
+                }
+            }
+            .cancellable(id: CancelID.initialSnapshot, cancelInFlight: true),
+            .run { send in
+                while !Task.isCancelled {
+                    await send(.retryPendingTimer)
+                    try? await Task.sleep(for: .seconds(2))
+                }
+            }
+            .cancellable(id: CancelID.pendingTimerRetry, cancelInFlight: true)
+        )
+    }
+
+    func receiveSnapshot(
+        _ snapshot: WatchExperimentSnapshot, state: inout State
+    ) -> Effect<Action> {
+        guard snapshot.experiment.id == state.experimentID,
+              state.snapshot.map({ current in
+                  snapshot.revision > current.revision
+                      || snapshot.revision == current.revision
+                          && snapshot.recordedAt >= current.recordedAt
+              }) ?? true else { return .none }
+        state.snapshot = snapshot
+        state.isLoading = false
+        let remoteIDs = Set(snapshot.timers.map(\.id))
+        for pending in state.localTimers where remoteIDs.contains(pending.id) {
+            WatchPendingTimerStore.shared.remove(pending.id)
+        }
+        state.localTimers.removeAll { remoteIDs.contains($0.id) }
+        let available = max(0, ExperimentTimerCollection.maximumCount
+            - snapshot.timers.count)
+        if state.localTimers.count > available {
+            for pending in state.localTimers.dropFirst(available) {
+                WatchPendingTimerStore.shared.remove(pending.id)
+            }
+            state.localTimers = Array(state.localTimers.prefix(available))
+            state.errorMessage = "iPhone 타이머가 우선되어 Watch 타이머 일부를 제거했어요."
+        }
+        switch snapshot.experiment.status {
+        case .running:
+            state.hasObservedRunning = true
+        case .paused where state.hasObservedRunning:
+            state.closeResult = .paused
+            state.overlay = nil
+        case .completed where state.hasObservedRunning:
+            state.closeResult = .completed
+            state.overlay = nil
+        default:
+            break
+        }
+        return state.localTimers.isEmpty ? .none : .send(.retryPendingTimer)
+    }
+
     func timerCommandEffect(
         id: UUID, operation: WatchExperimentCommand.Operation, experimentID: UUID
     ) -> Effect<Action> {
