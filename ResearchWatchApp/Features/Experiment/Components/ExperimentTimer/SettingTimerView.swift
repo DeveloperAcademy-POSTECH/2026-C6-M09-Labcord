@@ -60,12 +60,11 @@ struct SettingTimerView: View {
     }
 }
 
-/// 프로토콜 모드에서 타이머 목록이 보일 때 툴바로 여는 프리셋 화면입니다.
-/// 타이머 탭의 `SettingTimerView`와 같은 모습으로 보이도록 제목·여백을 맞춥니다.
 struct SettingTimerScreen: View {
     let timerSeconds: [Int]
+    let canAddTimer: Bool
     let onStart: (Int) -> Void
-    @Environment(\.dismiss) private var dismiss
+    let onCustomStart: (Int) -> Void
     @State private var isAddTimerPresented = false
 
     var body: some View {
@@ -75,17 +74,13 @@ struct SettingTimerScreen: View {
                 .foregroundStyle(Color("General/Brand/Primary"))
                 .padding(.bottom, WatchScreenMetrics.scaledHeight(4.5))
 
-            SettingTimerView(timerSeconds: timerSeconds) { seconds in
-                onStart(seconds)
-                dismiss()
-            } onAdd: {
+            SettingTimerView(timerSeconds: timerSeconds, onStart: onStart) {
                 isAddTimerPresented = true
             }
         }
         .padding(.top, WatchScreenMetrics.scaledHeight(24.5))
         .padding(.horizontal, 6)
         .ignoresSafeArea()
-        // 타이머 탭에서 + 버튼이 숨겨질 때와 같은 툴바 배치를 유지합니다.
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Color.clear
@@ -93,7 +88,7 @@ struct SettingTimerScreen: View {
             }
         }
         .navigationDestination(isPresented: $isAddTimerPresented) {
-            AddTimerView()
+            AddTimerView(canAddTimer: canAddTimer, onStart: onCustomStart)
         }
     }
 }
@@ -104,6 +99,9 @@ struct SettingTimerScreen: View {
 
 #Preview("프리셋 화면") {
     NavigationStack {
-        SettingTimerScreen(timerSeconds: [30, 90, 3_600], onStart: { _ in })
+        SettingTimerScreen(
+            timerSeconds: [30, 90, 3_600], canAddTimer: true,
+            onStart: { _ in }, onCustomStart: { _ in }
+        )
     }
 }
