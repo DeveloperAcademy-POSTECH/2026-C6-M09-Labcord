@@ -2,7 +2,6 @@ import Foundation
 import LabcordShared
 
 extension WatchExperimentClient {
-    /// 응답이 유실된 명령은 iPhone의 원래 요청 ID로 확인합니다.
     public func sendRecovering(
         _ command: WatchExperimentCommand,
         until isSatisfied: @Sendable (WatchExperimentResponse) -> Bool = { $0.phase == .completed }
@@ -35,7 +34,6 @@ extension WatchExperimentClient {
             mayHaveBeenDelivered = true
             if next.operation == .requestStatus, next.targetID == command.requestID,
                response.phase == .failed, response.queriedRequestID == nil {
-                // 잠금 등으로 조회 자체가 거절되면 원래 명령의 실행 여부는 여전히 모릅니다.
                 next = followUp(for: command)
                 try await clock.sleep(until: min(deadline, clock.now.advanced(by: .seconds(1))))
                 continue
@@ -50,7 +48,6 @@ extension WatchExperimentClient {
             }
             if response.phase != .unknown, isSatisfied(response) { return response }
 
-            // iPhone에 처리 기록이 없으면 동일한 ID와 내용만 다시 보냅니다.
             if response.phase == .unknown, next.operation == .requestStatus,
                next.targetID == command.requestID {
                 next = command
