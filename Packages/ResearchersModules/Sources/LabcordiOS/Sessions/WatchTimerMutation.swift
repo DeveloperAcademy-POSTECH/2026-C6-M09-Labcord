@@ -53,17 +53,42 @@ public struct WatchTimerMutation: Equatable, Sendable {
         guard let seconds = command.durationSeconds, seconds > 0, seconds <= Int(Int32.max) else {
             throw WatchExperimentError.invalidPayload
         }
-        if let existing = collection.timers.first(where: { $0.id == command.requestID }) {
+        let timerID = command.targetID ?? command.requestID
+        if let existing = collection.timers.first(where: { $0.id == timerID }) {
             guard existing.durationSeconds == seconds else {
                 throw WatchExperimentError.duplicateConflict
             }
             return
         }
-        guard collection.start(
-            id: command.requestID, durationSeconds: seconds, at: date
-        ) else {
+        let startedAt = command.timerStartedAt ?? date
+        let pauses = command.timerPauseIntervals ?? []
+        guard startedAt <= date, collection.canStartTimer,
+              validPauses(pauses, startedAt: startedAt, at: date) else {
             throw WatchExperimentError.invalidPayload
         }
+        let timer = ExperimentTimer(
+            id: timerID, durationSeconds: seconds,
+            startedAt: startedAt, pauseIntervals: pauses
+        )
+        collection = ExperimentTimerCollection(
+            timers: collection.timers + [timer], currentTime: date
+        )
+        collection.advance(to: date)
     }
 
+    private static func validPauses(
+        _ pauses: [ExperimentTimer.PauseInterval], startedAt: Date, at date: Date
+    ) -> Bool {
+        var previousEnd = startedAt
+        for (index, pause) in pauses.enumerated() {
+            guard pause.pausedAt >= previousEnd, pause.pausedAt <= date else { return false }
+            if let resumedAt = pause.resumedAt {
+                guard resumedAt >= pause.pausedAt, resumedAt <= date else { return false }
+                previousEnd = resumedAt
+            } else {
+                guard index == pauses.count - 1 else { return false }
+            }
+        }
+        return true
+    }
 }
