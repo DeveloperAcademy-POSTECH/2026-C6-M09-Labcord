@@ -18,7 +18,11 @@ public final class WatchExperimentTransport {
     private var transmissions: [UUID: UUID] = [:]
     private var pending: [UUID: CheckedContinuation<WatchExperimentResponse, Error>] = [:]
     private var deadlines: [UUID: Task<Void, Never>] = [:]
-    private var subscribers: [UUID: AsyncStream<WatchExperimentSnapshot>.Continuation] = [:]
+    private struct SnapshotSubscriber {
+        let experimentID: UUID?
+        let continuation: AsyncStream<WatchExperimentSnapshot>.Continuation
+    }
+    private var subscribers: [UUID: SnapshotSubscriber] = [:]
     private var latest: [UUID: WatchExperimentSnapshot] = [:]
     private var screenSubscribers: [UUID: AsyncStream<WatchScreenSnapshot>.Continuation] = [:]
     private var latestScreen: WatchScreenSnapshot?
@@ -56,7 +60,8 @@ public final class WatchExperimentTransport {
                 pending[command.requestID] = continuation
                 transmissions[command.requestID] = transmissionID
                 deadlines[command.requestID] = Task { [weak self] in
-                    try? await Task.sleep(for: .seconds(3))
+                    let waitsForState = [.snapshot, .requestStatus].contains(command.operation)
+                    try? await Task.sleep(for: .seconds(waitsForState ? 8 : 3))
                     guard !Task.isCancelled else { return }
                     self?.finish(
                         command.requestID, transmissionID: transmissionID,
@@ -97,6 +102,8 @@ public final class WatchExperimentTransport {
                 WatchExperimentResponse.self, from: responseData
               ), response.requestID == command.requestID,
               response.version == WatchExperimentCommand.schemaVersion,
+              command.operation != .requestStatus || response.queriedRequestID == command.targetID
+                || response.phase == .failed && response.queriedRequestID == nil,
               response.snapshot.map({ snapshot in
                   command.experimentID.map { $0 == snapshot.experiment.id } ?? true
               }) ?? true else {
@@ -124,12 +131,17 @@ public final class WatchExperimentTransport {
         pending.removeValue(forKey: id)?.resume(with: result)
     }
 
-    public func stream() -> AsyncStream<WatchExperimentSnapshot> {
+    public func stream(for experimentID: UUID? = nil) -> AsyncStream<WatchExperimentSnapshot> {
         let id = UUID()
         return AsyncStream(bufferingPolicy: .bufferingNewest(32)) { continuation in
-            subscribers[id] = continuation
+            subscribers[id] = SnapshotSubscriber(
+                experimentID: experimentID, continuation: continuation
+            )
             startRefreshing()
-            for snapshot in latest.values { continuation.yield(snapshot) }
+            for snapshot in latest.values
+                where experimentID == nil || snapshot.experiment.id == experimentID {
+                continuation.yield(snapshot)
+            }
             continuation.onTermination = { [weak self] _ in
                 Task { @MainActor in self?.removeSubscriber(id) }
             }
@@ -149,8 +161,15 @@ public final class WatchExperimentTransport {
         refreshTask = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self else { return }
-                await refreshScreen?()
-                for id in Array(latest.keys) { await refreshSnapshot?(id) }
+                if !screenSubscribers.isEmpty { await refreshScreen?() }
+                var ids = Set(subscribers.values.compactMap(\.experimentID))
+                if subscribers.values.contains(where: { $0.experimentID == nil }) {
+                    ids.formUnion(latest.keys)
+                }
+                for id in ids {
+                    guard !Task.isCancelled else { return }
+                    await refreshSnapshot?(id)
+                }
                 try? await Task.sleep(for: .seconds(2))
             }
         }
@@ -168,7 +187,10 @@ public final class WatchExperimentTransport {
             }
         }
         latest[id] = snapshot
-        for subscriber in subscribers.values { subscriber.yield(snapshot) }
+        for subscriber in subscribers.values
+            where subscriber.experimentID == nil || subscriber.experimentID == id {
+            subscriber.continuation.yield(snapshot)
+        }
     }
 
     public func reply(to data: Data) -> Data? {

@@ -13,6 +13,7 @@ public enum WatchConnectionStatus: Equatable, Sendable {
 public struct WatchExperimentClient: Sendable {
     public var send: @Sendable (WatchExperimentCommand) async throws -> WatchExperimentResponse
     public var snapshots: @Sendable () async -> AsyncStream<WatchExperimentSnapshot>
+    private var scopedSnapshots: (@Sendable (UUID) async -> AsyncStream<WatchExperimentSnapshot>)?
     public var screens: @Sendable () async -> AsyncStream<WatchScreenSnapshot>
     public var isReachable: @Sendable () async -> Bool
     public var connectionStatus: @Sendable () async -> WatchConnectionStatus
@@ -42,10 +43,12 @@ public struct WatchExperimentClient: Sendable {
         leavePhoneSession: @escaping @Sendable (UUID) async -> Void = { _ in },
         screens: @escaping @Sendable () async -> AsyncStream<WatchScreenSnapshot> = {
             AsyncStream { $0.finish() }
-        }
+        },
+        scopedSnapshots: (@Sendable (UUID) async -> AsyncStream<WatchExperimentSnapshot>)? = nil
     ) {
         self.send = send
         self.snapshots = snapshots
+        self.scopedSnapshots = scopedSnapshots
         self.screens = screens
         self.isReachable = isReachable
         self.connectionStatus = connectionStatus
@@ -57,6 +60,20 @@ public struct WatchExperimentClient: Sendable {
         self.cancelPhoneSession = cancelPhoneSession
         self.enterPhoneSession = enterPhoneSession
         self.leavePhoneSession = leavePhoneSession
+    }
+
+    public func snapshots(for experimentID: UUID) async -> AsyncStream<WatchExperimentSnapshot> {
+        if let scopedSnapshots { return await scopedSnapshots(experimentID) }
+        let stream = await snapshots()
+        return AsyncStream(bufferingPolicy: .bufferingNewest(1)) { continuation in
+            let task = Task {
+                for await snapshot in stream where snapshot.experiment.id == experimentID {
+                    continuation.yield(snapshot)
+                }
+                continuation.finish()
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
     }
 }
 
@@ -79,14 +96,7 @@ extension WatchExperimentClient: DependencyKey {
                 return response
             },
             snapshots: {
-                await connectivity.activate()
-                if let data = await connectivity.session?.receivedApplicationContext[
-                    WatchExperimentTransport.snapshotKey
-                ] as? Data {
-                    await connectivity.experiments.receiveSnapshot(data)
-                }
-                return await snapshotStream(connectivity)
-
+                await snapshotStream(connectivity)
             },
             isReachable: {
                 await connectivity.activate()
@@ -122,6 +132,9 @@ extension WatchExperimentClient: DependencyKey {
             screens: {
                 await connectivity.activate()
                 return await screenStream(connectivity)
+            },
+            scopedSnapshots: { experimentID in
+                await snapshotStream(connectivity, experimentID: experimentID)
             }
         )
     }
@@ -140,8 +153,14 @@ extension WatchExperimentClient: DependencyKey {
 
     @MainActor
     private static func snapshotStream(
-        _ connectivity: WatchConnectivitySession
+        _ connectivity: WatchConnectivitySession, experimentID: UUID? = nil
     ) -> AsyncStream<WatchExperimentSnapshot> {
+        connectivity.activate()
+        if let data = connectivity.session?.receivedApplicationContext[
+            WatchExperimentTransport.snapshotKey
+        ] as? Data {
+            connectivity.experiments.receiveSnapshot(data)
+        }
         connectivity.experiments.refreshSnapshot = { [weak connectivity] id in
             guard let connectivity else { return }
             _ = try? await connectivity.experiments.send(
@@ -149,7 +168,7 @@ extension WatchExperimentClient: DependencyKey {
                 session: connectivity.session
             )
         }
-        return connectivity.experiments.stream()
+        return connectivity.experiments.stream(for: experimentID)
     }
 
     @MainActor

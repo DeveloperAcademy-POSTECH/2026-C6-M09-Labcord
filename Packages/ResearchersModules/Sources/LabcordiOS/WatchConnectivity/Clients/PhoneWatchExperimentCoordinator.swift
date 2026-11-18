@@ -128,11 +128,6 @@ public final class PhoneWatchExperimentCoordinator {
         guard UIApplication.shared.isProtectedDataAvailable else {
             return failure(command, .phoneUnlockRequired)
         }
-        if command.operation == .cancelRecord,
-           let experimentID = command.experimentID, let recordID = command.targetID {
-            watchPhotoCancelLog.info("received \(recordID.uuidString, privacy: .public)")
-            commandSubscriber?.yield(.photoCancellationRequested(experimentID, recordID))
-        }
         loadJournal()
         if let response = existingResponse(command) { return response }
         if let response = query(command) {
@@ -145,6 +140,11 @@ public final class PhoneWatchExperimentCoordinator {
             try journal?.save(command, response: response)
         } catch { return failure(command, .storageFailed) }
         requests[command.requestID] = .init(command: command, response: response)
+        if command.operation == .cancelRecord,
+           let experimentID = command.experimentID, let recordID = command.targetID {
+            watchPhotoCancelLog.info("received \(recordID.uuidString, privacy: .public)")
+            commandSubscriber?.yield(.photoCancellationRequested(experimentID, recordID))
+        }
         Task { await execute(command) }
         return response
     }
