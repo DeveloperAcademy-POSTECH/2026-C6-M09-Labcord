@@ -13,7 +13,7 @@ public struct SpeechLanguageModelHint: Equatable, Sendable {
 
     func makeConfiguration() -> SFSpeechLanguageModel.Configuration {
         SFSpeechLanguageModel.Configuration(
-            languageModel: languageModel, vocabulary: vocabulary, weight: 1.0
+            languageModel: languageModel, vocabulary: vocabulary, weight: 0.5
         )
     }
 }
