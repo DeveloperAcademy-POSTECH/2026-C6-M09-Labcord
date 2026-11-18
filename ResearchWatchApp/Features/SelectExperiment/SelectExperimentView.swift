@@ -4,6 +4,7 @@ import LabcordShared
 import SwiftUI
 
 struct SelectExperimentView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @State private var store = Store(initialState: SelectExperimentFeature.State()) {
         SelectExperimentFeature()
     }
@@ -36,6 +37,12 @@ struct SelectExperimentView: View {
                 .padding(.horizontal, 10)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .padding(.top, 26)
+            } else if store.experiments.isEmpty, !store.isCurrent {
+                VStack {
+                    Text("iPhone에서 목록을 확인해 주세요.")
+                    Button("다시 확인") { store.send(.retryTapped) }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if store.experiments.isEmpty {
                 Text("진행 중인\n실험이 없어요")
                     .foregroundStyle(Color("Experiment/Label/Light"))
@@ -48,6 +55,15 @@ struct SelectExperimentView: View {
             } else {
                 ScrollView {
                     LazyVStack(spacing: 10) {
+                        if !store.isCurrent {
+                            Text(store.isLoading ? "이전 목록 · 갱신 중" : "이전 목록")
+                                .font(.footnote)
+                            if let error = store.errorMessage {
+                                Text(error)
+                                    .font(.footnote)
+                                Button("다시 시도") { store.send(.retryTapped) }
+                            }
+                        }
                         ForEach(store.experiments) { experiment in
                             Button {
                                 onSelect(experiment)
@@ -62,7 +78,13 @@ struct SelectExperimentView: View {
             }
         }
         .padding(.top, -25)
-        .task { store.send(.appeared) }
+        .task(id: scenePhase) {
+            if scenePhase == .active {
+                await store.send(.appeared).finish()
+            } else {
+                store.send(.disappeared)
+            }
+        }
         .onDisappear { store.send(.disappeared) }
     }
 }

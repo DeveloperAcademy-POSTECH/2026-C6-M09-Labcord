@@ -8,18 +8,18 @@ struct ExperimentStartView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
     @State private var store: StoreOf<ExperimentStartFeature>
-    let onCountdownChanged: (Bool) -> Void
+    let onStartAttempt: () -> Void
     let onExperimentStarted: () -> Void
 
     init(
         experiment: WatchExperimentSummary,
-        onCountdownChanged: @escaping (Bool) -> Void = { _ in },
+        onStartAttempt: @escaping () -> Void = {},
         onExperimentStarted: @escaping () -> Void
     ) {
         _store = State(initialValue: Store(initialState: .init(experiment: experiment)) {
             ExperimentStartFeature()
         })
-        self.onCountdownChanged = onCountdownChanged
+        self.onStartAttempt = onStartAttempt
         self.onExperimentStarted = onExperimentStarted
     }
 
@@ -36,6 +36,7 @@ struct ExperimentStartView: View {
                     Spacer()
 
                     Button {
+                        onStartAttempt()
                         store.send(.startTapped)
                     } label: {
                         Text("실험 시작")
@@ -54,8 +55,31 @@ struct ExperimentStartView: View {
                 .padding(.top, 14.5)
                 .padding(.bottom, 10)
 
-            case .checkingActiveExperiment, .requestingPermission:
-                Color.clear
+            case .checkingActiveExperiment:
+                VStack {
+                    ProgressView("iPhone에서 실험 확인 중")
+                    Button("취소") { store.send(.cancelTapped) }
+                }
+
+            case .waitingForPhone:
+                VStack {
+                    Text("iPhone에서 실험이 열리기를 기다리고 있어요.")
+                    Button("다시 확인") { store.send(.retryTapped) }
+                    Button("취소") { store.send(.cancelTapped) }
+                }
+                .multilineTextAlignment(.center)
+
+            case let .failed(error):
+                VStack {
+                    Text(error == .experimentNotFound || error == .invalidState
+                         ? "이 실험을 시작할 수 없어요." : "iPhone에서 실험을 확인하지 못했어요.")
+                    Button("다시 시도") { store.send(.retryTapped) }
+                    Button("취소") { store.send(.cancelTapped) }
+                }
+                .multilineTextAlignment(.center)
+
+            case .requestingPermission:
+                ProgressView("마이크 권한 확인 중")
 
             case .permissionDenied:
                 VStack(spacing: 8) {
@@ -99,15 +123,12 @@ struct ExperimentStartView: View {
             }
         }
         .onChange(of: store.phase) { _, phase in
-            if case .countdown = phase {
-                onCountdownChanged(true)
-            } else {
-                onCountdownChanged(false)
-            }
             if phase == .experiment { onExperimentStarted() }
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase != .active { store.send(.becameInactive) }
+            guard phase != .active else { return }
+            if phase == .inactive, store.phase == .requestingPermission { return }
+            store.send(.becameInactive)
         }
         .onDisappear { store.send(.disappeared) }
     }

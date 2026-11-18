@@ -17,6 +17,8 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
     private var latestAudioReceipts: [UUID: WatchAudioReceipt] = [:]
     private var latestSessionOpenRequests: [UUID: WatchSessionOpenRequest] = [:]
 
+    private var reachabilityObservers: [UUID: AsyncStream<Bool>.Continuation] = [:]
+
     public func experimentLists() -> AsyncStream<[WatchExperimentSummary]> {
         activate()
         let key = WatchExperimentTransport.listSnapshotKey
@@ -91,13 +93,10 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
     public func loadExperiments() async throws -> [WatchExperimentSummary] {
         activate()
         guard let session else { throw WatchExperimentError.notReachable }
-        let cached = cachedExperiments()
-
         for _ in 0..<30 where session.activationState != .activated {
             try await Task.sleep(for: .milliseconds(100))
         }
         guard session.activationState == .activated else {
-            if let cached { return cached }
             throw WatchExperimentError.notReachable
         }
         let command = WatchExperimentCommand(operation: .list)
@@ -106,11 +105,10 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
             do {
                 response = try await experiments.send(command, session: session)
             } catch {
-                if let cached { return cached }
+                try Task.checkCancellation()
                 response = try await backgroundResponse(for: command, session: session)
             }
         } else {
-            if let cached { return cached }
             response = try await backgroundResponse(for: command, session: session)
         }
         guard response.version == WatchExperimentCommand.schemaVersion,
@@ -139,6 +137,7 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         let failed = error != nil
         Task { @MainActor in
             self.activationFailed = failed
+            self.notifyReachabilityObservers()
             if state == .activated { self.records.resend(session: session) }
         }
     }
@@ -281,6 +280,34 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
     }
 }
 
+extension WatchConnectivitySession {
+    private var canReachPhone: Bool {
+        guard let session, session.activationState == .activated else { return false }
+        return session.isReachable
+    }
+
+    public func reachabilityChanges() -> AsyncStream<Bool> {
+        activate()
+        let id = UUID()
+        return AsyncStream(bufferingPolicy: .bufferingNewest(1)) { continuation in
+            reachabilityObservers[id] = continuation
+            continuation.yield(canReachPhone)
+            continuation.onTermination = { [weak self] _ in
+                Task { @MainActor in self?.reachabilityObservers.removeValue(forKey: id) }
+            }
+        }
+    }
+
+    private func notifyReachabilityObservers() {
+        let reachable = canReachPhone
+        for observer in reachabilityObservers.values { observer.yield(reachable) }
+    }
+
+    nonisolated public func sessionReachabilityDidChange(_ session: WCSession) {
+        Task { @MainActor in self.notifyReachabilityObservers() }
+    }
+}
+
 private extension WatchConnectivitySession {
     func backgroundResponse(
         for command: WatchExperimentCommand,
@@ -331,16 +358,6 @@ private extension WatchConnectivitySession {
                        WatchExperimentResponse.self, from: data
                    ), value.requestID == command.requestID {
                     continuation.yield(value)
-                } else if let data = userInfo[
-                              WatchExperimentTransport.listSnapshotKey
-                          ] as? Data,
-                          let summaries = try? JSONDecoder().decode(
-                              [WatchExperimentSummary].self, from: data
-                          ) {
-                    continuation.yield(WatchExperimentResponse(
-                        requestID: command.requestID, phase: .completed,
-                        experiments: summaries
-                    ))
                 }
             }
             continuation.onTermination = { [weak self] _ in

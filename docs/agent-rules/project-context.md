@@ -11,7 +11,7 @@
 | 로컬 패키지 | 단일 `Packages/ResearchersModules/Package.swift` 아래 네 개 타깃 |
 | 기기별 저장·통신 | 기기별 구현은 `LabcordiOS`·`LabcordWatchOS`에도 있음. 새 저장 구현의 경로는 해당 작업에서 팀과 확인 |
 | SwiftData | `LabcordShared/Models`의 모델 선언과 iPhone의 저장 실행 책임을 구분. Watch에 저장 구현을 새로 두거나 기존 모델을 자동 이동하지 않음 |
-| iPhone·Watch 화면 | `WatchScreenSnapshot`으로 같은 실험·진행 단계·기록 표시를 공유. iPhone이 화면 revision을 확정하고 Watch의 이동 요청은 이를 확인한 뒤 반영. 화면 이동은 실험 시작·재개와 별도 처리하며 녹음·저장 미확정·편집 초안은 보호 |
+| iPhone·Watch 화면 | `WatchScreenSnapshot`으로 같은 실험·진행 단계·기록 표시를 공유. iPhone이 화면 revision을 확정하고 Watch의 이동 요청은 이를 확인한 뒤 반영. Watch의 시작 화면은 iPhone에서 선택한 실험의 실행과 세션 진입을 확인한 뒤 이동합니다. 연결 복구 시 목록을 새로 조회합니다. 화면 이동은 실험 시작·재개와 별도 처리하며 녹음·저장 미확정·편집 초안은 보호 |
 | Watch 실험 타이머 정보 | Watch 실험 화면은 해당 실험의 `WatchExperimentSnapshot`을 요청·구독하고, `mode`를 타이머 페이지에 표시. 프로토콜 타이머 시간과 진행 중인 타이머 배열도 snapshot에 포함 |
 | 기록 표시와 저장 | 상대 기기의 녹음·리뷰·저장 표시를 원본 처리에 사용하지 않음. Watch 음성 원본 보호는 iPhone의 저장·취소 확정 응답으로 해제하며, 종료된 기록의 표시 시간은 고정 |
 | 들여쓰기 | 스타일 가이드는 2 spaces, 기존 Swift는 주로 4 spaces. 적용 기준은 팀 확인 사항이며 일괄 포맷 변경하지 않음 |

@@ -21,18 +21,20 @@ struct ResearchWatchApp: App {
         }
     }
 
+    @Environment(\.scenePhase) private var scenePhase
     @Dependency(\.watchConnectivitySession) var connectivity
     @Dependency(\.watchExperimentClient) var watchExperimentClient
     @State private var path: [Route] = []
     @State private var remoteScreen: WatchScreenSnapshot?
     @State private var pendingPhoneReentryID: UUID?
-    @State private var countdownExperimentID: UUID?
+    @State private var localStartID: UUID?
     @State private var phoneResultReadyIDs: Set<UUID> = []
     @State private var isVoiceRecordPresented = false
     @State private var suppressLeaveNotification = false
 
     private struct ScreenSyncKey: Hashable {
         let revision: UInt64?
+        let isActive: Bool
         let isVoiceRecordPresented: Bool
     }
 
@@ -40,6 +42,7 @@ struct ResearchWatchApp: App {
         WindowGroup {
             NavigationStack(path: $path) {
                 SelectExperimentView { experiment in
+                    localStartID = nil
                     path = [.start(experiment)]
                 }
                 .navigationDestination(for: Route.self) { route in
@@ -47,14 +50,9 @@ struct ResearchWatchApp: App {
                     case let .start(experiment):
                         ExperimentStartView(
                             experiment: experiment,
-                            onCountdownChanged: { isCountingDown in
-                                if isCountingDown {
-                                    countdownExperimentID = experiment.id
-                                } else if countdownExperimentID == experiment.id {
-                                    countdownExperimentID = nil
-                                }
-                            },
+                            onStartAttempt: { localStartID = experiment.id },
                             onExperimentStarted: {
+                                localStartID = nil
                                 path = [.experiment(experiment)]
                             }
                         )
@@ -125,6 +123,10 @@ struct ResearchWatchApp: App {
                     }
                     let previousDestination = remoteScreen?.destination
                     if screen.destination != .experiment {
+                        if previousDestination == .experiment,
+                           localStartID == remoteScreen?.experimentID, path.isEmpty {
+                            localStartID = nil
+                        }
                         pendingPhoneReentryID = nil
                     } else if previousDestination != nil,
                               previousDestination != .experiment,
@@ -136,9 +138,11 @@ struct ResearchWatchApp: App {
             }
             .task(id: ScreenSyncKey(
                 revision: remoteScreen?.revision,
+                isActive: scenePhase == .active,
                 isVoiceRecordPresented: isVoiceRecordPresented
             )) {
-                guard !isVoiceRecordPresented, let screen = remoteScreen else { return }
+                guard scenePhase == .active, !isVoiceRecordPresented,
+                      let screen = remoteScreen else { return }
                 if case let .some(.experiment(experiment)) = path.last {
                     switch screen.destination {
                     case .home:
@@ -161,7 +165,10 @@ struct ResearchWatchApp: App {
                 while !Task.isCancelled, remoteScreen?.revision == screen.revision,
                       !isVoiceRecordPresented,
                       canOpenRemoteExperiment(experimentID) {
-                    if let experiment = await experiment(for: experimentID),
+                    let experiment = try? await watchExperimentClient.activePhoneExperiment(
+                        experimentID
+                    )
+                    if let experiment,
                        !Task.isCancelled, remoteScreen?.revision == screen.revision,
                        !isVoiceRecordPresented,
                        canOpenRemoteExperiment(experimentID) {
@@ -180,22 +187,8 @@ struct ResearchWatchApp: App {
 
     private func canOpenRemoteExperiment(_ id: UUID) -> Bool {
         if case let .some(.start(selected)) = path.last {
-            return selected.id == id && countdownExperimentID != id
+            return selected.id == id && localStartID != id
         }
-        return path.isEmpty && pendingPhoneReentryID == id
-    }
-
-    private func experiment(for id: UUID) async -> WatchExperimentSummary? {
-        if let listed = try? await watchExperimentClient.list().first(where: {
-            $0.id == id && $0.status == .running
-        }) {
-            return listed
-        }
-        let response = try? await watchExperimentClient.send(
-            WatchExperimentCommand(operation: .snapshot, experimentID: id)
-        )
-        guard let experiment = response?.snapshot?.experiment,
-              experiment.status == .running else { return nil }
-        return experiment
+        return path.isEmpty && pendingPhoneReentryID == id && localStartID != id
     }
 }
