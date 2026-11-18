@@ -19,6 +19,13 @@ final class ExperimentListRepository {
         return try context.fetch(request).map { Self.entry($0, at: now) }
     }
 
+    func watchSummaries() throws -> [WatchExperimentSummary] {
+        let context = try store.makeContext()
+        return try context.fetch(FetchDescriptor<Experiment>())
+            .filter { $0.status != .completed }
+            .map { WatchExperimentSummary(id: $0.id, title: $0.title, status: $0.status) }
+    }
+
     private func recoverInterruptedVoiceRecordings() {
         let journal = VoiceRecordingJournal.scan()
         if journal.directoryUnavailable || journal.unreadableCount > 0 {
