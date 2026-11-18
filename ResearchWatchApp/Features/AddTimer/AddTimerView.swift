@@ -5,6 +5,7 @@
 //  Created by 정홍섭 on 11/17/26.
 //
 
+import ComposableArchitecture
 import LabcordDesignSystem
 import LabcordWatchOS
 import SwiftUI
@@ -16,28 +17,44 @@ struct AddTimerView: View {
         case seconds
     }
 
-    @State private var hours = 0
-    @State private var minutes = 0
-    @State private var seconds = 0
+    let canAddTimer: Bool
+    let onStart: (Int) -> Void
+
+    @State private var store: StoreOf<AddTimerFeature>
     @FocusState private var focusedField: Field?
+
+    init(canAddTimer: Bool, onStart: @escaping (Int) -> Void) {
+        self.canAddTimer = canAddTimer
+        self.onStart = onStart
+        _store = State(initialValue: Store(
+            initialState: AddTimerFeature.State(canAddTimer: canAddTimer)
+        ) {
+            AddTimerFeature()
+        })
+    }
 
     var body: some View {
         VStack {
+            Spacer()
+
             HStack(alignment: .wheelCenter, spacing: WatchScreenMetrics.scaledWidth(4)) {
-                durationPicker("시간", field: .hours, selection: $hours, range: 0..<24)
+                durationPicker("시간", field: .hours, selection: $store.hours, range: 0..<24)
                 
                 separator
                 
-                durationPicker("분", field: .minutes, selection: $minutes, range: 0..<60)
+                durationPicker("분", field: .minutes, selection: $store.minutes, range: 0..<60)
                 
                 separator
                 
-                durationPicker("초", field: .seconds, selection: $seconds, range: 0..<60)
+                durationPicker("초", field: .seconds, selection: $store.seconds, range: 0..<60)
             }
             .foregroundStyle(.white)
             
             Button {
-                
+                guard store.canStart else { return }
+                let seconds = store.totalSeconds
+                store.send(.startTapped)
+                onStart(seconds)
             } label: {
                 Text("타이머 실행")
                     .font(.system(size: 16, weight: .medium))
@@ -45,12 +62,16 @@ struct AddTimerView: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(Color("General/Brand/Primary"))
+            .disabled(!store.canStart)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         .padding(.bottom, WatchScreenMetrics.scaledHeight(3.5))
-        .ignoresSafeArea()
+        .ignoresSafeArea(edges: .bottom)
         .onAppear {
             if focusedField == nil { focusedField = .hours }
+        }
+        .onChange(of: canAddTimer) { _, canAddTimer in
+            store.send(.canAddTimerChanged(canAddTimer))
         }
     }
 
@@ -122,5 +143,5 @@ private extension VerticalAlignment {
 }
 
 #Preview {
-    AddTimerView()
+    AddTimerView(canAddTimer: true, onStart: { _ in })
 }
