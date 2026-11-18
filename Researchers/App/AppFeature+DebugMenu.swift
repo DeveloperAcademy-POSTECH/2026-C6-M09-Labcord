@@ -203,3 +203,13 @@ extension AppFeature {
     }
 }
 #endif
+
+extension AppFeature.State {
+    var isDebugMenuPresented: Bool {
+        #if DEBUG
+        debugMenu.isPresented
+        #else
+        false
+        #endif
+    }
+}

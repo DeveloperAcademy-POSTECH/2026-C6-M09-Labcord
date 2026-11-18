@@ -84,7 +84,7 @@ struct AppView: View {
                 ? .dark : .light
         )
         .task { await store.send(.watchTask).finish() }
-        .task { store.send(.appeared) }
+.task { store.send(.appeared) }
         .onAppear {
             store.send(.restoreSettingsSession)
             store.send(.watchSceneChanged(scenePhase == .active))

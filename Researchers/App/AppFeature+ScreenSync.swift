@@ -198,13 +198,3 @@ extension AppFeature {
         return .none
     }
 }
-
-extension AppFeature.State {
-    var isDebugMenuPresented: Bool {
-        #if DEBUG
-        debugMenu.isPresented
-        #else
-        false
-        #endif
-    }
-}
