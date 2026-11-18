@@ -24,7 +24,6 @@ struct ExperimentFeature {
     struct State: Equatable {
         let experimentID: UUID
         var snapshot: WatchExperimentSnapshot?
-        var isLoading = true
         var overlay: Overlay?
         var isClosing = false
         var closeResult: CloseResult?
@@ -32,15 +31,15 @@ struct ExperimentFeature {
         var pendingTimerIDs: Set<UUID> = []
         var localTimers: [WatchPendingTimer] = []
         var syncingTimerID: UUID?
-        var deletingTimerIDs: Set<UUID> = []
         var hasObservedRunning = false
 
         var canAddTimer: Bool {
-            displayedTimers.count < ExperimentTimerCollection.maximumCount
+            snapshot?.experiment.status == .running
+                && displayedTimers.count < ExperimentTimerCollection.maximumCount
         }
 
         var displayedTimers: [WatchTimerSnapshot] {
-            let remote = (snapshot?.timers ?? []).filter { !deletingTimerIDs.contains($0.id) }
+            let remote = snapshot?.timers ?? []
             let remoteIDs = Set(remote.map(\.id))
             return remote + localTimers.filter { !remoteIDs.contains($0.id) }
                 .map { $0.snapshot(at: .now) }
@@ -51,7 +50,6 @@ struct ExperimentFeature {
         case appeared
         case disappeared
         case snapshotReceived(WatchExperimentSnapshot)
-        case snapshotRequestFailed
         case timerCommandTapped(UUID, WatchExperimentCommand.Operation)
         case timerCommandFinished(UUID, failure: String?)
         case timerStartTapped(Int)
@@ -64,14 +62,14 @@ struct ExperimentFeature {
         case stopConfirmed
         case endDelayElapsed
         case closeSucceeded(WatchExperimentCommand.Operation)
-        case closeFailed
+        case closeFailed(String)
     }
 
     nonisolated enum CancelID: Hashable, Sendable {
         case snapshots
-        case initialSnapshot
         case endDelay
         case pendingTimerRetry
+        case controls
     }
 
     @Dependency(\.watchExperimentClient) var watchExperimentClient
@@ -83,7 +81,6 @@ struct ExperimentFeature {
             switch action {
             case .appeared:
                 let experimentID = state.experimentID
-                state.isLoading = state.snapshot == nil
                 state.localTimers = WatchPendingTimerStore.shared.timers(for: experimentID)
                 return observeExperiment(experimentID: experimentID)
 
@@ -142,7 +139,8 @@ struct ExperimentFeature {
 
             case let .timerCommandTapped(id, operation):
                 guard !state.pendingTimerIDs.contains(id),
-                      let timer = state.snapshot?.timers.first(where: { $0.id == id }),
+                      let snapshot = state.snapshot,
+                      let timer = snapshot.timers.first(where: { $0.id == id }),
                       state.overlay == nil, !state.isClosing else { return .none }
                 let isFinished = timer.status == .finished || timer.remaining(at: .now) == 0
                 guard (operation == .deleteTimer && (isFinished || timer.status == .paused))
@@ -150,19 +148,12 @@ struct ExperimentFeature {
                         || (operation == .resumeTimer && timer.status == .paused && !isFinished)
                 else { return .none }
                 state.pendingTimerIDs.insert(id)
-                if operation == .deleteTimer { state.deletingTimerIDs.insert(id) }
                 state.errorMessage = nil
-                let experimentID = state.experimentID
-                return timerCommandEffect(
-                    id: id, operation: operation, experimentID: experimentID
-                )
+                return timerCommandEffect(id: id, operation: operation, snapshot: snapshot)
 
             case let .timerCommandFinished(id, failure):
                 state.pendingTimerIDs.remove(id)
-                state.deletingTimerIDs.remove(id)
-                if let failure {
-                    state.errorMessage = "타이머를 변경하지 못했어요. 다시 시도해 주세요. (\(failure))"
-                }
+                if let failure { state.errorMessage = failure }
                 return .none
 
             case .retryPendingTimer:
@@ -225,22 +216,20 @@ struct ExperimentFeature {
                 state.closeResult = operation == .pause ? .paused : .completed
                 return .none
 
-            case .closeFailed:
+            case let .closeFailed(message):
                 state.isClosing = false
                 state.overlay = nil
-                state.errorMessage = "iPhone에서 실험을 변경하지 못했어요. "
-                    + "다시 시도해 주세요."
-                return .none
-
-            case .snapshotRequestFailed:
-                if state.snapshot == nil { state.isLoading = false }
+                state.errorMessage = message
                 return .none
 
             case .disappeared:
+                state.pendingTimerIDs.removeAll()
+                state.syncingTimerID = nil
+                state.isClosing = false
                 let stopObserving = Effect<Action>.merge(
                     .cancel(id: CancelID.snapshots),
-                    .cancel(id: CancelID.initialSnapshot),
-                    .cancel(id: CancelID.pendingTimerRetry)
+                    .cancel(id: CancelID.pendingTimerRetry),
+                    .cancel(id: CancelID.controls)
                 )
                 guard state.overlay != .end else { return stopObserving }
                 return .merge(stopObserving, .cancel(id: CancelID.endDelay))

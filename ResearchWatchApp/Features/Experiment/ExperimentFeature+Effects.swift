@@ -13,25 +13,6 @@ extension ExperimentFeature {
             }
             .cancellable(id: CancelID.snapshots, cancelInFlight: true),
             .run { send in
-                do {
-                    let response = try await watchExperimentClient.send(
-                        WatchExperimentCommand(
-                            operation: .snapshot,
-                            experimentID: experimentID
-                        )
-                    )
-                    guard response.phase == .completed,
-                          let snapshot = response.snapshot else {
-                        await send(.snapshotRequestFailed)
-                        return
-                    }
-                    await send(.snapshotReceived(snapshot))
-                } catch {
-                    await send(.snapshotRequestFailed)
-                }
-            }
-            .cancellable(id: CancelID.initialSnapshot, cancelInFlight: true),
-            .run { send in
                 while !Task.isCancelled {
                     await send(.retryPendingTimer)
                     try? await Task.sleep(for: .seconds(2))
@@ -51,7 +32,6 @@ extension ExperimentFeature {
                           && snapshot.recordedAt >= current.recordedAt
               }) ?? true else { return .none }
         state.snapshot = snapshot
-        state.isLoading = false
         let remoteIDs = Set(snapshot.timers.map(\.id))
         for pending in state.localTimers where remoteIDs.contains(pending.id) {
             WatchPendingTimerStore.shared.remove(pending.id)
@@ -82,29 +62,22 @@ extension ExperimentFeature {
     }
 
     func timerCommandEffect(
-        id: UUID, operation: WatchExperimentCommand.Operation, experimentID: UUID
+        id: UUID, operation: WatchExperimentCommand.Operation, snapshot: WatchExperimentSnapshot
     ) -> Effect<Action> {
         .run { send in
             do {
-                let snapshot = try await currentSnapshot(experimentID: experimentID)
-                let command = WatchExperimentCommand(
-                    operation: operation, experimentID: experimentID,
-                    expectedRevision: snapshot.revision, targetID: id
-                )
-                try await sendUntilCompleted(command, experimentID: experimentID)
-                let refreshed = try await watchExperimentClient.send(
-                    WatchExperimentCommand(operation: .snapshot, experimentID: experimentID)
-                )
-                if let snapshot = refreshed.snapshot {
-                    await send(.snapshotReceived(snapshot))
+                let updated = try await performControl(operation, targetID: id, from: snapshot)
+                if let updated {
+                    await send(.snapshotReceived(updated))
                 }
                 await send(.timerCommandFinished(id, failure: nil))
-            } catch let error as WatchExperimentError {
-                await send(.timerCommandFinished(id, failure: error.rawValue))
+            } catch is CancellationError {
+                return
             } catch {
-                await send(.timerCommandFinished(id, failure: String(describing: error)))
+                await send(.timerCommandFinished(id, failure: controlErrorMessage(for: error)))
             }
         }
+        .cancellable(id: CancelID.controls)
     }
 
     func pendingTimerSyncEffect(
@@ -132,11 +105,8 @@ extension ExperimentFeature {
                     timerStartedAt: pending.timer.startedAt,
                     timerPauseIntervals: pending.timer.pauseIntervals
                 )
-                try await sendUntilCompleted(command, experimentID: experimentID)
-                let refreshed = try await watchExperimentClient.send(
-                    WatchExperimentCommand(operation: .snapshot, experimentID: experimentID)
-                )
-                if let snapshot = refreshed.snapshot,
+                let confirmed = try await confirmedSnapshot(for: command)
+                if let snapshot = confirmed,
                    snapshot.timers.contains(where: { $0.id == pendingID }) {
                     await send(.timerStartSyncFinished(pendingID, .confirmed(snapshot)))
                 } else {
@@ -158,6 +128,7 @@ extension ExperimentFeature {
                 await send(.timerStartSyncFinished(pendingID, .retry))
             }
         }
+        .cancellable(id: CancelID.controls)
     }
 
     func currentSnapshot(experimentID: UUID) async throws -> WatchExperimentSnapshot {
@@ -168,28 +139,6 @@ extension ExperimentFeature {
             throw response.error ?? WatchExperimentError.resultUnknown
         }
         return snapshot
-    }
-
-    func sendUntilCompleted(
-        _ command: WatchExperimentCommand, experimentID: UUID
-    ) async throws {
-        var response = try await watchExperimentClient.send(command)
-        for _ in 0..<100 {
-            if response.phase == .completed { return }
-            if response.phase == .failed || response.phase == .unknown {
-                throw response.error ?? WatchExperimentError.resultUnknown
-            }
-            try await Task.sleep(for: .milliseconds(200))
-            response = try await watchExperimentClient.send(
-                WatchExperimentCommand(
-                    operation: .requestStatus, experimentID: experimentID,
-                    targetID: command.requestID
-                )
-            )
-        }
-        guard response.phase == .completed else {
-            throw WatchExperimentError.deliveryTimeout
-        }
     }
 
     func startPendingTimer(seconds: Int, state: inout State) -> Effect<Action> {
@@ -207,49 +156,118 @@ extension ExperimentFeature {
     ) -> Effect<Action> {
         state.isClosing = true
         let experimentID = state.experimentID
+        let lastSnapshot = state.snapshot
         return .run { send in
             do {
-                for attempt in 0..<3 {
-                    let snapshotResponse = try await watchExperimentClient.send(
-                        WatchExperimentCommand(operation: .snapshot, experimentID: experimentID)
-                    )
-                    guard snapshotResponse.phase == .completed,
-                          let snapshot = snapshotResponse.snapshot else {
-                        throw snapshotResponse.error ?? WatchExperimentError.resultUnknown
-                    }
-                    let command = WatchExperimentCommand(
-                        operation: operation, experimentID: experimentID,
-                        expectedRevision: snapshot.revision
-                    )
-                    do {
-                        var response = try await watchExperimentClient.send(command)
-                        for _ in 0..<100 {
-                            if response.phase == .completed { break }
-                            if response.phase == .failed || response.phase == .unknown {
-                                throw response.error ?? WatchExperimentError.resultUnknown
-                            }
-                            try await Task.sleep(for: .milliseconds(200))
-                            response = try await watchExperimentClient.send(
-                                WatchExperimentCommand(
-                                    operation: .requestStatus,
-                                    experimentID: experimentID,
-                                    targetID: command.requestID
-                                )
-                            )
-                        }
-                        guard response.phase == .completed else {
-                            throw WatchExperimentError.deliveryTimeout
-                        }
-                        await send(.closeSucceeded(operation))
-                        return
-                    } catch WatchExperimentError.staleRevision where attempt < 2 {
-                        continue
-                    }
+                let snapshot: WatchExperimentSnapshot
+                if let lastSnapshot {
+                    snapshot = lastSnapshot
+                } else {
+                    snapshot = try await currentSnapshot(experimentID: experimentID)
                 }
-                throw WatchExperimentError.staleRevision
+                _ = try await performControl(operation, targetID: nil, from: snapshot)
+                await send(.closeSucceeded(operation))
+            } catch is CancellationError {
+                return
             } catch {
-                await send(.closeFailed)
+                await send(.closeFailed(controlErrorMessage(for: error)))
             }
+        }
+        .cancellable(id: CancelID.controls)
+    }
+
+    private func controlErrorMessage(for error: Error) -> String {
+        switch error as? WatchExperimentError {
+        case .resultUnknown, .deliveryTimeout:
+            "iPhone에서 처리 결과를 확인할 수 없어요. 실험 상태를 확인해 주세요."
+        case .notReachable:
+            "iPhone에 연결한 뒤 다시 시도해 주세요."
+        default:
+            "iPhone에서 요청을 처리하지 못했어요. 다시 시도해 주세요."
+        }
+    }
+
+    private func performControl(
+        _ operation: WatchExperimentCommand.Operation, targetID: UUID?,
+        from initial: WatchExperimentSnapshot
+    ) async throws -> WatchExperimentSnapshot? {
+        var snapshot = initial
+        for attempt in 0..<3 {
+            let command = WatchExperimentCommand(
+                operation: operation, experimentID: snapshot.experiment.id,
+                expectedRevision: snapshot.revision, targetID: targetID
+            )
+            if snapshot.reflects(command) { return snapshot }
+            do {
+                return try await confirmedSnapshot(for: command)
+            } catch WatchExperimentError.staleRevision where attempt < 2 {
+                snapshot = try await currentSnapshot(experimentID: initial.experiment.id)
+            }
+        }
+        throw WatchExperimentError.staleRevision
+    }
+
+    private func confirmedSnapshot(
+        for command: WatchExperimentCommand
+    ) async throws -> WatchExperimentSnapshot? {
+        var awaitingResult = false
+        while true {
+            try Task.checkCancellation()
+            do {
+                return try await watchExperimentClient.sendRecovering(command).snapshot
+            } catch let error as WatchExperimentError {
+                switch error {
+                case .deliveryTimeout, .resultUnknown:
+                    awaitingResult = true
+                case .notReachable where awaitingResult:
+                    break
+                default:
+                    throw error
+                }
+            }
+            guard let id = command.experimentID else { throw WatchExperimentError.invalidPayload }
+            let current = try? await currentSnapshot(experimentID: id)
+            if let current, current.reflects(command) { return current }
+            if let result = try await completedStatus(
+                for: command, hasCurrentState: current != nil
+            ) {
+                return result.snapshot
+            }
+            try await Task.sleep(for: .seconds(2))
+        }
+    }
+
+    private func completedStatus(
+        for command: WatchExperimentCommand, hasCurrentState: Bool
+    ) async throws -> WatchExperimentResponse? {
+        let query = WatchExperimentCommand(
+            operation: .requestStatus, experimentID: command.experimentID,
+            targetID: command.requestID
+        )
+        guard let status = try? await watchExperimentClient.send(query),
+              status.queriedRequestID == command.requestID else { return nil }
+        switch status.phase {
+        case .completed: return status
+        case .failed: throw status.error ?? WatchExperimentError.resultUnknown
+        case .unknown where hasCurrentState: throw WatchExperimentError.resultUnknown
+        default: return nil
+        }
+    }
+}
+
+private extension WatchExperimentSnapshot {
+    func reflects(_ command: WatchExperimentCommand) -> Bool {
+        guard experiment.id == command.experimentID, revision >= (command.expectedRevision ?? 0)
+        else { return false }
+        let timer = timers.first { $0.id == command.targetID }
+        switch command.operation {
+        case .pause: return experiment.status == .paused
+        case .complete: return experiment.status == .completed
+        case .startTimer: return timer != nil
+        case .pauseTimer: return timer?.status == .paused
+        case .resumeTimer: return timer?.status == .running
+        case .deleteTimer: return timer == nil
+        default: return false
         }
     }
 }

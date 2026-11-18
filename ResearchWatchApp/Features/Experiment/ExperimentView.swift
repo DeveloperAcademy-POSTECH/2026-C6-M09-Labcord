@@ -29,7 +29,7 @@ struct ExperimentView: View {
     /// 프로토콜 모드는 프리셋 화면 대신 타이머 목록이 보일 때만 표시합니다.
     /// 종료된 타이머만 남아도 목록이 보이므로 버튼을 유지합니다.
     private var showsTimerAddButton: Bool {
-        guard selectedPage == 2 else { return false }
+        guard selectedPage == 2, store.snapshot != nil else { return false }
         return !isProtocolMode || !store.displayedTimers.isEmpty
     }
 
@@ -71,22 +71,28 @@ struct ExperimentView: View {
                 }
                     .tag(1)
 
-                ExperimentTimerView(
-                    mode: store.snapshot?.mode,
-                    timers: store.displayedTimers,
-                    protocolTimerSeconds: store.snapshot?.protocolTimerSeconds ?? [],
-                    pendingTimerIDs: store.pendingTimerIDs.union(
-                        store.syncingTimerID.map { Set([$0]) } ?? []
-                    ),
-                    creatingTimerIDs: Set(store.localTimers.map(\.id)),
-                    onTimerCommand: { id, operation in
-                        store.send(.timerCommandTapped(id, operation))
-                    },
-                    onStartTimer: { seconds in
-                        store.send(.timerStartTapped(seconds))
-                    },
-                    onAddTimer: { isAddTimerPresented = true }
-                )
+                Group {
+                    if store.snapshot == nil && store.localTimers.isEmpty {
+                        ProgressView("iPhone 상태 확인 중")
+                    } else {
+                        ExperimentTimerView(
+                            mode: store.snapshot?.mode,
+                            timers: store.displayedTimers,
+                            protocolTimerSeconds: store.snapshot?.protocolTimerSeconds ?? [],
+                            pendingTimerIDs: store.pendingTimerIDs.union(
+                                store.syncingTimerID.map { Set([$0]) } ?? []
+                            ),
+                            creatingTimerIDs: Set(store.localTimers.map(\.id)),
+                            onTimerCommand: { id, operation in
+                                store.send(.timerCommandTapped(id, operation))
+                            },
+                            onStartTimer: { seconds in
+                                store.send(.timerStartTapped(seconds))
+                            },
+                            onAddTimer: { isAddTimerPresented = true }
+                        )
+                    }
+                }
                     .tag(2)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
@@ -160,10 +166,14 @@ struct ExperimentView: View {
             set: { if !$0 { store.send(.overlayDismissed) } }
         )) {
             NavigationStack {
-                StopExperimentView(
-                    onStop: { store.send(.stopConfirmed) },
-                    onCancel: { store.send(.overlayDismissed) }
-                )
+                if store.isClosing {
+                    ProgressView("iPhone 결과 확인 중")
+                } else {
+                    StopExperimentView(
+                        onStop: { store.send(.stopConfirmed) },
+                        onCancel: { store.send(.overlayDismissed) }
+                    )
+                }
             }
             .presentationBackground(.black)
         }
@@ -172,11 +182,15 @@ struct ExperimentView: View {
             set: { if !$0 { store.send(.overlayDismissed) } }
         )) {
             NavigationStack {
-                EndExperimentView { store.send(.overlayDismissed) }
+                if store.isClosing {
+                    ProgressView("iPhone 결과 확인 중")
+                } else {
+                    EndExperimentView { store.send(.overlayDismissed) }
+                }
             }
             .presentationBackground(.black)
         }
-        .alert("실험을 변경하지 못했어요", isPresented: Binding(
+        .alert("iPhone 실험 상태", isPresented: Binding(
             get: { store.errorMessage != nil },
             set: { if !$0 { store.send(.overlayDismissed) } }
         )) {
