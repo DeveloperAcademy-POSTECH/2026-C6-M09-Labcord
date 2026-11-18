@@ -8,7 +8,6 @@ nonisolated struct HandOrientationTracker {
     private static let switchAngle: CGFloat = .pi / 3
     private static let searchAfterMissedFrames = 6
 
-
     private(set) var quarterTurns = initialQuarterTurns
     private var missedFrames = 0
 
