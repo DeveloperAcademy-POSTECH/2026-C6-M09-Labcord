@@ -30,14 +30,17 @@ extension CameraCaptureFeature {
     }
 
     private func watchPhotoRetake(state: inout State, action: Action) -> Effect<Action>? {
+        guard let command = state.watchPhotoRequest ?? state.watchPhotoCancellationRequest
+        else { return nil }
         switch action {
-        case .photo(.retakeRequested), .photo(.watchCancelRequested):
+        case .photo(.retakeRequested):
+            break
+        case let .photo(.watchCancelRequested(id)) where recordID(command) == id:
             break
         default:
             return nil
         }
-        guard let command = state.watchPhotoRequest ?? state.watchPhotoCancellationRequest,
-              !state.photo.isSaving, !state.photo.isScheduled, !state.photo.isCapturing,
+        guard !state.photo.isSaving, !state.photo.isScheduled, !state.photo.isCapturing,
               state.photo.capturedData == nil, state.photo.recordID == nil,
               state.photo.requestedRecordID == nil else { return nil }
         let cancellation = state.watchPhotoCancellationRequest

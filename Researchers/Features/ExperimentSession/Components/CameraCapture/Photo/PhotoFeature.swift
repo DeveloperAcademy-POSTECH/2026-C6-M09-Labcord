@@ -23,6 +23,12 @@ struct PhotoFeature {
         var requestedRecordID: UUID?
         var pendingWatchCaptureID: UUID?
         var requiresExternalConfirmation = false
+
+        func canCancelWatchCapture(_ id: UUID) -> Bool {
+            guard !isSaving, !isCapturing else { return false }
+            if capturedData != nil { return recordID == id }
+            return requestedRecordID == id || pendingWatchCaptureID == id
+        }
     }
 
     enum Action: Equatable {
@@ -194,11 +200,7 @@ struct PhotoFeature {
                 return resetPhoto(in: &state)
 
             case let .watchCancelRequested(id):
-                guard !state.isSaving,
-                      state.requestedRecordID == id || state.recordID == id
-                        || state.capturedData != nil else {
-                    return .none
-                }
+                guard state.canCancelWatchCapture(id) else { return .none }
                 return resetPhoto(in: &state)
 
             case .saveRequested:

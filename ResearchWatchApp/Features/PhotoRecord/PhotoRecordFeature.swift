@@ -11,7 +11,7 @@ private let watchPhotoCancelLog = Logger(
 @Reducer
 struct PhotoRecordFeature {
     enum Phase: Equatable {
-        case capturing, review, saving, saved, closing
+        case capturing, captureFailed, review, saving, saved, closing, cancelFailed
     }
 
     @ObservableState
@@ -19,20 +19,20 @@ struct PhotoRecordFeature {
         let experimentID: UUID
         var recordID: UUID?
         var phase: Phase = .capturing
+        var requests = WatchCameraRequests()
+        var cancellation: WatchCameraCancellation?
         var autoSaveSeconds: Int? = 3
         var shouldDismiss = false
     }
 
     enum Action {
-        case appeared, disappeared, recordReceived(WatchRecordSnapshot)
-        case captureResponse(UUID, WatchExperimentResponse?)
-        case saveTapped, saveResponse(UUID, WatchExperimentResponse?)
-        case retakeTapped, retakeFinished(UUID)
-        case closeTapped, closeFinished(Bool), autoSaveTick(UUID)
+        case appeared, disappeared, retryTapped, recordReceived(WatchRecordSnapshot)
+        case requestEvent(UUID, WatchCameraRequestEvent)
+        case saveTapped, retakeTapped, closeTapped, autoSaveTick(UUID)
     }
 
     private nonisolated enum CancelID: Hashable, Sendable {
-        case records, autoSave, capture
+        case records, autoSave, request
     }
 
     @Dependency(\.watchConnectivitySession) private var connectivity
@@ -43,222 +43,160 @@ struct PhotoRecordFeature {
         Reduce { state, action in
             switch action {
             case .appeared:
-                return .merge(
-                    .run { send in
-                        await connectivity.activate()
-                        for await record in await connectivity.records.stream() {
-                            await send(.recordReceived(record))
-                        }
+                let initial = state.recordID == nil ? start(&state) : .none
+                return .merge(initial, .run { send in
+                    await connectivity.activate()
+                    for await record in await connectivity.records.stream() {
+                        await send(.recordReceived(record))
                     }
-                    .cancellable(id: CancelID.records, cancelInFlight: true),
-                    .send(.retakeFinished(uuid()))
-                )
-
-            case let .retakeFinished(id):
-                guard !state.shouldDismiss, state.phase != .closing else { return .none }
-                state.recordID = id
-                state.phase = .capturing
-                state.autoSaveSeconds = 3
-                let experimentID = state.experimentID
-                return .run { send in
-                    let response = try? await client.takePhoto(
-                        experimentID: experimentID, recordID: id
-                    )
-                    await send(.captureResponse(id, response))
                 }
-                .cancellable(id: CancelID.capture, cancelInFlight: true)
+                .cancellable(id: CancelID.records, cancelInFlight: true))
 
-            case let .captureResponse(id, response):
-                guard state.recordID == id else { return .none }
-                if let record = response?.record { return .send(.recordReceived(record)) }
-                return .none
+            case .retryTapped:
+                if state.phase == .cancelFailed { return cancel(&state) }
+                let canCheck = state.phase == .capturing
+                    && !state.requests.isWaiting(for: .takePhoto)
+                guard state.phase == .captureFailed || canCheck else { return .none }
+                if state.requests.lastRecord?.originalRetained == false,
+                   state.requests.lastRecord?.phase == .failed { return start(&state) }
+                state.phase = .capturing
+                return request(.takePhoto, state: &state)
 
-            case let .recordReceived(record):
-                guard record.experimentID == state.experimentID,
-                      record.id == state.recordID, record.kind == .photo,
-                      !state.shouldDismiss else { return .none }
-                switch record.phase {
-                case .review:
-                    guard state.phase == .capturing else { return .none }
-                    state.phase = .review
-                    state.autoSaveSeconds = 3
-                    let id = record.id
-                    return .run { send in
-                        for _ in 0..<3 {
-                            try await Task.sleep(for: .seconds(1))
-                            await send(.autoSaveTick(id))
-                        }
+            case let .requestEvent(id, event):
+                guard let operation = state.requests.receive(event, from: id) else { return .none }
+                switch event {
+                case .prepared, .rejected: return .none
+                case let .received(record): return .send(.recordReceived(record))
+                case .failed:
+                    if operation == .cancelRecord, state.phase == .closing {
+                        state.phase = .cancelFailed
+                    } else if operation == .confirmRecord, state.phase == .saving {
+                        state.phase = .review
+                        state.autoSaveSeconds = nil
+                    } else if operation == .takePhoto, state.phase == .capturing {
+                        state.phase = .captureFailed
                     }
-                    .cancellable(id: CancelID.autoSave, cancelInFlight: true)
-                case .saving:
-                    state.phase = .saving
-                    return .cancel(id: CancelID.autoSave)
-                case .saved:
-                    state.phase = .saved
-                    return .cancel(id: CancelID.autoSave)
-                case .cancelled:
-                    state.shouldDismiss = true
-                    return .cancel(id: CancelID.autoSave)
-                default:
                     return .none
                 }
 
+            case let .recordReceived(record):
+                return receive(record, state: &state)
+
             case let .autoSaveTick(id):
-                guard state.recordID == id, state.phase == .review else { return .none }
-                guard let seconds = state.autoSaveSeconds else { return .none }
+                guard state.recordID == id, state.phase == .review,
+                      let seconds = state.autoSaveSeconds else { return .none }
                 state.autoSaveSeconds = seconds - 1
                 return seconds == 1 ? .send(.saveTapped) : .none
 
             case .saveTapped:
-                guard state.phase == .review, let id = state.recordID else { return .none }
+                let canRetry = state.phase == .saving
+                    && !state.requests.isWaiting(for: .confirmRecord)
+                guard state.phase == .review || canRetry else { return .none }
                 state.phase = .saving
-                let experimentID = state.experimentID
                 return .merge(
-                    .cancel(id: CancelID.autoSave),
-                    .run { send in
-                        let response = try? await client.finishPhoto(
-                            experimentID: experimentID, recordID: id, operation: .confirmRecord
-                        )
-                        await send(.saveResponse(id, response))
-                    }
+                    .cancel(id: CancelID.autoSave), request(.confirmRecord, state: &state)
                 )
-
-            case let .saveResponse(id, response):
-                guard state.recordID == id else { return .none }
-                if let record = response?.record { return .send(.recordReceived(record)) }
-                return .none
 
             case .retakeTapped:
-                guard state.phase == .review, let id = state.recordID else { return .none }
-                state.phase = .capturing
-                let experimentID = state.experimentID
-                let nextID = uuid()
-                state.recordID = nextID
-                return .merge(
-                    .cancel(id: CancelID.autoSave),
-                    .run { send in
-                        _ = await client.cancelPhoto(experimentID: experimentID, recordID: id)
-                        await send(.retakeFinished(nextID))
-                    }
-                )
+                guard state.phase == .review else { return .none }
+                state.cancellation = .retake
+                return cancel(&state)
 
             case .closeTapped:
                 guard state.phase != .closing else { return .none }
-                guard state.phase != .saved, let id = state.recordID else {
-                    watchPhotoCancelLog.info("closed without request")
+                guard state.phase != .saved, state.requests.mayHaveCaptured else {
                     state.shouldDismiss = true
-                    return .none
+                    return .cancel(id: CancelID.request)
                 }
-                watchPhotoCancelLog.info("sending \(id.uuidString, privacy: .public)")
-                state.phase = .closing
-                let experimentID = state.experimentID
-                return .merge(
-                    .cancel(id: CancelID.capture),
-                    .cancel(id: CancelID.autoSave),
-                    .run { send in
-                        let cancelled = await client.cancelPhoto(
-                            experimentID: experimentID, recordID: id
-                        )
-                        await send(.closeFinished(cancelled))
-                    }
-                )
-
-            case let .closeFinished(cancelled):
-                guard state.phase == .closing else { return .none }
-                watchPhotoCancelLog.info("completed \(cancelled)")
-                if cancelled {
-                    state.shouldDismiss = true
-                } else {
-                    state.phase = .review
-                    state.autoSaveSeconds = nil
-                }
-                return .none
+                state.cancellation = .close
+                return cancel(&state)
 
             case .disappeared:
                 return .merge(
-                    .cancel(id: CancelID.records),
-                    .cancel(id: CancelID.autoSave),
-                    .cancel(id: CancelID.capture)
+                    .cancel(id: CancelID.records), .cancel(id: CancelID.autoSave),
+                    .cancel(id: CancelID.request)
                 )
             }
         }
     }
 }
 
-private extension WatchExperimentClient {
-    func takePhoto(experimentID: UUID, recordID: UUID) async throws
-        -> WatchExperimentResponse {
-        let current = try await photoSnapshot(experimentID)
-        let preparation = try await sendAndWait(WatchExperimentCommand(
-            operation: .prepareStart, experimentID: experimentID,
-            expectedRevision: current.revision
-        ))
-        guard let token = preparation.startToken else {
-            throw WatchExperimentError.resultUnknown
-        }
-        try Task.checkCancellation()
-        return try await sendAndWait(WatchExperimentCommand(
-            requestID: recordID, operation: .takePhoto, experimentID: experimentID,
-            expectedRevision: preparation.snapshot?.revision ?? current.revision,
-            targetID: recordID, startToken: token
-        ), returnWhenCapturing: true)
+private extension PhotoRecordFeature {
+    func start(_ state: inout State) -> Effect<Action> {
+        state.recordID = uuid()
+        state.phase = .capturing
+        state.requests = WatchCameraRequests()
+        state.cancellation = nil
+        state.autoSaveSeconds = nil
+        return request(.takePhoto, state: &state)
     }
 
-    func finishPhoto(
-        experimentID: UUID, recordID: UUID, operation: WatchExperimentCommand.Operation
-    ) async throws -> WatchExperimentResponse {
-        let current = try await photoSnapshot(experimentID)
-        return try await sendAndWait(WatchExperimentCommand(
-            operation: operation, experimentID: experimentID,
-            expectedRevision: current.revision, targetID: recordID
-        ))
+    func cancel(_ state: inout State) -> Effect<Action> {
+        state.phase = .closing
+        state.autoSaveSeconds = nil
+        watchPhotoCancelLog.info("sending photo cancellation")
+        return .merge(.cancel(id: CancelID.autoSave), request(.cancelRecord, state: &state))
     }
 
-    func cancelPhoto(experimentID: UUID, recordID: UUID) async -> Bool {
-        let immediate = WatchExperimentCommand(
-            operation: .cancelRecord, experimentID: experimentID, targetID: recordID
+    func request(
+        _ operation: WatchExperimentCommand.Operation, state: inout State
+    ) -> Effect<Action> {
+        guard let recordID = state.recordID else { return .none }
+        let attempt = state.requests.begin(
+            operation, id: uuid(), experimentID: state.experimentID,
+            recordID: recordID, kind: .photo
         )
-        do {
-            let response = try await sendAndWait(immediate)
-            if response.phase == .completed { return true }
-        } catch {
-            watchPhotoCancelLog.error("immediate failed \(String(describing: error))")
+        return .run { send in
+            await attempt.run(using: client) { await send(.requestEvent(attempt.id, $0)) }
         }
-        for _ in 0..<20 {
-            if let response = try? await finishPhoto(
-                experimentID: experimentID, recordID: recordID, operation: .cancelRecord
-            ), response.phase == .completed { return true }
-            try? await Task.sleep(for: .milliseconds(100))
-        }
-        return false
+        .cancellable(id: CancelID.request, cancelInFlight: true)
     }
 
-    func photoSnapshot(_ experimentID: UUID) async throws -> WatchExperimentSnapshot {
-        let response = try await send(WatchExperimentCommand(
-            operation: .snapshot, experimentID: experimentID
-        ))
-        guard response.phase == .completed, let snapshot = response.snapshot else {
-            throw response.error ?? WatchExperimentError.resultUnknown
+    func receive(_ record: WatchRecordSnapshot, state: inout State) -> Effect<Action> {
+        guard !state.shouldDismiss, record.kind == .photo, record.id == state.recordID,
+              record.experimentID == state.experimentID, state.requests.accept(record)
+        else { return .none }
+        switch record.phase {
+        case .cancelled:
+            if state.cancellation == .retake { return start(&state) }
+            state.shouldDismiss = true
+        case .saved:
+            state.phase = .saved
+        case .capturing where state.phase == .captureFailed:
+            state.phase = .capturing
+            return .none
+        case .review, .previewing:
+            return review(record, state: &state)
+        case .saving:
+            guard state.cancellation == nil else { return .none }
+            state.phase = .saving
+        case .failed:
+            state.phase = failurePhase(record, cancellation: state.cancellation)
+        default: return .none
         }
-        return snapshot
+        state.autoSaveSeconds = nil
+        return .cancel(id: CancelID.autoSave)
     }
 
-    func sendAndWait(
-        _ command: WatchExperimentCommand, returnWhenCapturing: Bool = false
-    ) async throws -> WatchExperimentResponse {
-        var response = try await send(command)
-        for _ in 0..<30 {
-            if response.phase == .failed || response.phase == .unknown {
-                throw response.error ?? WatchExperimentError.resultUnknown
+    func failurePhase(
+        _ record: WatchRecordSnapshot, cancellation: WatchCameraCancellation?
+    ) -> Phase {
+        guard cancellation == nil else { return .cancelFailed }
+        return record.originalRetained == true ? .review : .captureFailed
+    }
+
+    func review(_ record: WatchRecordSnapshot, state: inout State) -> Effect<Action> {
+        guard state.cancellation == nil, [.capturing, .captureFailed].contains(state.phase)
+        else { return .none }
+        state.phase = .review
+        state.autoSaveSeconds = record.canAutoSave == false ? nil : 3
+        guard state.autoSaveSeconds != nil else { return .none }
+        return .run { send in
+            for _ in 0..<3 {
+                try await Task.sleep(for: .seconds(1))
+                await send(.autoSaveTick(record.id))
             }
-            if response.phase == .completed || returnWhenCapturing
-                && response.record?.phase == .capturing { return response }
-            try await Task.sleep(for: .milliseconds(100))
-            response = try await send(WatchExperimentCommand(
-                operation: .requestStatus, experimentID: command.experimentID,
-                targetID: command.requestID
-            ))
         }
-        throw WatchExperimentError.deliveryTimeout
+        .cancellable(id: CancelID.autoSave, cancelInFlight: true)
     }
 }

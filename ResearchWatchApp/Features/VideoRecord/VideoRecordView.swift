@@ -25,6 +25,9 @@ struct VideoRecordView: View {
     var body: some View {
         VStack {
             switch store.phase {
+            case .starting:
+                ProgressView("녹화 요청 중")
+
             case .recording:
                 Spacer()
 
@@ -65,7 +68,7 @@ struct VideoRecordView: View {
                 .disabled(store.startedAt == nil || store.isStopping)
                 .buttonBorderShape(.circle)
 
-            case .review:
+            case .previewing, .review:
                 TranScriptView(
                     transcript: "해당 영상을\n저장할까요?",
                     isSavePrompt: true,
@@ -79,6 +82,9 @@ struct VideoRecordView: View {
                     Text(store.phase == .saving ? "저장 중" : "처리 중")
                     ProgressView()
                         .progressViewStyle(.circular)
+                    if store.phase == .saving, !store.requests.isWaiting(for: .confirmRecord) {
+                        Button("저장 다시 시도") { store.send(.saveTapped) }
+                    }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
@@ -94,17 +100,17 @@ struct VideoRecordView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            case .failed:
+            case .failed, .cancelFailed:
                 VStack(spacing: 8) {
-                    Text("영상 촬영에 실패했어요")
-                    Button("다시 시도") { store.send(.start(UUID())) }
+                    Text(store.phase == .cancelFailed ? "취소를 확인할 수 없어요" : "녹화를 확인할 수 없어요")
+                    Button("다시 시도") { store.send(.retryTapped) }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .background(Color.black.ignoresSafeArea())
         .navigationTitle(
-            [.review, .saved, .closing].contains(store.phase) ? "" : "영상 촬영"
+            [.previewing, .review, .saved, .closing].contains(store.phase) ? "" : "영상 촬영"
         )
         .navigationBarBackButtonHidden()
         .toolbar {

@@ -25,10 +25,20 @@ struct PhotoRecordView: View {
             switch store.phase {
             case .capturing, .saving:
                 VStack(spacing: 4) {
-                    Text(store.phase == .capturing ? "촬영 중" : "저장 중")
+                    if store.phase == .saving {
+                        Text("저장 중")
+                    } else {
+                        Text(store.requests.lastRecord?.phase == .capturing ? "촬영 중" : "촬영 요청 중")
+                    }
                     ProgressView()
                         .progressViewStyle(.circular)
                         .fixedSize()
+                    if store.phase == .saving, !store.requests.isWaiting(for: .confirmRecord) {
+                        Button("저장 다시 시도") { store.send(.saveTapped) }
+                    } else if store.phase == .capturing, store.recordID != nil,
+                              !store.requests.isWaiting(for: .takePhoto) {
+                        Button("촬영 상태 확인") { store.send(.retryTapped) }
+                    }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
@@ -53,7 +63,13 @@ struct PhotoRecordView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             case .closing:
-                Color.clear
+                ProgressView("취소 중")
+
+            case .captureFailed, .cancelFailed:
+                VStack(spacing: 8) {
+                    Text(store.phase == .cancelFailed ? "취소를 확인할 수 없어요" : "촬영을 확인할 수 없어요")
+                    Button("다시 시도") { store.send(.retryTapped) }
+                }
             }
         }
         .background(Color.black.ignoresSafeArea())

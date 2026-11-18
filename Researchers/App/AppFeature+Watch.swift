@@ -89,17 +89,10 @@ extension AppFeature {
                 watchPhotoCancelLog.info(
                     "scheduled \(photo.isScheduled) external \(photo.requiresExternalConfirmation)"
                 )
-                if photo.requestedRecordID == recordID, photo.isScheduled {
-                    return .send(.path(.element(
-                        id: id, action: .session(.capture(.photo(.watchCancelRequested(recordID))))
-                    )))
-                }
-                if photo.capturedData != nil, !photo.isSaving {
-                    return .send(.path(.element(
-                        id: id, action: .session(.capture(.photo(.retakeRequested)))
-                    )))
-                }
-                return .none
+                guard photo.canCancelWatchCapture(recordID) else { return .none }
+                return .send(.path(.element(
+                    id: id, action: .session(.capture(.photo(.watchCancelRequested(recordID))))
+                )))
 
             case let .watchSceneChanged(active):
                 state.watchIsActive = active
