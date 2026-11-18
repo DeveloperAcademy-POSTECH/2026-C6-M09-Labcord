@@ -11,6 +11,8 @@ import SwiftUI
 
 struct SettingTimerView: View {
     let timerSeconds: [Int]
+    let onStart: (Int) -> Void
+    let onAdd: () -> Void
 
     var body: some View {
         ScrollView {
@@ -34,12 +36,12 @@ struct SettingTimerView: View {
                     spacing: WatchScreenMetrics.scaledHeight(6)
                 ) {
                     ForEach(timerSeconds.indices, id: \.self) { index in
-                        SettingTImerItemView(seconds: timerSeconds[index])
+                        SettingTimerItemView(seconds: timerSeconds[index]) {
+                            onStart(timerSeconds[index])
+                        }
                     }
 
-                    Button {
-                        // 구현 예정
-                    } label: {
+                    Button(action: onAdd) {
                         Image(systemName: "plus")
                             .font(.system(size: 28))
                             .frame(
@@ -58,6 +60,48 @@ struct SettingTimerView: View {
     }
 }
 
+struct SettingTimerScreen: View {
+    let timerSeconds: [Int]
+    let canAddTimer: Bool
+    let onStart: (Int) -> Void
+    let onCustomStart: (Int) -> Void
+    @State private var isAddTimerPresented = false
+
+    var body: some View {
+        VStack {
+            Text("타이머")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(Color("General/Brand/Primary"))
+                .padding(.bottom, WatchScreenMetrics.scaledHeight(4.5))
+
+            SettingTimerView(timerSeconds: timerSeconds, onStart: onStart) {
+                isAddTimerPresented = true
+            }
+        }
+        .padding(.top, WatchScreenMetrics.scaledHeight(24.5))
+        .padding(.horizontal, 6)
+        .ignoresSafeArea()
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Color.clear
+                    .frame(width: 1, height: 1)
+            }
+        }
+        .navigationDestination(isPresented: $isAddTimerPresented) {
+            AddTimerView(canAddTimer: canAddTimer, onStart: onCustomStart)
+        }
+    }
+}
+
 #Preview {
-    SettingTimerView(timerSeconds: [30, 90, 3_600])
+    SettingTimerView(timerSeconds: [30, 90, 3_600], onStart: { _ in }, onAdd: {})
+}
+
+#Preview("프리셋 화면") {
+    NavigationStack {
+        SettingTimerScreen(
+            timerSeconds: [30, 90, 3_600], canAddTimer: true,
+            onStart: { _ in }, onCustomStart: { _ in }
+        )
+    }
 }

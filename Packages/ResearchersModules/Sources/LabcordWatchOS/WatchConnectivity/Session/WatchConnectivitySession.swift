@@ -77,21 +77,27 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         #endif
     }
 
+    /// iPhone이 마지막으로 게시한 목록입니다. 응답을 기다리기 전에 화면을 채우는 데 사용합니다.
+    public func cachedExperiments() -> [WatchExperimentSummary]? {
+        activate()
+        guard let data = session?.receivedApplicationContext[
+            WatchExperimentTransport.listSnapshotKey
+        ] as? Data,
+              let summaries = try? JSONDecoder().decode([WatchExperimentSummary].self, from: data)
+        else { return nil }
+        return summaries.filter { $0.status != .completed }
+    }
+
     public func loadExperiments() async throws -> [WatchExperimentSummary] {
         activate()
         guard let session else { throw WatchExperimentError.notReachable }
-        let cachedData = session.receivedApplicationContext[
-            WatchExperimentTransport.listSnapshotKey
-        ] as? Data
-        let cached = cachedData.flatMap {
-            try? JSONDecoder().decode([WatchExperimentSummary].self, from: $0)
-        }
+        let cached = cachedExperiments()
 
         for _ in 0..<30 where session.activationState != .activated {
             try await Task.sleep(for: .milliseconds(100))
         }
         guard session.activationState == .activated else {
-            if let cached { return cached.filter { $0.status != .completed } }
+            if let cached { return cached }
             throw WatchExperimentError.notReachable
         }
         let command = WatchExperimentCommand(operation: .list)
@@ -100,11 +106,11 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
             do {
                 response = try await experiments.send(command, session: session)
             } catch {
-                if let cached { return cached.filter { $0.status != .completed } }
+                if let cached { return cached }
                 response = try await backgroundResponse(for: command, session: session)
             }
         } else {
-            if let cached { return cached.filter { $0.status != .completed } }
+            if let cached { return cached }
             response = try await backgroundResponse(for: command, session: session)
         }
         guard response.version == WatchExperimentCommand.schemaVersion,

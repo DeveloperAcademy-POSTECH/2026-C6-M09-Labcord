@@ -48,7 +48,10 @@ struct WatchConnectedLiveActivityView: View {
             maximumContentHeight: contentHeight
         ) {
             LiveActivityContent(
-                state: .watchConnected(message: "Apple Watch", detail: "기록할 준비가 됐어요."),
+                state: .watchConnected(
+                    message: "Apple Watch로도 기록할 수 있어요.",
+                    detail: "연결이 끊기면 iPhone으로만 기록할 수 있어요."
+                ),
                 onStop: {},
                 onRetry: {}
             )

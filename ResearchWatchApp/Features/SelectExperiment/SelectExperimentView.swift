@@ -16,7 +16,7 @@ struct SelectExperimentView: View {
                 .foregroundStyle(Color("General/Brand/Primary"))
                 .padding(.horizontal, 9.5)
 
-            if store.isLoading {
+            if store.isLoading, store.experiments.isEmpty {
                 VStack(spacing: 4) {
                     Text("실험 불러오는 중")
 

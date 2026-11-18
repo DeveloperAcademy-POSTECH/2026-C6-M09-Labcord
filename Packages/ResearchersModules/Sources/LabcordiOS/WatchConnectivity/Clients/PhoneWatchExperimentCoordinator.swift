@@ -8,6 +8,10 @@ private let watchPhotoCancelLog = Logger(
     subsystem: "com.researchers.Researchers", category: "WatchPhotoCancel"
 )
 
+private let watchCommandLog = Logger(
+    subsystem: "com.researchers.Researchers", category: "WatchCommand"
+)
+
 @MainActor
 public final class PhoneWatchExperimentCoordinator {
     public static let shared = PhoneWatchExperimentCoordinator()
@@ -235,7 +239,16 @@ public final class PhoneWatchExperimentCoordinator {
 
     func failure(_ command: WatchExperimentCommand, _ error: WatchExperimentError)
         -> WatchExperimentResponse {
-        WatchExperimentResponse(
+        watchCommandLog.error("""
+            rejected \(command.operation.rawValue, privacy: .public) \
+            error=\(error.rawValue, privacy: .public) \
+            experiment=\(command.experimentID?.uuidString ?? "nil", privacy: .public) \
+            visible=\(self.visibleExperimentID?.uuidString ?? "nil", privacy: .public) \
+            screen=\(self.currentScreen.experimentID?.uuidString ?? "nil", privacy: .public) \
+            busy=\(self.isBusy, privacy: .public) \
+            executing=\(self.executing != nil, privacy: .public)
+            """)
+        return WatchExperimentResponse(
             requestID: command.requestID, phase: .failed, error: error, screen: refreshedScreen()
         )
     }
