@@ -3,6 +3,7 @@ import ComposableArchitecture
 import Foundation
 import LabcordiOS
 import LabcordShared
+import UIKit
 
 @MainActor
 struct RecordingDemoSeeder {
@@ -44,10 +45,10 @@ struct RecordingDemoSeeder {
         UUID(uuidString: String(format: "D3A00000-0000-4000-8000-%012d", $0))!
     }
 
-    static var hasReplacement: Bool { manifestURL != nil }
+    static var hasReplacement: Bool { manifestAsset != nil }
 
-    private static var manifestURL: URL? {
-        Bundle.main.url(forResource: "LabcordDemo-manifest", withExtension: "json")
+    private static var manifestAsset: NSDataAsset? {
+        NSDataAsset(name: "LabcordDemo-manifest")
     }
 
     static func owns(_ id: UUID) -> Bool {
@@ -94,7 +95,7 @@ struct RecordingDemoSeeder {
         }
     }
 
-    private func install(_ fixture: Fixture, sources: [URL]) throws {
+    private func install(_ fixture: Fixture, sources: [Data]) throws {
         let existing = try experiments.loadResultDetail(fixture.id)
         if let existing, !isRecoverableSeed(existing, for: fixture) {
             try updateDemoText(in: existing, from: fixture)
@@ -138,7 +139,7 @@ struct RecordingDemoSeeder {
     }
 
     private func installRecord(
-        _ record: Record, source: URL, in fixture: Fixture,
+        _ record: Record, source: Data, in fixture: Fixture,
         existing: ExperimentResultDetail.Record?
     ) throws {
         if let existing {
@@ -151,10 +152,10 @@ struct RecordingDemoSeeder {
     }
 
     private func loadFixtures() throws -> [Fixture] {
-        guard let manifestURL = Self.manifestURL else { throw SeedError.invalidManifest }
+        guard let manifest = Self.manifestAsset else { throw SeedError.invalidManifest }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        let fixtures = try decoder.decode(Manifest.self, from: Data(contentsOf: manifestURL))
+        let fixtures = try decoder.decode(Manifest.self, from: manifest.data)
             .experiments
         let recordIDs = fixtures.flatMap { $0.records.map(\.id) }
         guard fixtures.count == Self.replacementIDs.count,
@@ -181,11 +182,11 @@ struct RecordingDemoSeeder {
             && records.allSatisfy(\.isValid)
     }
 
-    private func source(for record: Record) throws -> URL {
-        guard let url = Bundle.main.url(forResource: record.file, withExtension: nil),
-              FileManager.default.isReadableFile(atPath: url.path)
+    private func source(for record: Record) throws -> Data {
+        let name = (record.file as NSString).deletingPathExtension
+        guard let asset = NSDataAsset(name: name), !asset.data.isEmpty
         else { throw SeedError.missingMedia(record.file) }
-        return url
+        return asset.data
     }
 
     private func create(_ fixture: Fixture) throws -> ExperimentListEntry {
@@ -219,21 +220,25 @@ struct RecordingDemoSeeder {
         }
     }
 
-    private func save(_ record: Record, from source: URL, in fixture: Fixture) throws {
+    private func save(_ record: Record, from source: Data, in fixture: Fixture) throws {
         let id = fixture.id
         let date = fixture.startedAt.addingTimeInterval(record.offsetSeconds)
-        switch record.kind {
-        case .photo:
-            try experiments.savePhoto(id, record.id, date, Data(contentsOf: source))
-        case .audio:
-            try experiments.saveAudio(id, record.id, date, source, record.transcript ?? "")
-        case .video:
-            try removeOrphanVideo(recordID: record.id, experimentID: id, matching: source)
-            let copy = FileManager.default.temporaryDirectory
-                .appending(path: "labcord-demo-\(UUID().uuidString).mov")
-            try FileManager.default.copyItem(at: source, to: copy)
-            defer { try? FileManager.default.removeItem(at: copy) }
+        if record.kind == .photo {
+            try experiments.savePhoto(id, record.id, date, source)
+            return
+        }
+
+        let fileExtension = (record.file as NSString).pathExtension
+        let copy = FileManager.default.temporaryDirectory
+            .appending(path: "labcord-demo-\(UUID().uuidString).\(fileExtension)")
+        defer { try? FileManager.default.removeItem(at: copy) }
+        try source.write(to: copy, options: .atomic)
+
+        if record.kind == .video {
+            try removeOrphanVideo(recordID: record.id, experimentID: id, matching: copy)
             try experiments.saveVideo(id, record.id, date, copy)
+        } else {
+            try experiments.saveAudio(id, record.id, date, copy, record.transcript ?? "")
         }
     }
 
