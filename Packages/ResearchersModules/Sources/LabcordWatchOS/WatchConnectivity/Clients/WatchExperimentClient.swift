@@ -19,6 +19,7 @@ public struct WatchExperimentClient: Sendable {
     public var retryActivation: @Sendable () async -> Void
     public var list: @Sendable () async throws -> [WatchExperimentSummary]
     public var lists: @Sendable () async -> AsyncStream<[WatchExperimentSummary]>
+    public var cachedList: @Sendable () async -> [WatchExperimentSummary]?
     public var requestPhoneSession: @Sendable (UUID) async -> Void
     public var cancelPhoneSession: @Sendable (UUID) async -> Void
     public var enterPhoneSession: @Sendable (UUID) async -> Void
@@ -34,6 +35,7 @@ public struct WatchExperimentClient: Sendable {
         lists: @escaping @Sendable () async -> AsyncStream<[WatchExperimentSummary]> = {
             AsyncStream { $0.finish() }
         },
+        cachedList: @escaping @Sendable () async -> [WatchExperimentSummary]? = { nil },
         requestPhoneSession: @escaping @Sendable (UUID) async -> Void = { _ in },
         cancelPhoneSession: @escaping @Sendable (UUID) async -> Void = { _ in },
         enterPhoneSession: @escaping @Sendable (UUID) async -> Void = { _ in },
@@ -50,6 +52,7 @@ public struct WatchExperimentClient: Sendable {
         self.retryActivation = retryActivation
         self.list = list
         self.lists = lists
+        self.cachedList = cachedList
         self.requestPhoneSession = requestPhoneSession
         self.cancelPhoneSession = cancelPhoneSession
         self.enterPhoneSession = enterPhoneSession
@@ -100,6 +103,9 @@ extension WatchExperimentClient: DependencyKey {
             },
             lists: {
                 await connectivity.experimentLists()
+            },
+            cachedList: {
+                await connectivity.cachedExperiments()
             },
             requestPhoneSession: { id in
                 await connectivity.requestPhoneSession(id)

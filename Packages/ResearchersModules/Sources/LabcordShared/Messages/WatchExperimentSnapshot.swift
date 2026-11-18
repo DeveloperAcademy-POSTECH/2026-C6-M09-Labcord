@@ -24,15 +24,18 @@ public struct WatchTimerSnapshot: Codable, Equatable, Identifiable, Sendable {
     public let remainingSeconds: Int
     public let status: Status
     public let measuredAt: Date
+    public let startedAt: Date?
 
     public init(
-        id: UUID, durationSeconds: Int, remainingSeconds: Int, status: Status, measuredAt: Date
+        id: UUID, durationSeconds: Int, remainingSeconds: Int, status: Status,
+        measuredAt: Date, startedAt: Date? = nil
     ) {
         self.id = id
         self.durationSeconds = durationSeconds
         self.remainingSeconds = remainingSeconds
         self.status = status
         self.measuredAt = measuredAt
+        self.startedAt = startedAt
     }
 
     public func remaining(at date: Date) -> Int {

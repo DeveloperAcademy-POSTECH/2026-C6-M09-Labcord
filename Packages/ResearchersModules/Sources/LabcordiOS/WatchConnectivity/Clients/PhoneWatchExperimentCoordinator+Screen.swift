@@ -78,9 +78,7 @@ extension PhoneWatchExperimentCoordinator {
     }
 
     func availableExperiments() throws -> [WatchExperimentSummary] {
-        try client.load().compactMap { entry in
-            try client.watchState(entry.id)?.experiment
-        }.filter { $0.status != .completed }
+        try client.watchSummaries()
     }
 
     func publishAvailableExperiments() {

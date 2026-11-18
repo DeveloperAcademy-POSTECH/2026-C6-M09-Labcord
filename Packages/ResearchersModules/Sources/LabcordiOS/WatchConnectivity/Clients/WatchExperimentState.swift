@@ -22,7 +22,8 @@ public struct WatchExperimentState: Equatable, Sendable {
                     id: timer.id, durationSeconds: timer.durationSeconds,
                     remainingSeconds: timer.remainingSeconds(at: date),
                     status: watchTimerStatus(timer.status),
-                    measuredAt: timerMeasurementDate(timer, at: date)
+                    measuredAt: timerMeasurementDate(timer, at: date),
+                    startedAt: timer.startedAt
                 )
             },
             recordedAt: date,

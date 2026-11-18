@@ -21,6 +21,7 @@ public struct ExperimentClient: Sendable {
     private var dismissWatchTimerOperation: @MainActor @Sendable (UUID, UUID) throws -> Void
     public var watchState: @MainActor @Sendable (UUID) throws -> WatchExperimentState?
     public var load: @MainActor @Sendable () throws -> [ExperimentListEntry]
+    public var watchSummaries: @MainActor @Sendable () throws -> [WatchExperimentSummary]
     public var loadRecentProtocols: @MainActor @Sendable () throws -> [RecentProtocolEntry]
     public var enterSessionAndLoadDetail: @MainActor @Sendable (
         UUID
@@ -97,13 +98,18 @@ public struct ExperimentClient: Sendable {
         },
         dismissWatchTimer: @escaping @MainActor @Sendable (UUID, UUID) throws -> Void = { _, _ in
             throw WatchTimerAccessError.notConfigured
-        }
+        },
+        watchSummaries: (@MainActor @Sendable () throws -> [WatchExperimentSummary])? = nil
     ) {
         self.applyWatchTimer = applyWatchTimer
         self.beginTimerDeletion = beginTimerDeletion
         self.dismissWatchTimerOperation = dismissWatchTimer
         self.watchState = watchState
         self.load = load
+        self.watchSummaries = watchSummaries ?? {
+            try load().compactMap { try watchState($0.id)?.experiment }
+                .filter { $0.status != .completed }
+        }
         self.loadRecentProtocols = loadRecentProtocols
         self.enterSessionAndLoadDetail = enterSessionAndLoadDetail
         self.loadResultDetail = loadResultDetail
@@ -201,7 +207,8 @@ extension ExperimentClient: DependencyKey {
         },
         dismissWatchTimer: {
             try ExperimentSessionRepository.shared.dismissWatchTimer(experimentID: $0, timerID: $1)
-        }
+        },
+        watchSummaries: { try ExperimentListRepository.shared.watchSummaries() }
     )
 }
 

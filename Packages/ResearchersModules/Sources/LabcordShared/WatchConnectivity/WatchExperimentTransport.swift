@@ -191,7 +191,8 @@ private extension WatchExperimentTransport {
               snapshot.timers.count == previous.timers.count else { return false }
         return zip(snapshot.timers, previous.timers).allSatisfy { current, old in
             guard current.id == old.id, current.durationSeconds == old.durationSeconds,
-                  current.status == old.status else { return false }
+                  current.status == old.status,
+                  current.startedAt == old.startedAt else { return false }
             if current.status == .running {
                 let end = current.measuredAt.addingTimeInterval(Double(current.remainingSeconds))
                 let oldEnd = old.measuredAt.addingTimeInterval(Double(old.remainingSeconds))
