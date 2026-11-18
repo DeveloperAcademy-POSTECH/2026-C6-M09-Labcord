@@ -327,7 +327,6 @@ private extension AppFeature {
                 let experimentID = session.experimentID
                 let experimentTitle = session.detail?.title ?? ""
                 let timers = runningTimers(in: session.timer.timerCollection, at: now)
-                // 뒤이어 실험이 종료되면 이 동기화를 기다릴 수 있도록 홈 복귀 시점에 등록한다.
                 let synchronization = timerLiveActivityClient.scheduleSynchronization(
                     experimentID, experimentTitle, timers
                 )
