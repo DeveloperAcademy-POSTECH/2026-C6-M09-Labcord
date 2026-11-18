@@ -9,6 +9,13 @@ private struct StoredWatchSessionOpenRequest: Codable {
 }
 
 extension PhoneWatchExperimentCoordinator {
+    #if DEBUG
+    func clearDebugOpenSessionRequest() {
+        reconcileLatestSessionOpenRequest()
+        if let id = storedOpenRequest()?.request.experimentID { didHandleOpenSession(id) }
+    }
+    #endif
+
     private static var sessionOpenRequestKey: String { "watchSessionOpenRequest.v1" }
 
     public var hasPendingOpenSessionRequest: Bool {

@@ -1,0 +1,643 @@
+{
+  "experiments": [
+    {
+      "id": "D3A00000-0000-4000-8000-000000000101",
+      "title": "데모 - 토양 및 폐기물 pH 측정",
+      "startedAt": "2026-11-20T14:09:38+09:00",
+      "completedAt": "2026-11-20T06:28:02Z",
+      "protocol": {
+        "timerSeconds": [
+          300
+        ],
+        "materials": [
+          "low-sodium-error electrode",
+          "Analytical balance",
+          "silver-silver chloride",
+          "Reference electrode",
+          "reagent water",
+          "Beaker",
+          "Reagent water",
+          "reference electrode",
+          "fiber-capillary hole",
+          "Glass electrode",
+          "low-conductivity dilution water",
+          "glass electrode",
+          "Secondary standard buffers",
+          "HCl",
+          "temperature sensor",
+          "ground-glass joint",
+          "ultrasonic bath",
+          "Thermometer",
+          "aqueous phase",
+          "HCI",
+          "Primary standard buffer salts",
+          "combination electrodes",
+          "electrode holder",
+          "QC",
+          "pH meter",
+          "temperature compensation",
+          "pH meters",
+          "automatic compensation",
+          "Combination electrodes",
+          "beaker",
+          "constant potential",
+          "oily phase",
+          "supernatant solution",
+          "zug",
+          "multiphasic",
+          "drying ovens"
+        ],
+        "samples": [],
+        "glossaryTerms": [
+          "NIST",
+          "multiphasic?",
+          "multionasic,",
+          "alkaline",
+          "waste pH",
+          "EC",
+          "pH reading"
+        ],
+        "units": [
+          "pH",
+          "%",
+          "g",
+          "mL"
+        ]
+      },
+      "records": [
+        {
+          "id": "D3A00000-0000-4000-8004-000000000001",
+          "kind": "photo",
+          "file": "LabcordDemo-ph-01.jpg",
+          "offsetSeconds": 0,
+          "note": "pH 보정액 2종",
+          "previousNote": "데모 관찰. 두 보정액에 쓰는 컵의 액면과 전극 끝을 같은 높이에서 확인했다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8004-000000000002",
+          "kind": "audio",
+          "file": "LabcordDemo-ph-02.caf",
+          "offsetSeconds": 168,
+          "note": "S-01 전극 보정 완료",
+          "transcript": "토양 시료 S-01입니다. 산성 범위를 기준으로 두 완충용액에서 전극을 보정했고, 표시가 안정된 뒤 시료 준비를 시작했습니다.",
+          "previousNote": "데모 음성 관찰.",
+          "previousTranscript": "토양 시료 에스 영일입니다. 산성 범위를 기준으로 두 완충용액에서 전극을 보정했고, 표시가 안정된 뒤 시료 준비를 시작했습니다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8004-000000000003",
+          "kind": "photo",
+          "file": "LabcordDemo-ph-03.jpg",
+          "offsetSeconds": 255,
+          "note": "S-01 토양 분취",
+          "previousNote": "데모 관찰. 위에서 내려다보니 S-01 토양의 입도와 색이 한눈에 보였다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8004-000000000004",
+          "kind": "video",
+          "file": "LabcordDemo-ph-04.mov",
+          "offsetSeconds": 274,
+          "note": "교반 중 소용돌이",
+          "previousNote": "데모 관찰. 교반 중에 현탁액이 혼탁해졌고 중앙에 얕은 소용돌이가 보였다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8004-000000000005",
+          "kind": "audio",
+          "file": "LabcordDemo-ph-05.caf",
+          "offsetSeconds": 579,
+          "note": "교반 끝, 침전 대기",
+          "transcript": "교반을 마쳤습니다. 물과 토양이 섞여 아직 탁해서, 위쪽 액층이 맑아질 때까지 비커를 그대로 두겠습니다.",
+          "previousNote": "데모 음성 관찰."
+        },
+        {
+          "id": "D3A00000-0000-4000-8004-000000000006",
+          "kind": "photo",
+          "file": "LabcordDemo-ph-06.jpg",
+          "offsetSeconds": 732,
+          "note": "교반 직후 전체가 탁함",
+          "previousNote": "데모 관찰. 교반 직후 비커 위쪽까지 뿌옇게 섞여 있었고 바닥 경계는 아직 없었다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8004-000000000007",
+          "kind": "video",
+          "file": "LabcordDemo-ph-07.mov",
+          "offsetSeconds": 4313,
+          "note": "침전층과 상등액 분리",
+          "previousNote": "데모 관찰. 침전 뒤 바닥의 짙은 층과 위쪽의 맑은 상등액 경계가 선명하게 보였다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8004-000000000008",
+          "kind": "photo",
+          "file": "LabcordDemo-ph-08.jpg",
+          "offsetSeconds": 4444,
+          "note": "전극 끝은 상등액에만 잠김",
+          "previousNote": "데모 관찰. 유리 전극 끝이 침전층과 떨어져 상등액 안에 있는 것을 확인했다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8004-000000000009",
+          "kind": "audio",
+          "file": "LabcordDemo-ph-09.caf",
+          "offsetSeconds": 4515,
+          "note": "pH 6.38, 23.5 °C",
+          "transcript": "상등액의 표시가 안정됐습니다. 수중 토양 pH는 6.38, 시료 온도는 23.5 °C로 기록합니다.",
+          "previousNote": "데모 음성 관찰.",
+          "previousTranscript": "상등액의 표시가 안정됐습니다. 수중 토양 피에이치는 육 점 삼 팔, 시료 온도는 이십삼 점 오 도로 기록합니다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8004-000000000010",
+          "kind": "photo",
+          "file": "LabcordDemo-ph-10.jpg",
+          "offsetSeconds": 4650,
+          "note": "S-01 pH 6.38 확인",
+          "previousNote": "데모 관찰. S-01의 최종 pH 표시는 6.38이었다. 온도 23.5도는 음성에 남겼다."
+        }
+      ]
+    },
+    {
+      "id": "D3A00000-0000-4000-8000-000000000102",
+      "title": "데모 - 황산염 탁도 분석",
+      "startedAt": "2026-11-16T10:06:17+09:00",
+      "completedAt": "2026-11-16T01:25:05Z",
+      "protocol": {
+        "timerSeconds": [
+          14400,
+          60,
+          240
+        ],
+        "materials": [
+          "filter photometer",
+          "NaCl",
+          "Nephelometer",
+          "isopropanol",
+          "Barium chloride",
+          "nephelometer",
+          "magnetic stirrer",
+          "Magnetic stirrer",
+          "H,SO",
+          "ethanol",
+          "Na_C03",
+          "NazC03",
+          "Na,C03",
+          "BaC1",
+          "Hach Sulfaver",
+          "Filter photometer",
+          "barium chloride",
+          "BaCl2",
+          "Na_S0s",
+          "desiccator",
+          "barium sulfate turbidity",
+          "NaHCO",
+          "HC1",
+          "glycerol",
+          "Na2S04",
+          "HCl",
+          "standard acid",
+          "magnetic stirring bars",
+          "chloride",
+          "standard sulfuric acid",
+          "absorbance cell",
+          "Erlenmeyer flask",
+          "Standard acid",
+          "Type II water",
+          "nitrate N",
+          "Na CO",
+          "Type Il water",
+          "total alkalinity",
+          "SO4",
+          "Na SO",
+          "Standard sulfuric acid",
+          "nitrite N",
+          "Stopwatch",
+          "volumetric flask",
+          "Measuring spoon"
+        ],
+        "samples": [],
+        "glossaryTerms": [
+          "spectrophotometer",
+          "Spectrophotometer",
+          "Na,CO",
+          "calibration curve",
+          "Calibration curves"
+        ],
+        "units": [
+          "mg/L",
+          "nm",
+          "cm",
+          "mL",
+          "%",
+          "g",
+          "N",
+          "°C",
+          "ug",
+          "pH",
+          "mg",
+          "A"
+        ]
+      },
+      "records": [
+        {
+          "id": "D3A00000-0000-4000-8005-000000000001",
+          "kind": "photo",
+          "file": "LabcordDemo-sulfate-01.jpg",
+          "offsetSeconds": 0,
+          "note": "반응 전 표준과 공시험 무색",
+          "previousNote": "데모 관찰. 공시험과 표준액은 반응 전 모두 무색이었다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8005-000000000002",
+          "kind": "audio",
+          "file": "LabcordDemo-sulfate-02.caf",
+          "offsetSeconds": 144,
+          "note": "S-203 검량선 범위 내",
+          "transcript": "황산염 표준과 공시험을 분리해 배치했습니다. 검량선 범위에 들어오는 시료 S-203을 측정하겠습니다.",
+          "previousNote": "데모 음성 관찰.",
+          "previousTranscript": "황산염 표준과 공시험을 분리해 배치했습니다. 검량선 범위에 들어오는 시료 에스 이 영 삼을 측정하겠습니다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8005-000000000003",
+          "kind": "photo",
+          "file": "LabcordDemo-sulfate-03.jpg",
+          "offsetSeconds": 395,
+          "note": "반응 전 시료와 공시험 모두 맑음",
+          "previousNote": "데모 관찰. 시료와 시료 공시험을 나란히 뒀을 때 눈에 띄는 색이나 탁도 차이는 없었다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8005-000000000004",
+          "kind": "video",
+          "file": "LabcordDemo-sulfate-04.mov",
+          "offsetSeconds": 475,
+          "note": "교반 중 흰 현탁액 형성",
+          "previousNote": "데모 관찰. 교반 중 흰 황산바륨 입자가 액체 아래에서 퍼지는 모습을 기록했다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8005-000000000005",
+          "kind": "audio",
+          "file": "LabcordDemo-sulfate-05.caf",
+          "offsetSeconds": 547,
+          "note": "교반 끝, 탁도 측정",
+          "transcript": "교반을 마친 시료에 흰 현탁액이 보입니다. 셀에 옮겨 탁도 신호가 가장 높은 시점을 확인합니다.",
+          "previousNote": "데모 음성 관찰."
+        },
+        {
+          "id": "D3A00000-0000-4000-8005-000000000006",
+          "kind": "photo",
+          "file": "LabcordDemo-sulfate-06.jpg",
+          "offsetSeconds": 571,
+          "note": "흰 탁도 균일, 큰 기포 없음",
+          "previousNote": "데모 관찰. 측정 셀의 흰 현탁액은 균일했고 앞면에 큰 기포가 보이지 않았다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8005-000000000007",
+          "kind": "video",
+          "file": "LabcordDemo-sulfate-07.mov",
+          "offsetSeconds": 682,
+          "note": "측정 셀 층 분리 없음",
+          "previousNote": "데모 관찰. 측정용 반응 셀에 흰 탁도가 고르게 남아 있고 뚜렷한 층 분리가 보이지 않았다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8005-000000000008",
+          "kind": "photo",
+          "file": "LabcordDemo-sulfate-08.jpg",
+          "offsetSeconds": 879,
+          "note": "반응 셀이 공시험보다 탁함",
+          "previousNote": "데모 관찰. 시료 공시험과 반응 셀을 나란히 보면 반응 셀 쪽의 산란이 뚜렷했다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8005-000000000009",
+          "kind": "audio",
+          "file": "LabcordDemo-sulfate-09.caf",
+          "offsetSeconds": 915,
+          "note": "공시험 보정 후 17.6 mg/L",
+          "transcript": "관찰 구간의 최댓값에서 시료 바탕 신호를 보정했습니다. 검량선으로 환산한 황산염 농도는 17.6 mg/L로 기록합니다.",
+          "previousNote": "데모 음성 관찰.",
+          "previousTranscript": "관찰 구간의 최댓값에서 시료 바탕 신호를 보정했습니다. 검량선으로 환산한 황산염 농도는 리터당 십칠 점 육 밀리그램으로 기록합니다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8005-000000000010",
+          "kind": "photo",
+          "file": "LabcordDemo-sulfate-10.jpg",
+          "offsetSeconds": 1074,
+          "note": "농도가 높을수록 탁함",
+          "previousNote": "데모 관찰. 저농도부터 고농도 표준까지 현탁액의 탁도가 단계적으로 커졌다."
+        }
+      ]
+    },
+    {
+      "id": "D3A00000-0000-4000-8000-000000000103",
+      "title": "데모 - 인 비색 분석",
+      "startedAt": "2026-11-11T13:35:19+09:00",
+      "completedAt": "2026-11-11T04:56:58Z",
+      "protocol": {
+        "timerSeconds": [
+          1800,
+          1200,
+          300
+        ],
+        "materials": [
+          "NaHSO3",
+          "NaHSQ",
+          "Sodium bisulfite",
+          "H,SOA",
+          "Erlenmeyer flask",
+          "distilled water",
+          "sodium bisulfite",
+          "autoclave",
+          "Ammonium persulfate",
+          "spectrophotometer",
+          "ammonium persulfate",
+          "antimony potassium tartrate",
+          "linear graph paper",
+          "phosphorus-free filter",
+          "acetone",
+          "Acid-washed glassware",
+          "Arsenate",
+          "Ascorbic acid",
+          "HCl",
+          "H,SO",
+          "ascorbic acid",
+          "sulfuric acid",
+          "filter photometer",
+          "Ammonium molybdate-antimony potassium tartrate",
+          "polyphosphorus",
+          "arsenious acid",
+          "arsenic acid",
+          "Spectrophotometer",
+          "NaHSO3)",
+          "Dissolved Orthophosphate",
+          "Dissolved Hydrolyzable Phosphorus",
+          "arsenic",
+          "cubitainers",
+          "iron"
+        ],
+        "samples": [],
+        "glossaryTerms": [
+          "phosphorus",
+          "Orthophosphate",
+          "orthophosphate",
+          "ammonium molybdate-antimony potassium tartrate",
+          "Ammonium molybdate",
+          "standard curve",
+          "orthophosphates",
+          "sulfuric acid hydrolysis",
+          "Dissolved Phosphorus",
+          "persulfate digestion",
+          "Total Phosphorus",
+          "Hydrolyzable Phosphorus",
+          "Total Hydrolyzable Phosphorus"
+        ],
+        "units": [
+          "mg",
+          "mL",
+          "°C",
+          "mg/L",
+          "nm",
+          "cm",
+          "g",
+          "N",
+          "psi",
+          "%"
+        ]
+      },
+      "records": [
+        {
+          "id": "D3A00000-0000-4000-8006-000000000001",
+          "kind": "photo",
+          "file": "LabcordDemo-phosphorus-01.jpg",
+          "offsetSeconds": 0,
+          "note": "발색 전 표준과 공시험 무색",
+          "previousNote": "데모 관찰. 공시험과 표준 셀의 발색 전 상태는 무색에 가까웠다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8006-000000000002",
+          "kind": "audio",
+          "file": "LabcordDemo-phosphorus-02.caf",
+          "offsetSeconds": 153,
+          "note": "분광광도계 기준 신호 확인",
+          "transcript": "이번 기록의 대상은 정인산입니다. 표준과 시료, 공시험을 구분했고 분광광도계의 기준 신호를 확인했습니다.",
+          "previousNote": "데모 음성 관찰."
+        },
+        {
+          "id": "D3A00000-0000-4000-8006-000000000003",
+          "kind": "photo",
+          "file": "LabcordDemo-phosphorus-03.jpg",
+          "offsetSeconds": 435,
+          "note": "시료·공시험 셀 기포 없음",
+          "previousNote": "데모 관찰. 시료 셀과 공시험 셀의 광학면을 맞춰 두고 기포가 없는지 확인했다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8006-000000000004",
+          "kind": "video",
+          "file": "LabcordDemo-phosphorus-04.mov",
+          "offsetSeconds": 577,
+          "note": "발색 초기 옅은 청색",
+          "previousNote": "데모 관찰. 발색 초기의 시료 셀에서 엷은 청색을 확인했다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8006-000000000005",
+          "kind": "audio",
+          "file": "LabcordDemo-phosphorus-05.caf",
+          "offsetSeconds": 594,
+          "note": "발색 5분 대기",
+          "transcript": "발색을 시작했습니다. 표준 셀은 농도 순으로 두었고, 5분이 지난 시점에 각 셀의 흡광도를 확인하겠습니다.",
+          "previousNote": "데모 음성 관찰.",
+          "previousTranscript": "발색을 시작했습니다. 표준 셀은 농도 순으로 두었고, 오 분이 지난 시점에 각 셀의 흡광도를 확인하겠습니다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8006-000000000006",
+          "kind": "photo",
+          "file": "LabcordDemo-phosphorus-06.jpg",
+          "offsetSeconds": 768,
+          "note": "시료 옅은 청색, 공시험 무색",
+          "previousNote": "데모 관찰. 발색 중인 시료와 무색 공시험을 같은 조명에서 비교했다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8006-000000000007",
+          "kind": "video",
+          "file": "LabcordDemo-phosphorus-07.mov",
+          "offsetSeconds": 903,
+          "note": "표준 셀 농도별 색 차이",
+          "previousNote": "데모 관찰. 발색이 끝난 표준 셀에서 청색 농담이 순서대로 구분됐다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8006-000000000008",
+          "kind": "photo",
+          "file": "LabcordDemo-phosphorus-08.jpg",
+          "offsetSeconds": 986,
+          "note": "측정 셀 기포·물방울 없음",
+          "previousNote": "데모 관찰. 측정용 청색 셀의 광학면에 기포나 물방울이 없는 것을 확인했다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8006-000000000009",
+          "kind": "audio",
+          "file": "LabcordDemo-phosphorus-09.caf",
+          "offsetSeconds": 1077,
+          "note": "650 nm, 0.42 mg P/L",
+          "transcript": "650 nm에서 읽은 흡광도를 검량선에 대입했습니다. 시료의 인 농도는 0.42 mg P/L로 기록합니다.",
+          "previousNote": "데모 음성 관찰.",
+          "previousTranscript": "육백오십 나노미터에서 읽은 흡광도를 검량선에 대입했습니다. 시료의 인 농도는 리터당 영 점 사 이 밀리그램으로 기록합니다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8006-000000000010",
+          "kind": "photo",
+          "file": "LabcordDemo-phosphorus-10.jpg",
+          "offsetSeconds": 1245,
+          "note": "시료 청색, 공시험 무색",
+          "previousNote": "데모 관찰. 측정 후 시료의 청색이 공시험과 뚜렷하게 구분됐다."
+        }
+      ]
+    },
+    {
+      "id": "D3A00000-0000-4000-8000-000000000104",
+      "title": "데모 - 스핀코터 공정",
+      "startedAt": "2026-11-05T16:22:43+09:00",
+      "completedAt": "2026-11-05T07:35:32Z",
+      "protocol": {
+        "timerSeconds": [],
+        "materials": [
+          "샘플 홀더",
+          "controller 보드",
+          "system power 버튼",
+          "스핀코터",
+          "Spin coater",
+          "vacuum power 버튼",
+          "글로브 박스",
+          "SUS",
+          "ACIE-200 (컴팩트형)",
+          "ACE-200",
+          "초 정밀 그래픽모드 스핀코터",
+          "Vacuum power 버튼",
+          "샘플 로딩",
+          "Tefelon",
+          "펌프",
+          "vacuum 버튼",
+          "System power 버튼",
+          "펌프 전원",
+          "글라스",
+          "vaccum 버튼",
+          "Wafer size",
+          "power supply + ",
+          "Start 버튼",
+          "웨이퍼",
+          "장비 main 전원"
+        ],
+        "samples": [],
+        "glossaryTerms": [
+          "R.P.M",
+          "Spin Controller",
+          "Vacuum Input",
+          "acceleration & deceleration",
+          "deceleration free",
+          "high R.P.M",
+          "위치제어",
+          "Hold Time",
+          "Rotation Speed",
+          "rpm O",
+          "ramp",
+          "rpm 0",
+          "Back Light)",
+          "Coding program",
+          "감속 시간",
+          "time 0",
+          "Ent 버튼",
+          "ramp 1",
+          "time"
+        ],
+        "units": [
+          "rpm",
+          "A/S",
+          "mm",
+          "m/m",
+          "pm",
+          "V",
+          "Hz",
+          "mmHg",
+          "OD"
+        ]
+      },
+      "records": [
+        {
+          "id": "D3A00000-0000-4000-8007-000000000001",
+          "kind": "photo",
+          "file": "LabcordDemo-spin-01.jpg",
+          "offsetSeconds": 0,
+          "note": "척 중앙 진공홀 확인",
+          "previousNote": "데모 관찰. 기판 안착 전 척 중앙의 고정 위치와 홈을 확인했다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8007-000000000002",
+          "kind": "audio",
+          "file": "LabcordDemo-spin-02.caf",
+          "offsetSeconds": 86,
+          "note": "기판용 홀더 선택",
+          "transcript": "장비와 펌프 상태를 확인했습니다. 작은 기판에 맞는 홀더를 선택했고, 시작하기 전에 저장된 레시피를 확인합니다.",
+          "previousNote": "데모 음성 관찰."
+        },
+        {
+          "id": "D3A00000-0000-4000-8007-000000000003",
+          "kind": "photo",
+          "file": "LabcordDemo-spin-03.jpg",
+          "offsetSeconds": 185,
+          "note": "사각 기판 중앙 정렬",
+          "previousNote": "데모 관찰. 작은 사각 기판과 원형 척의 경계를 위에서 비교했다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8007-000000000004",
+          "kind": "video",
+          "file": "LabcordDemo-spin-04.mov",
+          "offsetSeconds": 284,
+          "note": "덮개 닫힘, 녹색 표시",
+          "previousNote": "데모 관찰. 회전 시작 전 덮개가 닫힌 상태와 녹색 상태 표시를 확인했다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8007-000000000005",
+          "kind": "audio",
+          "file": "LabcordDemo-spin-05.caf",
+          "offsetSeconds": 328,
+          "note": "진공 고정 확인",
+          "transcript": "기판이 홀더에 고정됐습니다. 진공 표시를 확인하고 뚜껑을 닫았습니다. 회전수와 가속 시간, 유지 시간은 화면에서 확인하겠습니다.",
+          "previousNote": "데모 음성 관찰."
+        },
+        {
+          "id": "D3A00000-0000-4000-8007-000000000006",
+          "kind": "photo",
+          "file": "LabcordDemo-spin-06.jpg",
+          "offsetSeconds": 371,
+          "note": "덮개 안쪽 기판 중앙 유지",
+          "previousNote": "데모 관찰. 닫힌 덮개 너머로 기판이 원형 척 가운데 있는 것을 확인했다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8007-000000000007",
+          "kind": "video",
+          "file": "LabcordDemo-spin-07.mov",
+          "offsetSeconds": 439,
+          "note": "회전 중 반사 균일",
+          "previousNote": "데모 관찰. 회전하는 기판의 반사가 닫힌 덮개 너머로 일정하게 보였다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8007-000000000008",
+          "kind": "photo",
+          "file": "LabcordDemo-spin-08.jpg",
+          "offsetSeconds": 536,
+          "note": "분리 후 표면 반사 균일",
+          "previousNote": "데모 관찰. 분리한 기판을 위에서 보니 표면 반사가 고르게 이어졌다."
+        },
+        {
+          "id": "D3A00000-0000-4000-8007-000000000009",
+          "kind": "audio",
+          "file": "LabcordDemo-spin-09.caf",
+          "offsetSeconds": 604,
+          "note": "얼룩 없음, 두께 미측정",
+          "transcript": "회전이 완전히 멈췄습니다. 기판을 분리한 뒤 표면 반사를 확인했는데, 눈에 띄는 얼룩은 보이지 않습니다. 두께는 이번 시연에서 측정하지 않았습니다.",
+          "previousNote": "데모 음성 관찰."
+        },
+        {
+          "id": "D3A00000-0000-4000-8007-000000000010",
+          "kind": "photo",
+          "file": "LabcordDemo-spin-10.jpg",
+          "offsetSeconds": 715,
+          "note": "가장자리 얼룩·뭉침 없음",
+          "previousNote": "데모 관찰. 낮은 정측면에서 확인한 결과 가장자리에 눈에 띄는 얼룩이나 덩어리가 없었다."
+        }
+      ]
+    }
+  ]
+}
