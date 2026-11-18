@@ -70,6 +70,6 @@ struct ProgressTimerView: View {
                 status: .paused, measuredAt: .now
             )
         ],
-        pendingTimerIDs: [], onTimerCommand: { _, _ in }
-    )
+        pendingTimerIDs: []
+    ) { _, _ in }
 }

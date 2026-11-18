@@ -49,5 +49,5 @@ struct SettingTimerItemView: View {
 }
 
 #Preview {
-    SettingTimerItemView(seconds: 30, onStart: {})
+    SettingTimerItemView(seconds: 30) {}
 }

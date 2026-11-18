@@ -63,10 +63,10 @@ struct FreeModeTimerView: View {
                 measuredAt: .now
             )
         ],
-        pendingTimerIDs: [], onTimerCommand: { _, _ in }
-    )
+        pendingTimerIDs: []
+    ) { _, _ in }
 }
 
 #Preview("없음") {
-    FreeModeTimerView(timers: [], pendingTimerIDs: [], onTimerCommand: { _, _ in })
+    FreeModeTimerView(timers: [], pendingTimerIDs: []) { _, _ in }
 }

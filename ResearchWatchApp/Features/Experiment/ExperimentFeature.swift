@@ -180,7 +180,7 @@ struct ExperimentFeature {
                 return startPendingTimer(seconds: seconds, state: &state)
 
             case let .timerCommandTapped(id, operation) where
-                state.localTimers.contains(where: { $0.id == id }):
+                state.localTimers.contains { $0.id == id }:
                 guard state.syncingTimerID != id,
                       let index = state.localTimers.firstIndex(where: { $0.id == id }) else {
                     return .none

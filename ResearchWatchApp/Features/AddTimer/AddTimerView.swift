@@ -39,17 +39,17 @@ struct AddTimerView: View {
 
             HStack(alignment: .wheelCenter, spacing: WatchScreenMetrics.scaledWidth(4)) {
                 durationPicker("시간", field: .hours, selection: $store.hours, range: 0..<24)
-                
+
                 separator
-                
+
                 durationPicker("분", field: .minutes, selection: $store.minutes, range: 0..<60)
-                
+
                 separator
-                
+
                 durationPicker("초", field: .seconds, selection: $store.seconds, range: 0..<60)
             }
             .foregroundStyle(.white)
-            
+
             Button {
                 guard store.canStart else { return }
                 let seconds = store.totalSeconds
@@ -143,5 +143,5 @@ private extension VerticalAlignment {
 }
 
 #Preview {
-    AddTimerView(canAddTimer: true, onStart: { _ in })
+    AddTimerView(canAddTimer: true) { _ in }
 }
