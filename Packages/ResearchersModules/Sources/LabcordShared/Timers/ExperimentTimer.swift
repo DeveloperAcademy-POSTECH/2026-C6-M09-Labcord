@@ -1,13 +1,13 @@
 import Foundation
 
-public struct ExperimentTimer: Equatable, Identifiable, Sendable {
+public struct ExperimentTimer: Codable, Equatable, Identifiable, Sendable {
     public enum Status: Equatable, Sendable {
         case running
         case paused
         case finished
     }
 
-    public struct PauseInterval: Equatable, Sendable {
+    public struct PauseInterval: Codable, Equatable, Sendable {
         public let id: UUID
         public let pausedAt: Date
         public let resumedAt: Date?
