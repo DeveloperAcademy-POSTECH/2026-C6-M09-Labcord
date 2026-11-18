@@ -13,6 +13,7 @@ struct ProtocolModeTimerView: View {
     let timers: [WatchTimerSnapshot]
     let protocolTimerSeconds: [Int]
     let pendingTimerIDs: Set<UUID>
+    var creatingTimerIDs: Set<UUID> = []
     let onTimerCommand: (UUID, WatchExperimentCommand.Operation) -> Void
     let onStartTimer: (Int) -> Void
     let onAddTimer: () -> Void
@@ -26,7 +27,7 @@ struct ProtocolModeTimerView: View {
             ScrollView {
                 ProgressTimerView(
                     timers: timers, pendingTimerIDs: pendingTimerIDs,
-                    onTimerCommand: onTimerCommand
+                    creatingTimerIDs: creatingTimerIDs, onTimerCommand: onTimerCommand
                 )
             }
         } else {
