@@ -1,11 +1,15 @@
 import ComposableArchitecture
 import LabcordiOS
+import LabcordShared
 import SwiftUI
 
 struct AppView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var store = PhoneIntentRuntime.shared.store
     @State private var intentRuntime = PhoneIntentRuntime.shared
+    #if DEBUG && targetEnvironment(simulator)
+    @State private var recordingDemoError: String?
+    #endif
 
     var body: some View {
         @Bindable var store = store
@@ -85,7 +89,23 @@ struct AppView: View {
         .onAppear {
             store.send(.restoreSettingsSession)
             store.send(.watchSceneChanged(scenePhase == .active))
+            #if DEBUG && targetEnvironment(simulator)
+            RecordingDemoVideoPreview.onTrigger = { video in
+                Task { @MainActor in await triggerRecordingDemo(video) }
+            }
+            #endif
         }
+        #if DEBUG && targetEnvironment(simulator)
+        .onDisappear { RecordingDemoVideoPreview.onTrigger = nil }
+        .alert("촬영 요청 실패", isPresented: Binding(
+            get: { recordingDemoError != nil },
+            set: { if !$0 { recordingDemoError = nil } }
+        )) {
+            Button("확인", role: .cancel) { recordingDemoError = nil }
+        } message: {
+            Text(recordingDemoError ?? "")
+        }
+        #endif
         .onChange(of: scenePhase) { _, phase in
             store.send(.watchSceneChanged(phase == .active))
         }
@@ -134,4 +154,66 @@ struct AppView: View {
             Text("이 화면을 나가면 분석 결과가 초기화 돼요.")
         }
     }
+
+    #if DEBUG && targetEnvironment(simulator)
+    @MainActor
+    private func triggerRecordingDemo(_ video: String) async {
+        guard let id = store.path.ids.last,
+              let session = store.path[id: id, case: \.session] else {
+            recordingDemoError = "실험 화면에서 영상을 재생해 주세요."
+            return
+        }
+        do {
+            switch video {
+            case "V03", "V06-A":
+                try await triggerRecordingDemoVoice(id: id, session: session)
+            case "V04", "V07":
+                _ = try await intentRuntime.perform(.photo)
+            case "V05", "V08":
+                _ = try await intentRuntime.perform(.video)
+            case "V12":
+                guard session.timer.isConfigured, session.timer.mode != .free,
+                      session.timer.selectedTimerTab == .configured,
+                      !session.timer.isEditorPresented,
+                      session.timer.timerSeconds.indices.contains(0),
+                      session.timer.canModifyTimers,
+                      session.timer.timerCollection.canStartTimer else {
+                    recordingDemoError = "설정된 타이머 화면에서 재생해 주세요."
+                    return
+                }
+                store.send(.path(.element(id: id, action: .session(.timer(.timerStarted(0))))))
+            default:
+                break
+            }
+        } catch {
+            recordingDemoError = "\(video) 요청을 처리하지 못했습니다: \(error.localizedDescription)"
+        }
+    }
+
+    @MainActor
+    private func triggerRecordingDemoVoice(
+        id: StackElementID, session: ExperimentSessionFeature.State
+    ) async throws {
+        guard session.voice.phase == .hidden, !session.isPausePresented else {
+            recordingDemoError = "음성 기록을 시작할 수 없는 상태입니다."
+            return
+        }
+        let experimentID = session.experimentID
+        store.send(.path(.element(id: id, action: .session(.capture(.voiceButtonTapped)))))
+        for _ in 0..<150 {
+            try await Task.sleep(for: .milliseconds(100))
+            guard let current = store.path[id: id, case: \.session],
+                  current.experimentID == experimentID else {
+                recordingDemoError = "실험 화면이 변경됐습니다."
+                return
+            }
+            if current.voice.phase == .recording { return }
+            if current.voice.hasRecordingFailure {
+                recordingDemoError = current.voice.errorMessage ?? "음성 기록을 시작하지 못했습니다."
+                return
+            }
+        }
+        recordingDemoError = "음성 기록 시작을 15초 안에 확인하지 못했습니다."
+    }
+    #endif
 }

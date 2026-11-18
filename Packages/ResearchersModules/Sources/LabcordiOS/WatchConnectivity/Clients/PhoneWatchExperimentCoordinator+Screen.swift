@@ -1,8 +1,32 @@
 import Foundation
 import LabcordShared
 import UIKit
+import WatchConnectivity
 
 extension PhoneWatchExperimentCoordinator {
+    #if DEBUG && targetEnvironment(simulator)
+    public func sendWatchActionTest(
+        _ action: String, completion: @escaping @MainActor @Sendable (Bool) -> Void
+    ) {
+        guard ["audio", "photo", "video"].contains(action),
+              let session = connectivity.session, session.activationState == .activated,
+              session.isReachable else {
+            completion(false)
+            return
+        }
+        let requestID = UUID().uuidString
+        session.sendMessage(
+            ["LabcordWatchTestCommand": action, "LabcordWatchTestRequestID": requestID],
+            replyHandler: { reply in
+                let success = reply["LabcordWatchTestRequestID"] as? String == requestID
+                    && reply["LabcordWatchTestSucceeded"] as? Bool == true
+                Task { @MainActor in completion(success) }
+            },
+            errorHandler: { _ in Task { @MainActor in completion(false) } }
+        )
+    }
+    #endif
+
     public func refresh() {
         refreshTask?.cancel()
         refreshTask = Task { [weak self] in

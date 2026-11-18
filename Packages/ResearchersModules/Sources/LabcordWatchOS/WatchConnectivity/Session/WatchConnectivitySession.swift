@@ -13,6 +13,10 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
     @MainActor public private(set) var activationFailed = false
     @MainActor public var remoteIntentHandler:
         (@MainActor (WatchRemoteIntentRequest) async -> WatchRemoteIntentResponse)?
+    #if DEBUG && targetEnvironment(simulator)
+    @MainActor public var recordingTestTriggerHandler: (@MainActor (String) async -> Bool)?
+    @MainActor private var recordingTestRequestIDs: Set<UUID> = []
+    #endif
     private var audioReceiptObservers: [UUID: AsyncStream<WatchAudioReceipt>.Continuation] = [:]
     private var latestAudioReceipts: [UUID: WatchAudioReceipt] = [:]
 
@@ -99,6 +103,32 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         didReceiveMessage message: [String: Any],
         replyHandler: @escaping ([String: Any]) -> Void
     ) {
+        #if DEBUG && targetEnvironment(simulator)
+        if let command = message["LabcordWatchTestCommand"] as? String,
+           let requestID = message["LabcordWatchTestRequestID"] as? String {
+            guard ["audio", "photo", "video"].contains(command),
+                  let id = UUID(uuidString: requestID) else {
+                replyHandler([:])
+                return
+            }
+            Task { @MainActor in
+                guard self.recordingTestRequestIDs.count < 1_000,
+                      self.recordingTestRequestIDs.insert(id).inserted else {
+                    replyHandler([
+                        "LabcordWatchTestRequestID": requestID,
+                        "LabcordWatchTestSucceeded": false
+                    ])
+                    return
+                }
+                let succeeded = await self.recordingTestTriggerHandler?(command) ?? false
+                replyHandler([
+                    "LabcordWatchTestRequestID": requestID,
+                    "LabcordWatchTestSucceeded": succeeded
+                ])
+            }
+            return
+        }
+        #endif
         if let data = message[WatchRemoteIntentRequest.messageKey] as? Data {
             Task { @MainActor in
                 guard data.count <= 4_096,

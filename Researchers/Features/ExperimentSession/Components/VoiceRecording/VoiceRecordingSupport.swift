@@ -12,7 +12,11 @@ extension VoiceRecordingFeature {
         state.sessionID = uuid()
         state.captureStartRequested = false
         state.phase = .starting
+        #if DEBUG && targetEnvironment(simulator)
+        return .send(.startRequested)
+        #else
         return .none
+        #endif
     }
 
     func reduceWatchPause(state: inout State, action: Action) -> Effect<Action> {

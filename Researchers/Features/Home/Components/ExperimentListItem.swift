@@ -16,7 +16,7 @@ struct ExperimentListItem: View {
                         .lineLimit(1)
 
                     HStack(spacing: LayoutTokens.spacing10) {
-                        Text(Self.dateFormatter.string(from: entry.createdAt))
+                        Text(Self.dateFormatter.string(from: displayDate))
                             .typography(Typography.subheadline)
                             .foregroundStyle(Color("General/Label/Tertiary"))
 
@@ -55,6 +55,14 @@ struct ExperimentListItem: View {
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
         }
+    }
+
+    private var displayDate: Date {
+        #if DEBUG && targetEnvironment(simulator)
+        RecordingDemoSeeder.displayDate(entry.createdAt, title: entry.title)
+        #else
+        entry.createdAt
+        #endif
     }
 
     private static let dateFormatter: DateFormatter = {

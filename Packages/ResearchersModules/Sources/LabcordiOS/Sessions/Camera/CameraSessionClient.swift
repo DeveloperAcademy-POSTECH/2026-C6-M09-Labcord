@@ -57,6 +57,24 @@ public struct CameraSessionClient: Sendable {
 extension CameraSessionClient: DependencyKey {
     public static let liveValue: CameraSessionClient = {
         let session = CameraSession()
+        #if targetEnvironment(simulator)
+        let greenScreen = GreenScreenCamera()
+        return CameraSessionClient(
+            activate: { await greenScreen.activate($0) },
+            isRunning: { await greenScreen.isRunning },
+            deactivate: { await greenScreen.deactivate($0) },
+            suspend: {},
+            switchCamera: {},
+            previewConnector: { await session.previewConnector() },
+            handEvents: { AsyncStream { _ in } },
+            capturePhoto: { try await greenScreen.capturePhoto() },
+            prepareVideoRecording: {},
+            recordVideo: { try await greenScreen.recordVideo(onStarted: $0) },
+            cancelVideoRecording: { await greenScreen.cancelVideoRecording() },
+            stopVideoRecording: { await greenScreen.stopVideoRecording() },
+            discardVideo: { try? FileManager.default.removeItem(at: $0) }
+        )
+        #else
         return CameraSessionClient(
             activate: { try await session.activate(owner: $0) },
             isRunning: { await session.isRunning() },
@@ -72,6 +90,7 @@ extension CameraSessionClient: DependencyKey {
             stopVideoRecording: { await session.stopVideoRecording() },
             discardVideo: { await session.discardVideo(at: $0) }
         )
+        #endif
     }()
 }
 

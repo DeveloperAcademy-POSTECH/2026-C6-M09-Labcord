@@ -4,15 +4,24 @@ import SwiftUI
 
 struct RecordTimelineView: View {
     let entries: [ExperimentResultDetail.TimelineEntry]
+    let experimentTitle: String
     let timerIdentities: [UUID: TimerIdentity]
     let onSelectEntry: (ExperimentResultDetail.TimelineEntry) -> Void
+
+    private func displayDate(_ date: Date) -> Date {
+        #if DEBUG && targetEnvironment(simulator)
+        RecordingDemoSeeder.displayDate(date, title: experimentTitle)
+        #else
+        date
+        #endif
+    }
 
     var body: some View {
         LazyVStack(alignment: .leading, spacing: LayoutTokens.spacing8) {
             ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
-                let date = ExperimentResultDateFormatter.date(entry.date)
+                let date = ExperimentResultDateFormatter.date(displayDate(entry.date))
                 let previousDate = index > 0
-                    ? ExperimentResultDateFormatter.date(entries[index - 1].date)
+                    ? ExperimentResultDateFormatter.date(displayDate(entries[index - 1].date))
                     : nil
 
                 if date != previousDate {

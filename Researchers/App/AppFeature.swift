@@ -9,6 +9,7 @@ struct AppFeature {
     struct State: Equatable {
         @Shared(.appStorage("onboardingHasCompleted")) var hasCompletedOnboarding = false
         var onboarding: OnboardingFeature.State?
+        var hasRequestedLaunchPermissions = false
         var watchPendingStartID: UUID?
         var screenNavigation: WatchExperimentCommand?
         var watchIsActive = false
@@ -62,6 +63,10 @@ struct AppFeature {
     @Dependency(\.uuid) var uuid
     @Dependency(\.date.now) var now
     @Dependency(\.timerLiveActivityClient) var timerLiveActivityClient
+    @Dependency(\.microphonePermissionClient) var microphonePermissionClient
+    @Dependency(\.cameraPermissionClient) var cameraPermissionClient
+    @Dependency(\.speechRecognitionPermissionClient) var speechRecognitionPermissionClient
+    @Dependency(\.notificationPermissionClient) var notificationPermissionClient
 
     var body: some Reducer<State, Action> {
         Scope(state: \.home, action: \.home) { HomeFeature() }
@@ -179,7 +184,7 @@ private extension AppFeature {
                 }
                 state.reviewAnalysisJobID = nil
                 state.path.append(.review(.init(
-                    title: entry.title, timerSeconds: entry.timerSeconds, terms: terms
+                    title: "Labcord", timerSeconds: entry.timerSeconds, terms: terms
                 )))
                 return .none
 
@@ -197,7 +202,9 @@ private extension AppFeature {
                     values.map { ProtocolReviewTerm(id: uuid(), value: $0) }
                 }
                 state.reviewAnalysisJobID = registration.analysisJobID
-                state.path.append(.review(.init(title: "", timerSeconds: seconds, terms: terms)))
+                state.path.append(.review(.init(
+                    title: "Labcord", timerSeconds: seconds, terms: terms
+                )))
                 return .none
 
             case let .path(.element(id: id, action: .review(.backTapped))):

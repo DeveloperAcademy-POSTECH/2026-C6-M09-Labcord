@@ -15,6 +15,13 @@ struct ExperimentSessionView: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.scenePhase) private var scenePhase
     @State private var voiceToast: VoiceToastPresentation?
+    @State private var displayedActivity: ActivityKind?
+    @State private var isActivityExpanded = false
+
+    private enum ActivityKind: Equatable {
+        case voice
+        case video
+    }
     let store: StoreOf<ExperimentSessionFeature>
     private var timerStore: StoreOf<SessionTimerFeature> {
         store.scope(state: \.timer, action: \.timer)
@@ -47,6 +54,11 @@ struct ExperimentSessionView: View {
     }
     private var isVideoActivityVisible: Bool {
         verticalSizeClass != .compact && isVideoRecording
+    }
+    private var activityKind: ActivityKind? {
+        if isPortraitVoiceActivityVisible { return .voice }
+        if isVideoActivityVisible { return .video }
+        return nil
     }
 
     var body: some View {
@@ -93,7 +105,7 @@ struct ExperimentSessionView: View {
         }
         .navigationBarBackButtonHidden()
         .toolbarVisibility(
-            isPortraitVoiceActivityVisible || isVideoActivityVisible || isVideoOverlayVisible
+            displayedActivity != nil || isVideoOverlayVisible
                 ? .hidden : .automatic,
             for: .statusBar
         )
@@ -141,7 +153,7 @@ struct ExperimentSessionView: View {
             }
         }
         .overlay {
-            if isPortraitVoiceActivityVisible {
+            if displayedActivity == .voice {
                 GeometryReader { geometry in
                     VoiceLiveActivityView(
                         store: voiceStore,
@@ -149,32 +161,29 @@ struct ExperimentSessionView: View {
                         onFailureAutoDismiss: {
                             voiceToast = VoiceToastPresentation(kind: .recordingFailure)
                         },
-                        availableWidth: geometry.size.width
+                        availableWidth: geometry.size.width,
+                        isExpanded: isActivityExpanded
                     )
                     .padding(.top, 14)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 }
                 .ignoresSafeArea(.container, edges: .top)
-                .transition(.opacity)
-            } else if isVideoActivityVisible {
+            } else if displayedActivity == .video {
                 GeometryReader { geometry in
-                    VideoLiveActivityView(store: videoStore, availableWidth: geometry.size.width)
-                        .id(videoStore.sessionID)
+                    VideoLiveActivityView(
+                        store: videoStore,
+                        availableWidth: geometry.size.width,
+                        isExpanded: isActivityExpanded
+                    )
                         .padding(.top, 14)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 }
                 .ignoresSafeArea(.container, edges: .top)
-                .transition(.opacity)
             }
         }
-        .animation(
-            reduceMotion ? nil : .spring(duration: 0.3, bounce: 0.08),
-            value: isPortraitVoiceActivityVisible
-        )
-        .animation(
-            reduceMotion ? nil : .spring(duration: 0.3, bounce: 0.08),
-            value: isVideoActivityVisible
-        )
+        .task(id: activityKind) {
+            await updateActivity()
+        }
         .modifier(
             VoiceRecordToastOverlay(
                 voiceStore: voiceStore,
@@ -254,6 +263,35 @@ struct ExperimentSessionView: View {
 }
 
 private extension ExperimentSessionView {
+    @MainActor
+    func updateActivity() async {
+        let next = activityKind
+        if displayedActivity != nil {
+            if reduceMotion {
+                isActivityExpanded = false
+            } else {
+                withAnimation(.spring(duration: 0.45, bounce: 0.08)) {
+                    isActivityExpanded = false
+                }
+                try? await Task.sleep(for: .milliseconds(650))
+                guard !Task.isCancelled else { return }
+            }
+        }
+        displayedActivity = next
+        guard next != nil else { return }
+        if !reduceMotion {
+            try? await Task.sleep(for: .milliseconds(600))
+            guard !Task.isCancelled else { return }
+        }
+        if reduceMotion {
+            isActivityExpanded = true
+        } else {
+            withAnimation(.spring(duration: 0.45, bounce: 0.08)) {
+                isActivityExpanded = true
+            }
+        }
+    }
+
     func previewFrame(anchor: Anchor<CGRect>?, geometry: GeometryProxy) -> CGRect {
         let fullFrame = CGRect(origin: .zero, size: geometry.size)
         guard let anchor else { return fullFrame }

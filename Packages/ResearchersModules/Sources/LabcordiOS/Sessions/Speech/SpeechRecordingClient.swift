@@ -60,6 +60,16 @@ public struct SpeechRecordingClient: Sendable {
 
 extension SpeechRecordingClient: DependencyKey {
     public static let liveValue: SpeechRecordingClient = {
+        #if DEBUG && targetEnvironment(simulator)
+        let demo = RecordingDemoSpeechSession()
+        return SpeechRecordingClient(
+            start: { experimentID, _, _, _, _ in
+                try await demo.start(experimentID: experimentID)
+            },
+            stop: { await demo.stop() },
+            cancel: { await demo.cancel() }
+        )
+        #else
         let session = SpeechRecordingSession()
         return SpeechRecordingClient(
             start: { experimentID, contextualStrings, phoneticReplacements, units, hint in
@@ -72,6 +82,7 @@ extension SpeechRecordingClient: DependencyKey {
             stop: { await session.stop() },
             cancel: { await session.cancel() }
         )
+        #endif
     }()
 }
 

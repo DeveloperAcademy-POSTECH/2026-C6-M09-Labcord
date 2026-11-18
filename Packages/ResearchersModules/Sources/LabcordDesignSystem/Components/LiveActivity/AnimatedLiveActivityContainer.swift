@@ -12,7 +12,7 @@ public struct AnimatedLiveActivityContainer<Content: View>: View {
     private let content: Content
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var expandedHeight: CGFloat = 138
+    @State private var expandedHeight: CGFloat
 
     public init(
         isExpanded: Bool,
@@ -30,6 +30,7 @@ public struct AnimatedLiveActivityContainer<Content: View>: View {
         self.maximumContentHeight = maximumContentHeight
         self.animatesContentHeight = animatesContentHeight
         self.content = content()
+        _expandedHeight = State(initialValue: minimumContentHeight + 32)
     }
 
     public var body: some View {
@@ -50,23 +51,24 @@ public struct AnimatedLiveActivityContainer<Content: View>: View {
                     }
                 }
                 .opacity(isExpanded ? 1 : 0)
+                .animation(
+                    reduceMotion ? nil : .easeOut(duration: 0.18).delay(isExpanded ? 0.18 : 0),
+                    value: isExpanded
+                )
                 .allowsHitTesting(isExpanded)
                 .accessibilityHidden(!isExpanded)
         }
-        .frame(
-            width: isExpanded ? expandedWidth : collapsedSize.width,
-            height: isExpanded ? expandedHeight : collapsedSize.height
-        )
+        .frame(width: expandedWidth, height: expandedHeight, alignment: .top)
         .clipShape(
-            RoundedRectangle(
-                cornerRadius: isExpanded ? 44 : collapsedSize.height / 2,
-                style: isExpanded ? .continuous : .circular
-            )
+            IslandTransitionShape(collapsedSize: collapsedSize, progress: isExpanded ? 1 : 0)
+        )
+        .contentShape(
+            IslandTransitionShape(collapsedSize: collapsedSize, progress: isExpanded ? 1 : 0)
         )
         .animation(reduceMotion ? nil : .spring(duration: 0.45, bounce: 0.08), value: isExpanded)
         .onPreferenceChange(ExpandedHeightKey.self) { height in
             guard height > 0, abs(expandedHeight - height) > 0.5 else { return }
-            if animatesContentHeight && !reduceMotion {
+            if isExpanded && animatesContentHeight && !reduceMotion {
                 withAnimation(.easeOut(duration: 0.25)) {
                     expandedHeight = height
                 }
@@ -74,6 +76,25 @@ public struct AnimatedLiveActivityContainer<Content: View>: View {
                 expandedHeight = height
             }
         }
+    }
+}
+
+private struct IslandTransitionShape: Shape {
+    let collapsedSize: CGSize
+    var progress: CGFloat
+
+    var animatableData: CGFloat {
+        get { progress }
+        set { progress = newValue }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        let amount = min(max(progress, 0), 1)
+        let width = collapsedSize.width + (rect.width - collapsedSize.width) * amount
+        let height = collapsedSize.height + (rect.height - collapsedSize.height) * amount
+        let corner = collapsedSize.height / 2 + (44 - collapsedSize.height / 2) * amount
+        let bounds = CGRect(x: rect.midX - width / 2, y: rect.minY, width: width, height: height)
+        return RoundedRectangle(cornerRadius: corner, style: .continuous).path(in: bounds)
     }
 }
 

@@ -156,6 +156,9 @@ nonisolated public enum ProtocolTimerExtractor {
         let prefix = source.substring(with: NSRange(
             location: prefixStart, length: range.location - prefixStart
         ))
+        let precedingStart = max(0, range.location - 48)
+        let preceding = source.substring(with: NSRange(location: precedingStart,
+                                                        length: range.location - precedingStart))
         let suffix = source.substring(with: NSRange(
             location: NSMaxRange(range), length: min(40, source.length - NSMaxRange(range))
         ))
@@ -173,10 +176,14 @@ nonisolated public enum ProtocolTimerExtractor {
             of: "^[ \\t]+(?:[A-Z]+[0-9]+\\b|[A-Za-z_]+\\.[A-Za-z_]+\\b|실험[ \\t]+시작)",
             options: options
         ) != nil
-        return (startsLine && eventAfterClock)
-            || prefix.range(of: "(?:시각|시각은|촬영|촬영이|촬영은|재촬영이|재촬영은|" +
+        let explicitEventAfterClock = suffix.range(of: "^[ \\t]*(?:\\r?\\n[ \\t]*)?" +
+                "(?:[A-Za-z_]+\\.[A-Za-z_]+\\b|[A-Z]+[0-9]+[ \\t]+T[0-9]+\\b)",
+            options: options
+        ) != nil
+        return (startsLine && eventAfterClock) || explicitEventAfterClock
+            || preceding.range(of: "(?:시각|시각은|촬영|촬영이|촬영은|재촬영이|재촬영은|" +
                             "목표[ \\t]+[A-Za-z0-9]+(?:은|는|이|가))" +
-                            "[ \\t]*[=:]?[ \\t]*$", options: options) != nil
+                            "[ \\t]*[=:]?[ \\t]*(?:\\r?\\n[ \\t]*)?$", options: options) != nil
             || prefix.range(of: "\\b(?:at|timestamp|time of day)[ \\t]*[=:]?[ \\t]*$",
                             options: options) != nil
             || prefix.range(of: "(?:오전|오후|[0-9]{4}-[0-9]{2}-[0-9]{2}[ T])\\s*$",

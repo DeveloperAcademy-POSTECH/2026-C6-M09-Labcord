@@ -64,7 +64,7 @@ extension AppFeature {
                     return
                 }
                 let savedTitle = ExperimentTitle.unique(
-                    title, existing: Set(experiments.filter { $0.id != identifier }.map(\.title))
+                    title, existing: Self.reviewTitles(experiments, excluding: identifier)
                 )
                 let entry = try await experimentClient.createWithProtocol(
                     identifier, date, savedTitle, procedure)
@@ -73,5 +73,15 @@ extension AppFeature {
                 await send(.reviewSaved(id, .failure(.saving)))
             }
         }
+    }
+
+    private static func reviewTitles(
+        _ experiments: [ExperimentListEntry], excluding id: UUID
+    ) -> Set<String> {
+        var existing = experiments.filter { $0.id != id }
+        #if DEBUG && targetEnvironment(simulator)
+        existing.removeAll { $0.id == RecordingDemoSeeder.experimentID }
+        #endif
+        return Set(existing.map(\.title))
     }
 }

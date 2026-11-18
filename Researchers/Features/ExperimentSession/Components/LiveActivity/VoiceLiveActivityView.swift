@@ -10,11 +10,13 @@ struct VoiceLiveActivityView: View {
     let onRestart: () -> Void
     let onFailureAutoDismiss: () -> Void
     let availableWidth: CGFloat
+    let isExpanded: Bool
     private static let compactContentHeight: CGFloat = 108
 
-    @State private var isExpanded = false
     @State private var saveProgress = 0.0
     @State private var shouldStartAfterRetry = false
+    @State private var lastContent: LiveActivityContent.State = .audioRecording(transcript: "")
+    @State private var lastContentWasFinished = false
 
     var body: some View {
         AnimatedLiveActivityContainer(
@@ -27,7 +29,7 @@ struct VoiceLiveActivityView: View {
             animatesContentHeight: store.phase == .finished
         ) {
             LiveActivityContent(
-                state: contentState,
+                state: displayedContent,
                 onStop: { store.send(.stopRequested) },
                 onRetry: retry,
                 onSave: { store.send(.saveRequested) },
@@ -36,24 +38,29 @@ struct VoiceLiveActivityView: View {
             .animation(nil, value: store.phase)
             .frame(height: fixedContentHeight, alignment: .top)
         }
-        .task {
-            try? await Task.sleep(for: .milliseconds(180))
-            guard !Task.isCancelled else { return }
-            isExpanded = true
-        }
         .onAppear {
+            updateLastContent()
             store.send(.overlayAppeared)
             if store.phase == .finished {
                 startSaveProgress()
             }
         }
         .onChange(of: store.phase) { _, phase in
+            updateLastContent()
             if phase == .finished {
                 startSaveProgress()
             } else if phase == .starting, shouldStartAfterRetry {
                 shouldStartAfterRetry = false
                 store.send(.overlayAppeared)
             }
+        }
+        .onChange(of: store.transcript) { _, _ in updateLastContent() }
+        .onChange(of: store.saveError) { _, _ in updateLastContent() }
+        .onChange(of: store.isSaving) { _, _ in updateLastContent() }
+        .onChange(of: store.isAutoSavePending) { _, _ in updateLastContent() }
+        .onChange(of: store.hasRecordingFailure) { _, _ in updateLastContent() }
+        .onChange(of: store.sessionID) { _, _ in
+            if store.phase == .starting { store.send(.overlayAppeared) }
         }
         .task(id: store.hasRecordingFailure) {
             guard store.hasRecordingFailure else { return }
@@ -65,8 +72,19 @@ struct VoiceLiveActivityView: View {
     }
 
     private var fixedContentHeight: CGFloat? {
-        store.phase == .finished && !dynamicTypeSize.isAccessibilitySize
+        (store.phase == .finished || (store.phase == .hidden && lastContentWasFinished))
+            && !dynamicTypeSize.isAccessibilitySize
             ? Self.compactContentHeight : nil
+    }
+
+    private var displayedContent: LiveActivityContent.State {
+        store.phase == .hidden && !store.hasRecordingFailure ? lastContent : contentState
+    }
+
+    private func updateLastContent() {
+        guard store.phase != .hidden || store.hasRecordingFailure else { return }
+        lastContent = contentState
+        lastContentWasFinished = store.phase == .finished
     }
 
     private var contentState: LiveActivityContent.State {

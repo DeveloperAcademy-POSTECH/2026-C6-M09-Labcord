@@ -42,8 +42,12 @@ struct ExperimentResultView: View {
                                         ExperimentResultHeaderView(
                                             title: detail.title,
                                             dateRange: ExperimentResultDateFormatter.range(
-                                                startedAt: detail.startedAt,
-                                                endedAt: detail.endedAt
+                                                startedAt: detail.startedAt.map {
+                                                    displayDate($0, title: detail.title)
+                                                },
+                                                endedAt: detail.endedAt.map {
+                                                    displayDate($0, title: detail.title)
+                                                }
                                             ),
                                             selectedType: store.selectedType,
                                             selectedSort: store.selectedSort,
@@ -60,6 +64,7 @@ struct ExperimentResultView: View {
 
                                         RecordTimelineView(
                                             entries: store.displayedEntries,
+                                            experimentTitle: detail.title,
                                             timerIdentities: timerIdentities
                                         ) {
                                             store.send(.timelineEntrySelected($0))
@@ -177,6 +182,14 @@ struct ExperimentResultView: View {
                 )
             }
         }
+    }
+
+    private func displayDate(_ date: Date, title: String) -> Date {
+        #if DEBUG && targetEnvironment(simulator)
+        RecordingDemoSeeder.displayDate(date, title: title)
+        #else
+        date
+        #endif
     }
 
     private var timerIdentities: [UUID: TimerIdentity] {

@@ -58,16 +58,15 @@ final class ExperimentListRepository {
             return Self.entry(existing)
         }
 
-        let defaults = UserDefaults.standard
-        let titles = Set(try context.fetch(FetchDescriptor<Experiment>()).map(\.title))
-        let nextNumber = ExperimentTitle.availableNumber(
-            for: "새 실험",
-            startingAt: defaults.integer(forKey: "lastExperimentNumber") + 1,
-            existing: titles
-        )
+        var experiments = try context.fetch(FetchDescriptor<Experiment>())
+        #if DEBUG && targetEnvironment(simulator)
+        let demoID = UUID(uuidString: "D3A00000-0000-4000-8000-000000000001")!
+        experiments.removeAll { $0.id == demoID }
+        #endif
+        let titles = Set(experiments.map(\.title))
         let experiment = Experiment(
             id: id,
-            title: ExperimentTitle.numbered("새 실험", number: nextNumber),
+            title: ExperimentTitle.unique("Labcord", existing: titles),
             createdAt: date,
             mode: .free,
         )
@@ -75,7 +74,6 @@ final class ExperimentListRepository {
         context.insert(experiment)
         try context.save()
 
-        defaults.set(nextNumber, forKey: "lastExperimentNumber")
         return Self.entry(experiment)
     }
 
