@@ -7,6 +7,7 @@
 
 import ComposableArchitecture
 import LabcordDesignSystem
+import LabcordShared
 import LabcordWatchOS
 import SwiftUI
 
