@@ -15,6 +15,7 @@ struct SelectExperimentFeature {
     enum Action {
         case appeared
         case disappeared
+        case cacheLoaded([WatchExperimentSummary])
         case listUpdated([WatchExperimentSummary])
         case loadSucceeded([WatchExperimentSummary])
         case loadFailed(WatchExperimentError?)
@@ -22,6 +23,7 @@ struct SelectExperimentFeature {
     }
 
     private nonisolated enum CancelID: Hashable, Sendable {
+        case cache
         case load
         case listUpdates
     }
@@ -34,6 +36,12 @@ struct SelectExperimentFeature {
             case .appeared:
                 let loadEffect = load(&state)
                 return .merge(
+                    .run { send in
+                        if let cached = await watchExperimentClient.cachedList() {
+                            await send(.cacheLoaded(cached))
+                        }
+                    }
+                    .cancellable(id: CancelID.cache, cancelInFlight: true),
                     loadEffect,
                     .run { send in
                         for await experiments in await watchExperimentClient.lists() {
@@ -45,9 +53,15 @@ struct SelectExperimentFeature {
             case .disappeared:
                 state.isLoading = false
                 return .merge(
+                    .cancel(id: CancelID.cache),
                     .cancel(id: CancelID.load),
                     .cancel(id: CancelID.listUpdates)
                 )
+            case let .cacheLoaded(experiments):
+                // 캐시는 iPhone 응답 전 임시 표시용이므로 로딩·최신 응답을 덮어쓰지 않습니다.
+                guard state.isLoading, state.experiments.isEmpty else { return .none }
+                state.experiments = experiments
+                return .none
             case let .listUpdated(experiments):
                 let wasLoading = state.isLoading
                 state.experiments = experiments
