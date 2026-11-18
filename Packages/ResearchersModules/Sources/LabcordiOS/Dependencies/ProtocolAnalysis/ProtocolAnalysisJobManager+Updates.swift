@@ -14,10 +14,5 @@ extension ProtocolAnalysisJobManager {
         return stream
     }
 
-    func publish() {
-        guard let value = try? snapshot() else { return }
-        for listener in listeners.values { listener.yield(value) }
-    }
-
     private func removeListener(_ id: UUID) { listeners[id] = nil }
 }

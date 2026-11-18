@@ -135,7 +135,7 @@ public actor ProtocolAnalysisJobManager {
     }
 }
 
-extension ProtocolAnalysisJobManager {
+private extension ProtocolAnalysisJobManager {
     private func schedule(_ id: UUID) async {
         let submission = UUID()
         submissionID = submission
@@ -375,7 +375,7 @@ extension ProtocolAnalysisJobManager {
         }
     }
 
-    func snapshot() throws -> ProtocolAnalysisJobSnapshot? {
+    internal func snapshot() throws -> ProtocolAnalysisJobSnapshot? {
         guard let record else { return nil }
         return try record.snapshot(
             inputs: store.inputs(record), phase: phase, backgroundAvailable: backgroundAvailable
@@ -387,5 +387,10 @@ extension ProtocolAnalysisJobManager {
         value.updatedAt = Date()
         try store.save(value)
         record = value
+    }
+
+    private func publish() {
+        guard let value = try? snapshot() else { return }
+        for listener in listeners.values { listener.yield(value) }
     }
 }
