@@ -78,6 +78,7 @@ struct ExperimentView: View {
                     pendingTimerIDs: store.pendingTimerIDs.union(
                         store.syncingTimerID.map { Set([$0]) } ?? []
                     ),
+                    creatingTimerIDs: Set(store.localTimers.map(\.id)),
                     onTimerCommand: { id, operation in
                         store.send(.timerCommandTapped(id, operation))
                     },
@@ -116,13 +117,21 @@ struct ExperimentView: View {
         }
         .navigationDestination(isPresented: $isTimerPresetPresented) {
             SettingTimerScreen(
-                timerSeconds: store.snapshot?.protocolTimerSeconds ?? []
+                timerSeconds: store.snapshot?.protocolTimerSeconds ?? [],
+                canAddTimer: store.canAddTimer
             ) { seconds in
                 store.send(.timerStartTapped(seconds))
+                returnToTimerList()
+            } onCustomStart: { seconds in
+                store.send(.customTimerStartTapped(seconds))
+                returnToTimerList()
             }
         }
         .navigationDestination(isPresented: $isAddTimerPresented) {
-            AddTimerView()
+            AddTimerView(canAddTimer: store.canAddTimer) { seconds in
+                store.send(.customTimerStartTapped(seconds))
+                returnToTimerList()
+            }
         }
         .onAppear {
             store.send(.appeared)
@@ -135,7 +144,6 @@ struct ExperimentView: View {
             }
         }
         .onDisappear {
-            // 타이머 하위 화면을 push한 동안에도 snapshot 구독과 대기 타이머 재전송을 유지합니다.
             guard !isTimerPresetPresented, !isAddTimerPresented else { return }
             store.send(.disappeared)
             shortcutLogger.info("ExperimentView disappeared")
@@ -198,6 +206,13 @@ struct ExperimentView: View {
 }
 
 private extension ExperimentView {
+    /// 타이머를 시작한 하위 화면을 모두 닫고 타이머 탭에서 실행 중인 타이머를 보여 줍니다.
+    func returnToTimerList() {
+        selectedPage = 2
+        isTimerPresetPresented = false
+        isAddTimerPresented = false
+    }
+
     /// 기록 버튼을 누른 것과 같은 흐름으로 단축어를 처리합니다.
     /// 다른 기록 화면이나 확인창이 떠 있으면 무시하며,
     /// 열린 음성 녹음 화면의 종료 요청은 VoiceRecordView가 처리합니다.
