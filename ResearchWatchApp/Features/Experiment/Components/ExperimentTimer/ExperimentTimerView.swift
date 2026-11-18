@@ -13,6 +13,7 @@ struct ExperimentTimerView: View {
     let timers: [WatchTimerSnapshot]
     let protocolTimerSeconds: [Int]
     let pendingTimerIDs: Set<UUID>
+    var creatingTimerIDs: Set<UUID> = []
     let onTimerCommand: (UUID, WatchExperimentCommand.Operation) -> Void
     let onStartTimer: (Int) -> Void
     let onAddTimer: () -> Void
@@ -23,6 +24,7 @@ struct ExperimentTimerView: View {
                 timers: timers,
                 protocolTimerSeconds: protocolTimerSeconds,
                 pendingTimerIDs: pendingTimerIDs,
+                creatingTimerIDs: creatingTimerIDs,
                 onTimerCommand: onTimerCommand,
                 onStartTimer: onStartTimer,
                 onAddTimer: onAddTimer
@@ -30,7 +32,7 @@ struct ExperimentTimerView: View {
         } else {
             FreeModeTimerView(
                 timers: timers, pendingTimerIDs: pendingTimerIDs,
-                onTimerCommand: onTimerCommand
+                creatingTimerIDs: creatingTimerIDs, onTimerCommand: onTimerCommand
             )
         }
     }
