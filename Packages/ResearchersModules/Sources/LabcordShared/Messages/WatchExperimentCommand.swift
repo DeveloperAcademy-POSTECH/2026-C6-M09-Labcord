@@ -31,6 +31,8 @@ public struct WatchExperimentCommand: Codable, Equatable, Sendable {
     public let expectedRevision: UInt64?
     public let targetID: UUID?
     public let durationSeconds: Int?
+    public let timerStartedAt: Date?
+    public let timerPauseIntervals: [ExperimentTimer.PauseInterval]?
     public let startToken: UUID?
     public let screen: WatchScreenSnapshot?
     public let discardTimerDraft: Bool?
@@ -43,6 +45,8 @@ public struct WatchExperimentCommand: Codable, Equatable, Sendable {
         expectedRevision: UInt64? = nil,
         targetID: UUID? = nil,
         durationSeconds: Int? = nil,
+        timerStartedAt: Date? = nil,
+        timerPauseIntervals: [ExperimentTimer.PauseInterval]? = nil,
         startToken: UUID? = nil,
         screen: WatchScreenSnapshot? = nil,
         discardTimerDraft: Bool? = nil
@@ -54,6 +58,8 @@ public struct WatchExperimentCommand: Codable, Equatable, Sendable {
         self.expectedRevision = expectedRevision
         self.targetID = targetID
         self.durationSeconds = durationSeconds
+        self.timerStartedAt = timerStartedAt
+        self.timerPauseIntervals = timerPauseIntervals
         self.startToken = startToken
         self.screen = screen
         self.discardTimerDraft = discardTimerDraft
