@@ -45,7 +45,7 @@ nonisolated enum SpeechVocabulary {
 
     static func recognitionHints(unitHints: [String], contextualStrings: [String]) -> [String] {
         var seen = Set<String>()
-        return (commonLabTerms + unitHints + contextualStrings)
+        return (contextualStrings + unitHints + commonLabTerms)
             .filter { seen.insert($0.lowercased()).inserted }
             .prefix(maxContextualStrings)
             .map { $0 }
