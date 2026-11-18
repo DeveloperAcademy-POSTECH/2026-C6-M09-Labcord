@@ -57,6 +57,10 @@ public final class WatchExperimentTransport {
         let transmissionID = UUID()
         return try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { continuation in
+                guard !Task.isCancelled else {
+                    continuation.resume(throwing: CancellationError())
+                    return
+                }
                 pending[command.requestID] = continuation
                 transmissions[command.requestID] = transmissionID
                 deadlines[command.requestID] = Task { [weak self] in

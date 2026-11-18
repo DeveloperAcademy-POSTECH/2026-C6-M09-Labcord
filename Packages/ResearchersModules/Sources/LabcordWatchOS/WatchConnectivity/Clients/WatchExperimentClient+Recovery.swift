@@ -33,6 +33,13 @@ extension WatchExperimentClient {
 
             try Task.checkCancellation()
             mayHaveBeenDelivered = true
+            if next.operation == .requestStatus, next.targetID == command.requestID,
+               response.phase == .failed, response.queriedRequestID == nil {
+                // 잠금 등으로 조회 자체가 거절되면 원래 명령의 실행 여부는 여전히 모릅니다.
+                next = followUp(for: command)
+                try await clock.sleep(until: min(deadline, clock.now.advanced(by: .seconds(1))))
+                continue
+            }
             if next.operation == .requestStatus,
                response.queriedRequestID != next.targetID,
                response.phase != .failed || response.queriedRequestID != nil {
