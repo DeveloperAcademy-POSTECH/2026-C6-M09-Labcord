@@ -12,16 +12,27 @@ import SwiftUI
 struct ProtocolModeTimerView: View {
     let timers: [WatchTimerSnapshot]
     let protocolTimerSeconds: [Int]
+    let pendingTimerIDs: Set<UUID>
+    let onTimerCommand: (UUID, WatchExperimentCommand.Operation) -> Void
+    let onStartTimer: (Int) -> Void
+    let onAddTimer: () -> Void
 
-    private var hasRunningTimer: Bool {
-        timers.contains { $0.status == .running }
+    private var hasTimers: Bool {
+        !timers.isEmpty
     }
 
     var body: some View {
-        if hasRunningTimer {
-            ProgressTimerView()
+        if hasTimers {
+            ScrollView {
+                ProgressTimerView(
+                    timers: timers, pendingTimerIDs: pendingTimerIDs,
+                    onTimerCommand: onTimerCommand
+                )
+            }
         } else {
-            SettingTimerView(timerSeconds: protocolTimerSeconds)
+            SettingTimerView(
+                timerSeconds: protocolTimerSeconds, onStart: onStartTimer, onAdd: onAddTimer
+            )
         }
     }
 }
@@ -37,10 +48,16 @@ struct ProtocolModeTimerView: View {
                 measuredAt: .now
             )
         ],
-        protocolTimerSeconds: [30, 90]
+        protocolTimerSeconds: [30, 90],
+        pendingTimerIDs: [], onTimerCommand: { _, _ in }, onStartTimer: { _ in },
+        onAddTimer: {}
     )
 }
 
 #Preview("없음") {
-    ProtocolModeTimerView(timers: [], protocolTimerSeconds: [30, 90, 3_600])
+    ProtocolModeTimerView(
+        timers: [], protocolTimerSeconds: [30, 90, 3_600],
+        pendingTimerIDs: [], onTimerCommand: { _, _ in }, onStartTimer: { _ in },
+        onAddTimer: {}
+    )
 }
