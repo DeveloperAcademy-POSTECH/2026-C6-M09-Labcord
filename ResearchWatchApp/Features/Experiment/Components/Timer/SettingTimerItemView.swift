@@ -12,15 +12,14 @@ import SwiftUI
 
 struct SettingTimerItemView: View {
     let seconds: Int
+    let onStart: () -> Void
 
     private var durationComponents: TimerDurationFormatter.Components {
         TimerDurationFormatter.components(magnitude: UInt64(max(0, seconds)))
     }
 
     var body: some View {
-        Button {
-            // 구현 예정
-        } label: {
+        Button(action: onStart) {
             VStack(alignment: .center, spacing: 0) {
                 Text(durationComponents.value)
                     .font(.title3)
@@ -50,5 +49,5 @@ struct SettingTimerItemView: View {
 }
 
 #Preview {
-    SettingTimerItemView(seconds: 30)
+    SettingTimerItemView(seconds: 30, onStart: {})
 }
