@@ -32,8 +32,12 @@ struct ExperimentFeature {
         var pendingTimerIDs: Set<UUID> = []
         var localTimers: [WatchPendingTimer] = []
         var syncingTimerID: UUID?
-        /// 삭제를 누른 즉시 목록에서 숨기고, iPhone이 거절하면 다시 표시합니다.
         var deletingTimerIDs: Set<UUID> = []
+        var hasObservedRunning = false
+
+        var canAddTimer: Bool {
+            displayedTimers.count < ExperimentTimerCollection.maximumCount
+        }
 
         var displayedTimers: [WatchTimerSnapshot] {
             let remote = (snapshot?.timers ?? []).filter { !deletingTimerIDs.contains($0.id) }
@@ -49,8 +53,9 @@ struct ExperimentFeature {
         case snapshotReceived(WatchExperimentSnapshot)
         case snapshotRequestFailed
         case timerCommandTapped(UUID, WatchExperimentCommand.Operation)
-        case timerCommandFinished(UUID, Bool)
+        case timerCommandFinished(UUID, failure: String?)
         case timerStartTapped(Int)
+        case customTimerStartTapped(Int)
         case retryPendingTimer
         case timerStartSyncFinished(UUID, TimerStartSyncResult)
         case pauseTapped
@@ -138,12 +143,17 @@ struct ExperimentFeature {
                     state.localTimers = Array(state.localTimers.prefix(available))
                     state.errorMessage = "iPhone 타이머가 우선되어 Watch 타이머 일부를 제거했어요."
                 }
-                if snapshot.experiment.status == .paused {
+                switch snapshot.experiment.status {
+                case .running:
+                    state.hasObservedRunning = true
+                case .paused where state.hasObservedRunning:
                     state.closeResult = .paused
                     state.overlay = nil
-                } else if snapshot.experiment.status == .completed {
+                case .completed where state.hasObservedRunning:
                     state.closeResult = .completed
                     state.overlay = nil
+                default:
+                    break
                 }
                 return state.localTimers.isEmpty ? .none : .send(.retryPendingTimer)
 
@@ -160,15 +170,14 @@ struct ExperimentFeature {
                       snapshot.timers.count + state.localTimers.count
                         < ExperimentTimerCollection.maximumCount,
                       state.overlay == nil, !state.isClosing else { return .none }
-                let timer = ExperimentTimer(
-                    id: uuid(), durationSeconds: seconds, startedAt: now
-                )
-                let pending = WatchPendingTimer(
-                    experimentID: state.experimentID, timer: timer, lastObservedAt: now
-                )
-                state.localTimers.append(pending)
-                WatchPendingTimerStore.shared.add(pending)
-                return .send(.retryPendingTimer)
+                return startPendingTimer(seconds: seconds, state: &state)
+
+            case let .customTimerStartTapped(seconds):
+                guard let snapshot = state.snapshot,
+                      snapshot.experiment.status == .running,
+                      seconds > 0, state.canAddTimer,
+                      state.overlay == nil, !state.isClosing else { return .none }
+                return startPendingTimer(seconds: seconds, state: &state)
 
             case let .timerCommandTapped(id, operation) where
                 state.localTimers.contains(where: { $0.id == id }):
@@ -251,17 +260,19 @@ struct ExperimentFeature {
                         if let snapshot = refreshed.snapshot {
                             await send(.snapshotReceived(snapshot))
                         }
-                        await send(.timerCommandFinished(id, true))
+                        await send(.timerCommandFinished(id, failure: nil))
+                    } catch let error as WatchExperimentError {
+                        await send(.timerCommandFinished(id, failure: error.rawValue))
                     } catch {
-                        await send(.timerCommandFinished(id, false))
+                        await send(.timerCommandFinished(id, failure: String(describing: error)))
                     }
                 }
 
-            case let .timerCommandFinished(id, succeeded):
+            case let .timerCommandFinished(id, failure):
                 state.pendingTimerIDs.remove(id)
                 state.deletingTimerIDs.remove(id)
-                if !succeeded {
-                    state.errorMessage = "타이머를 변경하지 못했어요. 다시 시도해 주세요."
+                if let failure {
+                    state.errorMessage = "타이머를 변경하지 못했어요. 다시 시도해 주세요. (\(failure))"
                 }
                 return .none
 
@@ -419,6 +430,16 @@ struct ExperimentFeature {
                 return .merge(stopObserving, .cancel(id: CancelID.endDelay))
             }
         }
+    }
+
+    private func startPendingTimer(seconds: Int, state: inout State) -> Effect<Action> {
+        let timer = ExperimentTimer(id: uuid(), durationSeconds: seconds, startedAt: now)
+        let pending = WatchPendingTimer(
+            experimentID: state.experimentID, timer: timer, lastObservedAt: now
+        )
+        state.localTimers.append(pending)
+        WatchPendingTimerStore.shared.add(pending)
+        return .send(.retryPendingTimer)
     }
 
     private func close(
