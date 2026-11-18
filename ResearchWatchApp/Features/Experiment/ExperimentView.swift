@@ -19,11 +19,18 @@ struct ExperimentView: View {
     @State private var isPhotoRecordPresented = false
     @State private var isVideoRecordPresented = false
     @State private var shortcutRegistration: WatchRecordingShortcutCenter.Registration?
+    @State private var isTimerPresetPresented = false
+    @State private var isAddTimerPresented = false
 
+    private var isProtocolMode: Bool {
+        store.snapshot?.mode == .procedure
+    }
+
+    /// 프로토콜 모드는 프리셋 화면 대신 타이머 목록이 보일 때만 표시합니다.
+    /// 종료된 타이머만 남아도 목록이 보이므로 버튼을 유지합니다.
     private var showsTimerAddButton: Bool {
         guard selectedPage == 2 else { return false }
-        return store.snapshot?.mode != .procedure ||
-            store.snapshot?.timers.contains { $0.status == .running } == true
+        return !isProtocolMode || !store.displayedTimers.isEmpty
     }
 
     init(
@@ -66,8 +73,18 @@ struct ExperimentView: View {
 
                 ExperimentTimerView(
                     mode: store.snapshot?.mode,
-                    timers: store.snapshot?.timers ?? [],
-                    protocolTimerSeconds: store.snapshot?.protocolTimerSeconds ?? []
+                    timers: store.displayedTimers,
+                    protocolTimerSeconds: store.snapshot?.protocolTimerSeconds ?? [],
+                    pendingTimerIDs: store.pendingTimerIDs.union(
+                        store.syncingTimerID.map { Set([$0]) } ?? []
+                    ),
+                    onTimerCommand: { id, operation in
+                        store.send(.timerCommandTapped(id, operation))
+                    },
+                    onStartTimer: { seconds in
+                        store.send(.timerStartTapped(seconds))
+                    },
+                    onAddTimer: { isAddTimerPresented = true }
                 )
                     .tag(2)
             }
@@ -82,7 +99,13 @@ struct ExperimentView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 if showsTimerAddButton {
-                    Button {} label: {
+                    Button {
+                        if isProtocolMode {
+                            isTimerPresetPresented = true
+                        } else {
+                            isAddTimerPresented = true
+                        }
+                    } label: {
                         Image(systemName: "plus")
                     }
                 } else {
@@ -90,6 +113,16 @@ struct ExperimentView: View {
                         .frame(width: 1, height: 1)
                 }
             }
+        }
+        .navigationDestination(isPresented: $isTimerPresetPresented) {
+            SettingTimerScreen(
+                timerSeconds: store.snapshot?.protocolTimerSeconds ?? []
+            ) { seconds in
+                store.send(.timerStartTapped(seconds))
+            }
+        }
+        .navigationDestination(isPresented: $isAddTimerPresented) {
+            AddTimerView()
         }
         .onAppear {
             store.send(.appeared)
@@ -102,6 +135,8 @@ struct ExperimentView: View {
             }
         }
         .onDisappear {
+            // 타이머 하위 화면을 push한 동안에도 snapshot 구독과 대기 타이머 재전송을 유지합니다.
+            guard !isTimerPresetPresented, !isAddTimerPresented else { return }
             store.send(.disappeared)
             shortcutLogger.info("ExperimentView disappeared")
         }
