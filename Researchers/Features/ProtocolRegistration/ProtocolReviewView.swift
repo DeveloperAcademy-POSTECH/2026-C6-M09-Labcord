@@ -94,6 +94,7 @@ struct ProtocolReviewView: View {
                 ZStack(alignment: .bottom) {
                     if let editor = timerEditor {
                         Overlay()
+                            .onTapGesture(perform: cancelTimerEditing)
                             .ignoresSafeArea()
                             .transition(.opacity)
 
@@ -103,17 +104,8 @@ struct ProtocolReviewView: View {
                         } onDelete: { index in
                             if let index { store.send(.deleteTimer(index)) }
                             timerEditor = nil
-                        } onCancel: {
-                            timerEditor = nil
-                        }
+                        } onCancel: { cancelTimerEditing() }
                         .id(editor.id)
-                        .frame(maxWidth: .infinity)
-                        .background(Color(
-                            "General/Background/Grouped/Secondary"
-                        ))
-                        .clipShape(UnevenRoundedRectangle(
-                            topLeadingRadius: 28, topTrailingRadius: 28
-                        ))
                         .ignoresSafeArea(edges: .bottom)
                         .transition(reduceMotion ? .opacity : .move(edge: .bottom))
                     }
@@ -126,6 +118,10 @@ struct ProtocolReviewView: View {
 }
 
 private extension ProtocolReviewView {
+    func cancelTimerEditing() {
+        timerEditor = nil
+    }
+
     var titleField: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 0) {
