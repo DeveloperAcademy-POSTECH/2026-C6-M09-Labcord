@@ -2,7 +2,9 @@ import AppIntents
 
 struct TogglePhoneVoiceRecordingIntent: AppIntent {
     static let title: LocalizedStringResource = "Watch 실험 음성 기록"
-    static let description = IntentDescription("현재 실험의 Watch 음성 기록을 요청합니다.")
+    static let description = IntentDescription(
+        "Watch 실험 화면에서 음성 녹음을 시작하거나, 녹음 중이면 종료합니다."
+    )
     static let supportedModes: IntentModes = .foreground(.immediate)
     static let authenticationPolicy: IntentAuthenticationPolicy =
         .requiresLocalDeviceAuthentication
@@ -15,8 +17,8 @@ struct TogglePhoneVoiceRecordingIntent: AppIntent {
 }
 
 struct TakePhoneExperimentPhotoIntent: AppIntent {
-    static let title: LocalizedStringResource = "iPhone 실험 사진 촬영"
-    static let description = IntentDescription("현재 실험에서 카메라로 사진을 촬영합니다.")
+    static let title: LocalizedStringResource = "Watch 실험 사진 촬영 요청"
+    static let description = IntentDescription("Watch 실험 화면에서 사진 촬영을 시작합니다.")
     static let supportedModes: IntentModes = .foreground(.immediate)
     static let authenticationPolicy: IntentAuthenticationPolicy =
         .requiresLocalDeviceAuthentication
@@ -30,8 +32,8 @@ struct TakePhoneExperimentPhotoIntent: AppIntent {
 
 struct StartPhoneExperimentVideoIntent: AppIntent {
     static let persistentIdentifier = "TogglePhoneExperimentVideoIntent"
-    static let title: LocalizedStringResource = "iPhone 실험 영상 녹화 시작"
-    static let description = IntentDescription("현재 실험에서 카메라로 영상 녹화를 시작합니다.")
+    static let title: LocalizedStringResource = "Watch 실험 영상 녹화 요청"
+    static let description = IntentDescription("Watch 실험 화면에서 영상 녹화를 시작합니다.")
     static let supportedModes: IntentModes = .foreground(.immediate)
     static let authenticationPolicy: IntentAuthenticationPolicy =
         .requiresLocalDeviceAuthentication

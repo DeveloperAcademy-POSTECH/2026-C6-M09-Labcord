@@ -48,6 +48,10 @@ struct ExperimentSessionView: View {
     private var isVideoActivityVisible: Bool {
         verticalSizeClass != .compact && isVideoRecording
     }
+    private var isWatchConnectedActivityVisible: Bool {
+        verticalSizeClass != .compact && store.watchConnectedNoticeID != nil
+            && !isPortraitVoiceActivityVisible && !isVideoActivityVisible
+    }
 
     var body: some View {
         Group {
@@ -89,6 +93,7 @@ struct ExperimentSessionView: View {
         .navigationBarBackButtonHidden()
         .toolbarVisibility(
             isPortraitVoiceActivityVisible || isVideoActivityVisible || isVideoOverlayVisible
+                || isWatchConnectedActivityVisible
                 ? .hidden : .automatic,
             for: .statusBar
         )
@@ -169,6 +174,11 @@ struct ExperimentSessionView: View {
         .animation(
             reduceMotion ? nil : .spring(duration: 0.3, bounce: 0.08),
             value: isVideoActivityVisible
+        )
+        .modifier(
+            WatchConnectedActivityOverlay(
+                noticeID: isWatchConnectedActivityVisible ? store.watchConnectedNoticeID : nil
+            ) { store.send(.watchConnectedNoticeDismissed($0)) }
         )
         .modifier(
             VoiceRecordToastOverlay(

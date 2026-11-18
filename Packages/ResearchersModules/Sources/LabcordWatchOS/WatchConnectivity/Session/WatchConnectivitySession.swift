@@ -35,18 +35,26 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
     }
 
     public func requestPhoneSession(_ experimentID: UUID) async {
-        let request = WatchSessionOpenRequest(experimentID: experimentID)
-        latestSessionOpenRequests[experimentID] = request
-        await sendSessionOpenRequest(request)
+        await sendSessionOpenRequest(experimentID, action: .open)
     }
 
     public func cancelPhoneSession(_ experimentID: UUID) async {
-        let request = WatchSessionOpenRequest(experimentID: experimentID, action: .cancel)
-        latestSessionOpenRequests[experimentID] = request
-        await sendSessionOpenRequest(request)
+        await sendSessionOpenRequest(experimentID, action: .cancel)
     }
 
-    private func sendSessionOpenRequest(_ request: WatchSessionOpenRequest) async {
+    public func enterPhoneSession(_ experimentID: UUID) async {
+        await sendSessionOpenRequest(experimentID, action: .enteredExperiment)
+    }
+
+    public func leavePhoneSession(_ experimentID: UUID) async {
+        await sendSessionOpenRequest(experimentID, action: .leftExperiment)
+    }
+
+    private func sendSessionOpenRequest(
+        _ experimentID: UUID, action: WatchSessionOpenRequest.Action
+    ) async {
+        let request = WatchSessionOpenRequest(experimentID: experimentID, action: action)
+        latestSessionOpenRequests[experimentID] = request
         activate()
         guard let session else { return }
         for _ in 0..<30 where session.activationState != .activated {

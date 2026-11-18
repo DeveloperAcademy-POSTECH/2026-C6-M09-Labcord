@@ -4,6 +4,7 @@ import LabcordWatchOS
 
 enum ExperimentStartPhase: Equatable {
     case details
+    case checkingActiveExperiment
     case requestingPermission
     case permissionDenied
     case countdown(Int?)
@@ -16,10 +17,13 @@ struct ExperimentStartFeature {
     struct State: Equatable {
         let experiment: WatchExperimentSummary
         var phase: ExperimentStartPhase = .details
+        var isActiveExperimentConflictPresented = false
     }
 
     enum Action {
         case startTapped
+        case activeExperimentChecked(hasConflict: Bool)
+        case activeExperimentConflictDismissed
         case permissionUpdated(PermissionStatus)
         case permissionRecheckTapped
         case countdownTick
@@ -28,6 +32,7 @@ struct ExperimentStartFeature {
     }
 
     private nonisolated enum CancelID: Hashable, Sendable {
+        case activeExperimentCheck
         case permission
         case countdown
         case openSession
@@ -40,7 +45,26 @@ struct ExperimentStartFeature {
         Reduce { state, action in
             switch action {
             case .startTapped:
-                guard state.phase == .details else { return .none }
+                guard state.phase == .details,
+                      !state.isActiveExperimentConflictPresented else { return .none }
+                state.phase = .checkingActiveExperiment
+                let experimentID = state.experiment.id
+                return .run { send in
+                    let experiments = (try? await watchExperimentClient.list()) ?? []
+                    let hasConflict = experiments.contains {
+                        $0.status == .running && $0.id != experimentID
+                    }
+                    await send(.activeExperimentChecked(hasConflict: hasConflict))
+                }
+                .cancellable(id: CancelID.activeExperimentCheck, cancelInFlight: true)
+
+            case let .activeExperimentChecked(hasConflict):
+                guard state.phase == .checkingActiveExperiment else { return .none }
+                if hasConflict {
+                    state.phase = .details
+                    state.isActiveExperimentConflictPresented = true
+                    return .none
+                }
                 switch microphonePermission.currentStatus() {
                 case .authorized:
                     return beginCountdown(&state)
@@ -54,6 +78,10 @@ struct ExperimentStartFeature {
                 case .denied, .restricted:
                     state.phase = .permissionDenied
                 }
+                return .none
+
+            case .activeExperimentConflictDismissed:
+                state.isActiveExperimentConflictPresented = false
                 return .none
 
             case let .permissionUpdated(status):
@@ -79,6 +107,10 @@ struct ExperimentStartFeature {
                 return .none
 
             case .becameInactive:
+                if state.phase == .checkingActiveExperiment {
+                    state.phase = .details
+                    return .cancel(id: CancelID.activeExperimentCheck)
+                }
                 guard case .countdown = state.phase else {
                     return .cancel(id: CancelID.countdown)
                 }
@@ -93,12 +125,14 @@ struct ExperimentStartFeature {
             case .disappeared:
                 if state.phase == .experiment {
                     return .merge(
+                        .cancel(id: CancelID.activeExperimentCheck),
                         .cancel(id: CancelID.permission),
                         .cancel(id: CancelID.countdown)
                     )
                 }
                 state.phase = .details
                 return .merge(
+                    .cancel(id: CancelID.activeExperimentCheck),
                     .cancel(id: CancelID.permission),
                     .cancel(id: CancelID.countdown),
                     .cancel(id: CancelID.openSession)

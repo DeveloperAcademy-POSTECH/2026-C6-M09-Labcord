@@ -21,6 +21,8 @@ public struct WatchExperimentClient: Sendable {
     public var lists: @Sendable () async -> AsyncStream<[WatchExperimentSummary]>
     public var requestPhoneSession: @Sendable (UUID) async -> Void
     public var cancelPhoneSession: @Sendable (UUID) async -> Void
+    public var enterPhoneSession: @Sendable (UUID) async -> Void
+    public var leavePhoneSession: @Sendable (UUID) async -> Void
 
     public init(
         send: @escaping @Sendable (WatchExperimentCommand) async throws -> WatchExperimentResponse,
@@ -34,6 +36,8 @@ public struct WatchExperimentClient: Sendable {
         },
         requestPhoneSession: @escaping @Sendable (UUID) async -> Void = { _ in },
         cancelPhoneSession: @escaping @Sendable (UUID) async -> Void = { _ in },
+        enterPhoneSession: @escaping @Sendable (UUID) async -> Void = { _ in },
+        leavePhoneSession: @escaping @Sendable (UUID) async -> Void = { _ in },
         screens: @escaping @Sendable () async -> AsyncStream<WatchScreenSnapshot> = {
             AsyncStream { $0.finish() }
         }
@@ -48,6 +52,8 @@ public struct WatchExperimentClient: Sendable {
         self.lists = lists
         self.requestPhoneSession = requestPhoneSession
         self.cancelPhoneSession = cancelPhoneSession
+        self.enterPhoneSession = enterPhoneSession
+        self.leavePhoneSession = leavePhoneSession
     }
 }
 
@@ -100,6 +106,12 @@ extension WatchExperimentClient: DependencyKey {
             },
             cancelPhoneSession: { id in
                 await connectivity.cancelPhoneSession(id)
+            },
+            enterPhoneSession: { id in
+                await connectivity.enterPhoneSession(id)
+            },
+            leavePhoneSession: { id in
+                await connectivity.leavePhoneSession(id)
             },
             screens: {
                 await connectivity.activate()
