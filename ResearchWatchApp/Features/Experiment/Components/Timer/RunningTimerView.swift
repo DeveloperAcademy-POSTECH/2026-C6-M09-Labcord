@@ -16,6 +16,17 @@ struct RunningTimerView: View {
     let onPause: () -> Void
     let onResume: () -> Void
     let onDelete: () -> Void
+    @State private var swipeOffset: CGFloat = 0
+    @State private var isDeleteRevealed = false
+
+    private var canSwipeDelete: Bool {
+        timer.status == .paused && !isCommandPending
+    }
+
+    private let deleteButtonSize: CGFloat = 34
+    private var revealWidth: CGFloat {
+        deleteButtonSize + 4
+    }
 
     private var timerInterval: ClosedRange<Date> {
         let end = timer.measuredAt.addingTimeInterval(TimeInterval(max(0, timer.remainingSeconds)))
@@ -24,6 +35,66 @@ struct RunningTimerView: View {
     }
 
     var body: some View {
+        ZStack(alignment: .trailing) {
+            if canSwipeDelete {
+                deleteButton
+                    .opacity(min(1, -swipeOffset / revealWidth))
+            }
+
+            card
+                .offset(x: swipeOffset)
+        }
+        .simultaneousGesture(swipeGesture, including: canOpenBySwipe ? .all : .subviews)
+        .highPriorityGesture(swipeGesture, including: isDeleteRevealed ? .all : .subviews)
+        .onChange(of: canSwipeDelete) { _, canSwipe in
+            if !canSwipe { setDeleteRevealed(false) }
+        }
+    }
+
+    private var canOpenBySwipe: Bool {
+        canSwipeDelete && !isDeleteRevealed
+    }
+
+    private var deleteButton: some View {
+        Button(action: onDelete) {
+            Image(systemName: "trash")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Color("General/Action/Destructive/Foreground"))
+                .frame(width: deleteButtonSize, height: deleteButtonSize)
+                .background(Color("General/Action/Destructive/Background"), in: Circle())
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("타이머 삭제")
+    }
+
+    private var swipeGesture: some Gesture {
+        DragGesture(minimumDistance: 12)
+            .onChanged { value in
+                guard canSwipeDelete,
+                      abs(value.translation.width) > abs(value.translation.height) else { return }
+                let base = isDeleteRevealed ? -revealWidth : 0
+                swipeOffset = min(0, max(-revealWidth, base + value.translation.width))
+            }
+            .onEnded { value in
+                guard canSwipeDelete,
+                      abs(value.translation.width) > abs(value.translation.height) else {
+                    setDeleteRevealed(isDeleteRevealed && canSwipeDelete)
+                    return
+                }
+                let base = isDeleteRevealed ? -revealWidth : 0
+                setDeleteRevealed(base + value.predictedEndTranslation.width < -revealWidth / 2)
+            }
+    }
+
+    private func setDeleteRevealed(_ revealed: Bool) {
+        withAnimation(.snappy(duration: 0.2)) {
+            isDeleteRevealed = revealed
+            swipeOffset = revealed ? -revealWidth : 0
+        }
+    }
+
+    private var card: some View {
         TimelineView(.animation(paused: timer.status != .running)) { context in
             let remaining = timer.remaining(at: context.date)
             let isFinished = timer.status == .finished || remaining == 0
