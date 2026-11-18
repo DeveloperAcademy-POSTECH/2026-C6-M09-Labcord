@@ -376,3 +376,18 @@ private extension WatchAudioReceiver {
         return false
     }
 }
+
+#if DEBUG
+extension WatchAudioReceiver {
+    func clearDebugData() {
+        for pipeline in pipelines.values { pipeline.transcriber.cancel() }
+        pipelines.removeAll()
+        pendingRerun.removeAll()
+        reviewGate.cancelAll()
+        latestTranscripts.removeAll()
+        transcriptConflicts.removeAll()
+        failures.removeAll()
+        hasIncomingFileFailure = false
+    }
+}
+#endif

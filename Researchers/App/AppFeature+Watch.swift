@@ -181,7 +181,8 @@ extension AppFeature {
             let canResumeResult = state.path.ids.last.flatMap {
                 state.path[id: $0, case: \.result]?.canRefreshExternalRecords
             } == true && !PhoneWatchAudioService.shared.hasUnsettledRecording()
-            coordinator.isBusy = state.reviewSaving || state.home.list.isDeleting
+            coordinator.isBusy = state.isDebugMenuPresented || state.reviewSaving
+                || state.home.list.isDeleting
                 || state.home.list.pendingDeletion != nil
                 || (!state.path.isEmpty && sessionID == nil && !canResumeResult)
             let current = coordinator.currentScreen
@@ -250,14 +251,15 @@ extension AppFeature {
     }
 
     func openWatchSession(_ state: inout State) -> Effect<Action> {
-        guard state.watchIsActive, UIApplication.shared.applicationState == .active,
+        guard state.watchIsActive, !state.isDebugMenuPresented,
+              UIApplication.shared.applicationState == .active,
               let experimentID = state.watchPendingStartID else {
             return .none
         }
         guard (try? PhoneWatchExperimentCoordinator.shared.validPendingStartID()) == experimentID
         else {
             state.watchPendingStartID = nil
-            return .none
+            return openReadyLiveActivityExperiment(&state)
         }
         if let id = state.path.ids.last,
            var session = state.path[id: id, case: \.session],
