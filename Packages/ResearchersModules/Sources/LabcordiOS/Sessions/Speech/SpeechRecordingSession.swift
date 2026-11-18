@@ -70,7 +70,9 @@ public final class SpeechRecordingSession {
         do {
             return try await beginRecording(
                 id: id, transcriber: transcriber,
-                contextualStrings: Array((unitNormalizer.hints + contextualStrings).prefix(100))
+                contextualStrings: SpeechVocabulary.recognitionHints(
+                    unitHints: unitNormalizer.hints, contextualStrings: contextualStrings
+                )
             )
         } catch {
             finishRecording(keepingFile: false)

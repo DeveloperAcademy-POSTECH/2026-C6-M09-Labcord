@@ -34,6 +34,22 @@ nonisolated public struct SpeechSessionVocabulary: Equatable, Sendable {
 
 nonisolated enum SpeechVocabulary {
     private static let maxContextualStrings = 100
+    private static let commonLabTerms = [
+        "시약", "샘플", "검체", "용매", "용질", "배지", "정제", "여과", "흡광도", "주기",
+        "피펫", "비커", "원심분리기", "시료", "용액", "완충액", "증류수", "혼합", "희석", "분주",
+        "용해", "추출", "원심분리", "침전", "건조", "농도", "부피", "무게", "온도", "산도",
+        "형광", "수율", "대조군", "실험군", "세포", "세포주", "배양", "배양액", "단백질", "효소",
+        "항체", "항원", "프라이머", "플라스미드", "산", "염기", "중화", "적정", "산화", "환원",
+        "촉매", "반응물", "생성물", "침전물", "팁", "튜브", "플라스크", "배양기", "마이크로플레이트"
+    ]
+
+    static func recognitionHints(unitHints: [String], contextualStrings: [String]) -> [String] {
+        var seen = Set<String>()
+        return (commonLabTerms + unitHints + contextualStrings)
+            .filter { seen.insert($0.lowercased()).inserted }
+            .prefix(maxContextualStrings)
+            .map { $0 }
+    }
 
     static func terms(from raw: [String]) -> [String] {
         var seen = Set<String>()

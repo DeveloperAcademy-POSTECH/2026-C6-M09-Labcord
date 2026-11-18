@@ -39,7 +39,9 @@ final class WatchAudioTranscriber {
         try Task.checkCancellation()
         let analyzer = SpeechAnalyzer(modules: [transcriber])
         let normalizer = SpeechUnitNormalizer(units: units)
-        let hints = Array((normalizer.hints + contextualStrings).prefix(100))
+        let hints = SpeechVocabulary.recognitionHints(
+            unitHints: normalizer.hints, contextualStrings: contextualStrings
+        )
         if !hints.isEmpty {
             let context = AnalysisContext()
             context.contextualStrings[.general] = hints
