@@ -1,5 +1,5 @@
 //
-//  SettingTImerItemView.swift
+//  SettingTimerItemView.swift
 //  ResearchWatch Watch App
 //
 //  Created by 정홍섭 on 11/17/26.
@@ -10,7 +10,7 @@ import LabcordShared
 import LabcordWatchOS
 import SwiftUI
 
-struct SettingTImerItemView: View {
+struct SettingTimerItemView: View {
     let seconds: Int
 
     private var durationComponents: TimerDurationFormatter.Components {
@@ -50,5 +50,5 @@ struct SettingTImerItemView: View {
 }
 
 #Preview {
-    SettingTImerItemView(seconds: 30)
+    SettingTimerItemView(seconds: 30)
 }
