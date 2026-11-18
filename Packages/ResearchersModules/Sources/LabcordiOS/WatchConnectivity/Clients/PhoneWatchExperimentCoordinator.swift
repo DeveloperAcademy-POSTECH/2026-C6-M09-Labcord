@@ -245,7 +245,8 @@ public final class PhoneWatchExperimentCoordinator {
             experiment=\(command.experimentID?.uuidString ?? "nil", privacy: .public) \
             visible=\(self.visibleExperimentID?.uuidString ?? "nil", privacy: .public) \
             screen=\(self.currentScreen.experimentID?.uuidString ?? "nil", privacy: .public) \
-            busy=\(self.isBusy, privacy: .public) executing=\(self.executing != nil, privacy: .public)
+            busy=\(self.isBusy, privacy: .public) \
+            executing=\(self.executing != nil, privacy: .public)
             """)
         return WatchExperimentResponse(
             requestID: command.requestID, phase: .failed, error: error, screen: refreshedScreen()
