@@ -13,6 +13,7 @@ import SwiftUI
 struct FreeModeTimerView: View {
     let timers: [WatchTimerSnapshot]
     let pendingTimerIDs: Set<UUID>
+    var creatingTimerIDs: Set<UUID> = []
     let onTimerCommand: (UUID, WatchExperimentCommand.Operation) -> Void
 
     private var hasTimers: Bool {
@@ -33,7 +34,8 @@ struct FreeModeTimerView: View {
                 if hasTimers {
                     ProgressTimerView(
                         timers: timers, pendingTimerIDs: pendingTimerIDs,
-                        onTimerCommand: onTimerCommand
+                        creatingTimerIDs: creatingTimerIDs,
+                        onTimerCommand: onTimerCommand, showsTitle: false
                     )
                 } else {
                     Text("현재 진행 중인\n타이머가 없어요.")
@@ -46,7 +48,7 @@ struct FreeModeTimerView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.horizontal, 9.5)
+        .padding(.horizontal, hasTimers ? 0 : 9.5)
     }
 }
 
