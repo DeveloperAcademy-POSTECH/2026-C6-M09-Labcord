@@ -28,7 +28,7 @@ struct ExperimentActionButton: View {
                     in: RoundedRectangle(cornerRadius: .infinity)
                 )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressFeedbackButtonStyle())
     }
 }
 

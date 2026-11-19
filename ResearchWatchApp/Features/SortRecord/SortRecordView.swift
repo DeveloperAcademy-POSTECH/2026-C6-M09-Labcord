@@ -11,6 +11,7 @@ import LabcordShared
 import SwiftUI
 
 struct SortRecordView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let isPhoneResultReady: Bool
     let onClose: () -> Void
     @State private var store: StoreOf<SortRecordFeature>
@@ -64,6 +65,9 @@ struct SortRecordView: View {
                 .padding(.horizontal, 9.5)
             }
         }
+        .animation(
+            reduceMotion ? nil : .easeOut(duration: 0.18), value: store.isPhoneResultReady
+        )
         .onChange(of: isPhoneResultReady, initial: true) { _, ready in
             store.send(.phoneResultChanged(ready))
         }

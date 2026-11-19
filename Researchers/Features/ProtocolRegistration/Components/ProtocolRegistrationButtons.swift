@@ -2,24 +2,11 @@ import LabcordDesignSystem
 import SwiftUI
 
 struct EntryLoadingIndicator: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
     var body: some View {
-        Group {
-            if reduceMotion {
-                ProgressView()
-            } else {
-                ProgressView()
-                    .phaseAnimator([CGFloat(0.8), 1.15]) { content, scale in
-                        content.scaleEffect(scale)
-                    } animation: { _ in
-                        .easeInOut(duration: 0.8)
-                    }
-            }
-        }
-        .controlSize(.mini)
-        .frame(width: 18, height: 18)
-        .accessibilityLabel("실험 저장 중")
+        ProgressView()
+            .controlSize(.mini)
+            .frame(width: 18, height: 18)
+            .accessibilityLabel("실험 저장 중")
     }
 }
 

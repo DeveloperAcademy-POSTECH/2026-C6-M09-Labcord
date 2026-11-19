@@ -8,6 +8,7 @@ import SwiftUI
 struct ResearchersApp: App {
     @UIApplicationDelegateAdaptor(OrientationAppDelegate.self) private var orientationDelegate
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var isSplashActive = true
 
@@ -32,11 +33,15 @@ struct ResearchersApp: App {
                             guard scenePhase == .active else { return }
                             try? await Task.sleep(for: .seconds(1))
                             guard !Task.isCancelled else { return }
-                            withAnimation { isSplashActive = false }
+                            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) {
+                                isSplashActive = false
+                            }
                             PhoneIntentRuntime.shared.store.send(.watchSplashChanged(true))
                         }
+                        .transition(.opacity)
                 } else {
                     AppView()
+                        .transition(.opacity)
                 }
             }
             .background {

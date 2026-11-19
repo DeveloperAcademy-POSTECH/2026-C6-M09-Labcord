@@ -28,6 +28,7 @@ struct RecordTimelineView: View {
                     .simultaneousGesture(TapGesture().onEnded { onSelectEntry(entry) })
             }
         }
+        .labcordMotion(.layout, value: entries.map(\.id))
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

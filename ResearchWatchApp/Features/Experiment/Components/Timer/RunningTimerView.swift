@@ -11,6 +11,7 @@ import LabcordWatchOS
 import SwiftUI
 
 struct RunningTimerView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let timer: WatchTimerSnapshot
     let isCommandPending: Bool
     var isCreating = false
@@ -31,6 +32,10 @@ struct RunningTimerView: View {
         guard canSwipeDelete else { return 0 }
         let base = isDeleteRevealed ? -revealWidth : 0
         return min(0, max(-revealWidth, base + horizontalDrag))
+    }
+
+    private var swipeAnimation: Animation? {
+        horizontalDrag == 0 && !reduceMotion ? LabcordMotion.settle.animation : nil
     }
 
     private let deleteButtonSize: CGFloat = 34
@@ -54,7 +59,9 @@ struct RunningTimerView: View {
             }
 
             card
-                .offset(x: swipeOffset)
+                .animation(swipeAnimation) { content in
+                    content.offset(x: swipeOffset)
+                }
         }
         .contentShape(Rectangle())
         .simultaneousGesture(swipeGesture, including: canSwipeDelete ? .all : .subviews)
@@ -85,7 +92,7 @@ struct RunningTimerView: View {
                 .background(Color("General/Action/Destructive/Background"), in: Circle())
                 .contentShape(Circle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressFeedbackButtonStyle())
         .accessibilityLabel("타이머 삭제")
     }
 
@@ -112,13 +119,15 @@ struct RunningTimerView: View {
 
     private func setDeleteRevealed(_ revealed: Bool) {
         guard revealed || isDeleteRevealed else { return }
-        withAnimation(.snappy(duration: 0.2)) {
+        withAnimation(reduceMotion ? nil : LabcordMotion.settle.animation) {
             revealedTimerID = revealed ? timer.id : nil
         }
     }
 
     private var card: some View {
-        TimelineView(.animation(paused: timer.status != .running)) { context in
+        TimelineView(.animation(
+            minimumInterval: reduceMotion ? 1 : 1.0 / 30, paused: timer.status != .running
+        )) { context in
             let remaining = timer.remaining(at: context.date)
             let isFinished = timer.status == .finished || remaining == 0
             let ringProgress = timer.status == .running
@@ -179,7 +188,7 @@ struct RunningTimerView: View {
                     }
                     .contentShape(Circle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressFeedbackButtonStyle())
                 .disabled(isCommandPending && !showsCreatingIndicator)
                 .accessibilityLabel(accessibilityLabel(isFinished: isFinished))
             }

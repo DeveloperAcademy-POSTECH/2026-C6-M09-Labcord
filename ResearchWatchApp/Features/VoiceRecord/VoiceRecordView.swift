@@ -90,9 +90,7 @@ struct VoiceRecordView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .animation(
-            reduceMotion ? nil : .easeInOut(duration: 0.2), value: store.phase == .recording
-        )
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.18), value: store.phase)
         .background(Color.black.ignoresSafeArea())
         .navigationTitle(navigationTitle)
         .navigationBarBackButtonHidden()

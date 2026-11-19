@@ -11,6 +11,7 @@ import LabcordWatchOS
 import SwiftUI
 
 struct VideoRecordView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let store: StoreOf<VideoRecordFeature>
     @Binding var presentedVideo: StoreOf<VideoRecordFeature>?
 
@@ -115,6 +116,7 @@ struct VideoRecordView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.18), value: store.phase)
         .background(Color.black.ignoresSafeArea())
         .navigationTitle(
             [.review, .saved, .closing].contains(store.phase) ? "" : "영상 촬영"

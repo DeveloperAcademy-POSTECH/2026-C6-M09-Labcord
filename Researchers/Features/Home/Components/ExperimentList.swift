@@ -5,6 +5,7 @@ import SwiftUI
 
 struct ExperimentList: View {
     @Bindable var store: StoreOf<ExperimentListFeature>
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         List {
@@ -20,6 +21,12 @@ struct ExperimentList: View {
                 emptyMessage: "최근 실험이 없습니다",
                 entries: store.entries.filter { !$0.isActive }
             )
+        }
+        .transaction { transaction in
+            if reduceMotion {
+                transaction.animation = nil
+                transaction.disablesAnimations = true
+            }
         }
         .listRowSpacing(0)
         .listSectionSpacing(.custom(LayoutTokens.spacing32))

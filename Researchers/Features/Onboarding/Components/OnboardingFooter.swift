@@ -29,6 +29,7 @@ struct OnboardingFooter: View {
                 .buttonStyle(IOSButtonStyle(.filled, size: .large))
             }
         }
+        .labcordMotion(.layout, value: store.page)
         .padding(.horizontal, LayoutTokens.spacing16)
         .padding(.top, LayoutTokens.spacing16)
         .frame(maxWidth: .infinity)

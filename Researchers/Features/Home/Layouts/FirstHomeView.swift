@@ -36,6 +36,7 @@ struct FirstHomeView: View {
             .padding(.trailing, 20)
             .padding(.bottom, 17)
         }
+        .labcordMotion(.state, value: store.isGuideVisible)
         .task {
             store.send(.firstHomeAppeared)
         }

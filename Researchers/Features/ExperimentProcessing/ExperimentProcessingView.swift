@@ -30,8 +30,10 @@ struct ExperimentProcessingView: View {
                 Text("실험과 기록을 확인하는 데 시간이 조금 더 걸리고 있어요.")
                     .foregroundStyle(Color("General/Label/Secondary"))
                     .multilineTextAlignment(.center)
+                    .transition(.opacity)
             }
         }
+        .labcordMotion(.layout, value: isTakingLonger)
         .padding(LayoutTokens.spacing24)
         .accessibilityElement(children: .combine)
         .task {

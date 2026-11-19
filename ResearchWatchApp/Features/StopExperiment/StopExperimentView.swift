@@ -43,7 +43,7 @@ struct StopExperimentView: View {
                                 in: RoundedRectangle(cornerRadius: .infinity)
                             )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(PressFeedbackButtonStyle())
 
                     Button("취소", action: onCancel)
                         .frame(height: WatchScreenMetrics.scaledHeight(45))

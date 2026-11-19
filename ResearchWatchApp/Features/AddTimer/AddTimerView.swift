@@ -100,6 +100,7 @@ struct AddTimerView: View {
                     in: RoundedRectangle(cornerRadius: 4)
                 )
                 .opacity(isFocused ? 1 : 0)
+                .labcordMotion(.state, value: isFocused)
                 .accessibilityHidden(true)
 
             Picker(title, selection: selection) {
@@ -122,6 +123,7 @@ struct AddTimerView: View {
                         lineWidth: isFocused ? 1.5 : 1
                     )
                 }
+                .labcordMotion(.state, value: isFocused)
                 .allowsHitTesting(false)
             }
         }

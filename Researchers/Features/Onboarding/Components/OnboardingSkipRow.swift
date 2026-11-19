@@ -19,6 +19,7 @@ struct OnboardingSkipRow: View {
             .buttonStyle(IOSButtonStyle(.accent, size: .medium))
             .opacity(store.page == .third ? 0 : 1)
             .disabled(store.page == .third)
+            .labcordMotion(.state, value: store.page)
         }
     }
 }

@@ -45,7 +45,7 @@ struct ExperimentStartView: View {
                                 in: RoundedRectangle(cornerRadius: 100)
                             )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(PressFeedbackButtonStyle())
                     .padding(.horizontal, 9.5)
                 }
                 .padding(.top, 14.5)
@@ -96,7 +96,7 @@ struct ExperimentStartView: View {
                 .transition(.opacity)
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: store.isActiveExperimentConflictPresented)
+        .labcordMotion(.state, value: store.isActiveExperimentConflictPresented)
         .navigationBarBackButtonHidden(store.isActiveExperimentConflictPresented)
         .toolbar {
             if store.isActiveExperimentConflictPresented {

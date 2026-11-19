@@ -13,6 +13,7 @@ struct GesturePracticeView: View {
     @Dependency(\.cameraSessionClient) private var camera
     @Dependency(\.cameraPermissionClient) private var cameraPermission
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var connector: CameraPreviewConnector?
     @State private var cameraOwner: UUID?
     @State private var cameraMessage: String?
@@ -238,7 +239,9 @@ private extension GesturePracticeView {
         for practiceDevice: GestureDevice
     ) {
         advanceTask?.cancel()
-        withAnimation { page = gesture.rawValue }
+        withAnimation(reduceMotion ? nil : LabcordMotion.layout.animation) {
+            page = gesture.rawValue
+        }
         let next = gesture.nextIncomplete(in: completed)
         guard next != nil || practiceDevice == .iPhone else { return }
         advanceTask = Task { @MainActor in
@@ -249,7 +252,7 @@ private extension GesturePracticeView {
                     return
                 }
                 advanceTask = nil
-                withAnimation {
+                withAnimation(reduceMotion ? nil : LabcordMotion.layout.animation) {
                     if let next {
                         page = next.rawValue
                     } else {

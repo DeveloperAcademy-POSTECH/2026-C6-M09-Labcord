@@ -23,6 +23,7 @@ struct OnboardingBackground: View {
                         .clipped()
                 }
             }
+            .labcordMotion(.state, value: showsLabImage)
             .ignoresSafeArea()
     }
 }

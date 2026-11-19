@@ -34,6 +34,7 @@ struct OnboardingView: View {
                         pageControl
                     }
                 }
+                .labcordMotion(.state, value: store.page)
                 .padding(.horizontal, LayoutTokens.spacing16)
                 .padding(.top, 19)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)

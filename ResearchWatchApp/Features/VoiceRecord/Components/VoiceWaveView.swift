@@ -11,6 +11,9 @@ import LabcordWatchOS
 import SwiftUI
 
 struct VoiceWaveView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.isLuminanceReduced) private var isLuminanceReduced
+    @Environment(\.scenePhase) private var scenePhase
     let isVoiceDetected: Bool
 
     private let bars: [(width: CGFloat, height: CGFloat)] = [
@@ -18,8 +21,12 @@ struct VoiceWaveView: View {
         (4, 40), (4, 26), (2.77, 18)
     ]
 
+    private var isAnimating: Bool {
+        isVoiceDetected && !reduceMotion && !isLuminanceReduced && scenePhase == .active
+    }
+
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 24, paused: !isVoiceDetected)) { context in
+        TimelineView(.animation(minimumInterval: 1.0 / 24, paused: !isAnimating)) { context in
             HStack(alignment: .center, spacing: WatchScreenMetrics.scaledWidth(6)) {
                 ForEach(bars.indices, id: \.self) { index in
                     Rectangle()
@@ -36,11 +43,11 @@ struct VoiceWaveView: View {
             .frame(height: WatchScreenMetrics.scaledHeight(50))
             .foregroundStyle(Color("General/Brand/Primary"))
         }
-        .animation(.easeOut(duration: 0.28), value: isVoiceDetected)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.18), value: isVoiceDetected)
     }
 
     private func height(for index: Int, at date: Date) -> CGFloat {
-        guard isVoiceDetected else { return bars[index].height }
+        guard isAnimating else { return bars[index].height }
         let seconds = date.timeIntervalSinceReferenceDate
         let offset = Double(index) * 1.7
         let motion = 0.5

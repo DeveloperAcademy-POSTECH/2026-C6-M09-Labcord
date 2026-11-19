@@ -45,6 +45,8 @@ struct RecentProtocolView: View {
                 }
             }
         }
+        .labcordMotion(.state, value: store.loading)
+        .labcordMotion(.state, value: store.failed)
         .safeAreaInset(edge: .bottom) {
             Button {
                 store.send(.useSelected)

@@ -113,12 +113,16 @@ struct ExperimentResultView: View {
                 }
             }
             .overlay {
-                if let overlayStore = store.scope(
-                    state: \.titleEditOverlay,
-                    action: \.titleEditOverlay
-                ) {
-                    TitleEditOverlayView(store: overlayStore)
+                ZStack {
+                    if let overlayStore = store.scope(
+                        state: \.titleEditOverlay,
+                        action: \.titleEditOverlay
+                    ) {
+                        TitleEditOverlayView(store: overlayStore)
+                            .transition(.opacity)
+                    }
                 }
+                .labcordMotion(.state, value: store.titleEditOverlay != nil)
             }
             .alert("실험을 재개하지 못했어요", isPresented: Binding(
                 get: { store.resumeFailed },
@@ -132,7 +136,7 @@ struct ExperimentResultView: View {
                 Overlay()
                     .ignoresSafeArea()
                     .opacity(store.selectedEntry == nil ? 0 : 1)
-                    .animation(.easeInOut(duration: 0.2), value: store.selectedEntry != nil)
+                    .labcordMotion(.state, value: store.selectedEntry != nil)
                     .allowsHitTesting(false)
             }
             .fullScreenCover(item: Binding(

@@ -5,6 +5,7 @@ import LabcordWatchOS
 import SwiftUI
 
 struct PhotoRecordView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let store: StoreOf<PhotoRecordFeature>
     @Binding var presentedPhoto: StoreOf<PhotoRecordFeature>?
 
@@ -72,6 +73,7 @@ struct PhotoRecordView: View {
                 Color.clear
             }
         }
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.18), value: store.phase)
         .background(Color.black.ignoresSafeArea())
         .navigationTitle(
             [.review, .saved, .closing].contains(store.phase) ? "" : "사진 촬영"

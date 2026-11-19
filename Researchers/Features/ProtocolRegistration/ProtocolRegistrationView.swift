@@ -42,6 +42,8 @@ struct ProtocolRegistrationView: View {
                 setupContent
             }
         }
+        .labcordMotion(.state, value: input.analysisID != nil)
+        .labcordMotion(.state, value: input.showsAnalysisCompletion)
         .background(Color(
             "General/Background/Primary", bundle: LabcordDesignSystemResources.bundle
         ).ignoresSafeArea())

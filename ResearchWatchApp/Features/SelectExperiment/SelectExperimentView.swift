@@ -61,9 +61,11 @@ struct SelectExperimentView: View {
                             } label: {
                                 ExperimentRow(title: experiment.title)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(PressFeedbackButtonStyle())
+                            .transition(.opacity)
                         }
                     }
+                    .labcordMotion(.layout, value: store.experiments.map(\.id))
                 }
                 .padding(.horizontal, 2)
             }
