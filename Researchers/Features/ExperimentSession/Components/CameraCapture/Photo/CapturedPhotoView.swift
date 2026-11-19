@@ -6,11 +6,13 @@ struct CapturedPhotoView: View {
     let onClose: () -> Void
     let onSave: () -> Void
     let isSaving: Bool
+    let autoSaveEndsAt: Date?
     @StateObject private var imageStore: CapturedPhotoImageStore
 
     init(
         photoData: Data,
         isSaving: Bool,
+        autoSaveEndsAt: Date?,
         onRetake: @escaping () -> Void,
         onClose: @escaping () -> Void,
         onSave: @escaping () -> Void
@@ -19,6 +21,7 @@ struct CapturedPhotoView: View {
         self.onClose = onClose
         self.onSave = onSave
         self.isSaving = isSaving
+        self.autoSaveEndsAt = autoSaveEndsAt
         _imageStore = StateObject(wrappedValue: CapturedPhotoImageStore(data: photoData))
     }
 
@@ -29,7 +32,9 @@ struct CapturedPhotoView: View {
             onClose: onClose,
             onSave: onSave,
             isSaving: isSaving,
-            isCloseEnabled: !isSaving
+            isCloseEnabled: !isSaving,
+            showsAutoSaveNotice: autoSaveEndsAt != nil,
+            autoSaveEndsAt: autoSaveEndsAt
         ) {
             if let photo = imageStore.image {
                 Image(uiImage: photo)

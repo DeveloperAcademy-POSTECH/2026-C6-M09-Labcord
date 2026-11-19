@@ -102,10 +102,12 @@ struct ExperimentSessionView: View {
                 CapturedPhotoView(
                     photoData: data,
                     isSaving: captureStore.photo.isSaving,
+                    autoSaveEndsAt: captureStore.photo.autoSaveEndsAt,
                     onRetake: { captureStore.send(.photoRetakeAndCaptureRequested) },
                     onClose: { captureStore.send(.photo(.retakeRequested)) },
                     onSave: { captureStore.send(.photo(.saveRequested)) }
                 )
+                .id(captureStore.photo.recordID)
             }
         }
         .overlay {
