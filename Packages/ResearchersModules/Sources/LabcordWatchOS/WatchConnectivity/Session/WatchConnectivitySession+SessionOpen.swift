@@ -72,22 +72,32 @@ extension WatchConnectivitySession {
         )
     }
 
+    func resendPendingSessionOpenRequest() {
+        guard let request = lastOpenTransmission,
+              request.epoch == experiments.remoteEpoch,
+              request.action == .cancel || openAcks[request.requestID] != nil
+        else { return }
+        sendSessionOpenRequest(request, saveInContext: true)
+    }
+
     private func sendSessionOpenRequest(_ request: WatchSessionOpenRequest, saveInContext: Bool) {
-        guard let session, session.activationState == .activated,
+        guard let session, WatchConnectivityState(session).canTransfer,
               request.isLive(at: .now),
               let data = try? JSONEncoder().encode(request) else { return }
         let key = WatchSessionOpenRequest.confirmedMessageKey
+        let id = request.requestID.uuidString
         if saveInContext {
-            var context = session.applicationContext
-            context[key] = data
-            try? session.updateApplicationContext(context)
+            _ = try? WatchConnectivityDiagnostics.updateContext(session, key: key, data: data)
         }
         if session.isReachable {
-            session.sendMessage([key: data], replyHandler: { _ in }, errorHandler: { _ in })
+            WatchConnectivityDiagnostics.event("open.sent", id: id, bytes: data.count)
+            session.sendMessage([key: data], replyHandler: { _ in
+                WatchConnectivityDiagnostics.event("open.reply", id: id)
+            }, errorHandler: { error in
+                WatchConnectivityDiagnostics.failure("open.failed", id: id, error: error)
+            })
         }
-        #if !targetEnvironment(simulator)
         transferUserInfo([key: data])
-        #endif
     }
 
     func receiveOpenAck(_ data: Data) {

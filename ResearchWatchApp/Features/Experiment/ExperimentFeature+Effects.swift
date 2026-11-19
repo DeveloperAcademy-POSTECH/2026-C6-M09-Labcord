@@ -7,7 +7,8 @@ extension ExperimentFeature {
     func observeExperiment(experimentID: UUID) -> Effect<Action> {
         .merge(
             .run { send in
-                for await snapshot in await watchExperimentClient.snapshots() {
+                let snapshots = await watchExperimentClient.snapshots(experimentID)
+                for await snapshot in snapshots {
                     await send(.snapshotReceived(snapshot))
                 }
             }

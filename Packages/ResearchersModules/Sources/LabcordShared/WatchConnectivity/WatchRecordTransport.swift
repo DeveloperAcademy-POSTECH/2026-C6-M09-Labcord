@@ -3,10 +3,15 @@ import WatchConnectivity
 
 @MainActor
 public final class WatchRecordTransport {
-    public static let snapshotKey = "record.snapshot.v1"
+    public nonisolated static let snapshotKey = "record.snapshot.v1"
     private static let maximumPayloadBytes = 200_000
     private var latest: [UUID: WatchRecordSnapshot] = [:]
     private var observers: [UUID: AsyncStream<WatchRecordSnapshot>.Continuation] = [:]
+    private var activeExperimentID: UUID?
+    private var needsContextUpdate = false
+    private var liveRecords: [UUID: [UUID: WatchRecordSnapshot]] = [:]
+    private var recentResults: [UUID: [WatchRecordSnapshot.Kind: WatchRecordSnapshot]] = [:]
+    private var pendingResults: [UUID: WatchRecordSnapshot] = [:]
     public private(set) var lastPublishError: WatchExperimentError?
     public var acceptsRemoteEpoch: ((WatchStateEpoch?) -> Bool)?
 
@@ -14,6 +19,11 @@ public final class WatchRecordTransport {
 
     public func clearSnapshots() {
         latest.removeAll()
+        activeExperimentID = nil
+        needsContextUpdate = true
+        liveRecords.removeAll()
+        recentResults.removeAll()
+        pendingResults.removeAll()
         lastPublishError = nil
     }
 
@@ -45,52 +55,100 @@ public final class WatchRecordTransport {
     }
 
     public func publish(_ record: WatchRecordSnapshot, session: WCSession?) {
-        let changed = accept(record)
-        guard changed || latest[record.id] == record else { return }
-        resend(session: session)
-        if let session, session.activationState == .activated,
-           record.phase == .saved || record.phase == .cancelled {
-            transfer(record, session: session)
+        guard accept(record), let experimentID = record.experimentID else { return }
+        pendingResults.removeValue(forKey: record.id)
+        if record.phase == .saved || record.phase == .cancelled
+            || (record.phase == .failed && record.originalRetained == false) {
+            liveRecords[experimentID]?.removeValue(forKey: record.id)
+            recentResults[experimentID, default: [:]][record.kind] = record
+            #if !targetEnvironment(simulator)
+            if record.phase != .failed, !transfer(record, session: session) {
+                pendingResults[record.id] = record
+            }
+            #endif
+        } else {
+            liveRecords[experimentID, default: [:]][record.id] = record
+        }
+        if activeExperimentID == experimentID { publishActiveContext(session: session) }
+    }
+
+    public func restoreResult(_ record: WatchRecordSnapshot) {
+        guard let experimentID = record.experimentID else { return }
+        if let previous = recentResults[experimentID]?[record.kind] {
+            guard let date = record.startedAt, let previousDate = previous.startedAt,
+                  previousDate < date else { return }
+        }
+        recentResults[experimentID, default: [:]][record.kind] = record
+        if activeExperimentID == experimentID { needsContextUpdate = true }
+    }
+
+    public func resend(experimentID: UUID?, session: WCSession?, force: Bool = false) {
+        let changed = activeExperimentID != experimentID
+        activeExperimentID = experimentID
+        if changed || force || needsContextUpdate {
+            publishActiveContext(session: session, force: force)
+        }
+        guard force else { return }
+        for record in Array(pendingResults.values) where transfer(record, session: session) {
+            pendingResults.removeValue(forKey: record.id)
         }
     }
 
-    public func resend(session: WCSession?) {
-        guard let session, session.activationState == .activated else {
+    public func retryOnRecovery(_ data: Data) {
+        guard let record = try? JSONDecoder().decode(WatchRecordSnapshot.self, from: data),
+              record.phase == .saved || record.phase == .cancelled,
+              latest[record.id] == record else { return }
+        pendingResults[record.id] = record
+    }
+
+    private func publishActiveContext(session: WCSession?, force: Bool = false) {
+        guard let session, WatchConnectivityState(session).canTransfer else {
             lastPublishError = .notReachable
             return
         }
-        let records = latest.values.sorted { $0.id.uuidString < $1.id.uuidString }
+        needsContextUpdate = false
+        let records: [WatchRecordSnapshot] = activeExperimentID.map { id in
+            var selected = liveRecords[id] ?? [:]
+            for record in (recentResults[id] ?? [:]).values {
+                selected[record.id] = selected[record.id] ?? record
+            }
+            return selected.values.sorted { $0.id.uuidString < $1.id.uuidString }
+        } ?? []
         do {
-            let data = try JSONEncoder().encode(records)
+            let data = try sortedEncoder().encode(records)
             guard data.count <= Self.maximumPayloadBytes else {
                 throw WatchExperimentError.resultUnknown
             }
-            var context = session.applicationContext
-            context[Self.snapshotKey] = data
-            try session.updateApplicationContext(context)
+            try WatchConnectivityDiagnostics.updateContext(
+                session, key: Self.snapshotKey, data: data, force: force
+            )
             lastPublishError = nil
         } catch {
             lastPublishError = .resultUnknown
-            for record in records { transfer(record, session: session) }
+            for record in records { _ = transfer(record, session: session) }
         }
     }
 
-    private func transfer(_ record: WatchRecordSnapshot, session: WCSession) {
+    private func transfer(_ record: WatchRecordSnapshot, session: WCSession?) -> Bool {
         do {
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = .sortedKeys
-            let data = try encoder.encode(record)
+            let data = try sortedEncoder().encode(record)
             guard data.count <= Self.maximumPayloadBytes else {
                 lastPublishError = .resultUnknown
-                return
+                return false
             }
-            guard !session.outstandingUserInfoTransfers.contains(where: {
-                ($0.userInfo[Self.snapshotKey] as? Data) == data
-            }) else { return }
-            session.transferUserInfo([Self.snapshotKey: data])
+            return WatchConnectivityDiagnostics.queueUserInfo(
+                [Self.snapshotKey: data], on: session
+            )
         } catch {
             lastPublishError = .resultUnknown
+            return false
         }
+    }
+
+    private func sortedEncoder() -> JSONEncoder {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        return encoder
     }
 
     @discardableResult

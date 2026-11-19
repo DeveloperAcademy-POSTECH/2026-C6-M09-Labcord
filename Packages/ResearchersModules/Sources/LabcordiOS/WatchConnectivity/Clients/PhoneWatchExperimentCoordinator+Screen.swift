@@ -3,19 +3,27 @@ import LabcordShared
 import UIKit
 
 extension PhoneWatchExperimentCoordinator {
-    public func refresh() {
-        refreshTask?.cancel()
+    public func refresh(republishingAfterRecovery: Bool = false) {
+        republishAfterRecovery = republishAfterRecovery || republishingAfterRecovery
+        guard refreshTask == nil else { return }
         refreshTask = Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(100))
             guard !Task.isCancelled, let self else { return }
-            var ids = Set(states.keys)
-            if let visibleExperimentID { ids.insert(visibleExperimentID) }
-            if let id = currentScreen.experimentID { ids.insert(id) }
-            publishScreen()
-            for id in ids.sorted(by: { $0.uuidString < $1.uuidString }) {
-                if let snapshot = try? snapshot(id) { publish(snapshot) }
+            refreshTask = nil
+            guard let session = connectivity.session,
+                  WatchConnectivityState(session).canTransfer else { return }
+            let force = republishAfterRecovery
+            republishAfterRecovery = false
+            let activeID = visibleExperimentID ?? currentScreen.experimentID ?? pendingStartID
+            publishScreen(force: force)
+            if let activeID {
+                if let snapshot = try? snapshot(activeID, restoringRecords: false) {
+                    publish(snapshot, force: force)
+                }
+                if force { try? restoreSavedRecords(activeID) }
             }
-            publishAvailableExperiments()
+            publishAvailableExperiments(force: force)
+            connectivity.records.resend(experimentID: activeID, session: session, force: force)
         }
     }
 
@@ -63,10 +71,10 @@ extension PhoneWatchExperimentCoordinator {
         return currentScreen.withRevision(currentScreen.revision)
     }
 
-    func publishScreen() {
-        guard currentScreen.revision > 0,
-              let session = connectivity.session, session.activationState == .activated,
-              let data = try? JSONEncoder().encode(refreshedScreen()) else { return }
+    func publishScreen(force: Bool = false) {
+        guard currentScreen.revision > 0, let session = connectivity.session,
+              WatchConnectivityState(session).canTransfer,
+              let data = try? contextEncoder().encode(currentScreen) else { return }
         var context = session.applicationContext
         let previous = (context[WatchExperimentTransport.screenKey] as? Data).flatMap {
             try? JSONDecoder().decode(WatchScreenSnapshot.self, from: $0)
@@ -76,7 +84,9 @@ extension PhoneWatchExperimentCoordinator {
         }
         context[WatchExperimentTransport.screenKey] = data
         do {
-            try session.updateApplicationContext(context)
+            try WatchConnectivityDiagnostics.updateContext(
+                session, context: context, id: WatchExperimentTransport.screenKey, force: force
+            )
             lastScreenError = nil
         } catch {
             lastScreenError = .resultUnknown
@@ -95,23 +105,26 @@ extension PhoneWatchExperimentCoordinator {
         return list
     }
 
-    func publishAvailableExperiments() {
-        guard let session = connectivity.session, session.activationState == .activated,
+    func publishAvailableExperiments(force: Bool) {
+        guard let session = connectivity.session, WatchConnectivityState(session).canTransfer,
               let list = try? versionedExperiments() else { return }
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = .sortedKeys
+        let encoder = contextEncoder()
         let key = WatchExperimentTransport.listSnapshotKey
         let versionKey = WatchExperimentTransport.listVersionKey
         guard let version = try? encoder.encode(list.version),
-              session.applicationContext[versionKey] as? Data != version,
               let data = try? encoder.encode(list.summaries) else { return }
         var context = session.applicationContext
         context[key] = data
         context[versionKey] = version
-        try? session.updateApplicationContext(context)
-        if session.isReachable {
+        let updated = try? WatchConnectivityDiagnostics.updateContext(
+            session, context: context, id: key, force: force
+        )
+        if updated != false, WatchConnectivityState(session).canTransfer, session.isReachable {
             session.sendMessage(
-                [key: data, versionKey: version], replyHandler: { _ in }, errorHandler: { _ in }
+                [key: data, versionKey: version], replyHandler: { _ in },
+                errorHandler: { error in
+                    WatchConnectivityDiagnostics.failure("list.failed", id: key, error: error)
+                }
             )
         }
     }
@@ -124,7 +137,9 @@ extension PhoneWatchExperimentCoordinator {
         Self.removePreviousEpoch(from: &context)
         context.removeValue(forKey: WatchExperimentTransport.screenKey)
         context.removeValue(forKey: WatchSessionOpenResponse.messageKey)
-        try? session.updateApplicationContext(context)
+        _ = try? WatchConnectivityDiagnostics.updateContext(
+            session, context: context, id: WatchExperimentTransport.screenKey
+        )
     }
 
     private static func removePreviousEpoch(from context: inout [String: Any]) {
@@ -184,11 +199,11 @@ extension PhoneWatchExperimentCoordinator {
         )
     }
 
-    func snapshot(_ id: UUID) throws -> WatchExperimentSnapshot {
+    func snapshot(_ id: UUID, restoringRecords: Bool = true) throws -> WatchExperimentSnapshot {
         guard let state = try client.watchState(id) else {
             throw WatchExperimentError.experimentNotFound
         }
-        try restoreSavedRecords(id)
+        if restoringRecords { try restoreSavedRecords(id) }
         let active = visibleExperimentID == id
         if states[id] != state || sessionVisibility[id] != active {
             let next = try nextRevision()
@@ -221,12 +236,25 @@ extension PhoneWatchExperimentCoordinator {
         return next
     }
 
-    func publish(_ snapshot: WatchExperimentSnapshot) {
-        guard let session = connectivity.session, session.activationState == .activated,
-              let data = try? JSONEncoder().encode(snapshot) else { return }
-        var context = session.applicationContext
-        context[WatchExperimentTransport.snapshotKey] = data
-        try? session.updateApplicationContext(context)
+    func publish(_ snapshot: WatchExperimentSnapshot, force: Bool = false) {
+        guard let session = connectivity.session, WatchConnectivityState(session).canTransfer
+        else { return }
+        let key = WatchExperimentTransport.snapshotKey
+        if !force, let previous = session.applicationContext[key] as? Data,
+           let value = try? JSONDecoder().decode(WatchExperimentSnapshot.self, from: previous),
+           value.experiment.id == snapshot.experiment.id, value.revision == snapshot.revision,
+           value.epoch == snapshot.epoch {
+            return
+        }
+        guard let data = try? contextEncoder().encode(snapshot) else { return }
+        _ = try? WatchConnectivityDiagnostics.updateContext(
+            session, key: key, data: data, force: force
+        )
     }
 
+    private func contextEncoder() -> JSONEncoder {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        return encoder
+    }
 }

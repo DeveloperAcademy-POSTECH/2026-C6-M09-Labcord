@@ -99,7 +99,7 @@ extension PhoneWatchExperimentCoordinator {
     }
 
     func publishRecord(
-        _ record: WatchRecordSnapshot, experimentID: UUID
+        _ record: WatchRecordSnapshot, experimentID: UUID, restoringRecord: Bool = false
     ) throws -> WatchRecordSnapshot {
         guard record.experimentID == nil || record.experimentID == experimentID else {
             throw WatchExperimentError.duplicateConflict
@@ -129,8 +129,13 @@ extension PhoneWatchExperimentCoordinator {
            previous.experimentID != experimentID || previous.kind != identified.kind {
             throw WatchExperimentError.duplicateConflict
         }
+        let reconcilesKnownRecord = recordSnapshots[record.id] != nil
         recordSnapshots[record.id] = identified
-        connectivity.records.publish(identified, session: connectivity.session)
+        if restoringRecord && !reconcilesKnownRecord {
+            connectivity.records.restoreResult(identified)
+        } else {
+            connectivity.records.publish(identified, session: connectivity.session)
+        }
         recordDidChange(identified)
         return identified
     }

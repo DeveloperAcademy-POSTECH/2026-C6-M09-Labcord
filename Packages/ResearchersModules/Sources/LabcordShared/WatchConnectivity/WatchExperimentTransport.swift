@@ -21,7 +21,12 @@ public final class WatchExperimentTransport {
     private var transmissions: [UUID: UUID] = [:]
     private var pending: [UUID: CheckedContinuation<WatchExperimentResponse, Error>] = [:]
     private var deadlines: [UUID: Task<Void, Never>] = [:]
-    private var subscribers: [UUID: AsyncStream<WatchExperimentSnapshot>.Continuation] = [:]
+    private struct SnapshotObserver {
+        let experimentID: UUID
+        let continuation: AsyncStream<WatchExperimentSnapshot>.Continuation
+    }
+
+    private var subscribers: [UUID: SnapshotObserver] = [:]
     private var latest: [UUID: WatchExperimentSnapshot] = [:]
     private var screenSubscribers: [UUID: AsyncStream<WatchScreenSnapshot>.Continuation] = [:]
     private var latestScreen: WatchScreenSnapshot?
@@ -44,14 +49,21 @@ public final class WatchExperimentTransport {
     public func send(_ command: WatchExperimentCommand, session: WCSession?) async throws
         -> WatchExperimentResponse {
         try Task.checkCancellation()
-        guard let session, session.activationState == .activated, session.isReachable else {
+        guard let session, WatchConnectivityState(session).canTransfer,
+              session.isReachable else {
             throw WatchExperimentError.notReachable
         }
         let responseKey = Self.responseKey
+        let id = command.requestID.uuidString
+        let start = ContinuousClock.now
         return try await send(command) { data, reply, failure in
+            WatchConnectivityDiagnostics.event("command.sent", id: id, bytes: data.count)
             session.sendMessage([Self.commandKey: data]) { @Sendable message in
-                reply(message[responseKey] as? Data)
-            } errorHandler: { @Sendable _ in
+                let data = message[responseKey] as? Data
+                WatchConnectivityDiagnostics.reply(id: id, since: start, bytes: data?.count ?? 0)
+                reply(data)
+            } errorHandler: { @Sendable error in
+                WatchConnectivityDiagnostics.failure("command.failed", id: id, error: error)
                 failure()
             }
         }
@@ -74,6 +86,9 @@ public final class WatchExperimentTransport {
                 deadlines[command.requestID] = Task { [weak self] in
                     try? await Task.sleep(for: .seconds(3))
                     guard !Task.isCancelled else { return }
+                    WatchConnectivityDiagnostics.event(
+                        "command.timeout", id: command.requestID.uuidString
+                    )
                     self?.finish(
                         command.requestID, transmissionID: transmissionID,
                         result: .failure(WatchExperimentError.deliveryTimeout)
@@ -151,12 +166,14 @@ public final class WatchExperimentTransport {
         pending.removeValue(forKey: id)?.resume(with: result)
     }
 
-    public func stream() -> AsyncStream<WatchExperimentSnapshot> {
+    public func stream(experimentID: UUID) -> AsyncStream<WatchExperimentSnapshot> {
         let id = UUID()
         return AsyncStream(bufferingPolicy: .bufferingNewest(32)) { continuation in
-            subscribers[id] = continuation
+            subscribers[id] = SnapshotObserver(
+                experimentID: experimentID, continuation: continuation
+            )
             startRefreshing()
-            for snapshot in latest.values { continuation.yield(snapshot) }
+            if let snapshot = latest[experimentID] { continuation.yield(snapshot) }
             continuation.onTermination = { [weak self] _ in
                 Task { @MainActor in self?.removeSubscriber(id) }
             }
@@ -175,11 +192,20 @@ public final class WatchExperimentTransport {
         guard refreshTask == nil else { return }
         refreshTask = Task { [weak self] in
             while !Task.isCancelled {
-                guard let self else { return }
-                await refreshScreen?()
-                for id in Array(latest.keys) { await refreshSnapshot?(id) }
+                guard self != nil else { return }
+                await self?.refreshObservedState()
                 try? await Task.sleep(for: .seconds(2))
             }
+        }
+    }
+
+    private func refreshObservedState() async {
+        if !screenSubscribers.isEmpty { await refreshScreen?() }
+        let experimentIDs = Set(subscribers.values.map(\.experimentID))
+        for id in experimentIDs {
+            guard !Task.isCancelled else { return }
+            guard subscribers.values.contains(where: { $0.experimentID == id }) else { continue }
+            await refreshSnapshot?(id)
         }
     }
 
@@ -194,16 +220,22 @@ public final class WatchExperimentTransport {
         let id = snapshot.experiment.id
         guard latest[id].map({ snapshot.isNewer(than: $0) }) ?? true else { return }
         latest[id] = snapshot
-        for subscriber in subscribers.values { subscriber.yield(snapshot) }
+        for subscriber in subscribers.values where subscriber.experimentID == id {
+            subscriber.continuation.yield(snapshot)
+        }
     }
 
     public func reply(to data: Data) -> Data? {
         guard let command = try? JSONDecoder().decode(WatchExperimentCommand.self, from: data)
         else { return nil }
+        let id = command.requestID.uuidString
+        WatchConnectivityDiagnostics.event("command.received", id: id, bytes: data.count)
         let response = receiveCommand?(command) ?? WatchExperimentResponse(
             requestID: command.requestID, phase: .failed, error: .phoneBusy
         )
-        return try? JSONEncoder().encode(response)
+        let encoded = try? JSONEncoder().encode(response)
+        WatchConnectivityDiagnostics.event("command.replied", id: id, bytes: encoded?.count ?? 0)
+        return encoded
     }
 }
 

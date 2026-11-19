@@ -176,7 +176,7 @@ public final class WatchAudioTransferClient {
 
 extension WatchAudioTransferClient {
     private func enqueueBackground(_ header: WatchAudioHeader) async throws {
-        guard WCSession.default.activationState == .activated else { return }
+        guard WatchConnectivityState(.default).canTransfer else { return }
         if isCancellationPending(header) {
             if !deferredCancellations.contains(header.recordingID) {
                 enqueueBackgroundControl(.cancel(header))
@@ -200,7 +200,9 @@ extension WatchAudioTransferClient {
             let outstanding = WCSession.default.outstandingFileTransfers
             guard outstanding.count < 2 else { return }
             guard !outstanding.contains(where: { $0.file.fileURL == url }) else { continue }
-            WCSession.default.transferFile(url, metadata: ["labcordAudioChunk": true])
+            WatchConnectivityDiagnostics.queueFile(
+                url, metadata: ["labcordAudioChunk": true], on: .default
+            )
         }
     }
 
@@ -222,7 +224,7 @@ extension WatchAudioTransferClient {
                       try? JSONDecoder().decode(WatchAudioMessage.self, from: $0)
                   } == message
               }) else { return }
-        WCSession.default.transferUserInfo([key: data])
+        WatchConnectivityDiagnostics.queueUserInfo([key: data], on: .default)
     }
 
     public func receive(_ receipt: WatchAudioReceipt) async throws {
@@ -362,39 +364,5 @@ extension WatchAudioTransferClient {
             throw WatchExperimentError.resultUnknown
         }
         return receipt
-    }
-}
-
-@MainActor
-public final class WatchAudioImmediateExchange {
-    private var pending: [UUID: CheckedContinuation<WatchAudioReceipt, Error>] = [:]
-
-    public init() {}
-
-    public func send(_ message: WatchAudioMessage) async throws -> WatchAudioReceipt {
-        guard WCSession.default.activationState == .activated,
-              WCSession.default.isReachable else { throw WatchExperimentError.notReachable }
-        let data = try JSONEncoder().encode(message)
-        let id = UUID()
-        return try await withCheckedThrowingContinuation { continuation in
-            pending[id] = continuation
-            WCSession.default.sendMessageData(data) { @Sendable [weak self] reply in
-                Task { @MainActor in
-                    self?.resolve(id, result: Result {
-                        try JSONDecoder().decode(WatchAudioReceipt.self, from: reply)
-                    })
-                }
-            } errorHandler: { @Sendable [weak self] error in
-                Task { @MainActor in self?.resolve(id, result: .failure(error)) }
-            }
-            Task { [weak self] in
-                try? await Task.sleep(for: .seconds(3))
-                self?.resolve(id, result: .failure(WatchExperimentError.deliveryTimeout))
-            }
-        }
-    }
-
-    private func resolve(_ id: UUID, result: Result<WatchAudioReceipt, Error>) {
-        pending.removeValue(forKey: id)?.resume(with: result)
     }
 }

@@ -15,6 +15,7 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         (@MainActor (WatchRemoteIntentRequest) async -> WatchRemoteIntentResponse)?
     private var audioReceiptObservers: [UUID: AsyncStream<WatchAudioReceipt>.Continuation] = [:]
     private var latestAudioReceipts: [UUID: WatchAudioReceipt] = [:]
+    private var connectionState: WatchConnectivityState?
     var openAcks: [UUID: AsyncStream<WatchSessionOpenResponse>.Continuation] = [:]
     var lastOpenTransmission: WatchSessionOpenRequest?
     var latestList: WatchExperimentList?
@@ -64,16 +65,51 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         activationDidCompleteWith state: WCSessionActivationState,
         error: Error?
     ) {
+        WatchConnectivityDiagnostics.state(session, event: "activation", error: error)
         let failed = error != nil
         Task { @MainActor in
             self.activationFailed = failed
             if state == .activated {
                 var context = session.applicationContext
                 if context.removeValue(forKey: WatchRecordTransport.snapshotKey) != nil {
-                    try? session.updateApplicationContext(context)
+                    _ = try? WatchConnectivityDiagnostics.updateContext(
+                        session, context: context, id: WatchRecordTransport.snapshotKey
+                    )
                 }
             }
+            self.connectionDidChange(session)
         }
+    }
+
+    nonisolated public func sessionCompanionAppInstalledDidChange(_ session: WCSession) {
+        WatchConnectivityDiagnostics.state(session, event: "companionInstalled")
+        Task { @MainActor in self.connectionDidChange(session) }
+    }
+
+    nonisolated public func sessionReachabilityDidChange(_ session: WCSession) {
+        WatchConnectivityDiagnostics.state(session, event: "reachability")
+        Task { @MainActor in self.connectionDidChange(session) }
+    }
+
+    private func connectionDidChange(_ session: WCSession) {
+        let state = WatchConnectivityState(session)
+        let recovered = state.recovered(from: connectionState)
+        connectionState = state
+        guard recovered else { return }
+        self.session(session, didReceiveApplicationContext: session.receivedApplicationContext)
+        resendPendingSessionOpenRequest()
+    }
+
+    nonisolated public func session(
+        _ session: WCSession, didFinish transfer: WCSessionUserInfoTransfer, error: Error?
+    ) {
+        WatchConnectivityDiagnostics.finished(transfer, error: error)
+    }
+
+    nonisolated public func session(
+        _ session: WCSession, didFinish transfer: WCSessionFileTransfer, error: Error?
+    ) {
+        WatchConnectivityDiagnostics.finished(transfer, error: error)
     }
 
     @MainActor public func retryActivation() {
@@ -169,6 +205,7 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         _ session: WCSession,
         didReceiveUserInfo userInfo: [String: Any]
     ) {
+        WatchConnectivityDiagnostics.received(userInfo)
         beginDelivery()
         observerStore.deliverUserInfo(userInfo) { self.finishDelivery() }
         let record = userInfo[WatchRecordTransport.snapshotKey] as? Data

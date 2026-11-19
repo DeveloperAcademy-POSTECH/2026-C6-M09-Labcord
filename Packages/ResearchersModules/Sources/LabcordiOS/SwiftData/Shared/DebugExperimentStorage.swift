@@ -26,6 +26,7 @@ public enum DebugExperimentStorage {
             "Photos", "Videos", "Audio", "VoiceRecordingJournals",
             "IncompleteVoiceRecordings", "WatchAudioIncoming",
             "WatchExperiment/requests.json",
+            "WatchExperiment/\(WatchExperimentRequestJournal.entriesDirectoryName)",
             "WatchExperiment/dismissedTimers.json"
         ] {
             cleanup.attempt(name) { try removeIfPresent(root.appending(path: name)) }

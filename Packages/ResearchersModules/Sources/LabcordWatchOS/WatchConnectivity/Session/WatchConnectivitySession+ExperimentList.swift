@@ -90,12 +90,9 @@ private extension WatchConnectivitySession {
             continuation?.finish()
         }
         let data = try JSONEncoder().encode(command)
-        var context = session.applicationContext
-        context[WatchExperimentTransport.backgroundCommandKey] = data
-        try? session.updateApplicationContext(context)
-        #if !targetEnvironment(simulator)
-        transferUserInfo([WatchExperimentTransport.backgroundCommandKey: data])
-        #endif
+        let key = WatchExperimentTransport.backgroundCommandKey
+        _ = try? WatchConnectivityDiagnostics.updateContext(session, key: key, data: data)
+        transferUserInfo([key: data])
         var iterator = responses.makeAsyncIterator()
         let received = await withTaskCancellationHandler {
             await iterator.next()

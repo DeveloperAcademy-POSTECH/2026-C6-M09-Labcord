@@ -93,10 +93,10 @@ final class PhoneIntentRuntime {
             logger.error("Watch request rejected: WatchConnectivity is unsupported")
             throw PhoneIntentError.watchUnavailable
         }
-        let activated = WCSession.default.activationState == .activated
-        let reachable = WCSession.default.isReachable
-        guard activated, reachable else {
-            logger.error("Watch request rejected: activated=\(activated) reachable=\(reachable)")
+        let session = WCSession.default
+        let state = WatchConnectivityState(session)
+        guard state.canTransfer, state.reachable else {
+            WatchConnectivityDiagnostics.state(session, event: "intentUnavailable")
             throw PhoneIntentError.watchUnavailable
         }
         let request = WatchRemoteIntentRequest(

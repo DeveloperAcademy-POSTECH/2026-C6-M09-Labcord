@@ -57,6 +57,7 @@ public final class PhoneWatchExperimentCoordinator {
     var completions: [UUID: CheckedContinuation<Void, Error>] = [:]
     var mediaDeadlines: [UUID: Task<Void, Never>] = [:]
     var refreshTask: Task<Void, Never>?
+    var republishAfterRecovery = false
 
     public init() {
         @Dependency(\.watchConnectivitySession) var connectivity
@@ -283,6 +284,8 @@ extension PhoneWatchExperimentCoordinator {
 
     func beginDebugDataReset() {
         refreshTask?.cancel()
+        refreshTask = nil
+        republishAfterRecovery = false
         failPendingCommands()
         requests.removeAll()
         recentQueries = WatchExperimentQueryCache()

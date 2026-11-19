@@ -197,7 +197,7 @@ final class WatchVoiceRecordingService {
         _ header: WatchAudioHeader, phase: WatchRecordSnapshot.Phase
     ) {
         guard let session = connectivity.session,
-              session.activationState == .activated,
+              WatchConnectivityState(session).canTransfer,
               let data = try? JSONEncoder().encode(WatchVoiceLiveStatus(
                 experimentID: header.experimentID, recordingID: header.recordingID,
                 startedAt: header.startedAt, sentAt: .now,

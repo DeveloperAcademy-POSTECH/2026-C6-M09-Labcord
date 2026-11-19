@@ -11,6 +11,7 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
     public let records = WatchRecordTransport()
     public private(set) var lastAudioTransferError: WatchAudioError?
     private var didRetryActivation = false
+    private var connectionState: WatchConnectivityState?
 
     func addStateObserver(_ observer: @escaping () -> Void) -> UUID {
         let id = UUID()
@@ -49,46 +50,39 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         activationDidCompleteWith state: WCSessionActivationState,
         error: Error?
     ) {
-        let succeeded = error == nil
+        WatchConnectivityDiagnostics.state(session, event: "activation", error: error)
+        let succeeded = error == nil && state == .activated
         let shouldRetry = error != nil && session.activationState != .activated
         Task { @MainActor in
             if succeeded {
                 self.didRetryActivation = false
-                PhoneWatchExperimentCoordinator.shared.receiveOpenSessionRequest(
-                    session.receivedApplicationContext[
-                        WatchSessionOpenRequest.messageKey
-                    ] as? Data
-                )
-                PhoneWatchExperimentCoordinator.shared.receiveOpenSessionRequest(
-                    session.receivedApplicationContext[
-                        WatchSessionOpenRequest.confirmedMessageKey
-                    ] as? Data, confirmed: true
-                )
-                self.receiveBackgroundListCommand(
-                    session.receivedApplicationContext[
-                        WatchExperimentTransport.backgroundCommandKey
-                    ] as? Data
-                )
             } else if shouldRetry, !self.didRetryActivation {
                 self.didRetryActivation = true
                 session.activate()
             }
-            self.notifyStateObservers()
-            self.records.resend(session: session)
-            PhoneWatchExperimentCoordinator.shared.refresh()
+            self.connectionDidChange(session)
         }
     }
 
     nonisolated public func sessionWatchStateDidChange(_ session: WCSession) {
-        Task { @MainActor in self.notifyStateObservers() }
+        WatchConnectivityDiagnostics.state(session, event: "watchState")
+        Task { @MainActor in self.connectionDidChange(session) }
     }
 
     nonisolated public func sessionReachabilityDidChange(_ session: WCSession) {
-        Task { @MainActor in
-            self.notifyStateObservers()
-            self.records.resend(session: session)
-            PhoneWatchExperimentCoordinator.shared.refresh()
-        }
+        WatchConnectivityDiagnostics.state(session, event: "reachability")
+        Task { @MainActor in self.connectionDidChange(session) }
+    }
+
+    private func connectionDidChange(_ session: WCSession) {
+        let state = WatchConnectivityState(session)
+        guard state != connectionState else { return }
+        let recovered = state.recovered(from: connectionState)
+        connectionState = state
+        notifyStateObservers()
+        guard recovered else { return }
+        self.session(session, didReceiveApplicationContext: session.receivedApplicationContext)
+        PhoneWatchExperimentCoordinator.shared.refresh(republishingAfterRecovery: true)
     }
 
     nonisolated public func session(
@@ -152,6 +146,7 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
     }
 
     nonisolated public func session(_ session: WCSession, didReceive file: WCSessionFile) {
+        WatchConnectivityDiagnostics.receivedFile(file.metadata)
         guard file.metadata?["labcordAudioChunk"] as? Bool == true else { return }
         do {
             let retained = try WatchAudioReceiver.retainIncomingFile(file.fileURL)
@@ -173,6 +168,7 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         _ session: WCSession,
         didReceiveUserInfo userInfo: [String: Any]
     ) {
+        WatchConnectivityDiagnostics.received(userInfo)
         let backgroundCommand = userInfo[
             WatchExperimentTransport.backgroundCommandKey
         ] as? Data
@@ -206,7 +202,8 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         guard let data, data.count <= 4_096,
               let command = try? JSONDecoder().decode(
                   WatchExperimentCommand.self, from: data
-              ), command.operation == .list, let session else { return }
+              ), command.operation == .list,
+              let session, WatchConnectivityState(session).canTransfer else { return }
         if let previous = session.applicationContext[
             WatchExperimentTransport.backgroundResponseKey
         ] as? Data, let response = try? JSONDecoder().decode(
@@ -214,21 +211,45 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         ), response.requestID == command.requestID { return }
         guard let response = experiments.reply(to: data) else { return }
 
-        var context = session.applicationContext
-        context[WatchExperimentTransport.backgroundResponseKey] = response
-        try? session.updateApplicationContext(context)
+        _ = try? WatchConnectivityDiagnostics.updateContext(
+            session, key: WatchExperimentTransport.backgroundResponseKey, data: response
+        )
         #if !targetEnvironment(simulator)
         transferUserInfo([WatchExperimentTransport.backgroundResponseKey: response])
         #endif
     }
 
     nonisolated public func sessionDidBecomeInactive(_ session: WCSession) {
-        Task { @MainActor in self.notifyStateObservers() }
+        WatchConnectivityDiagnostics.state(session, event: "inactive")
+        Task { @MainActor in self.sessionDidDisconnect() }
     }
 
     nonisolated public func sessionDidDeactivate(_ session: WCSession) {
-        session.activate()
-        Task { @MainActor in self.notifyStateObservers() }
+        WatchConnectivityDiagnostics.state(session, event: "deactivated")
+        Task { @MainActor in
+            self.sessionDidDisconnect()
+            session.activate()
+        }
+    }
+
+    private func sessionDidDisconnect() {
+        connectionState = nil
+        notifyStateObservers()
+    }
+
+    nonisolated public func session(
+        _ session: WCSession, didFinish transfer: WCSessionUserInfoTransfer, error: Error?
+    ) {
+        WatchConnectivityDiagnostics.finished(transfer, error: error)
+        if error != nil, let data = transfer.userInfo[WatchRecordTransport.snapshotKey] as? Data {
+            Task { @MainActor in self.records.retryOnRecovery(data) }
+        }
+    }
+
+    nonisolated public func session(
+        _ session: WCSession, didFinish transfer: WCSessionFileTransfer, error: Error?
+    ) {
+        WatchConnectivityDiagnostics.finished(transfer, error: error)
     }
 }
 

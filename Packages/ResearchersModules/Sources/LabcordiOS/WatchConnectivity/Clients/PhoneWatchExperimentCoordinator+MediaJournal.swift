@@ -121,7 +121,9 @@ extension PhoneWatchExperimentCoordinator {
                     requestID: entry.command.requestID, phase: .failed, error: .resultUnknown
                 ), record: value, experimentID: experimentID)
             } else {
-                _ = try publishRecord(record, experimentID: experimentID)
+                _ = try publishRecord(
+                    record, experimentID: experimentID, restoringRecord: restarted
+                )
             }
         }
     }

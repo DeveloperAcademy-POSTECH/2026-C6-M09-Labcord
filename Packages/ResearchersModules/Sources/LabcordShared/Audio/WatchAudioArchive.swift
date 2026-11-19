@@ -5,6 +5,7 @@ public actor WatchAudioArchive {
     private let root: URL
     private let maximumBytes: Int
     let files = FileManager.default
+    private var chunkRanges = WatchAudioChunkRanges()
 
     public init(root: URL, maximumBytes: Int = 256 * 1_024 * 1_024) {
         self.root = root
@@ -31,26 +32,29 @@ public actor WatchAudioArchive {
             guard try read(WatchAudioChunk.self, at: url) == chunk else {
                 throw WatchAudioError.conflict
             }
-        } else {
-            let receipt = try statusEnsuringArchive(chunk.header)
-            guard receipt.savedRecordID == nil, !receipt.isCancelled else {
+            return try archiveStatus(chunk.header)
+        }
+        let receipt = try archiveStatus(chunk.header)
+        guard receipt.savedRecordID == nil, !receipt.isCancelled else {
+            throw WatchAudioError.conflict
+        }
+        if let manifest = receipt.manifest {
+            guard chunk.sequence < manifest.chunkCount,
+                  chunk.firstSample + chunk.sampleCount <= manifest.totalSamples else {
                 throw WatchAudioError.conflict
             }
-            if let manifest = receipt.manifest {
-                guard chunk.sequence < manifest.chunkCount,
-                      chunk.firstSample + chunk.sampleCount <= manifest.totalSamples else {
-                    throw WatchAudioError.conflict
-                }
-            }
-            for sequence in receipt.receivedSequences {
-                let other = try self.chunk(chunk.header, sequence)
-                let overlaps = chunk.firstSample < other.firstSample + other.sampleCount
-                    && other.firstSample < chunk.firstSample + chunk.sampleCount
-                guard !overlaps else { throw WatchAudioError.conflict }
-            }
-            try write(chunk, to: url)
         }
-        return try statusEnsuringArchive(chunk.header)
+        for sequence in receipt.receivedSequences {
+            let other = try chunkRange(chunk.header, sequence: sequence)
+            let overlaps = chunk.firstSample < other.endSample
+                && other.firstSample < chunk.firstSample + chunk.sampleCount
+            guard !overlaps else { throw WatchAudioError.conflict }
+        }
+        try write(chunk, to: url)
+        chunkRanges.remember(chunk, at: url)
+        return try archiveStatus(
+            chunk.header, sequences: (receipt.receivedSequences + [chunk.sequence]).sorted()
+        )
     }
 
     public func finish(_ manifest: WatchAudioManifest) throws -> WatchAudioReceipt {
@@ -65,50 +69,17 @@ public actor WatchAudioArchive {
                 throw WatchAudioError.conflict
             }
         } else {
-            let receipt = try statusEnsuringArchive(manifest.header)
+            let receipt = try archiveStatus(manifest.header)
             for sequence in receipt.receivedSequences {
-                let chunk = try self.chunk(manifest.header, sequence)
+                let range = try chunkRange(manifest.header, sequence: sequence)
                 guard sequence < manifest.chunkCount,
-                      chunk.firstSample + chunk.sampleCount <= manifest.totalSamples else {
+                      range.endSample <= manifest.totalSamples else {
                     throw WatchAudioError.conflict
                 }
             }
             try write(manifest, to: url)
         }
-        return try statusEnsuringArchive(manifest.header)
-    }
-
-    public func statusEnsuringArchive(_ header: WatchAudioHeader) throws -> WatchAudioReceipt {
-        try begin(header)
-        let directory = directory(header)
-        var sequences = try files.contentsOfDirectory(
-            at: directory, includingPropertiesForKeys: nil
-        )
-            .filter { $0.pathExtension == "chunk" }
-            .compactMap { Int($0.deletingPathExtension().lastPathComponent) }.sorted()
-        let manifestURL = directory.appendingPathComponent("manifest.json")
-        let savedURL = directory.appendingPathComponent("saved.json")
-        let digestURL = directory.appendingPathComponent("saved-digest.json")
-        let manifest = files.fileExists(atPath: manifestURL.path)
-            ? try read(WatchAudioManifest.self, at: manifestURL) : nil
-        let savedID = files.fileExists(atPath: savedURL.path)
-            ? try read(UUID.self, at: savedURL) : nil
-        let digest = savedID != nil && files.fileExists(atPath: digestURL.path)
-            ? try read(String.self, at: digestURL) : nil
-        if savedID == header.recordingID, let proof = try loadOrMigrateCleanupProof(header) {
-            guard proof.manifest == manifest, proof.digest == digest else {
-                throw WatchAudioError.conflict
-            }
-
-            sequences = Array(0..<proof.manifest.chunkCount)
-        }
-        return WatchAudioReceipt(
-            header: header, receivedSequences: sequences,
-            manifest: manifest, savedRecordID: savedID, contentDigest: digest,
-            isCancelled: files.fileExists(
-                atPath: directory.appendingPathComponent("cancelled.json").path
-            )
-        )
+        return try archiveStatus(manifest.header)
     }
 
     public func chunk(_ header: WatchAudioHeader, _ sequence: Int) throws -> WatchAudioChunk {
@@ -118,6 +89,13 @@ public actor WatchAudioArchive {
             throw WatchAudioError.invalidAudio
         }
         return chunk
+    }
+
+    private func chunkRange(
+        _ header: WatchAudioHeader, sequence: Int
+    ) throws -> WatchAudioChunkRanges.Range {
+        let url = chunkURL(header, sequence: sequence)
+        return try chunkRanges.range(for: header, at: url) { try chunk(header, sequence) }
     }
 
     public func retainedChunkURL(_ header: WatchAudioHeader, sequence: Int) throws -> URL {
@@ -140,7 +118,7 @@ public actor WatchAudioArchive {
             }
             return true
         }
-        let local = try statusEnsuringArchive(receipt.header)
+        let local = try archiveStatus(receipt.header)
         guard Set(receipt.receivedSequences).isSubset(of: Set(local.receivedSequences)) else {
             throw WatchAudioError.conflict
         }
@@ -330,7 +308,7 @@ extension WatchAudioArchive {
         try removeVerifiedChunks(proof)
     }
 
-    private func loadOrMigrateCleanupProof(
+    func loadOrMigrateCleanupProof(
         _ header: WatchAudioHeader
     ) throws -> WatchAudioCleanupProof? {
         try begin(header)
@@ -369,7 +347,10 @@ extension WatchAudioArchive {
                   value.sha256 == expected.sha256 else { throw WatchAudioError.conflict }
             retained.append(url)
         }
-        for url in retained { try files.removeItem(at: url) }
+        for url in retained {
+            try files.removeItem(at: url)
+            chunkRanges.remove(url)
+        }
     }
 
     private func contentDigest(

@@ -12,7 +12,9 @@ extension PhoneWatchExperimentCoordinator {
         var savedIDs: Set<UUID> = []
         for record in detail.records {
             if let saved = savedMedia(record) {
-                _ = try publishRecord(saved, experimentID: experimentID)
+                _ = try publishRecord(
+                    saved, experimentID: experimentID, restoringRecord: true
+                )
                 savedIDs.insert(record.id)
             }
         }
