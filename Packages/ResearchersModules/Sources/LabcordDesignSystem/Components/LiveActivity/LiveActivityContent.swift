@@ -3,6 +3,7 @@ import SwiftUI
 public struct LiveActivityContent: View {
     public enum State: Sendable {
         case audioRecording(transcript: String)
+        case watchAudioRecording
         case videoRecording(elapsed: String, progress: Double)
         case audioError(message: String)
         case audioResult(transcript: String, isSaving: Bool, progress: Double)
@@ -88,6 +89,13 @@ public struct LiveActivityContent: View {
                 lines: 4,
                 truncationMode: .head
             )
+        case .watchAudioRecording:
+            textGroup(
+                title: "녹음 중",
+                message: "Apple Watch에서 녹음 중입니다.",
+                style: Typography.subheadline,
+                lines: 4
+            )
         case let .videoRecording(elapsed, _):
             VStack(alignment: .leading, spacing: LayoutTokens.spacing2) {
                 HStack(spacing: 0) {
@@ -150,6 +158,10 @@ public struct LiveActivityContent: View {
         switch state {
         case .audioRecording:
             LiveActivityControlButton(kind: .audioStop, action: onStop)
+        case .watchAudioRecording:
+            Image(systemName: "applewatch")
+                .foregroundStyle(Color(.General.Label.light))
+                .accessibilityHidden(true)
         case let .videoRecording(_, progress):
             LiveActivityControlButton(
                 kind: isVideoStopComplete ? .videoStopComplete : .videoStopInProgress,
