@@ -170,6 +170,8 @@ extension PhoneWatchExperimentCoordinator {
     }
 
     func clearDebugOpenSessionRequest() {
+        pendingWatchEntry = nil
+        presentWatchExperimentID = nil
         reconcileLatestSessionOpenRequest()
         if let requestID = storedOpenRequest()?.request.requestID {
             finishOpenSession(requestID, error: .staleRevision)
@@ -216,15 +218,37 @@ extension PhoneWatchExperimentCoordinator {
         }
     }
 
+    public func pendingWatchEntryID() -> UUID? {
+        guard let entry = pendingWatchEntry else { return nil }
+        guard entry.isLive(at: .now), entry.epoch == nil || entry.epoch == stateEpoch else {
+            pendingWatchEntry = nil
+            return nil
+        }
+        return entry.experimentID
+    }
+
+    public func consumeWatchEntry(_ experimentID: UUID) {
+        if pendingWatchEntry?.experimentID == experimentID { pendingWatchEntry = nil }
+    }
+
     private func receiveWatchPresence(_ request: WatchSessionOpenRequest) {
         guard request.epoch == nil || request.epoch == stateEpoch,
               request.isLive(at: .now),
               latestWatchPresenceAt.map({ request.requestedAt > $0 }) ?? true else { return }
         latestWatchPresenceAt = request.requestedAt
         if request.action == .enteredExperiment {
-            commandSubscriber?.yield(.watchEnteredExperiment(request.experimentID))
+            let isNewEntry = presentWatchExperimentID != request.experimentID
+            presentWatchExperimentID = request.experimentID
+            pendingWatchEntry = request
+            if isNewEntry {
+                commandSubscriber?.yield(.watchEnteredExperiment(request.experimentID))
+            } else {
+                commandSubscriber?.yield(.openSessionRequested)
+            }
             return
         }
+        if presentWatchExperimentID == request.experimentID { presentWatchExperimentID = nil }
+        consumeWatchEntry(request.experimentID)
         guard currentScreen.destination == .experiment,
               currentScreen.experimentID == request.experimentID,
               (try? client.watchState(request.experimentID)?.experiment.status) == .running
