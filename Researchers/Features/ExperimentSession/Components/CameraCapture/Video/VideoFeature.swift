@@ -58,7 +58,7 @@ struct VideoFeature {
         case saveFailed(UUID, String)
         case saveErrorDismissed
         case cancelCleanupFailed(String)
-        case cancelCleanupFinished(UUID)
+        case cancelCleanupFinished(UUID, confirmed: Bool)
         case cancelRequested
         case errorDismissed
         case delegate(Delegate)
@@ -222,6 +222,7 @@ struct VideoFeature {
                     .cancel(id: CancelID.save),
                     .run { send in
                         await cameraSessionClient.cancelVideoRecordingForSession(sessionID)
+                        var confirmed = true
                         if let videoURL {
                             if let savingRecordID {
                                 do {
@@ -229,6 +230,7 @@ struct VideoFeature {
                                         experimentID, savingRecordID, videoURL
                                     )
                                 } catch {
+                                    confirmed = false
                                     await send(.cancelCleanupFailed(error.localizedDescription))
                                 }
                             } else {
@@ -236,7 +238,9 @@ struct VideoFeature {
                             }
                         }
                         if let cancelledRecordID {
-                            await send(.cancelCleanupFinished(cancelledRecordID))
+                            await send(.cancelCleanupFinished(
+                                cancelledRecordID, confirmed: confirmed
+                            ))
                         }
                     }
                 )
@@ -333,7 +337,7 @@ private extension VideoFeature {
             .run { send in
                 await cameraSessionClient.discardVideo(url)
                 if let discardedRecordID {
-                    await send(.cancelCleanupFinished(discardedRecordID))
+                    await send(.cancelCleanupFinished(discardedRecordID, confirmed: true))
                 }
             }
         )

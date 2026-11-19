@@ -170,7 +170,12 @@ private extension ExperimentSessionFeature {
                 if !state.isReady {
                     state.permissionRequestGeneration += 1
                 }
-                return .send(.capture(.camera(.resumeIfNeeded)))
+                let resumeCamera: Effect<Action> = .send(.capture(.camera(.resumeIfNeeded)))
+                if let deadline = state.capture.photo.autoSaveEndsAt, deadline <= now,
+                   let id = state.capture.photo.recordID {
+                    return .merge(resumeCamera, .send(.capture(.photo(.autoSaveElapsed(id)))))
+                }
+                return resumeCamera
             case .appEnteredBackground:
                 return .send(.capture(.camera(.appEnteredBackground)))
             case .setupLeaveTapped:
@@ -317,7 +322,7 @@ private extension ExperimentSessionFeature {
                 guard !state.isPausePresented, state.watchCommand == nil, !state.isRemotePreview,
                       !PhoneWatchAudioService.shared.hasUnsettledRecording(in: state.experimentID)
                 else {
-                    guard let id, state.capture.photo.requiresExternalConfirmation else {
+                    guard let id, state.capture.photo.isWatchCapture else {
                         return .none
                     }
                     return .send(.capture(.photo(.captureFailed(id, "촬영을 시작할 수 없어요."))))
@@ -355,10 +360,17 @@ private extension ExperimentSessionFeature {
             return handleVoiceGesture(detectedAt, state: &state)
 
         case let .threeFingersHeld(detectedAt):
-            guard !state.capture.isPhotoCaptureScheduled,
-                  !state.capture.isCapturingPhoto,
-                  detectedAt.timeIntervalSinceNow > -0.5 else { return .none }
-            return .send(.videoStartRequested)
+            return handleVideoGesture(detectedAt, state: state)
+        }
+    }
+
+    func handleVideoGesture(_ detectedAt: Date, state: State) -> Effect<Action> {
+        guard !state.capture.isPhotoCaptureScheduled, !state.capture.isCapturingPhoto,
+              detectedAt.timeIntervalSinceNow > -0.5 else { return .none }
+        switch state.capture.videoPhase {
+        case .idle: return .send(.videoStartRequested)
+        case .starting, .recording: return .send(.capture(.video(.stopRequested)))
+        case .preview: return .none
         }
     }
 

@@ -114,7 +114,7 @@ struct ExperimentStartView: View {
             if phase == .experiment { onExperimentStarted() }
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase != .active { store.send(.becameInactive) }
+            if phase == .background { store.send(.enteredBackground) }
         }
         .onDisappear { store.send(.disappeared) }
     }

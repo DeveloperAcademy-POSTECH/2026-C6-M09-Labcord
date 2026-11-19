@@ -34,7 +34,7 @@ struct ExperimentStartFeature {
         case permissionRecheckTapped
         case countdownTick
         case openFinished(UUID, WatchExperimentError?)
-        case becameInactive
+        case enteredBackground
         case disappeared
     }
 
@@ -151,9 +151,9 @@ struct ExperimentStartFeature {
                 state.phase = .experiment
                 return .none
 
-            case .becameInactive:
+            case .enteredBackground:
                 switch state.phase {
-                case .checkingActiveExperiment, .countdown, .waitingForPhone:
+                case .checkingActiveExperiment, .countdown:
                     return leaveStart(&state)
                 default:
                     return .none

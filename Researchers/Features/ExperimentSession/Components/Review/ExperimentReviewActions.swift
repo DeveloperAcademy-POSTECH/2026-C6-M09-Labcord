@@ -3,29 +3,27 @@ import LabcordiOS
 import SwiftUI
 
 struct ExperimentReviewActions: View {
-    @State private var remainingSeconds = 3
+    @State private var defaultDeadline: Date?
 
     let retakeLabel: String
     let isSaving: Bool
     let showsAutoSaveNotice: Bool
+    var autoSaveEndsAt: Date?
     let onRetake: () -> Void
     let onSave: () -> Void
 
     var body: some View {
         VStack(alignment: .trailing, spacing: 12) {
-            if showsAutoSaveNotice {
-                StatusPill("\(remainingSeconds)초 후 자동 저장돼요", showIcon: false)
-                    .task {
-                        remainingSeconds = 3
-                        for seconds in stride(from: 2, through: 1, by: -1) {
-                            do {
-                                try await Task.sleep(for: .seconds(1))
-                                remainingSeconds = seconds
-                            } catch {
-                                return
-                            }
+            if showsAutoSaveNotice, !isSaving {
+                TimelineView(.periodic(from: .now, by: 0.25)) { context in
+                    if let end = autoSaveEndsAt ?? defaultDeadline {
+                        let seconds = Int(ceil(end.timeIntervalSince(context.date)))
+                        if seconds > 0 {
+                            StatusPill("\(seconds)초 후 자동 저장돼요", showIcon: false)
                         }
                     }
+                }
+                .onAppear { defaultDeadline = .now.addingTimeInterval(3) }
             }
 
             HStack(spacing: 12) {
