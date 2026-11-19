@@ -53,15 +53,28 @@ public struct ProgressRing: View {
                     .typography(Typography.title2Bold)
                     .foregroundStyle(Color(.General.Label.light))
             } else if showPercentage {
-                Text("\(Int((progress * 100).rounded()))%")
-                    .typography(Typography.title2Bold)
-                    .foregroundStyle(labelColor)
+                percentageLabel
             }
         }
         .frame(width: diameter, height: diameter)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("진행률")
-        .accessibilityValue(centerText ?? "\(Int((progress * 100).rounded()))%")
+        .accessibilityValue(centerText ?? "\(percentage)%")
+    }
+
+    private var percentageLabel: some View {
+        HStack(spacing: 0) {
+            Text("\(percentage)")
+                .contentTransition(.numericText(value: Double(percentage)))
+            Text("%")
+        }
+        .typography(Typography.title2Bold)
+        .monospacedDigit()
+        .foregroundStyle(labelColor)
+    }
+
+    private var percentage: Int {
+        Int((progress * 100).rounded())
     }
 
     private var trackColor: Color {
