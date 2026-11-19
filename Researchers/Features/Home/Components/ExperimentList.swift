@@ -56,14 +56,6 @@ struct ExperimentList: View {
 }
 
 private extension ExperimentList {
-    func canDelete(_ entry: ExperimentListEntry) -> Bool {
-        #if DEBUG
-        !RecordingDemoSeeder.owns(entry.id)
-        #else
-        true
-        #endif
-    }
-
     func section(
         _ title: String,
         icon: Icon,
@@ -81,7 +73,7 @@ private extension ExperimentList {
                         store.send(.experimentTapped(entry.id))
                     }
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        if canDelete(entry) {
+                        if !RecordingDemoSeeder.owns(entry.id) {
                             Button("삭제", systemImage: "trash") {
                                 store.send(.deleteRequested(entry.id))
                             }

@@ -46,7 +46,6 @@ public actor ProtocolAnalysisJobManager {
         try await start(id: id, inputs: inputs, cached: [])
     }
 
-    #if DEBUG
     public func startCached(
         id: UUID,
         entries: [(input: ProtocolAnalysisJobInput, result: ProtocolAnalysisCachedResult)],
@@ -57,7 +56,6 @@ public actor ProtocolAnalysisJobManager {
             cacheSeconds: seconds
         )
     }
-    #endif
 
     private func start(
         id: UUID, inputs: [ProtocolAnalysisJobInput], cached: [ProtocolAnalysisCachedResult],
@@ -151,7 +149,6 @@ public actor ProtocolAnalysisJobManager {
         }
     }
 
-    #if DEBUG
     public func resetDebugData() async throws {
         if let id = record?.id { _ = stopExecution(id: id) }
         record = nil
@@ -162,7 +159,6 @@ public actor ProtocolAnalysisJobManager {
             try FileManager.default.removeItem(at: store.directory)
         }
     }
-    #endif
 
     public func enteredBackground() async {
         guard !backgroundAvailable, let id = record?.id,

@@ -1,4 +1,3 @@
-#if DEBUG
 import ComposableArchitecture
 import SwiftUI
 import UIKit
@@ -119,4 +118,3 @@ struct DebugMenuShortcut: UIViewRepresentable {
         }
     }
 }
-#endif

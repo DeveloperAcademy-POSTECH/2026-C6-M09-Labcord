@@ -1,4 +1,3 @@
-#if DEBUG
 import SwiftUI
 
 struct WatchDebugResetAction {
@@ -96,4 +95,3 @@ private struct WatchDebugShortcut {
         return true
     }
 }
-#endif

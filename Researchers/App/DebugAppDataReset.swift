@@ -1,4 +1,3 @@
-#if DEBUG
 import ActivityKit
 import ComposableArchitecture
 import Foundation
@@ -31,4 +30,3 @@ struct DebugAppDataReset {
         return "실험을 초기화했지만 일부 파일을 정리하지 못했어요. 다시 시도해 주세요. (\(items))"
     }
 }
-#endif

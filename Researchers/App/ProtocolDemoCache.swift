@@ -1,4 +1,3 @@
-#if DEBUG
 import CoreGraphics
 import CryptoKit
 import Foundation
@@ -165,4 +164,3 @@ private nonisolated struct ImageSignature: Codable, Sendable {
         return meanDifference < 4 && Double(visiblyDifferentCount) / Double(pixels.count) < 0.02
     }
 }
-#endif

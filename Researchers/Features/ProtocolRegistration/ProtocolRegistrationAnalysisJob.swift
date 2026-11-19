@@ -116,7 +116,6 @@ private extension ProtocolInputAnalysisFeature {
             try await jobManager.resume(id: id)
             return
         }
-        #if DEBUG
         @Shared(.appStorage("protocolDemoCacheEnabled")) var cacheEnabled = false
         @Shared(.appStorage("protocolDemoCacheSeconds")) var cacheSeconds = 15
         let duration = cacheSeconds
@@ -124,7 +123,6 @@ private extension ProtocolInputAnalysisFeature {
             try await jobManager.startCached(id: id, entries: entries, seconds: duration)
             return
         }
-        #endif
         try await jobManager.start(id: id, inputs: inputs)
     }
 
