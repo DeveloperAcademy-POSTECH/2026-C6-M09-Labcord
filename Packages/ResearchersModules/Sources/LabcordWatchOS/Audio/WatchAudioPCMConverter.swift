@@ -2,7 +2,6 @@ import AVFoundation
 import Foundation
 import LabcordShared
 
-/// 녹음 한 건의 첫 번째 마이크 채널을 v1 보관 포맷으로 변환합니다.
 final class WatchAudioPCMConverter {
     static let sampleRate = 16_000
 
@@ -71,7 +70,6 @@ final class WatchAudioPCMConverter {
                 return self.inputBuffer
             }
             guard status != .error, error == nil else { throw WatchAudioError.invalidAudio }
-            // Apple 기기의 네이티브 Int16은 v1 PCM과 같은 리틀 엔디언입니다.
             let byteCount = Int(outputBuffer.frameLength) * MemoryLayout<Int16>.stride
             pcm.append(contentsOf: UnsafeRawBufferPointer(
                 start: outputSamples, count: byteCount
