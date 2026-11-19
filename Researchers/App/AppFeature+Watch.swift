@@ -33,7 +33,7 @@ extension AppFeature {
                   state.screenNavigation == nil else {
                 return .none
             }
-            guard let request else { return .none }
+            guard let request else { return followWatchEntry(&state, coordinator: coordinator) }
             let experimentID = request.experimentID
             if let id = state.path.ids.last,
                let session = state.path[id: id, case: \.session],
@@ -50,8 +50,8 @@ extension AppFeature {
                 }
                 return .none
             }
-            guard canLeaveCurrentScreen(state), coordinator.canPrepareOpenSession(request)
-            else { return .none }
+            guard canPrepareWatchScreen(state, experimentID: experimentID),
+                  coordinator.canPrepareOpenSession(request) else { return .none }
             var session = ExperimentSessionFeature.State(experimentID: experimentID)
             if request.expiresAt != nil {
                 session.watchOpenRequestID = request.requestID
@@ -62,6 +62,36 @@ extension AppFeature {
             state.path.append(.session(session))
             return .send(.home(.list(.cancelLoad)))
         }
+    }
+
+    private func followWatchEntry(
+        _ state: inout State, coordinator: PhoneWatchExperimentCoordinator
+    ) -> Effect<Action> {
+        guard let experimentID = coordinator.pendingWatchEntryID() else { return .none }
+        if let id = state.path.ids.last,
+           let session = state.path[id: id, case: \.session],
+           session.experimentID == experimentID, !session.isRemotePreview {
+            coordinator.consumeWatchEntry(experimentID)
+            return .none
+        }
+        guard canPrepareWatchScreen(state, experimentID: experimentID) else { return .none }
+        guard (try? experimentClient.watchState(experimentID)?.experiment.status) == .running
+        else { return .none }
+        coordinator.consumeWatchEntry(experimentID)
+        state.path.removeAll()
+        state.path.append(.session(.init(experimentID: experimentID)))
+        guard let id = state.path.ids.last else { return .none }
+        return .merge(
+            .send(.home(.list(.cancelLoad))),
+            .send(.path(.element(id: id, action: .session(.watchConnected))))
+        )
+    }
+
+    private func canPrepareWatchScreen(_ state: State, experimentID: UUID) -> Bool {
+        guard Self.canLeaveLocalScreen(state) else { return false }
+        guard let id = state.path.ids.last else { return true }
+        if state.path[id: id, case: \.session]?.experimentID == experimentID { return true }
+        return !PhoneWatchAudioService.shared.hasUnsettledRecording()
     }
 
     var watchReducer: some Reducer<State, Action> {

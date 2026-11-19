@@ -82,7 +82,7 @@ private extension WatchConnectivitySession {
     ) async throws -> WatchExperimentResponse {
         let (responses, continuation) = backgroundResponses(for: command)
         let timeout = Task {
-            try? await Task.sleep(for: .seconds(30))
+            try? await Task.sleep(for: .seconds(10))
             if !Task.isCancelled { continuation?.yield(nil) }
         }
         defer {
