@@ -7,6 +7,7 @@ import Speech
 final class WatchAudioTranscriber {
     let header: WatchAudioHeader
     private let analyzer: SpeechAnalyzer
+    private let sourceFormat: AVAudioFormat
     private let input: AsyncStream<AnalyzerInput>.Continuation
     private let converter: AnalyzerInputConverter?
     private var analyzeTask: Task<Void, Error>?
@@ -47,27 +48,22 @@ final class WatchAudioTranscriber {
             context.contextualStrings[.general] = hints
             try await analyzer.setContext(context)
         }
-        guard let format = AVAudioFormat(
+        guard header.isValid, let sourceFormat = AVAudioFormat(
             commonFormat: .pcmFormatInt16, sampleRate: Double(header.sampleRate),
             channels: 1, interleaved: false
         ) else { throw WatchAudioError.invalidAudio }
-        let analyzerFormat = await SpeechAnalyzer.bestAvailableAudioFormat(
-            compatibleWith: [transcriber]
-        ) ?? format
+        guard let analyzerFormat = await SpeechAnalyzer.bestAvailableAudioFormat(
+            compatibleWith: [transcriber], considering: sourceFormat
+        ) else { throw WatchAudioError.recognitionUnavailable }
         try await analyzer.prepareToAnalyze(in: analyzerFormat)
-        let compatible = format.sampleRate == analyzerFormat.sampleRate
-            && format.channelCount == analyzerFormat.channelCount
-            && format.commonFormat == analyzerFormat.commonFormat
-            && format.isInterleaved == analyzerFormat.isInterleaved
-        let converter = compatible ? nil : try await AnalyzerInputConverter.converter(
-            compatibleWith: [transcriber]
-        )
         try Task.checkCancellation()
         let (stream, input) = AsyncStream<AnalyzerInput>.makeStream()
         self.header = header
         self.analyzer = analyzer
+        self.sourceFormat = sourceFormat
         self.input = input
-        self.converter = converter
+        self.converter = sourceFormat == analyzerFormat
+            ? nil : AnalyzerInputConverter(analyzerFormat: analyzerFormat)
         self.emit = emit
         self.termMatcher = SpeechTermMatcher(replacements: replacements)
         self.unitNormalizer = normalizer
@@ -82,11 +78,8 @@ final class WatchAudioTranscriber {
     func append(_ chunk: WatchAudioChunk) throws {
         if case let .failure(error) = terminal { throw error }
         guard chunk.header == header, chunk.firstSample == throughSample, terminal == nil,
-              let format = AVAudioFormat(
-                commonFormat: .pcmFormatInt16, sampleRate: Double(header.sampleRate),
-                channels: 1, interleaved: false
-              ), let buffer = AVAudioPCMBuffer(
-                pcmFormat: format, frameCapacity: AVAudioFrameCount(chunk.sampleCount)
+              let buffer = AVAudioPCMBuffer(
+                pcmFormat: sourceFormat, frameCapacity: AVAudioFrameCount(chunk.sampleCount)
               ), let samples = buffer.int16ChannelData?[0] else {
             throw WatchAudioError.invalidAudio
         }
@@ -104,6 +97,15 @@ final class WatchAudioTranscriber {
 
     func finish() async throws -> String {
         if let terminal { return try terminal.get() }
+        do {
+            if let converter {
+                for item in try converter.flush() { input.yield(item) }
+            }
+        } catch {
+            complete(.failure(error))
+            stopTasks()
+            throw error
+        }
         input.finish()
         return try await withCheckedThrowingContinuation { continuation in
             waiter = continuation
