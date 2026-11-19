@@ -175,6 +175,22 @@ public final class WatchAudioTransferClient {
 }
 
 extension WatchAudioTransferClient {
+    public func retryRecognition(_ header: WatchAudioHeader) async throws {
+        try checkCancellation(header)
+        let receipt = try await archive.statusIfPresent(header)
+        guard let manifest = receipt.manifest else { throw WatchAudioError.incomplete }
+        try checkCancellation(header)
+        do {
+            _ = try await request(.finish(manifest), for: header)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            try checkCancellation(header)
+            guard WatchConnectivityState(.default).canTransfer else { throw error }
+            enqueueBackgroundControl(.finish(manifest))
+        }
+    }
+
     private func enqueueBackground(_ header: WatchAudioHeader) async throws {
         guard WatchConnectivityState(.default).canTransfer else { return }
         if isCancellationPending(header) {
@@ -188,7 +204,8 @@ extension WatchAudioTransferClient {
         guard local.savedRecordID == nil, !local.isCancelled,
               remote?.isSavedAcknowledgement != true,
               !isCancellationPending(header) else { return }
-        if await hasPendingConfirmation(header), !isCancellationPending(header) {
+        if remote?.failure != .recognitionUnavailable,
+           await hasPendingConfirmation(header), !isCancellationPending(header) {
             enqueueBackgroundControl(.confirm(header))
         }
         guard let manifest = local.manifest, !local.receivedSequences.isEmpty else { return }
@@ -305,7 +322,8 @@ extension WatchAudioTransferClient {
             try checkCancellation(header)
             remote = try await request(.finish(manifest), for: header)
         }
-        if await hasPendingConfirmation(header), !remote.isCancelled, remote.savedRecordID == nil {
+        if remote.failure != .recognitionUnavailable,
+           await hasPendingConfirmation(header), !remote.isCancelled, remote.savedRecordID == nil {
             _ = try await confirm(header)
         }
         lastDeliveryError = nil

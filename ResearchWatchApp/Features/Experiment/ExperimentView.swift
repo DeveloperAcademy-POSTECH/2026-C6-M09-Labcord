@@ -16,13 +16,15 @@ struct ExperimentView: View {
     let onCompleted: () -> Void
     @State private var store: StoreOf<ExperimentFeature>
     @State private var selectedPage = 1
-    @Binding var isVoiceRecordPresented: Bool
+    @Binding var voiceRecording: StoreOf<VoiceRecordFeature>?
+    @State private var lastVoiceDismissal: ContinuousClock.Instant?
     @Binding var photoRecording: StoreOf<PhotoRecordFeature>?
     @Binding var phoneScreen: WatchScreenSnapshot?
     @State private var videoRecording: StoreOf<VideoRecordFeature>?
     @State private var isTimerPresetPresented = false
     @State private var isAddTimerPresented = false
 
+    private var isVoiceRecordPresented: Bool { voiceRecording != nil }
     private var isPhotoRecordPresented: Bool { photoRecording != nil }
     private var isVideoRecordPresented: Bool { videoRecording != nil }
 
@@ -50,7 +52,7 @@ struct ExperimentView: View {
 
     init(
         experiment: WatchExperimentSummary,
-        isVoiceRecordPresented: Binding<Bool>,
+        voiceRecording: Binding<StoreOf<VoiceRecordFeature>?>,
         photoRecording: Binding<StoreOf<PhotoRecordFeature>?>,
         phoneScreen: Binding<WatchScreenSnapshot?>,
         onNavigationBlockedChanged: @escaping (Bool) -> Void = { _ in },
@@ -61,7 +63,7 @@ struct ExperimentView: View {
         self.onNavigationBlockedChanged = onNavigationBlockedChanged
         self.onPaused = onPaused
         self.onCompleted = onCompleted
-        _isVoiceRecordPresented = isVoiceRecordPresented
+        _voiceRecording = voiceRecording
         _photoRecording = photoRecording
         _phoneScreen = phoneScreen
         _store = State(initialValue: Store(
@@ -82,7 +84,7 @@ struct ExperimentView: View {
 
             TabView(selection: $selectedPage) {
                 ExperimentRecordView(title: store.snapshot?.experiment.title ?? experiment.title) {
-                    isVoiceRecordPresented = true
+                    openVoiceRecording()
                 } onPhotoRecordTap: {
                     openPhotoRecording()
                 } onVideoRecordTap: {
@@ -210,9 +212,15 @@ struct ExperimentView: View {
         } message: {
             Text(store.errorMessage ?? "")
         }
-        .sheet(isPresented: $isVoiceRecordPresented) {
+        .onChange(of: isVoiceRecordPresented) { wasPresented, isPresented in
+            if wasPresented && !isPresented {
+                lastVoiceDismissal = .now
+                WatchRecordingShortcutCenter.shared.dismissVoice(in: experiment.id)
+            }
+        }
+        .sheet(item: $voiceRecording) { recording in
             NavigationStack {
-                VoiceRecordView(experimentID: experiment.id)
+                VoiceRecordView(store: recording, presentedRecording: $voiceRecording)
             }
             .modifier(WatchDebugMenuModifier())
             .presentationBackground(.black)
@@ -254,6 +262,14 @@ private extension ExperimentView {
         photo.send(.openRequested)
     }
 
+    func openVoiceRecording(resumePending: Bool = true) {
+        guard voiceRecording == nil else { return }
+        let state = VoiceRecordFeature.State(experimentID: experiment.id)
+        let recording = Store(initialState: state) { VoiceRecordFeature() }
+        voiceRecording = recording
+        recording.send(.openRequested(resumePending: resumePending))
+    }
+
     /// 타이머를 시작한 하위 화면을 모두 닫고 타이머 탭에서 실행 중인 타이머를 보여 줍니다.
     func returnToTimerList() {
         selectedPage = 2
@@ -279,9 +295,14 @@ private extension ExperimentView {
             shortcutLogger.info("Shortcut ignored: another record or overlay is presented")
             return false
         }
+        if shortcut == .voice, let lastVoiceDismissal,
+           lastVoiceDismissal.duration(to: .now) < .seconds(2) {
+            shortcutLogger.info("Voice shortcut ignored: recently dismissed")
+            return true
+        }
         shortcutLogger.info("Shortcut opens \(String(describing: shortcut), privacy: .public)")
         switch shortcut {
-        case .voice: isVoiceRecordPresented = true
+        case .voice: openVoiceRecording(resumePending: false)
         case .photo: openPhotoRecording()
         case .video: openVideoRecording()
         }
@@ -296,7 +317,7 @@ private extension ExperimentView {
             title: "새 실험(1)",
             status: .running
         ),
-        isVoiceRecordPresented: .constant(false), photoRecording: .constant(nil),
+        voiceRecording: .constant(nil), photoRecording: .constant(nil),
         phoneScreen: .constant(nil),
         onPaused: {}, onCompleted: {}
     )

@@ -16,6 +16,7 @@ struct ExperimentPauseControlsView: View {
                     .foregroundStyle(Color("Experiment/Label/Primary"))
             }
             .buttonStyle(.labcordIcon(.neutral, size: .large))
+            .disabled(store.isSavingWatchAudio)
             .background(
                 VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
             )
@@ -28,7 +29,7 @@ struct ExperimentPauseControlsView: View {
                     .foregroundStyle(Color("Experiment/Label/Primary"))
             }
             .buttonStyle(.labcord(.plain, size: .medium))
-            .disabled(!canCloseSession)
+            .disabled(!canCloseSession || store.isSavingWatchAudio)
 
             Spacer()
 
@@ -40,7 +41,7 @@ struct ExperimentPauseControlsView: View {
             ) {
                 store.send(.stopTapped)
             }
-            .disabled(!canCloseSession)
+            .disabled(store.isCompleting || store.isSavingWatchAudio)
         }
     }
 }

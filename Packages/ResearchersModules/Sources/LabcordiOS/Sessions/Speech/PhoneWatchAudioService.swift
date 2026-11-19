@@ -34,6 +34,11 @@ public final class PhoneWatchAudioService {
         !hasScannedInbox || screenState.hasUnsettledRecording(in: experimentID)
     }
 
+    public func isCapturing(in experimentID: UUID, at now: Date = .now) -> Bool {
+        guard let liveRecording else { return false }
+        return liveRecording.experimentID == experimentID && liveRecording.expiresAt > now
+    }
+
     func requireSettledRecording(in experimentID: UUID) throws {
         guard !hasUnsettledRecording(in: experimentID) else {
             throw WatchExperimentError.phoneBusy
@@ -302,6 +307,27 @@ private extension PhoneWatchAudioService {
 }
 
 extension PhoneWatchAudioService {
+    public func canSaveReviewedRecordings(in experimentID: UUID) -> Bool {
+        latest.values.contains { isReviewedRecording($0, in: experimentID) }
+    }
+
+    public func saveReviewedRecordings(in experimentID: UUID) async throws {
+        for receipt in latest.values.filter({ isReviewedRecording($0, in: experimentID) }) {
+            let command = WatchExperimentCommand(
+                operation: .confirmRecord, experimentID: experimentID,
+                targetID: receipt.header.recordingID, recordKind: .audio
+            )
+            let response = try await handleRecordCommand(command)
+            guard response.record?.phase == .saved else { throw WatchAudioError.incomplete }
+        }
+    }
+
+    private func isReviewedRecording(_ receipt: WatchAudioReceipt, in experimentID: UUID) -> Bool {
+        receipt.header.experimentID == experimentID && receipt.isReviewing
+            && receipt.transcript?.isFinal == true && receipt.failure == nil
+            && !receipt.isCancelled && receipt.savedRecordID == nil
+    }
+
     public func dismissFinishedScreenRecording() {
         screenState.dismissFinishedRecording()
     }

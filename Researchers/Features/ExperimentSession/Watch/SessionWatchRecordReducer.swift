@@ -2,6 +2,9 @@ import ComposableArchitecture
 import Foundation
 import LabcordiOS
 import LabcordShared
+import OSLog
+
+private let remoteCaptureLog = Logger(subsystem: "Labcord", category: "Capture")
 
 extension ExperimentSessionFeature {
     var watchRecordReducer: some Reducer<State, Action> {
@@ -33,6 +36,18 @@ extension ExperimentSessionFeature {
                 case .startTimer, .pauseTimer, .resumeTimer, .deleteTimer:
                     return .send(.timer(.watchCommand(command)))
                 case .takePhoto, .startVideo, .stopVideo, .confirmRecord, .cancelRecord:
+                    let startsCapture = command.operation == .takePhoto
+                        || command.operation == .startVideo
+                    if startsCapture, let blocker = captureStartBlocker(state) {
+                        remoteCaptureLog.notice("""
+                            Watch capture blocked id=\(command.requestID, privacy: .public) \
+                            reason=\(blocker, privacy: .public)
+                            """)
+                        state.watchMediaCommand = nil
+                        return .send(.watchRecordResponse(.init(
+                            requestID: command.requestID, phase: .failed, error: .phoneBusy
+                        )))
+                    }
                     guard state.voice.phase == .hidden else {
                         state.watchMediaCommand = nil
                         return .send(.watchRecordResponse(.init(
@@ -65,5 +80,16 @@ extension ExperimentSessionFeature {
                 return .none
             }
         }
+    }
+
+    func captureStartBlocker(_ state: State) -> String? {
+        if state.isPausePresented { return "paused" }
+        if state.isReturningHome || state.watchCommand != nil { return "sessionCommand" }
+        if state.isRemotePreview { return "remotePreview" }
+        if state.voice.phase != .hidden { return "phoneVoice" }
+        if PhoneWatchAudioService.shared.isCapturing(in: state.experimentID, at: now) {
+            return "watchVoiceCapturing"
+        }
+        return nil
     }
 }

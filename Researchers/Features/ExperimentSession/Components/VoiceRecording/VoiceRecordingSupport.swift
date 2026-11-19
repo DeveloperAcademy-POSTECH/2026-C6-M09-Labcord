@@ -144,9 +144,9 @@ extension VoiceRecordingFeature {
 
 extension ExperimentSessionFeature {
     func prepareVoiceRecording(state: inout State) -> Effect<Action> {
-        guard state.watchCommand == nil, !state.isRemotePreview,
-              !PhoneWatchAudioService.shared.hasUnsettledRecording(in: state.experimentID)
-        else { return .none }
+        guard captureStartBlocker(state) == nil, state.watchMediaCommand == nil else {
+            return .none
+        }
         guard state.detail != nil else {
             if state.isLoadingDetail {
                 state.voice.errorMessage = "실험 정보를 불러오고 있어요. 잠시 후 다시 시도해 주세요."
@@ -157,7 +157,7 @@ extension ExperimentSessionFeature {
         }
         guard state.voice.phase == .hidden,
               state.capture.isCameraViewVisible,
-              !state.capture.isCapturingPhoto,
+              state.capture.photo.watchCaptureID == nil, !state.capture.isCapturingPhoto,
               state.capture.capturedPhotoData == nil,
               state.capture.videoPhase == .idle else { return .none }
         return .merge(

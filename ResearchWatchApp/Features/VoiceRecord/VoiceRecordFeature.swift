@@ -6,13 +6,14 @@ import LabcordWatchOS
 @Reducer
 struct VoiceRecordFeature {
     enum Phase: Equatable {
-        case starting, recording, awaitingTransfer, transcribing, transcript, saving, saved, failed
+        case checkingPending, starting, recording, awaitingTransfer, transcribing
+        case transcript, saving, saved, failed
     }
 
     @ObservableState
     struct State: Equatable {
         let experimentID: UUID
-        var phase: Phase = .starting
+        var phase: Phase = .checkingPending
         var recordingID = UUID()
         var header: WatchAudioHeader?
         var isVoiceDetected = false
@@ -20,7 +21,7 @@ struct VoiceRecordFeature {
         var transcript = ""
         var errorMessage: String?
         var deliveryNotice: String?
-        var receivedChunkCount = 0
+        var transferSize: WatchAudioTransferSize?
         var latestReceipt: WatchAudioReceipt?
         var isConfirming = false
         var autoSaveSeconds = 3
@@ -29,14 +30,14 @@ struct VoiceRecordFeature {
     }
 
     enum Action {
-        case appeared, disappeared, dismissTapped, finishTapped, retryTapped, rerecordTapped
+        case openRequested(resumePending: Bool), finishRequested(playsFeedback: Bool)
+        case disappeared, dismissTapped, retryTapped, rerecordTapped
         case saveTapped, cancelTapped, autoSaveTick(UUID), deliveryDelayed(Phase)
-        case started(WatchAudioHeader)
-        case resume(WatchAudioHeader)
+        case started(WatchAudioHeader), resume(WatchAudioHeader)
         case captureEvent(UUID, WatchAudioCaptureEvent)
         case voiceSilenceElapsed
         case delivery(WatchAudioDeliveryEvent)
-        case prepared(UUID, confirming: Bool, WatchAudioReceipt?)
+        case prepared(UUID, WatchVoiceRecordingService.DeliveryState)
         case failed(UUID, WatchAudioError)
     }
 
@@ -47,7 +48,7 @@ struct VoiceRecordFeature {
     var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
-            case .appeared:
+            case let .openRequested(resumePending):
                 guard !state.isPresented, !state.shouldDismiss else { return .none }
                 state.isPresented = true
                 let experimentID = state.experimentID
@@ -56,10 +57,11 @@ struct VoiceRecordFeature {
                     observeDelivery(),
                     .run { send in
                         do {
-                            if let header = try await WatchVoiceRecordingService.shared
-                                .pendingRecording(in: experimentID) {
+                            if resumePending, let header = try await WatchVoiceRecordingService
+                                .shared.pendingRecording(in: experimentID) {
                                 await send(.resume(header))
                             } else {
+                                try Task.checkCancellation()
                                 try await Self.capture(experimentID, recordingID, send: send)
                             }
                         } catch is CancellationError {
@@ -72,14 +74,15 @@ struct VoiceRecordFeature {
                 )
 
             case let .resume(header):
-                guard state.isPresented, state.phase == .starting else { return .none }
+                guard state.isPresented, state.phase == .checkingPending else { return .none }
                 state.recordingID = header.recordingID
                 state.header = header
                 return prepareDelivery(state: &state)
 
             case let .started(header):
-                guard state.isPresented, state.phase == .starting,
-                      state.recordingID == header.recordingID else { return .none }
+                guard state.isPresented, state.recordingID == header.recordingID,
+                      state.phase == .checkingPending || state.phase == .starting
+                else { return .none }
                 state.header = header
                 state.phase = .recording
                 return .none
@@ -103,20 +106,20 @@ struct VoiceRecordFeature {
                 state.isVoiceDetected = false
                 state.isVoiceReleasePending = false
                 return .none
-
-            case .finishTapped:
+            case let .finishRequested(playsFeedback):
                 guard state.isPresented, state.phase == .recording else { return .none }
-                return prepareDelivery(state: &state)
+                return prepareDelivery(state: &state, playsStopFeedback: playsFeedback)
 
-            case let .prepared(id, confirming, receipt):
+            case let .prepared(id, delivery):
                 guard state.isPresented, state.recordingID == id, state.phase != .saved else {
                     return .none
                 }
-                if confirming {
+                state.transferSize = delivery.size ?? state.transferSize
+                if delivery.isConfirming {
                     state.isConfirming = true
                     if state.phase != .failed { state.phase = .saving }
                 }
-                guard let receipt else { return .none }
+                guard let receipt = delivery.receipt else { return .none }
                 return handleReceipt(receipt, state: &state)
 
             case let .delivery(event):
@@ -153,8 +156,9 @@ struct VoiceRecordFeature {
                 return confirm(header, state: &state)
 
             case .rerecordTapped:
-                guard state.isPresented, state.phase == .transcript,
-                      let header = state.header else { return .none }
+                guard state.isPresented, let header = state.header else { return .none }
+                if state.phase == .failed { return restartCapture(state: &state) }
+                guard state.phase == .transcript else { return .none }
                 WatchVoiceRecordingService.shared.cancelInBackground(
                     header, recordingID: header.recordingID
                 )
@@ -163,6 +167,10 @@ struct VoiceRecordFeature {
             case .retryTapped:
                 guard state.isPresented else { return .none }
                 state.deliveryNotice = nil
+                if state.phase == .failed, state.latestReceipt?.failure == .recognitionUnavailable,
+                   let header = state.header {
+                    return retryRecognition(header, state: &state)
+                }
                 if state.isConfirming, let header = state.header {
                     return confirm(header, state: &state)
                 }
@@ -174,7 +182,8 @@ struct VoiceRecordFeature {
                 return .none
 
             case let .failed(id, error):
-                guard state.isPresented, state.recordingID == id, state.phase != .saved else {
+                guard state.isPresented, state.recordingID == id,
+                      state.phase != .saved, state.phase != .transcript else {
                     return .none
                 }
                 state.phase = .failed
@@ -192,10 +201,7 @@ struct VoiceRecordFeature {
                 } else {
                     WatchVoiceRecordingService.shared.dismiss(recordingID: state.recordingID)
                 }
-                switch action {
-                case .disappeared: break
-                default: state.shouldDismiss = true
-                }
+                state.shouldDismiss = true
                 return .merge(
                     .cancel(id: CancelID.capture),
                     .cancel(id: CancelID.delivery),
@@ -207,7 +213,6 @@ struct VoiceRecordFeature {
         }
     }
 }
-
 private extension VoiceRecordFeature {
     static func capture(_ experimentID: UUID, _ recordingID: UUID, send: Send<Action>)
         async throws {
@@ -231,9 +236,12 @@ private extension VoiceRecordFeature {
     func restartCapture(state: inout State) -> Effect<Action> {
         let experimentID = state.experimentID
         let recordingID = UUID()
-        state = State(experimentID: experimentID, recordingID: recordingID, isPresented: true)
+        state = State(
+            experimentID: experimentID, phase: .starting,
+            recordingID: recordingID, isPresented: true
+        )
         return .merge(
-            .cancel(id: CancelID.autoSave),
+            .cancel(id: CancelID.autoSave), .cancel(id: CancelID.prepare),
             .run { send in
                 do {
                     try await Self.capture(experimentID, recordingID, send: send)
@@ -263,6 +271,21 @@ private extension VoiceRecordFeature {
         .cancellable(id: CancelID.voiceRelease)
     }
 
+    func retryRecognition(_ header: WatchAudioHeader, state: inout State) -> Effect<Action> {
+        state.phase = state.isConfirming ? .saving : .transcribing
+        state.errorMessage = nil
+        return .run { send in
+            do {
+                try await WatchVoiceRecordingService.shared.retryRecognition(header)
+            } catch is CancellationError {
+                return
+            } catch {
+                await send(.failed(header.recordingID, Self.audioError(error)))
+            }
+        }
+        .cancellable(id: CancelID.prepare, cancelInFlight: true)
+    }
+
     func confirm(_ header: WatchAudioHeader, state: inout State) -> Effect<Action> {
         state.phase = .saving
         state.isConfirming = true
@@ -280,7 +303,9 @@ private extension VoiceRecordFeature {
         )
     }
 
-    func prepareDelivery(state: inout State) -> Effect<Action> {
+    func prepareDelivery(
+        state: inout State, playsStopFeedback: Bool = false
+    ) -> Effect<Action> {
         guard let header = state.header else { return .none }
         state.phase = state.isConfirming ? .saving : .awaitingTransfer
         state.isVoiceDetected = false
@@ -291,10 +316,9 @@ private extension VoiceRecordFeature {
             .run { send in
                 do {
                     let service = await WatchVoiceRecordingService.shared
-                    try await service.stopAndQueue(header)
+                    try await service.stopAndQueue(header, playsStopFeedback: playsStopFeedback)
                     let delivery = try await service.deliveryState(for: header)
-                    await send(.prepared(header.recordingID, confirming: delivery.isConfirming,
-                                         delivery.receipt))
+                    await send(.prepared(header.recordingID, delivery))
                 } catch is CancellationError {
                     return
                 } catch {
@@ -309,7 +333,7 @@ private extension VoiceRecordFeature {
         guard state.header == receipt.header, state.phase != .recording,
               state.phase != .starting else { return .none }
         if let previous = state.latestReceipt, !receipt.canReplace(previous) { return .none }
-        state.latestReceipt = receipt
+        defer { state.latestReceipt = receipt }
         if receipt.isSavedAcknowledgement {
             state.phase = .saved
             state.deliveryNotice = nil
@@ -324,15 +348,10 @@ private extension VoiceRecordFeature {
             state.errorMessage = Self.message(for: failure)
             return .cancel(id: CancelID.autoSave)
         }
-        updateProgress(receipt.receivedSequences.count, state: &state)
+        updateTransfer(receipt, state: &state)
         if state.isConfirming {
             state.phase = .saving
             return .none
-        }
-        if state.phase == .awaitingTransfer || state.phase == .failed,
-           let manifest = receipt.manifest,
-           receipt.receivedSequences.elementsEqual(0..<manifest.chunkCount) {
-            state.phase = .transcribing
         }
         guard receipt.isReviewing, let transcript = receipt.transcript, transcript.isFinal else {
             return .none
@@ -352,10 +371,16 @@ private extension VoiceRecordFeature {
         .cancellable(id: CancelID.autoSave, cancelInFlight: true)
     }
 
-    func updateProgress(_ count: Int, state: inout State) {
-        guard count > state.receivedChunkCount else { return }
-        state.receivedChunkCount = count
-        state.deliveryNotice = nil
+    func updateTransfer(_ receipt: WatchAudioReceipt, state: inout State) {
+        let received = Set(receipt.receivedSequences)
+        let previous = Set(state.latestReceipt?.receivedSequences ?? [])
+        if received.count > previous.count { state.deliveryNotice = nil }
+        guard state.phase == .awaitingTransfer || state.phase == .failed,
+              let manifest = receipt.manifest, manifest.header == receipt.header,
+              manifest.totalSamples > 0, manifest.chunkCount > 0,
+              received.count == manifest.chunkCount,
+              received.allSatisfy((0..<manifest.chunkCount).contains) else { return }
+        state.phase = .transcribing
     }
 
     static func audioError(_ error: Error) -> WatchAudioError {

@@ -17,21 +17,16 @@ private let shortcutLogger = Logger(
 )
 
 struct VoiceRecordView: View {
-    @Environment(\.dismiss) private var dismiss
-    @State private var store: StoreOf<VoiceRecordFeature>
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let store: StoreOf<VoiceRecordFeature>
+    @Binding var presentedRecording: StoreOf<VoiceRecordFeature>?
 
-    init(experimentID: UUID) {
-        _store = State(initialValue: Store(
-            initialState: VoiceRecordFeature.State(experimentID: experimentID)
-        ) {
-            VoiceRecordFeature()
-        })
-    }
+    private var isPresented: Bool { presentedRecording === store }
 
     var body: some View {
         VStack(spacing: WatchScreenMetrics.scaledHeight(25)) {
             switch store.phase {
-            case .starting, .awaitingTransfer, .transcribing, .saving:
+            case .checkingPending, .starting, .awaitingTransfer, .transcribing, .saving:
                 VStack(spacing: 4) {
                     Text(progressTitle)
 
@@ -56,7 +51,7 @@ struct VoiceRecordView: View {
 
                 VoiceWaveView(isVoiceDetected: store.isVoiceDetected)
 
-                Button("완료") { store.send(.finishTapped) }
+                Button("완료") { store.send(.finishRequested(playsFeedback: true)) }
                     .frame(maxWidth: .infinity, maxHeight: WatchScreenMetrics.scaledHeight(44))
                     .padding(.horizontal, 9.5)
                     .padding(.bottom, 9)
@@ -85,11 +80,19 @@ struct VoiceRecordView: View {
             case .failed:
                 VStack(spacing: 12) {
                     Text(store.errorMessage ?? "음성 기록을 진행할 수 없어요.")
-                    Button("다시 시도") { store.send(.retryTapped) }
+                    if store.header != nil {
+                        Button("새로 녹음") { store.send(.rerecordTapped) }
+                    }
+                    Button(store.header == nil ? "다시 시도" : "이전 기록 재시도") {
+                        store.send(.retryTapped)
+                    }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
+        .animation(
+            reduceMotion ? nil : .easeInOut(duration: 0.2), value: store.phase == .recording
+        )
         .background(Color.black.ignoresSafeArea())
         .navigationTitle(navigationTitle)
         .navigationBarBackButtonHidden()
@@ -107,20 +110,15 @@ struct VoiceRecordView: View {
             }
         }
         .onAppear {
-            store.send(.appeared)
+            guard isPresented else { return }
             shortcutLogger.info("VoiceRecordView appeared")
             let center = WatchRecordingShortcutCenter.shared
             center.register(.voiceRecording, in: store.experimentID) { shortcut, id in
                 stopRecording(for: shortcut, experimentID: id)
             }
         }
-        .onDisappear {
-            store.send(.disappeared)
-            WatchRecordingShortcutCenter.shared.dismissVoice(in: store.experimentID)
-            shortcutLogger.info("VoiceRecordView disappeared")
-        }
-        .onChange(of: store.shouldDismiss) { _, shouldDismiss in
-            if shouldDismiss { dismiss() }
+        .onChange(of: store.shouldDismiss, initial: true) { _, shouldDismiss in
+            if shouldDismiss, isPresented { presentedRecording = nil }
         }
         .task(id: store.phase) {
             let phase = store.phase
@@ -137,18 +135,19 @@ struct VoiceRecordView: View {
         }
     }
 
-    /// 음성 단축어는 녹음 중일 때만 녹음을 종료하고, 다른 단계에서는 처리하지 않습니다.
+    /// 같은 화면에서 반복된 단축어는 새 녹음을 만들지 않습니다.
     private func stopRecording(
         for shortcut: WatchRecordingShortcut, experimentID: UUID?
     ) -> Bool {
-        guard shortcut == .voice else { return false }
+        guard isPresented, shortcut == .voice,
+              experimentID == nil || experimentID == store.experimentID
+        else { return false }
         let phase = String(describing: store.phase)
-        guard store.phase == .recording,
-              experimentID == nil || experimentID == store.experimentID else {
-            shortcutLogger.info("Voice stop ignored: phase=\(phase, privacy: .public)")
-            return false
+        guard store.phase == .recording else {
+            shortcutLogger.info("Voice shortcut already handled: phase=\(phase, privacy: .public)")
+            return store.phase != .failed
         }
-        store.send(.finishTapped)
+        store.send(.finishRequested(playsFeedback: false))
         let next = String(describing: store.phase)
         shortcutLogger.info(
             "Voice stop sent: \(phase, privacy: .public)->\(next, privacy: .public)"
@@ -158,11 +157,14 @@ struct VoiceRecordView: View {
 
     private var progressTitle: String {
         switch store.phase {
+        case .checkingPending: "이전 음성 기록 확인 중"
         case .starting: "마이크 준비 중"
         case .awaitingTransfer:
-            store.receivedChunkCount > 0
-                ? "iPhone 전송 중 · \(store.receivedChunkCount)개 전송됨"
-                : "iPhone 전송 대기 중"
+            if let size = store.transferSize {
+                "iPhone 전송 \(size.percentage(for: store.latestReceipt?.receivedSequences ?? []))%"
+            } else {
+                "iPhone 전송 대기 중"
+            }
         case .transcribing: "전사 중"
         case .saving: "iPhone 저장 확인 중"
         default: ""
@@ -170,10 +172,13 @@ struct VoiceRecordView: View {
     }
 
     private var navigationTitle: String {
-        store.phase == .transcript || store.phase == .saved ? "" : "음성 녹음"
+        [.checkingPending, .transcript, .saved].contains(store.phase) ? "" : "음성 녹음"
     }
 }
 
 #Preview {
-    VoiceRecordView(experimentID: UUID())
+    let store = Store(initialState: VoiceRecordFeature.State(experimentID: UUID())) {
+        VoiceRecordFeature()
+    }
+    VoiceRecordView(store: store, presentedRecording: .constant(store))
 }

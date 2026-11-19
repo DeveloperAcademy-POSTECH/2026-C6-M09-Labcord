@@ -19,7 +19,7 @@ struct ResearchWatchApp: App {
     @State private var remoteScreen: WatchScreenSnapshot?
     @State private var pendingPhoneReentryID: UUID?
     @State private var dismissedStart: (id: UUID, until: Date)?
-    @State private var isVoiceRecordPresented = false
+    @State private var voiceRecording: StoreOf<VoiceRecordFeature>?
     @State private var photoRecording: StoreOf<PhotoRecordFeature>?
     @State private var isRemoteNavigationBlocked = false
     @State private var needsRouteReconciliation = false
@@ -27,7 +27,7 @@ struct ResearchWatchApp: App {
 
     @State private var debugRootRevision = 0
 
-    private var isRecordPresented: Bool { isVoiceRecordPresented || photoRecording != nil }
+    private var isRecordPresented: Bool { voiceRecording != nil || photoRecording != nil }
 
     private struct ScreenSyncKey: Hashable {
         let epoch: WatchStateEpoch?
@@ -55,7 +55,7 @@ struct ResearchWatchApp: App {
                     case let .experiment(experiment):
                         ExperimentView(
                             experiment: experiment,
-                            isVoiceRecordPresented: $isVoiceRecordPresented,
+                            voiceRecording: $voiceRecording,
                             photoRecording: $photoRecording,
                             phoneScreen: $remoteScreen,
                             onNavigationBlockedChanged: { isRemoteNavigationBlocked = $0 },
@@ -129,9 +129,16 @@ struct ResearchWatchApp: App {
             .onChange(of: WatchRecordingShortcutCenter.shared.restorationID, initial: true) {
                 restoreGestureExperiment()
             }
+            .onChange(of: voiceRecording) { previous, _ in
+                previous?.send(.disappeared)
+            }
             .onChange(of: scenePhase) { _, phase in
                 guard phase == .active,
                       case let .experiment(experiment)? = path.last else { return }
+                if let phase = voiceRecording?.phase,
+                   [.awaitingTransfer, .transcribing, .saving].contains(phase) {
+                    WatchVoiceRecordingService.shared.retryDelivery()
+                }
                 Task { await watchExperimentClient.enterPhoneSession(experiment.id) }
             }
             .modifier(WatchDebugMenuModifier())
@@ -241,6 +248,7 @@ private extension ResearchWatchApp {
     }
 
     func resetToStart() {
+        voiceRecording = nil
         photoRecording = nil
         pendingPhoneReentryID = nil
         dismissedStart = nil

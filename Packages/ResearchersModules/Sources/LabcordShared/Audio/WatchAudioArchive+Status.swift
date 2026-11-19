@@ -6,6 +6,24 @@ extension WatchAudioArchive {
         return try archiveStatus(header)
     }
 
+    public func transferSize(for header: WatchAudioHeader) throws -> WatchAudioTransferSize? {
+        guard let manifest = try statusIfPresent(header).manifest,
+              manifest.header == header, (1..<1_000_000).contains(manifest.chunkCount),
+              manifest.totalSamples > 0 else { return nil }
+        var counts: [Int64] = []
+        var end: Int64 = 0
+        for sequence in 0..<manifest.chunkCount {
+            try Task.checkCancellation()
+            let range = try chunkRange(header, sequence: sequence)
+            guard range.firstSample == end, range.endSample > end,
+                  range.endSample <= manifest.totalSamples else { return nil }
+            counts.append(range.endSample - end)
+            end = range.endSample
+        }
+        guard end == manifest.totalSamples else { return nil }
+        return WatchAudioTransferSize(sampleCounts: counts, totalSamples: end)
+    }
+
     func archiveStatus(
         _ header: WatchAudioHeader, sequences knownSequences: [Int]? = nil
     ) throws -> WatchAudioReceipt {
@@ -44,5 +62,18 @@ extension WatchAudioArchive {
                 atPath: directory.appendingPathComponent("cancelled.json").path
             )
         )
+    }
+}
+
+/// 고정 폭 PCM이므로 확인된 샘플 비율은 오디오 바이트 비율과 같습니다.
+public struct WatchAudioTransferSize: Equatable, Sendable {
+    fileprivate let sampleCounts: [Int64]
+    fileprivate let totalSamples: Int64
+
+    public func percentage(for receivedSequences: [Int]) -> Int {
+        let samples = Set(receivedSequences).reduce(Int64(0)) { sum, sequence in
+            sum + (sampleCounts.indices.contains(sequence) ? sampleCounts[sequence] : 0)
+        }
+        return Int(samples * 100 / totalSamples)
     }
 }

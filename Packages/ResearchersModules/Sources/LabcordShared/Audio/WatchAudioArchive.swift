@@ -91,7 +91,7 @@ public actor WatchAudioArchive {
         return chunk
     }
 
-    private func chunkRange(
+    func chunkRange(
         _ header: WatchAudioHeader, sequence: Int
     ) throws -> WatchAudioChunkRanges.Range {
         let url = chunkURL(header, sequence: sequence)

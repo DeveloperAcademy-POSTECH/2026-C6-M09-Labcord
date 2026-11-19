@@ -4,6 +4,7 @@ import Foundation
 import LabcordShared
 import LabcordWatchOS
 import WatchConnectivity
+import WatchKit
 
 @MainActor
 final class WatchVoiceRecordingService {
@@ -88,16 +89,30 @@ final class WatchVoiceRecordingService {
         return nil
     }
 
-    func deliveryState(
-        for header: WatchAudioHeader
-    ) async throws -> (isConfirming: Bool, receipt: WatchAudioReceipt?) {
-        let receipt = try await archive.remoteReceipt(header)
-        if let receipt { try await transfer.receive(receipt) }
-        return (await transfer.hasPendingConfirmation(header), receipt)
+    struct DeliveryState: Sendable {
+        let isConfirming: Bool
+        let receipt: WatchAudioReceipt?
+        let size: WatchAudioTransferSize?
     }
 
-    func stopAndQueue(_ header: WatchAudioHeader) async throws {
-        if recorder.activeRecording == header { await recorder.stop() }
+    func deliveryState(for header: WatchAudioHeader) async throws -> DeliveryState {
+        let receipt = try await archive.remoteReceipt(header)
+        if let receipt { try await transfer.receive(receipt) }
+        let isTerminal = receipt?.isSavedAcknowledgement == true || receipt?.isCancelled == true
+        let size = isTerminal ? nil : try? await archive.transferSize(for: header)
+        return DeliveryState(
+            isConfirming: await transfer.hasPendingConfirmation(header),
+            receipt: receipt, size: size
+        )
+    }
+
+    func stopAndQueue(
+        _ header: WatchAudioHeader, playsStopFeedback: Bool = false
+    ) async throws {
+        if recorder.activeRecording == header {
+            await recorder.stop()
+            if playsStopFeedback { WKInterfaceDevice.current().play(.stop) }
+        }
         do {
             let receipt = try await archive.statusIfPresent(header)
             guard !receipt.receivedSequences.isEmpty else { throw WatchAudioError.invalidAudio }
@@ -127,6 +142,12 @@ final class WatchVoiceRecordingService {
     func retryDelivery() {
         activate()
         Task { await transfer.recover() }
+    }
+
+    func retryRecognition(_ header: WatchAudioHeader) async throws {
+        activate()
+        try await transfer.retryRecognition(header)
+        retryDelivery()
     }
 
     func confirm(_ header: WatchAudioHeader) async throws {

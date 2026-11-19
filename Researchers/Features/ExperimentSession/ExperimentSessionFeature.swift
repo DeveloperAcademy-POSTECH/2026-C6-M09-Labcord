@@ -2,6 +2,9 @@ import ComposableArchitecture
 import Foundation
 import LabcordiOS
 import LabcordShared
+import OSLog
+
+private let captureLog = Logger(subsystem: "Labcord", category: "Capture")
 
 @Reducer
 struct ExperimentSessionFeature {
@@ -209,11 +212,16 @@ private extension ExperimentSessionFeature {
                 state.isPausePresented = false
                 return .none
             case .pause(.delegate(.stopRequested)):
-                guard state.watchCommand == nil, state.canCloseSession,
-                      !PhoneWatchAudioService.shared.hasUnsettledRecording(
-                        in: state.experimentID
-                      ) else {
-                    return .send(.pause(.stopRejected))
+                guard state.isPausePresented, !state.pause.isSavingWatchAudio else {
+                    return .none
+                }
+                guard state.watchCommand == nil, state.canCloseSession else {
+                    return .send(.pause(.stopRejected("처리 중인 기록이나 타이머를 먼저 확인해 주세요.")))
+                }
+                guard !PhoneWatchAudioService.shared.hasUnsettledRecording(in: state.experimentID)
+                else {
+                    let message = "Watch 녹음이 남아 있어요. 전송과 저장을 확인해 주세요."
+                    return .send(.pause(.stopRejected(message)))
                 }
                 state.timer.isClosing = true
                 return .send(.pause(.completeRequested(nil)))
@@ -306,7 +314,6 @@ private extension ExperimentSessionFeature {
             case .capture(.delegate(.voiceRequested)): return .send(.voiceStartRequested)
 
             case let .capture(.delegate(.photoRequested(id))):
-                guard !state.isPausePresented else { return .none }
                 return .send(.photoStartRequested(id))
 
             case .capture(.delegate(.videoRequested)): return .send(.videoStartRequested)
@@ -319,23 +326,24 @@ private extension ExperimentSessionFeature {
                 return prepareVoiceRecording(state: &state)
 
             case let .photoStartRequested(id):
-                guard !state.isPausePresented, state.watchCommand == nil, !state.isRemotePreview,
-                      !PhoneWatchAudioService.shared.hasUnsettledRecording(in: state.experimentID)
-                else {
+                if let blocker = captureStartBlocker(state) {
+                    let requestID = id?.uuidString ?? "-"
+                    captureLog.notice("""
+                        photo blocked id=\(requestID, privacy: .public) \
+                        reason=\(blocker, privacy: .public)
+                        """)
                     guard let id, state.capture.photo.isWatchCapture else {
-                        return .none
+                        return .send(.capture(.cancelPhotoGesture))
                     }
                     return .send(.capture(.photo(.captureFailed(id, "촬영을 시작할 수 없어요."))))
-                }
-                guard state.voice.phase == .hidden else {
-                    return .send(.capture(.cancelPhotoGesture))
                 }
                 return .send(.capture(.photoCaptureRequested(id)))
 
             case .videoStartRequested:
-                guard !state.isPausePresented, state.watchCommand == nil, !state.isRemotePreview,
-                      !PhoneWatchAudioService.shared.hasUnsettledRecording(in: state.experimentID),
-                      state.voice.phase == .hidden else { return .none }
+                if let blocker = captureStartBlocker(state) {
+                    captureLog.notice("video blocked reason=\(blocker, privacy: .public)")
+                    return .none
+                }
                 return .send(.capture(.videoRecordRequested))
 
             case .permissions, .voice, .capture, .timer, .pause: return .none
@@ -379,5 +387,4 @@ private extension ExperimentSessionFeature {
         case .starting, .stopping, .finished: return .none
         }
     }
-
 }
