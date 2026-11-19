@@ -1,10 +1,21 @@
 import ComposableArchitecture
+import LabcordDesignSystem
 import LabcordiOS
 import SwiftUI
 
 struct AppView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var store = PhoneIntentRuntime.shared.store
+
+    private var showsLocalRecording: Bool {
+        guard let id = store.path.ids.last,
+              let session = store.path[id: id, case: \.session] else { return false }
+        if session.voice.phase != .hidden || session.voice.hasRecordingFailure { return true }
+        switch session.capture.video.phase {
+        case .starting, .recording: return true
+        case .idle, .preview: return false
+        }
+    }
 
     var body: some View {
         @Bindable var store = store
@@ -79,6 +90,11 @@ struct AppView: View {
                 }
             }
         }
+        .overlay {
+            if store.onboarding == nil, !showsLocalRecording {
+                WatchVoiceLiveActivityOverlay()
+            }
+        }
         .preferredColorScheme(
             store.path.ids.last.map { store.path[id: $0, case: \.gesturePractice] != nil } == true
                 ? .dark : .light
@@ -128,6 +144,44 @@ struct AppView: View {
             Text(store.reviewReturningToAnalysis
                  ? "이 화면에서 수정한 내용은 저장되지 않아요."
                  : "이 화면을 나가면 분석 결과가 초기화 돼요.")
+        }
+    }
+}
+
+private struct WatchVoiceLiveActivityOverlay: View {
+    @State private var isRecordingVisible = false
+    private var recording: PhoneWatchAudioService.LiveRecording? {
+        PhoneWatchAudioService.shared.liveRecording
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            if isRecordingVisible, recording != nil {
+                AnimatedLiveActivityContainer(
+                    isExpanded: true,
+                    collapsedSize: CGSize(width: 125, height: 37),
+                    expandedWidth: max(0, geometry.size.width - 2 * LayoutTokens.spacing16),
+                    minimumContentHeight: 52,
+                    animatesContentHeight: false
+                ) {
+                    LiveActivityContent(state: .watchAudioRecording, onStop: {}, onRetry: {})
+                }
+                .padding(.top, 14)
+                .frame(maxWidth: .infinity, alignment: .top)
+            }
+        }
+        .ignoresSafeArea(.container, edges: .top)
+        .allowsHitTesting(false)
+        .task(id: recording) {
+            guard let recording, recording.expiresAt > .now else {
+                isRecordingVisible = false
+                return
+            }
+            isRecordingVisible = true
+            let remaining = max(0, recording.expiresAt.timeIntervalSinceNow)
+            try? await Task.sleep(for: .seconds(remaining))
+            guard !Task.isCancelled else { return }
+            isRecordingVisible = false
         }
     }
 }
