@@ -39,7 +39,7 @@ extension AppFeature {
     }
 
     static func canLeaveLocalScreen(_ state: State) -> Bool {
-        guard !state.reviewSaving, !state.home.list.isDeleting,
+        guard !state.isDebugMenuPresented, !state.reviewSaving, !state.home.list.isDeleting,
               state.home.list.pendingDeletion == nil else { return false }
         guard let id = state.path.ids.last else { return true }
         if let session = state.path[id: id, case: \.session] {

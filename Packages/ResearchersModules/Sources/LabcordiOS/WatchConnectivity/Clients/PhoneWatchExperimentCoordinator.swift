@@ -253,3 +253,38 @@ public final class PhoneWatchExperimentCoordinator {
         )
     }
 }
+
+#if DEBUG
+extension PhoneWatchExperimentCoordinator {
+    func checkDebugDataResetAvailability() throws {
+        guard executing == nil, photoCancellationID == nil,
+              !requests.values.contains(where: { $0.response.phase == .received }),
+              PhoneWatchAudioService.shared.canResetDebugData
+        else { throw WatchExperimentError.phoneBusy }
+    }
+
+    func beginDebugDataReset() {
+        refreshTask?.cancel()
+        failPendingCommands()
+        requests.removeAll()
+        recentQueries = WatchExperimentQueryCache()
+        tokens.removeAll()
+        states.removeAll()
+        recordResults.removeAll()
+        recordSnapshots.removeAll()
+        revisions.removeAll()
+        sessionVisibility.removeAll()
+        pendingStartID = nil
+        visibleExperimentID = nil
+        photoCancellationID = nil
+        journal = nil
+        clearDebugOpenSessionRequest()
+    }
+
+    func endDebugDataReset() {
+        loadJournal()
+        updateScreen(WatchScreenSnapshot(destination: .home))
+        refresh()
+    }
+}
+#endif

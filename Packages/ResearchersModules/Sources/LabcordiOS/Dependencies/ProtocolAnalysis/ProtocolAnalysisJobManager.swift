@@ -14,7 +14,7 @@ public actor ProtocolAnalysisJobManager {
     private var draining: (id: UUID, task: Task<Void, Never>)?
     private var runID: UUID?
     private var submissionID: UUID?
-    private var listeners: [UUID: AsyncStream<ProtocolAnalysisJobSnapshot>.Continuation] = [:]
+    var listeners: [UUID: AsyncStream<ProtocolAnalysisJobSnapshot>.Continuation] = [:]
 
     public init(
         directory: URL? = nil,
@@ -27,19 +27,6 @@ public actor ProtocolAnalysisJobManager {
         self.parser = parser
         termClient = terms
         self.usesSystemScheduler = usesSystemScheduler
-    }
-
-    public func updates() -> AsyncStream<ProtocolAnalysisJobSnapshot> {
-        let id = UUID()
-        let (stream, continuation) = AsyncStream<ProtocolAnalysisJobSnapshot>.makeStream(
-            bufferingPolicy: .bufferingNewest(1)
-        )
-        listeners[id] = continuation
-        if let value = try? snapshot() { continuation.yield(value) }
-        continuation.onTermination = { [weak self] _ in
-            Task { await self?.removeListener(id) }
-        }
-        return stream
     }
 
     public func restore() throws -> ProtocolAnalysisJobSnapshot? {
@@ -127,6 +114,19 @@ public actor ProtocolAnalysisJobManager {
             return false
         }
     }
+
+    #if DEBUG
+    public func resetDebugData() async throws {
+        if let id = record?.id { _ = stopExecution(id: id) }
+        record = nil
+        phase = .queued
+        backgroundAvailable = false
+        try await drainStoppedExecution()
+        if FileManager.default.fileExists(atPath: store.directory.path) {
+            try FileManager.default.removeItem(at: store.directory)
+        }
+    }
+    #endif
 
     public func enteredBackground() async {
         guard !backgroundAvailable, let id = record?.id,
@@ -375,7 +375,7 @@ private extension ProtocolAnalysisJobManager {
         }
     }
 
-    private func snapshot() throws -> ProtocolAnalysisJobSnapshot? {
+    internal func snapshot() throws -> ProtocolAnalysisJobSnapshot? {
         guard let record else { return nil }
         return try record.snapshot(
             inputs: store.inputs(record), phase: phase, backgroundAvailable: backgroundAvailable
@@ -393,6 +393,4 @@ private extension ProtocolAnalysisJobManager {
         guard let value = try? snapshot() else { return }
         for listener in listeners.values { listener.yield(value) }
     }
-
-    private func removeListener(_ id: UUID) { listeners[id] = nil }
 }

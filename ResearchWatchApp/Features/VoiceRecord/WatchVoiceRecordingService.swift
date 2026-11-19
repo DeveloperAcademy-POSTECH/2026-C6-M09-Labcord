@@ -77,11 +77,13 @@ final class WatchVoiceRecordingService {
         return header
     }
 
-    func retryDelivery(for header: WatchAudioHeader?) async {
+    func retryDelivery(for header: WatchAudioHeader?) async -> WatchAudioReceipt? {
         if let header, requestedConfirmations.remove(header.recordingID) != nil {
             await confirm(header)
         }
         await transfer.recover()
+        guard let header else { return nil }
+        return try? await archive.remoteReceipt(header)
     }
 
     func stopAndQueueIfNeeded() async {

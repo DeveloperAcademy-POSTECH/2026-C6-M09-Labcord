@@ -31,7 +31,7 @@ struct VoiceRecordView: View {
     var body: some View {
         VStack(spacing: WatchScreenMetrics.scaledHeight(25)) {
             switch store.phase {
-            case .starting, .transcribing, .saving:
+            case .starting, .awaitingTransfer, .transcribing, .saving:
                 VStack(spacing: 4) {
                     Text(progressTitle)
 
@@ -74,7 +74,7 @@ struct VoiceRecordView: View {
 
             case .failed:
                 VStack(spacing: 12) {
-                    Text("음성 기록을 진행할 수 없어요.")
+                    Text(store.errorMessage ?? "음성 기록을 진행할 수 없어요.")
                     Button("다시 시도") { store.send(.retryTapped) }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -144,8 +144,9 @@ struct VoiceRecordView: View {
     private var progressTitle: String {
         switch store.phase {
         case .starting: "마이크 준비 중"
+        case .awaitingTransfer: "iPhone 전송 대기 중"
         case .transcribing: "전사 중"
-        case .saving: "저장 중"
+        case .saving: "iPhone 저장 확인 중"
         default: ""
         }
     }

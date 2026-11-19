@@ -13,6 +13,9 @@ struct AppFeature {
     @ObservableState
     struct State: Equatable {
         @Shared(.appStorage("onboardingHasCompleted")) var hasCompletedOnboarding = false
+        #if DEBUG
+        var debugMenu = DebugMenuState()
+        #endif
         var onboarding: OnboardingFeature.State?
         var watchPendingStartID: UUID?
         var watchSplashPhase = WatchSplashPhase.waiting
@@ -33,8 +36,10 @@ struct AppFeature {
         var pendingLiveActivityExperimentID: UUID?
         var readyLiveActivityExperimentID: UUID?
     }
-
     enum Action {
+        #if DEBUG
+        case debugMenu(DebugMenuAction)
+        #endif
         case appeared
         case openLiveActivityExperiment(UUID)
         case liveActivityExperimentLoaded(UUID, Bool)
@@ -63,13 +68,11 @@ struct AppFeature {
         case confirmReviewExit
         case cancelReviewExit
     }
-
     @Dependency(\.experimentClient) var experimentClient
     @Dependency(\.protocolAnalysisJobManager) var jobManager
     @Dependency(\.uuid) var uuid
     @Dependency(\.date.now) var now
     @Dependency(\.timerLiveActivityClient) var timerLiveActivityClient
-
     var body: some Reducer<State, Action> {
         Scope(state: \.home, action: \.home) { HomeFeature() }
         watchReducer
@@ -79,9 +82,13 @@ struct AppFeature {
 
         Reduce { _, _ in .none }
             .ifLet(\.onboarding, action: \.onboarding) { OnboardingFeature() }
-
-        appReducer
-            .forEach(\.path, action: \.path)
+        CombineReducers {
+            appReducer
+            #if DEBUG
+            debugMenuReducer
+            #endif
+        }
+        .forEach(\.path, action: \.path)
         watchCompletionNavigationReducer
         watchContextReducer
         watchPendingOpenReducer
@@ -92,6 +99,9 @@ private extension AppFeature {
     var appReducer: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
+            #if DEBUG
+            case .debugMenu: return .none
+            #endif
             case .appeared, .onboarding:
                 return handleLaunch(&state, action)
 
@@ -347,12 +357,12 @@ private extension AppFeature {
         }
     }
 
-    func openReadyLiveActivityExperiment(_ state: inout State) -> Effect<Action> {
-        guard state.watchIsActive,
-              let experimentID = state.readyLiveActivityExperimentID else { return .none }
-        state.readyLiveActivityExperimentID = nil
-        guard !state.reviewSaving, state.watchRequestID == nil,
+    internal func openReadyLiveActivityExperiment(_ state: inout State) -> Effect<Action> {
+        guard state.watchIsActive, !state.isDebugMenuPresented,
+              let experimentID = state.readyLiveActivityExperimentID,
+              !state.reviewSaving, state.watchRequestID == nil,
               state.watchPendingStartID == nil else { return .none }
+        state.readyLiveActivityExperimentID = nil
         if let id = state.path.ids.last,
            state.path[id: id, case: \.session]?.experimentID == experimentID {
             return .none

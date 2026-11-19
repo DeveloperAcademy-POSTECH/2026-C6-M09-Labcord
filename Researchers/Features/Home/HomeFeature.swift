@@ -55,7 +55,15 @@ struct HomeFeature {
                 if !state.requiresGesturePractice { state.isGuideVisible = false }
                 return .none
 
-            case .addTapped, .settingsTapped, .list:
+            case .addTapped:
+                #if DEBUG
+                if state.list.includesDemo, state.isFirstHome {
+                    state.$hasCompletedFirstHome.withLock { $0 = true }
+                }
+                #endif
+                return .none
+
+            case .settingsTapped, .list:
                 return .none
             }
         }

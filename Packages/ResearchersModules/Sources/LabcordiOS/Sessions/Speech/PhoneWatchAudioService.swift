@@ -323,3 +323,22 @@ private extension WatchAudioMessage {
         }
     }
 }
+
+#if DEBUG
+extension PhoneWatchAudioService {
+    var canResetDebugData: Bool {
+        !hasUnsettledRecording() && receiver.processing.isEmpty
+    }
+
+    func clearDebugData() {
+        receiver.clearDebugData()
+        latest.removeAll()
+        recordRevisions.removeAll()
+        liveRecording = nil
+        screenState = WatchRecordingScreenState()
+        lastLiveStatusAt = .distantPast
+        lastError = nil
+        damagedRecordingIDs.removeAll()
+    }
+}
+#endif
