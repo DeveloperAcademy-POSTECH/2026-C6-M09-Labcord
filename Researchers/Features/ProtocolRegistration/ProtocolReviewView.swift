@@ -15,6 +15,10 @@ struct ProtocolReviewView: View {
         ScrollViewReader { scroll in
             ScrollView {
                 VStack(alignment: .leading, spacing: 32) {
+                    if store.isPartial {
+                        Text("부분 결과예요. 이전 화면에서 다시 시도할 수 있어요. 실험을 등록하면 분석이 종료돼요.")
+                            .typography(Typography.subheadline)
+                    }
                     titleField
                     timerSection
                     termSection

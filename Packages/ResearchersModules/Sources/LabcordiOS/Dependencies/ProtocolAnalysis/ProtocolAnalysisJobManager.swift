@@ -218,6 +218,9 @@ private extension ProtocolAnalysisJobManager {
             await ProtocolAnalysisBackgroundScheduler.shared.finish(id: id, success: success)
         } catch {
             guard runID == attempt else { return }
+            if !(error is CancellationError) {
+                logAnalysisFailure(error, record: record, phase: phase)
+            }
             let message = error is CancellationError
                 ? "분석이 중단됐어요. 이어서 진행해 주세요."
                 : "완료한 내용은 보관했어요. 분석을 이어서 진행해 주세요."

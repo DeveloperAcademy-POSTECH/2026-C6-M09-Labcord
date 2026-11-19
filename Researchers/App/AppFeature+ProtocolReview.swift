@@ -4,14 +4,23 @@ import LabcordiOS
 import LabcordShared
 
 extension AppFeature {
+    func requestReviewExit(_ state: inout State, id: StackElementID) -> Effect<Action> {
+        guard !state.reviewSaving, state.path.ids.last == id,
+              let review = state.path[id: id, case: \.review] else { return .none }
+        state.reviewReturningToAnalysis = review.isPartial
+        state.reviewExitRequested = true
+        return .none
+    }
+
     func confirmReviewExit(_ state: inout State) -> Effect<Action> {
         state.reviewExitRequested = false
         guard !state.reviewSaving, state.savedReview == nil,
               let id = state.path.ids.last,
-              state.path[id: id, case: \.review] != nil else { return .none }
+              let review = state.path[id: id, case: \.review] else { return .none }
         state.reviewPendingID = nil
         state.path.pop(from: id)
         state.reviewAnalysisJobID = nil
+        if review.isPartial { return .none }
         guard let registrationID = state.path.ids.first(where: {
             state.path[id: $0, case: \.registration] != nil
         }) else { return .none }

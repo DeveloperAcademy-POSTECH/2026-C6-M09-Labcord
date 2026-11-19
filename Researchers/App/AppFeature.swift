@@ -29,6 +29,7 @@ struct AppFeature {
         var reviewSaveFailed = false
         var reviewAlreadySaved = false
         var reviewExitRequested = false
+        var reviewReturningToAnalysis = false
         var reviewPendingID: UUID?
         var reviewAnalysisJobID: UUID?
         var recentRegistrationID: StackElementID?
@@ -219,13 +220,12 @@ private extension AppFeature {
                     values.map { ProtocolReviewTerm(id: uuid(), value: $0) }
                 }
                 state.reviewAnalysisJobID = registration.analysisJobID
-                state.path.append(.review(.init(title: "", timerSeconds: seconds, terms: terms)))
+                state.path.append(.review(.init(title: "", timerSeconds: seconds, terms: terms,
+                    isPartial: !registration.inputAnalysis.pendingInputs.isEmpty)))
                 return .none
 
             case let .path(.element(id: id, action: .review(.backTapped))):
-                guard !state.reviewSaving, state.path.ids.last == id else { return .none }
-                state.reviewExitRequested = true
-                return .none
+                return requestReviewExit(&state, id: id)
 
             case .confirmReviewExit:
                 return confirmReviewExit(&state)
