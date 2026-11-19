@@ -62,7 +62,7 @@ struct ExperimentListFeature {
                         await send(.loaded(revision, .failure(.loading)))
                     }
                 }
-                .cancellable(id: CancelID.load, cancelInFlight: true)
+                .cancellable(id: CancelID.load)
 
             case let .loaded(revision, result):
                 guard revision == state.loadRevision else { return .none }
