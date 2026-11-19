@@ -42,6 +42,8 @@ public final class PhoneWatchExperimentCoordinator {
     private var recentQueries = WatchExperimentQueryCache()
     var lastPublishedList: (summaries: [WatchExperimentSummary], version: WatchStateVersion)?
     var latestWatchPresenceAt: Date?
+    var pendingWatchEntry: WatchSessionOpenRequest?
+    var presentWatchExperimentID: UUID?
     var watchOpenUnavailableBefore: Date?
     var openSessionExpiryTask: Task<Void, Never>?
     var tokens: [UUID: (experimentID: UUID, expiresAt: ContinuousClock.Instant)] = [:]
