@@ -27,7 +27,9 @@ extension WatchConnectivitySession {
 
     public func loadExperiments() async throws -> WatchExperimentList {
         try await waitForActivation()
-        guard let session else { throw WatchExperimentError.notReachable }
+        guard let session, WatchConnectivityState(session).canTransfer else {
+            throw WatchExperimentError.notReachable
+        }
         let command = WatchExperimentCommand(operation: .list)
         let response: WatchExperimentResponse
         if session.isReachable {

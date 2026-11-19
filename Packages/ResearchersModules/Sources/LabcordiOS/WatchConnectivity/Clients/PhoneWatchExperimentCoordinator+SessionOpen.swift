@@ -36,6 +36,10 @@ extension PhoneWatchExperimentCoordinator {
             receiveWatchPresence(request)
             return
         }
+        WatchConnectivityDiagnostics.event(
+            action == .cancel ? "open.cancelled" : "open.received",
+            id: (request.targetRequestID ?? request.requestID).uuidString
+        )
         storeOpenRequest(.init(request: request, handled: action == .cancel))
         openSessionExpiryTask?.cancel()
         if action != .cancel { scheduleExpiry(request) }
@@ -156,6 +160,13 @@ extension PhoneWatchExperimentCoordinator {
         openSessionExpiryTask?.cancel()
         openSessionExpiryTask = nil
         storeOpenRequest(stored)
+        if let error {
+            WatchConnectivityDiagnostics.failure(
+                "open.rejected", id: requestID.uuidString, error: error
+            )
+        } else {
+            WatchConnectivityDiagnostics.event("open.committed", id: requestID.uuidString)
+        }
         if stored.request.expiresAt != nil { publishOpenOutcome(stored) }
     }
 
