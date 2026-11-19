@@ -233,7 +233,6 @@ private extension GesturePracticeView {
         showCompletion(of: gesture, in: completed, for: .iPhone)
     }
 
-    /// 인식 결과를 잠시 보여준 뒤 다음 카드나 Apple Watch 연습으로 이동합니다.
     func showCompletion(
         of gesture: PracticeGesture, in completed: Set<PracticeGesture>,
         for practiceDevice: GestureDevice

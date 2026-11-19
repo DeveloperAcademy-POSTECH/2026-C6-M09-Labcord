@@ -135,7 +135,6 @@ struct VoiceRecordView: View {
         }
     }
 
-    /// 같은 화면에서 반복된 단축어는 새 녹음을 만들지 않습니다.
     private func stopRecording(
         for shortcut: WatchRecordingShortcut, experimentID: UUID?
     ) -> Bool {

@@ -274,7 +274,6 @@ private extension ResearchWatchApp {
 
     func experiment(for screen: WatchScreenSnapshot, id: UUID) async
         -> WatchExperimentSummary? {
-        // 첫 화면은 이전 실행의 application context일 수 있으므로 iPhone의 현재 화면을 확인합니다.
         let list = try? await watchExperimentClient.send(WatchExperimentCommand(operation: .list))
         var current = list?.screen
         if current == nil {

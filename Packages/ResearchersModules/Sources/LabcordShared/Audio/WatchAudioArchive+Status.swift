@@ -65,7 +65,6 @@ extension WatchAudioArchive {
     }
 }
 
-/// 고정 폭 PCM이므로 확인된 샘플 비율은 오디오 바이트 비율과 같습니다.
 public struct WatchAudioTransferSize: Equatable, Sendable {
     fileprivate let sampleCounts: [Int64]
     fileprivate let totalSamples: Int64
