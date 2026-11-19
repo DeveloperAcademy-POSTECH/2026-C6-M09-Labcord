@@ -126,7 +126,6 @@ extension PhoneWatchExperimentCoordinator {
         guard let detail = try client.enterSessionAndLoadDetail(experimentID) else {
             throw WatchExperimentError.experimentNotFound
         }
-        // iPhone의 MainActor에서 유효성 확인과 저장을 연달아 실행합니다.
         finishOpenSession(requestID)
         return detail
     }

@@ -35,7 +35,6 @@ struct WatchRecordingScreenState {
         guard phase != .cancelled, phase != .saved else { return }
         if status.isRecording {
             guard unsettled[status.recordingID] == nil else {
-                // The inbox already keeps this recording protected.
                 return
             }
             activeCaptures[status.recordingID] = (

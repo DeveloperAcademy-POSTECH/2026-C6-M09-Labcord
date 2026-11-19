@@ -267,7 +267,6 @@ extension WatchAudioTransferClient {
                 }
                 return
             } catch WatchAudioError.conflict {
-                // A receipt from an older build may not have been checked against the PCM.
                 _ = try await request(.status(header), for: header)
                 return
             }
