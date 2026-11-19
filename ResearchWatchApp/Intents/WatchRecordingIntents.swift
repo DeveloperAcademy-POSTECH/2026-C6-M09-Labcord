@@ -29,7 +29,7 @@ struct TakeWatchExperimentPhotoIntent: AppIntent {
 
 struct StartWatchExperimentVideoIntent: AppIntent {
     static let title: LocalizedStringResource = "Watch 실험 영상 녹화"
-    static let description = IntentDescription("실험 중 Watch에서 영상 녹화를 시작합니다.")
+    static let description = IntentDescription("Watch에서 영상 녹화를 시작하고, 다시 실행하면 중지합니다.")
     static let supportedModes: IntentModes = .foreground(.immediate)
 
     @MainActor

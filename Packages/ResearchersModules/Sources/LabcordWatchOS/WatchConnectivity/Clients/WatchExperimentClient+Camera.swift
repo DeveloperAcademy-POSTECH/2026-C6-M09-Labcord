@@ -50,7 +50,16 @@ public extension WatchExperimentClient {
     func startCameraRecord(
         experimentID: UUID, recordID: UUID, kind: WatchRecordSnapshot.Kind
     ) async throws -> WatchExperimentResponse {
-        let current = try await cameraSnapshot(experimentID)
+        let command = try await prepareCameraRecord(
+            experimentID: experimentID, recordID: recordID, kind: kind
+        )
+        return try await startPreparedCameraRecord(command)
+    }
+
+    func prepareCameraRecord(
+        experimentID: UUID, recordID: UUID, kind: WatchRecordSnapshot.Kind
+    ) async throws -> WatchExperimentCommand {
+        let current = try await cameraStartSnapshot(experimentID)
         let preparation = try await waitForCameraCommand(.init(
             operation: .prepareStart, experimentID: experimentID,
             expectedRevision: current.revision, expectedEpoch: current.epoch
@@ -58,17 +67,28 @@ public extension WatchExperimentClient {
         guard let token = preparation.startToken else {
             throw preparation.error ?? WatchExperimentError.requestExpired
         }
-        try Task.checkCancellation()
-        UserDefaults.standard.set(recordID.uuidString, forKey: pendingCameraKey(
-            experimentID: experimentID, kind: kind
-        ))
-        return try await waitForCameraCommand(.init(
+        return .init(
             requestID: recordID, operation: kind == .photo ? .takePhoto : .startVideo,
             experimentID: experimentID,
             expectedRevision: preparation.snapshot?.revision ?? current.revision,
             targetID: recordID, startToken: token, recordKind: kind,
             expectedEpoch: current.epoch
+        )
+    }
+
+    func startPreparedCameraRecord(
+        _ command: WatchExperimentCommand
+    ) async throws -> WatchExperimentResponse {
+        guard let experimentID = command.experimentID, let kind = command.recordKind,
+              command.targetID == command.requestID,
+              command.operation == (kind == .photo ? .takePhoto : .startVideo) else {
+            throw WatchExperimentError.invalidPayload
+        }
+        try Task.checkCancellation()
+        UserDefaults.standard.set(command.requestID.uuidString, forKey: pendingCameraKey(
+            experimentID: experimentID, kind: kind
         ))
+        return try await waitForCameraCommand(command)
     }
 
     func finishCameraRecord(
@@ -97,6 +117,22 @@ public extension WatchExperimentClient {
 
     private func pendingCameraKey(experimentID: UUID, kind: WatchRecordSnapshot.Kind) -> String {
         "watch.camera.pending.\(kind.rawValue).\(experimentID.uuidString)"
+    }
+
+    private func cameraStartSnapshot(
+        _ experimentID: UUID
+    ) async throws -> WatchExperimentSnapshot {
+        let deadline = ContinuousClock.now.advanced(by: .seconds(3))
+        repeat {
+            try Task.checkCancellation()
+            do {
+                return try await cameraSnapshot(experimentID)
+            } catch WatchExperimentError.notReachable {
+                let nextAttempt = ContinuousClock.now.advanced(by: .milliseconds(100))
+                try await Task.sleep(until: min(nextAttempt, deadline), clock: .continuous)
+            }
+        } while ContinuousClock.now < deadline
+        throw WatchExperimentError.notReachable
     }
 
     private func cameraSnapshot(_ experimentID: UUID) async throws -> WatchExperimentSnapshot {
@@ -139,6 +175,8 @@ public extension WatchExperimentClient {
     ) -> Bool {
         if response.phase == .failed { return true }
         if command.operation == .takePhoto, response.record?.phase == .capturing { return true }
+        if command.operation == .startVideo, response.record?.phase == .recording,
+           response.record?.startedAt != nil { return true }
         return response.phase == .completed
     }
 }

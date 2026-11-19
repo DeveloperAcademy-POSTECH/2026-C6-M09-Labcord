@@ -122,6 +122,13 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         didReceiveMessage message: [String: Any],
         replyHandler: @escaping ([String: Any]) -> Void
     ) {
+        if let screen = message[WatchExperimentTransport.screenKey] as? Data {
+            Task { @MainActor in
+                experiments.receiveScreen(screen)
+                replyHandler([:])
+            }
+            return
+        }
         if let list = message[WatchExperimentTransport.listSnapshotKey] as? Data {
             let version = message[WatchExperimentTransport.listVersionKey] as? Data
             Task { @MainActor in self.receiveList(list, versionData: version) }

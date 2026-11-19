@@ -46,7 +46,7 @@ struct TakePhoneExperimentPhotoIntent: AppIntent {
 struct StartPhoneExperimentVideoIntent: AppIntent {
     static let persistentIdentifier = "TogglePhoneExperimentVideoIntent"
     static let title: LocalizedStringResource = "Watch 실험 영상 녹화 요청"
-    static let description = IntentDescription("Watch 실험 화면에서 영상 녹화를 시작합니다.")
+    static let description = IntentDescription("Watch에서 영상 녹화를 시작하고, 다시 실행하면 중지합니다.")
     static let supportedModes: IntentModes = .foreground(.immediate)
     static let authenticationPolicy: IntentAuthenticationPolicy =
         .requiresLocalDeviceAuthentication

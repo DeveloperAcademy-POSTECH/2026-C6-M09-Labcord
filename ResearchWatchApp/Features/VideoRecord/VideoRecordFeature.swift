@@ -13,7 +13,7 @@ import LabcordWatchOS
 @Reducer
 struct VideoRecordFeature {
     enum Phase: Equatable {
-        case recording, review, saving, saved, closing, failed
+        case recording, review, saving, saved, closing, failed, saveFailed
     }
 
     @ObservableState
@@ -21,10 +21,12 @@ struct VideoRecordFeature {
         let experimentID: UUID
         var recordID: UUID?
         var recordRevision: UInt64?
+        var isPreparingStart = false
+        var stopWhenStarted = false
         var isRecovering = false
-        var shouldRetryStopOnStart = false
         var phaseBeforeClose: Phase?
         var phase: Phase = .recording
+        var failureMessage: String?
         var startedAt: Date?
         var isStopping = false
         var isRetaking = false
@@ -33,28 +35,32 @@ struct VideoRecordFeature {
     }
 
     enum Action {
-        case appeared, disappeared, start(UUID, resume: Bool), retryTapped
+        case openRequested, presentationEnded, start(UUID, resume: Bool), retryTapped
+        case startPrepared(WatchExperimentCommand)
         case startResponse(UUID, WatchExperimentResponse)
         case recordReceived(WatchRecordSnapshot)
-        case stopTapped, stopResponse(UUID, WatchExperimentResponse?)
+        case stopTapped, stopResponse(UUID, WatchExperimentResponse?), stopWaitElapsed(UUID)
         case autoSaveTick(UUID)
         case saveTapped, saveResponse(UUID, WatchExperimentResponse?)
         case retakeTapped, closeTapped
         case cancelFinished(UUID, WatchExperimentResponse?)
     }
 
-    private nonisolated enum CancelID: Hashable, Sendable {
-        case records, start, autoSave, settle, stop
+    nonisolated enum CancelID: Hashable, Sendable {
+        case records(UUID), start(UUID), autoSave(UUID), settle(UUID), stop(UUID), stopWait(UUID)
     }
 
+    let presentationID = UUID()
+
     @Dependency(\.watchConnectivitySession) private var connectivity
-    @Dependency(\.watchExperimentClient) private var client
+    @Dependency(\.watchExperimentClient) var client
     @Dependency(\.uuid) private var uuid
 
     var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
-            case .appeared:
+            case .openRequested:
+                guard state.recordID == nil, !state.shouldDismiss else { return .none }
                 let pending = client.pendingCameraRecord(
                     experimentID: state.experimentID, kind: .video
                 )
@@ -65,44 +71,39 @@ struct VideoRecordFeature {
                             await send(.recordReceived(record))
                         }
                     }
-                    .cancellable(id: CancelID.records, cancelInFlight: true),
-                    .send(.start(pending ?? uuid(), resume: pending != nil))
+                    .cancellable(id: CancelID.records(presentationID), cancelInFlight: true),
+                    start(pending ?? uuid(), resume: pending != nil, state: &state)
                 )
 
             case let .start(id, resume):
                 guard !state.shouldDismiss else { return .none }
-                state.recordID = id
-                state.recordRevision = nil
-                state.isRecovering = resume
-                state.shouldRetryStopOnStart = false
-                state.phase = .recording
-                state.startedAt = nil
-                state.isStopping = false
-                state.isRetaking = false
-                state.autoSaveSeconds = 3
-                let experimentID = state.experimentID
-                return .run { send in
-                    if !resume {
-                        do {
-                            let response = try await client.startCameraRecord(
-                                experimentID: experimentID, recordID: id, kind: .video
-                            )
-                            await send(.startResponse(id, response))
-                        } catch {
-                            guard !Task.isCancelled else { return }
-                            await send(.startResponse(id, .init(requestID: id, phase: .failed)))
-                        }
-                    }
-                    for await response in await client.cameraRecordUpdates(
-                        experimentID: experimentID, recordID: id, kind: .video
-                    ) {
-                        await send(.startResponse(id, response))
-                    }
-                }
-                .cancellable(id: CancelID.start, cancelInFlight: true)
+                return start(id, resume: resume, state: &state)
+
+            case let .startPrepared(command):
+                guard state.isPreparingStart, !state.shouldDismiss,
+                      state.recordID == command.requestID else { return .none }
+                state.isPreparingStart = false
+                return observeStart(
+                    experimentID: state.experimentID, recordID: command.requestID, command: command
+                )
 
             case .retryTapped:
+                if state.phase == .saveFailed { return .send(.saveTapped) }
                 guard state.phase == .failed else { return .none }
+                if let id = state.recordID, state.stopWhenStarted {
+                    state.phase = .recording
+                    state.failureMessage = nil
+                    state.isStopping = true
+                    return .merge(
+                        observeStart(experimentID: state.experimentID, recordID: id, command: nil),
+                        stopDeadline(id)
+                    )
+                }
+                if let id = state.recordID, state.startedAt != nil || client.pendingCameraRecord(
+                    experimentID: state.experimentID, kind: .video
+                ) == id {
+                    return .send(.start(id, resume: true))
+                }
                 return .send(.start(uuid(), resume: false))
 
             case let .startResponse(id, response):
@@ -132,31 +133,35 @@ struct VideoRecordFeature {
             case .stopTapped:
                 guard state.phase == .recording, !state.isStopping,
                       let id = state.recordID else { return .none }
+                if state.isPreparingStart { return cancelPreparation(state: &state) }
                 state.isStopping = true
-                state.shouldRetryStopOnStart = state.startedAt == nil
-                let experimentID = state.experimentID
-                return .run { send in
-                    let response = try? await client.finishCameraRecord(
-                        experimentID: experimentID, recordID: id, kind: .video,
-                        operation: .stopVideo
-                    )
-                    await send(.stopResponse(id, response))
+                guard state.startedAt != nil else {
+                    state.stopWhenStarted = true
+                    return stopDeadline(id)
                 }
-                .cancellable(id: CancelID.stop, cancelInFlight: true)
+                return .merge(
+                    stop(experimentID: state.experimentID, recordID: id), stopDeadline(id)
+                )
+
+            case let .stopWaitElapsed(id):
+                guard state.recordID == id, state.phase == .recording, state.isStopping else {
+                    return .none
+                }
+                state.isStopping = false
+                state.phase = .failed
+                state.failureMessage = "iPhone에서 녹화 정지를 확인하지 못했어요."
+                return .none
 
             case let .stopResponse(id, response):
-                guard state.recordID == id else { return .none }
+                guard state.recordID == id, !state.shouldDismiss,
+                      state.phase == .recording || state.phase == .failed else { return .none }
                 state.isStopping = false
                 if let record = response?.record, record.phase != .recording {
                     return .send(.recordReceived(record))
                 }
-                if state.phase == .recording, state.shouldRetryStopOnStart,
-                   state.startedAt != nil, response?.phase != .completed {
-                    state.shouldRetryStopOnStart = false
-                    return .send(.stopTapped)
-                }
-                if response?.phase == .completed { state.shouldRetryStopOnStart = false }
-                return .none
+                guard response?.phase != .completed else { return .none }
+                state.failureMessage = "iPhone에서 녹화 정지를 확인하지 못했어요."
+                return failStart(state: &state, recordID: id, clearPending: false)
 
             case let .autoSaveTick(id):
                 guard state.recordID == id, state.phase == .review,
@@ -165,11 +170,12 @@ struct VideoRecordFeature {
                 return seconds == 1 ? .send(.saveTapped) : .none
 
             case .saveTapped:
-                guard state.phase == .review, let id = state.recordID else { return .none }
+                guard state.phase == .review || state.phase == .saveFailed,
+                      let id = state.recordID else { return .none }
                 state.phase = .saving
                 let experimentID = state.experimentID
                 return .merge(
-                    .cancel(id: CancelID.autoSave),
+                    .cancel(id: CancelID.autoSave(presentationID)),
                     .run { send in
                         let response = try? await client.finishCameraRecord(
                             experimentID: experimentID, recordID: id, kind: .video,
@@ -177,17 +183,21 @@ struct VideoRecordFeature {
                         )
                         await send(.saveResponse(id, response))
                     }
-                    .cancellable(id: CancelID.settle, cancelInFlight: true)
+                    .cancellable(id: CancelID.settle(presentationID), cancelInFlight: true)
                 )
 
             case let .saveResponse(id, response):
-                guard state.recordID == id, state.phase == .saving else { return .none }
-                if let record = response?.record, record.phase == .saved {
+                guard state.recordID == id, !state.shouldDismiss,
+                      state.phase == .saving || state.phase == .saveFailed else { return .none }
+                let record = response?.record
+                if let record, record.phase == .saved || record.phase == .cancelled {
                     return .send(.recordReceived(record))
                 }
-                state.phase = .review
-                state.autoSaveSeconds = nil
-                return .none
+                if record?.originalRetained == false
+                    || (response?.error == .invalidState && record?.originalRetained != true) {
+                    return failUnavailableSave(state: &state, recordID: id)
+                }
+                return failSave(state: &state)
 
             case .retakeTapped:
                 guard state.phase == .review, let id = state.recordID else { return .none }
@@ -197,9 +207,11 @@ struct VideoRecordFeature {
                 return cancelVideo(experimentID: state.experimentID, recordID: id)
 
             case .closeTapped:
+                if state.isPreparingStart { return cancelPreparation(state: &state) }
                 guard state.phase != .closing, state.phase != .saving, !state.isStopping
                 else { return .none }
-                guard state.phase != .saved, state.phase != .failed, let id = state.recordID else {
+                guard state.phase != .saved, state.phase != .failed, state.phase != .saveFailed,
+                      let id = state.recordID else {
                     state.shouldDismiss = true
                     return .none
                 }
@@ -229,11 +241,15 @@ struct VideoRecordFeature {
                 }
                 return .none
 
-            case .disappeared:
+            case .presentationEnded:
+                state.shouldDismiss = true
                 return .merge(
-                    .cancel(id: CancelID.records),
-                    .cancel(id: CancelID.start), .cancel(id: CancelID.stop),
-                    .cancel(id: CancelID.autoSave), .cancel(id: CancelID.settle)
+                    .cancel(id: CancelID.records(presentationID)),
+                    .cancel(id: CancelID.start(presentationID)),
+                    .cancel(id: CancelID.stop(presentationID)),
+                    .cancel(id: CancelID.stopWait(presentationID)),
+                    .cancel(id: CancelID.autoSave(presentationID)),
+                    .cancel(id: CancelID.settle(presentationID))
                 )
             }
         }
@@ -241,33 +257,33 @@ struct VideoRecordFeature {
 }
 
 private extension VideoRecordFeature {
-    func failStart(state: inout State, recordID: UUID) -> Effect<Action> {
-        client.clearPendingCameraRecord(
-            experimentID: state.experimentID, kind: .video, recordID: recordID
-        )
-        state.phase = .failed
-        state.isStopping = false
-        return .merge(.cancel(id: CancelID.start), .cancel(id: CancelID.autoSave))
-    }
-
     func applyRecord(_ record: WatchRecordSnapshot, state: inout State) -> Effect<Action> {
         switch record.phase {
         case .recording:
+            if state.stopWhenStarted {
+                let alreadyTimedOut = state.phase == .failed
+                state.startedAt = record.startedAt
+                state.isRecovering = false
+                state.stopWhenStarted = false
+                state.isStopping = true
+                state.phase = .recording
+                let effect = stop(experimentID: state.experimentID, recordID: record.id)
+                return alreadyTimedOut ? .merge(effect, stopDeadline(record.id)) : effect
+            }
             if state.phase == .recording || state.phaseBeforeClose == .recording {
                 state.startedAt = record.startedAt
                 state.isRecovering = false
             }
-            if state.phase == .recording, state.shouldRetryStopOnStart, !state.isStopping {
-                state.shouldRetryStopOnStart = false
-                return .send(.stopTapped)
-            }
         case .previewing, .review:
+            let recoveringStop = state.phase == .failed
+                && (state.stopWhenStarted || state.startedAt != nil)
+            state.stopWhenStarted = false
             state.isStopping = false
             if state.phase == .closing {
                 state.phaseBeforeClose = .review
                 return .none
             }
-            guard state.phase == .recording else { return .none }
+            guard state.phase == .recording || recoveringStop else { return .none }
             state.phase = .review
             state.autoSaveSeconds = 3
             return .run { send in
@@ -276,7 +292,7 @@ private extension VideoRecordFeature {
                     await send(.autoSaveTick(record.id))
                 }
             }
-            .cancellable(id: CancelID.autoSave, cancelInFlight: true)
+            .cancellable(id: CancelID.autoSave(presentationID), cancelInFlight: true)
         case .saved, .cancelled:
             return finishRecord(record, state: &state)
         case .failed:
@@ -296,14 +312,26 @@ private extension VideoRecordFeature {
         if record.phase == .saved {
             state.phase = .saved
         } else if state.phase != .closing {
-            state.shouldDismiss = true
+            state.failureMessage = "iPhone에서 녹화가 취소됐어요."
+            state.startedAt = nil
+            return failStart(state: &state, recordID: record.id)
         }
-        return .merge(.cancel(id: CancelID.start), .cancel(id: CancelID.autoSave))
+        return .merge(
+            .cancel(id: CancelID.start(presentationID)),
+            .cancel(id: CancelID.autoSave(presentationID))
+        )
     }
 
     func applyFailure(_ record: WatchRecordSnapshot, state: inout State) -> Effect<Action> {
+        guard state.phase != .saved else { return .none }
         if record.originalRetained == false {
+            if state.phase == .review || state.phase == .saving || state.phase == .saveFailed {
+                return failUnavailableSave(state: &state, recordID: record.id)
+            }
             return failStart(state: &state, recordID: record.id)
+        }
+        if state.phase == .review || state.phase == .saving || state.phase == .saveFailed {
+            return failSave(state: &state)
         }
         if record.originalRetained == true {
             if state.phase == .closing {
@@ -313,17 +341,29 @@ private extension VideoRecordFeature {
             }
             state.autoSaveSeconds = nil
         } else if state.phase == .recording {
-            state.isRecovering = true
-            state.startedAt = nil
+            state.failureMessage = "이전 녹화 상태를 확인하지 못했어요."
+            return failStart(state: &state, recordID: record.id, clearPending: false)
         }
-        return .cancel(id: CancelID.autoSave)
+        return .cancel(id: CancelID.autoSave(presentationID))
+    }
+
+    func failUnavailableSave(state: inout State, recordID: UUID) -> Effect<Action> {
+        state.failureMessage = "iPhone에서 저장할 영상을 확인할 수 없어요."
+        return failStart(state: &state, recordID: recordID)
+    }
+
+    func failSave(state: inout State) -> Effect<Action> {
+        state.phase = .saveFailed
+        state.autoSaveSeconds = nil
+        state.failureMessage = "영상 저장을 확인하지 못했어요."
+        return .cancel(id: CancelID.autoSave(presentationID))
     }
 
     func cancelVideo(
         experimentID: UUID, recordID: UUID, stopFirst: Bool = false
     ) -> Effect<Action> {
         .merge(
-            .cancel(id: CancelID.autoSave),
+            .cancel(id: CancelID.autoSave(presentationID)),
             .run { send in
                 if stopFirst {
                     _ = try? await client.finishCameraRecord(
@@ -338,7 +378,7 @@ private extension VideoRecordFeature {
                 )
                 await send(.cancelFinished(recordID, response))
             }
-            .cancellable(id: CancelID.settle, cancelInFlight: true)
+            .cancellable(id: CancelID.settle(presentationID), cancelInFlight: true)
         )
     }
 }

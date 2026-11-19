@@ -14,6 +14,7 @@ struct PhotoRecordFeature {
         let experimentID: UUID
         var recordID: UUID?
         var recordRevision: UInt64?
+        var phoneScreen: WatchScreenSnapshot?
         var phase: Phase = .capturing
         var phaseBeforeClose: Phase?
         var autoSaveSeconds: Int? = 3
@@ -21,8 +22,8 @@ struct PhotoRecordFeature {
     }
 
     enum Action {
-        case appeared, disappeared, recordReceived(WatchRecordSnapshot)
-        case start(UUID, resume: Bool)
+        case openRequested, presentationEnded, recordReceived(WatchRecordSnapshot)
+        case screenReceived(WatchScreenSnapshot)
         case captureResponse(UUID, WatchExperimentResponse), captureWaitElapsed(UUID)
         case saveTapped, saveResponse(UUID, WatchExperimentResponse?)
         case retakeTapped, retryTapped
@@ -31,8 +32,11 @@ struct PhotoRecordFeature {
     }
 
     private nonisolated enum CancelID: Hashable, Sendable {
-        case records, autoSave, capture, settle, captureWait
+        case screens(UUID), records(UUID), autoSave(UUID)
+        case capture(UUID), settle(UUID), captureWait(UUID)
     }
+
+    private let presentationID = UUID()
 
     @Dependency(\.watchConnectivitySession) private var connectivity
     @Dependency(\.watchExperimentClient) private var client
@@ -41,7 +45,8 @@ struct PhotoRecordFeature {
     var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
-            case .appeared:
+            case .openRequested:
+                guard state.recordID == nil, !state.shouldDismiss else { return .none }
                 let pending = client.pendingCameraRecord(
                     experimentID: state.experimentID, kind: .photo
                 )
@@ -52,44 +57,19 @@ struct PhotoRecordFeature {
                             await send(.recordReceived(record))
                         }
                     }
-                    .cancellable(id: CancelID.records, cancelInFlight: true),
-                    .send(.start(pending ?? uuid(), resume: pending != nil))
-                )
-
-            case let .start(id, resume):
-                guard !state.shouldDismiss else { return .none }
-                state.recordID = id
-                state.recordRevision = nil
-                state.phase = resume ? .recovering : .capturing
-                state.autoSaveSeconds = 3
-                let experimentID = state.experimentID
-                let capture: Effect<Action> = .run { send in
-                    if !resume {
-                        do {
-                            let response = try await client.startCameraRecord(
-                                experimentID: experimentID, recordID: id, kind: .photo
-                            )
-                            await send(.captureResponse(id, response))
-                        } catch {
-                            guard !Task.isCancelled else { return }
-                            await send(.captureResponse(id, .init(requestID: id, phase: .failed)))
+                    .cancellable(id: CancelID.records(presentationID), cancelInFlight: true),
+                    .run { send in
+                        for await screen in await client.screens() {
+                            await send(.screenReceived(screen))
                         }
                     }
-                    for await response in await client.cameraRecordUpdates(
-                        experimentID: experimentID, recordID: id, kind: .photo
-                    ) {
-                        await send(.captureResponse(id, response))
-                    }
-                }
-                .cancellable(id: CancelID.capture, cancelInFlight: true)
-                return .merge(
-                    capture,
-                    .run { send in
-                        try await Task.sleep(for: .seconds(15))
-                        await send(.captureWaitElapsed(id))
-                    }
-                    .cancellable(id: CancelID.captureWait, cancelInFlight: true)
+                    .cancellable(id: CancelID.screens(presentationID), cancelInFlight: true),
+                    start(pending ?? uuid(), resume: pending != nil, state: &state)
                 )
+
+            case let .screenReceived(screen):
+                state.receiveScreen(screen)
+                return .none
 
             case let .captureWaitElapsed(id):
                 if state.recordID == id, state.phase == .capturing { state.phase = .recovering }
@@ -97,6 +77,7 @@ struct PhotoRecordFeature {
 
             case let .captureResponse(id, response):
                 guard state.recordID == id, !state.shouldDismiss else { return .none }
+                if let screen = response.screen { state.receiveScreen(screen) }
                 if let record = response.record { return .send(.recordReceived(record)) }
                 guard state.phase == .capturing || state.phase == .recovering else { return .none }
                 if response.phase == .failed && response.error != .resultUnknown
@@ -139,8 +120,8 @@ struct PhotoRecordFeature {
                 return .none
 
             case .retryTapped:
-                guard state.phase == .failed else { return .none }
-                return .send(.start(uuid(), resume: false))
+                guard state.phase == .failed, !state.shouldDismiss else { return .none }
+                return start(uuid(), resume: false, state: &state)
 
             case .retakeTapped:
                 guard state.phase == .review, let id = state.recordID else { return .none }
@@ -166,7 +147,7 @@ struct PhotoRecordFeature {
                     client.clearPendingCameraRecord(
                         experimentID: state.experimentID, kind: .photo, recordID: id
                     )
-                    if retake { return .send(.start(uuid(), resume: false)) }
+                    if retake { return start(uuid(), resume: false, state: &state) }
                     state.shouldDismiss = true
                 } else if let record = response?.record, record.phase == .saved {
                     return .send(.recordReceived(record))
@@ -178,25 +159,70 @@ struct PhotoRecordFeature {
                 }
                 return .none
 
-            case .disappeared:
+            case .presentationEnded:
+                state.shouldDismiss = true
+                state.recordID = nil
                 return .merge(
-                    .cancel(id: CancelID.records), .cancel(id: CancelID.autoSave),
-                    .cancel(id: CancelID.capture), .cancel(id: CancelID.settle),
-                    .cancel(id: CancelID.captureWait)
+                    .cancel(id: CancelID.screens(presentationID)),
+                    .cancel(id: CancelID.records(presentationID)),
+                    .cancel(id: CancelID.autoSave(presentationID)),
+                    .cancel(id: CancelID.capture(presentationID)),
+                    .cancel(id: CancelID.settle(presentationID)),
+                    .cancel(id: CancelID.captureWait(presentationID))
                 )
             }
         }
     }
+}
 
-    private func failCapture(state: inout State, recordID: UUID) -> Effect<Action> {
+private extension PhotoRecordFeature {
+    func start(_ id: UUID, resume: Bool, state: inout State) -> Effect<Action> {
+        state.recordID = id
+        state.recordRevision = nil
+        state.phase = resume ? .recovering : .capturing
+        state.autoSaveSeconds = 3
+        let experimentID = state.experimentID
+        let capture: Effect<Action> = .run { send in
+            if !resume {
+                do {
+                    let response = try await client.startCameraRecord(
+                        experimentID: experimentID, recordID: id, kind: .photo
+                    )
+                    await send(.captureResponse(id, response))
+                } catch {
+                    guard !Task.isCancelled else { return }
+                    await send(.captureResponse(id, .init(requestID: id, phase: .failed)))
+                }
+            }
+            for await response in await client.cameraRecordUpdates(
+                experimentID: experimentID, recordID: id, kind: .photo
+            ) {
+                await send(.captureResponse(id, response))
+            }
+        }
+        .cancellable(id: CancelID.capture(presentationID), cancelInFlight: true)
+        return .merge(
+            capture,
+            .run { send in
+                try await Task.sleep(for: .seconds(15))
+                await send(.captureWaitElapsed(id))
+            }
+            .cancellable(id: CancelID.captureWait(presentationID), cancelInFlight: true)
+        )
+    }
+
+    func failCapture(state: inout State, recordID: UUID) -> Effect<Action> {
         client.clearPendingCameraRecord(
             experimentID: state.experimentID, kind: .photo, recordID: recordID
         )
         state.phase = .failed
-        return .merge(.cancel(id: CancelID.capture), .cancel(id: CancelID.autoSave))
+        return .merge(
+            .cancel(id: CancelID.capture(presentationID)),
+            .cancel(id: CancelID.autoSave(presentationID))
+        )
     }
 
-    private func applyRecord(_ record: WatchRecordSnapshot, state: inout State) -> Effect<Action> {
+    func applyRecord(_ record: WatchRecordSnapshot, state: inout State) -> Effect<Action> {
         switch record.phase {
         case .review:
             if state.phase == .closing {
@@ -205,6 +231,10 @@ struct PhotoRecordFeature {
             }
             guard state.phase == .capturing || state.phase == .recovering else { return .none }
             state.phase = .review
+            guard record.canAutoSave != false else {
+                state.autoSaveSeconds = nil
+                return .none
+            }
             state.autoSaveSeconds = 3
             return .run { send in
                 for _ in 0..<3 {
@@ -212,7 +242,7 @@ struct PhotoRecordFeature {
                     await send(.autoSaveTick(record.id))
                 }
             }
-            .cancellable(id: CancelID.autoSave, cancelInFlight: true)
+            .cancellable(id: CancelID.autoSave(presentationID), cancelInFlight: true)
         case .saved, .cancelled:
             return finishRecord(record, state: &state)
         case .failed:
@@ -223,14 +253,14 @@ struct PhotoRecordFeature {
                 state.phase = record.originalRetained == true ? .review : .recovering
                 state.autoSaveSeconds = nil
             }
-            return .cancel(id: CancelID.autoSave)
+            return .cancel(id: CancelID.autoSave(presentationID))
         default:
             break
         }
         return .none
     }
 
-    private func finishRecord(
+    func finishRecord(
         _ record: WatchRecordSnapshot, state: inout State
     ) -> Effect<Action> {
         client.clearPendingCameraRecord(
@@ -241,15 +271,18 @@ struct PhotoRecordFeature {
         } else if state.phase != .closing {
             state.shouldDismiss = true
         }
-        return .merge(.cancel(id: CancelID.capture), .cancel(id: CancelID.autoSave))
+        return .merge(
+            .cancel(id: CancelID.capture(presentationID)),
+            .cancel(id: CancelID.autoSave(presentationID))
+        )
     }
 
-    private func settle(
+    func settle(
         _ experimentID: UUID, recordID: UUID, operation: WatchExperimentCommand.Operation,
         retake: Bool = false
     ) -> Effect<Action> {
         .merge(
-            .cancel(id: CancelID.autoSave),
+            .cancel(id: CancelID.autoSave(presentationID)),
             .run { send in
                 let response = try? await client.finishCameraRecord(
                     experimentID: experimentID, recordID: recordID, kind: .photo,
@@ -261,7 +294,21 @@ struct PhotoRecordFeature {
                     await send(.cancelFinished(recordID, retake: retake, response))
                 }
             }
-            .cancellable(id: CancelID.settle, cancelInFlight: true)
+            .cancellable(id: CancelID.settle(presentationID), cancelInFlight: true)
         )
+    }
+}
+
+private extension PhotoRecordFeature.State {
+    mutating func receiveScreen(_ screen: WatchScreenSnapshot) {
+        guard !shouldDismiss, screen.isValid else { return }
+        if let previous = phoneScreen {
+            if previous.epoch == screen.epoch {
+                guard screen.revision > previous.revision else { return }
+            } else if let previousEpoch = previous.epoch {
+                guard screen.epoch?.isNewer(than: previousEpoch) == true else { return }
+            }
+        }
+        phoneScreen = screen
     }
 }

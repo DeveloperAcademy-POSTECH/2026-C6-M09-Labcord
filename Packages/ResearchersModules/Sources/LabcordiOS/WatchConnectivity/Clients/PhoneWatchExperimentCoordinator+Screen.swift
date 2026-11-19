@@ -57,10 +57,11 @@ extension PhoneWatchExperimentCoordinator {
                 tokens.removeAll()
             }
             if pendingStartID != updated.experimentID { pendingStartID = nil }
+            let countdownChanged = currentScreen.scheduledPhoto != updated.scheduledPhoto
             currentScreenPathID = pathID
             currentScreen = updated
             lastScreenError = nil
-            publishScreen()
+            publishScreen(countdownChanged: countdownChanged)
         } catch {
             lastScreenError = .storageFailed
         }
@@ -93,7 +94,7 @@ extension PhoneWatchExperimentCoordinator {
         return currentScreen.withRevision(currentScreen.revision)
     }
 
-    func publishScreen(force: Bool = false) {
+    func publishScreen(force: Bool = false, countdownChanged: Bool = false) {
         guard currentScreen.revision > 0, let session = connectivity.session,
               WatchConnectivityState(session).canTransfer,
               let data = try? contextEncoder().encode(currentScreen) else { return }
@@ -113,6 +114,12 @@ extension PhoneWatchExperimentCoordinator {
         } catch {
             lastScreenError = .resultUnknown
         }
+        let resendCountdown = force && currentScreen.scheduledPhoto != nil
+        guard session.isReachable, countdownChanged || resendCountdown else { return }
+        let key = WatchExperimentTransport.screenKey
+        session.sendMessage([key: data], replyHandler: { _ in }, errorHandler: { error in
+            WatchConnectivityDiagnostics.failure("photo.countdown", id: key, error: error)
+        })
     }
 
     func versionedExperiments() throws -> (
@@ -278,5 +285,13 @@ extension PhoneWatchExperimentCoordinator {
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys
         return encoder
+    }
+}
+
+private extension WatchScreenSnapshot {
+    var scheduledPhoto: WatchScreenRecording? {
+        guard let recording, recording.kind == .photo, recording.phase == .capturing,
+              recording.countdownEndsAt != nil else { return nil }
+        return recording
     }
 }

@@ -20,13 +20,14 @@ struct ResearchWatchApp: App {
     @State private var pendingPhoneReentryID: UUID?
     @State private var dismissedStart: (id: UUID, until: Date)?
     @State private var isVoiceRecordPresented = false
+    @State private var photoRecording: StoreOf<PhotoRecordFeature>?
     @State private var isRemoteNavigationBlocked = false
     @State private var needsRouteReconciliation = false
     @State private var suppressLeaveNotification = false
 
     @State private var debugRootRevision = 0
 
-    private var isRecordPresented: Bool { isVoiceRecordPresented }
+    private var isRecordPresented: Bool { isVoiceRecordPresented || photoRecording != nil }
 
     private struct ScreenSyncKey: Hashable {
         let epoch: WatchStateEpoch?
@@ -55,6 +56,8 @@ struct ResearchWatchApp: App {
                         ExperimentView(
                             experiment: experiment,
                             isVoiceRecordPresented: $isVoiceRecordPresented,
+                            photoRecording: $photoRecording,
+                            phoneScreen: $remoteScreen,
                             onNavigationBlockedChanged: { isRemoteNavigationBlocked = $0 },
                             onPaused: {
                                 suppressLeaveNotification = true
@@ -102,9 +105,11 @@ struct ResearchWatchApp: App {
                     if case let .some(.experiment(experiment)) = previous.last {
                         if case let .some(.experiment(next)) = current.last {
                             if next.id != experiment.id {
+                                photoRecording = nil
                                 WatchRecordingShortcutCenter.shared.leaveExperiment(experiment.id)
                             }
                         } else {
+                            photoRecording = nil
                             WatchRecordingShortcutCenter.shared.leaveExperiment(experiment.id)
                             isRemoteNavigationBlocked = false
                             let shouldNotify = !suppressLeaveNotification
@@ -117,6 +122,9 @@ struct ResearchWatchApp: App {
                         }
                     }
                 }
+            }
+            .onChange(of: photoRecording) { previous, _ in
+                previous?.send(.presentationEnded)
             }
             .onChange(of: WatchRecordingShortcutCenter.shared.restorationID, initial: true) {
                 restoreGestureExperiment()
@@ -233,6 +241,7 @@ private extension ResearchWatchApp {
     }
 
     func resetToStart() {
+        photoRecording = nil
         pendingPhoneReentryID = nil
         dismissedStart = nil
         needsRouteReconciliation = false
