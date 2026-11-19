@@ -35,14 +35,14 @@
     "sha256": "18944a480fffb1492eea65c1531a4421a96b62c16ab4ea767b587b4e977b93b8",
     "filenames": [],
     "checkpointAsset": "LabcordDemo-protocol-buffer-1",
-    "imageAsset": "LabcordDemo-protocol-buffer-1-image",
-    "page": 1
+    "page": 1,
+    "signatureAsset": "LabcordDemo-protocol-buffer-1-signature"
   },
   {
     "sha256": "1bdfe19b20db1e51a0a4fbf11e35f9ee513929445d38d6ce3ce8be2e037c8f4e",
     "filenames": [],
     "checkpointAsset": "LabcordDemo-protocol-buffer-2",
-    "imageAsset": "LabcordDemo-protocol-buffer-2-image",
-    "page": 2
+    "page": 2,
+    "signatureAsset": "LabcordDemo-protocol-buffer-2-signature"
   }
 ]

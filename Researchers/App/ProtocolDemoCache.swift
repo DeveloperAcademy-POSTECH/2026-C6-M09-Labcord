@@ -11,14 +11,14 @@ enum ProtocolDemoCache {
         let sha256: String
         let filenames: [String]
         let checkpointAsset: String
-        let imageAsset: String?
+        let signatureAsset: String?
         let page: Int?
     }
 
     private nonisolated struct Source: Sendable {
         let entry: Entry
         let checkpoint: Data
-        let image: Data?
+        let signature: ImageSignature?
     }
 
     static func checkpoints(
@@ -33,8 +33,9 @@ enum ProtocolDemoCache {
             guard let checkpoint = NSDataAsset(name: entry.checkpointAsset)?.data else {
                 return nil
             }
-            let image = entry.imageAsset.flatMap { NSDataAsset(name: $0)?.data }
-            return Source(entry: entry, checkpoint: checkpoint, image: image)
+            let signature = entry.signatureAsset.flatMap { NSDataAsset(name: $0)?.data }
+                .flatMap { ImageSignature(referenceData: $0) }
+            return Source(entry: entry, checkpoint: checkpoint, signature: signature)
         }
         let matching = Task.detached(priority: .userInitiated) {
             match(inputs, to: sources)
@@ -50,10 +51,7 @@ enum ProtocolDemoCache {
         _ inputs: [ProtocolAnalysisJobInput], to sources: [Source]
     ) -> [(input: ProtocolAnalysisJobInput, checkpoint: Data)]? {
         let photoReferences = sources.compactMap { source -> (Source, ImageSignature)? in
-            guard let image = source.image, let signature = ImageSignature(image) else {
-                return nil
-            }
-            return (source, signature)
+            source.signature.map { (source, $0) }
         }
         var matches: [(ProtocolAnalysisJobInput, Source)] = []
         for input in inputs {
@@ -98,10 +96,17 @@ enum ProtocolDemoCache {
     }
 }
 
-private nonisolated struct ImageSignature {
+private nonisolated struct ImageSignature: Codable, Sendable {
     private static let side = 96
     let aspectRatio: Double
-    let pixels: [UInt8]
+    let pixels: Data
+
+    init?(referenceData: Data) {
+        guard let value = try? JSONDecoder().decode(Self.self, from: referenceData),
+              value.aspectRatio.isFinite, value.aspectRatio > 0,
+              value.pixels.count == Self.side * Self.side else { return nil }
+        self = value
+    }
 
     init?(_ data: Data) {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil),
@@ -125,7 +130,7 @@ private nonisolated struct ImageSignature {
         }
         guard drawn else { return nil }
         aspectRatio = Double(image.width) / Double(image.height)
-        pixels = buffer
+        pixels = Data(buffer)
     }
 
     func matches(_ reference: ImageSignature) -> Bool {
