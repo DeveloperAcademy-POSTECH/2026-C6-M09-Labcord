@@ -72,8 +72,9 @@ struct ExperimentListFeature {
                         RecordingDemoSeeder.isVisible($0.id, includesDemo: state.includesDemo)
                     }
                     if let entry = state.createdEntry {
-                        state.entries.removeAll { $0.id == entry.id }
-                        state.entries.append(entry)
+                        if !state.entries.contains(where: { $0.id == entry.id }) {
+                            state.entries.append(entry)
+                        }
                         state.createdEntry = nil
                     }
                     state.entries.sort(by: ExperimentListEntry.newestFirst)
