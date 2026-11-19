@@ -338,7 +338,6 @@ private extension WatchAudioReceiver {
         defer { try? FileManager.default.removeItem(at: source) }
         let receipt = try await archive.statusIfPresent(header)
         try Task.checkCancellation()
-        // No actor hop between checking cancellation and committing the stable record ID.
         guard !receipt.isCancelled, !cancelling.contains(header.recordingID) else { return }
         do {
             try client.saveAudio(
