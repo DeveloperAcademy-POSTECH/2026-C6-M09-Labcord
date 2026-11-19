@@ -7,6 +7,7 @@ import LabcordShared
 struct PhotoFeature {
     @ObservableState
     struct State: Equatable {
+        @SharedReader(.suppressPhotoShutterSound) var suppressPhotoShutterSound = false
         var isScheduled = false
         var scheduledAt: Date?
         var isCapturing = false
@@ -161,11 +162,14 @@ struct PhotoFeature {
                 state.isCapturing = true
                 let id = state.requestedRecordID ?? uuid()
                 state.requestedRecordID = id
+                let suppressShutterSound = state.suppressPhotoShutterSound
                 return .merge(
                     cancelDelay,
                     .run { send in
                         do {
-                            let data = try await cameraSessionClient.capturePhoto()
+                            let data = try await cameraSessionClient.capturePhoto(
+                                suppressShutterSound
+                            )
                             await send(.captured(id, data))
                         } catch let error as PermissionAccessError {
                             await send(.captureFailed(

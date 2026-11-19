@@ -29,6 +29,11 @@ struct DebugMenuView: View {
                     )
                 }
 
+                Toggle("사진 셔터음 끄기", isOn: Binding(
+                    get: { store.debugMenu.suppressPhotoShutterSound },
+                    set: { store.send(.debugMenu(.setPhotoShutterSoundSuppression($0))) }
+                ))
+
                 Button("앱 초기화", role: .destructive) {
                     confirmsReset = true
                 }

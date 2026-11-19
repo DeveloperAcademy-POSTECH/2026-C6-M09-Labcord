@@ -19,7 +19,10 @@ public actor CameraSession {
     private var activeCamera: AVCaptureDevice?
     private var cachedPreviewConnector: CameraPreviewConnector?
     private let photoOutput = AVCapturePhotoOutput()
-    private var photoDelegate: PhotoCaptureDelegate?
+    private var isCapturingPhoto = false
+    #if DEBUG
+    private let silentPhoto = SilentPreviewPhotoCapture()
+    #endif
     private let movieOutput = AVCaptureMovieFileOutput()
     private var microphoneInput: AVCaptureDeviceInput?
     private var videoDelegate: VideoRecordingDelegate?
@@ -36,8 +39,14 @@ public actor CameraSession {
         let overlayHub = CameraHandOverlayHub()
         handEventHub = hub
         handOverlayHub = overlayHub
+        #if DEBUG
+        let onFrame = silentPhoto.receive
+        #else
+        let onFrame: ((CVPixelBuffer, CGFloat) -> Void)? = nil
+        #endif
         handDetector = CameraHandDetector(
             queue: handTrackingQueue,
+            onFrame: onFrame,
             onHold: { hub.emit($0) },
             onOverlay: { overlayHub.emit($0) }
         )
@@ -189,45 +198,25 @@ public actor CameraSession {
 }
 
 extension CameraSession {
-    public func capturePhoto() async throws -> Data {
+    public func capturePhoto(suppressShutterSound: Bool) async throws -> Data {
         try await waitForCaptureSession()
-        guard photoDelegate == nil else { throw CameraSessionError.alreadyCapturingPhoto }
+        guard !isCapturingPhoto else { throw CameraSessionError.alreadyCapturingPhoto }
         guard videoSessionID == nil else { throw CameraSessionError.alreadyRecording }
-        let audioSession = AVAudioSession.sharedInstance()
-        let usesAudioInput = microphoneInput != nil || !audioSession.currentRoute.inputs.isEmpty
-        let permitsRecordingSounds = audioSession.allowHapticsAndSystemSoundsDuringRecording
-        let restoreRecordingAudio = usesAudioInput && !permitsRecordingSounds
-            && CameraCaptureConfiguration.setRecordingSystemSounds(true)
-        var deadline: Task<Void, Never>?
-        defer {
-            deadline?.cancel()
-            photoDelegate = nil
-            if restoreRecordingAudio {
-                _ = CameraCaptureConfiguration.setRecordingSystemSounds(false)
-            }
+        isCapturingPhoto = true
+        defer { isCapturingPhoto = false }
+        #if DEBUG
+        if suppressShutterSound && !photoOutput.isShutterSoundSuppressionSupported {
+            return try await silentPhoto.capture(camera: activeCamera)
         }
-
+        #endif
         CameraCaptureConfiguration.configureCaptureRotation(
             for: photoOutput.connection(with: .video), camera: activeCamera
         )
-
-        let data: Data = try await withCheckedThrowingContinuation { continuation in
-            let delegate = PhotoCaptureDelegate(continuation: continuation)
-            photoDelegate = delegate
-            deadline = Task {
-                try? await Task.sleep(for: .seconds(8))
-                if !Task.isCancelled { delegate.timeout() }
-            }
-            let settings = AVCapturePhotoSettings()
-            let allowsSystemSounds = audioSession.allowHapticsAndSystemSoundsDuringRecording
-            Self.logger.notice("""
-                native shutter request=\(settings.uniqueID) audioInput=\(usesAudioInput) \
-                systemSoundsAllowed=\(allowsSystemSounds)
-                """)
-            photoOutput.capturePhoto(with: settings, delegate: delegate)
-        }
-        Self.logger.info("Photo captured: \(data.count) bytes")
-        return data
+        return try await CameraCaptureConfiguration.captureNativePhoto(
+            output: photoOutput,
+            suppressShutterSound: suppressShutterSound,
+            usesMicrophone: microphoneInput != nil
+        )
     }
 
     public func recordVideo(
@@ -239,7 +228,7 @@ extension CameraSession {
         }
         let deadline = ContinuousClock().now + .milliseconds(1500)
         try await waitForCaptureSession(until: deadline)
-        guard photoDelegate == nil else { throw CameraSessionError.alreadyCapturingPhoto }
+        guard !isCapturingPhoto else { throw CameraSessionError.alreadyCapturingPhoto }
         guard videoSessionID == nil else { throw CameraSessionError.alreadyRecording }
         videoSessionID = id
         defer {

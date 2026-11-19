@@ -10,6 +10,7 @@ nonisolated final class CameraHandDetector: NSObject,
     private let onHold: @Sendable (CameraHandEvent) -> Void
     private let onOverlay: @Sendable (CameraHandOverlayHub.Frame) -> Void
     private let queue: DispatchQueue
+    private let onFrame: ((CVPixelBuffer, CGFloat) -> Void)?
     private var holdTracker = HandHoldTracker()
     private var orientationTracker = HandOrientationTracker()
     private var processingTask: Task<Void, Never>?
@@ -17,10 +18,12 @@ nonisolated final class CameraHandDetector: NSObject,
 
     init(
         queue: DispatchQueue,
+        onFrame: ((CVPixelBuffer, CGFloat) -> Void)?,
         onHold: @escaping @Sendable (CameraHandEvent) -> Void,
         onOverlay: @escaping @Sendable (CameraHandOverlayHub.Frame) -> Void
     ) {
         self.queue = queue
+        self.onFrame = onFrame
         self.onHold = onHold
         self.onOverlay = onOverlay
         super.init()
@@ -39,10 +42,12 @@ nonisolated final class CameraHandDetector: NSObject,
         didOutput sampleBuffer: CMSampleBuffer,
         from connection: AVCaptureConnection
     ) {
+        let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer)
+        if let imageBuffer { onFrame?(imageBuffer, connection.videoRotationAngle) }
         guard processingTask == nil else { return }
         let generation = generation
         let imageSize: CGSize
-        if let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
+        if let imageBuffer {
             imageSize = CGSize(
                 width: CVPixelBufferGetWidth(imageBuffer),
                 height: CVPixelBufferGetHeight(imageBuffer)
