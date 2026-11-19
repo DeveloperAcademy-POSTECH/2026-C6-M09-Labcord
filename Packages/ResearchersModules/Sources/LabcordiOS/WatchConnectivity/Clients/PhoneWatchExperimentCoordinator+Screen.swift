@@ -11,10 +11,10 @@ extension PhoneWatchExperimentCoordinator {
             var ids = Set(states.keys)
             if let visibleExperimentID { ids.insert(visibleExperimentID) }
             if let id = currentScreen.experimentID { ids.insert(id) }
+            publishScreen()
             for id in ids.sorted(by: { $0.uuidString < $1.uuidString }) {
                 if let snapshot = try? snapshot(id) { publish(snapshot) }
             }
-            publishScreen()
             publishAvailableExperiments()
         }
     }
@@ -28,7 +28,7 @@ extension PhoneWatchExperimentCoordinator {
             return
         }
         do {
-            let updated = candidate.withRevision(try nextRevision())
+            let updated = candidate.withRevision(try nextRevision(), epoch: stateEpoch)
             if currentScreen.destination != updated.destination
                 || currentScreen.experimentID != updated.experimentID
                 || currentScreen.stage != updated.stage {
@@ -68,6 +68,12 @@ extension PhoneWatchExperimentCoordinator {
               let session = connectivity.session, session.activationState == .activated,
               let data = try? JSONEncoder().encode(refreshedScreen()) else { return }
         var context = session.applicationContext
+        let previous = (context[WatchExperimentTransport.screenKey] as? Data).flatMap {
+            try? JSONDecoder().decode(WatchScreenSnapshot.self, from: $0)
+        }
+        if let previous, previous.epoch != stateEpoch {
+            Self.removePreviousEpoch(from: &context)
+        }
         context[WatchExperimentTransport.screenKey] = data
         do {
             try session.updateApplicationContext(context)
@@ -77,22 +83,56 @@ extension PhoneWatchExperimentCoordinator {
         }
     }
 
-    func availableExperiments() throws -> [WatchExperimentSummary] {
-        try client.watchSummaries()
+    func versionedExperiments() throws -> (
+        summaries: [WatchExperimentSummary], version: WatchStateVersion
+    ) {
+        let summaries = try client.watchSummaries()
+        if let lastPublishedList, lastPublishedList.summaries == summaries {
+            return lastPublishedList
+        }
+        let list = (summaries, WatchStateVersion(epoch: stateEpoch, revision: try nextRevision()))
+        lastPublishedList = list
+        return list
     }
 
     func publishAvailableExperiments() {
         guard let session = connectivity.session, session.activationState == .activated,
-              let summaries = try? availableExperiments(),
-              let data = try? JSONEncoder().encode(summaries) else { return }
+              let list = try? versionedExperiments() else { return }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
         let key = WatchExperimentTransport.listSnapshotKey
-        guard session.applicationContext[key] as? Data != data else { return }
+        let versionKey = WatchExperimentTransport.listVersionKey
+        guard let version = try? encoder.encode(list.version),
+              session.applicationContext[versionKey] as? Data != version,
+              let data = try? encoder.encode(list.summaries) else { return }
         var context = session.applicationContext
         context[key] = data
+        context[versionKey] = version
         try? session.updateApplicationContext(context)
         if session.isReachable {
-            session.sendMessage([key: data], replyHandler: { _ in }, errorHandler: { _ in })
+            session.sendMessage(
+                [key: data, versionKey: version], replyHandler: { _ in }, errorHandler: { _ in }
+            )
         }
+    }
+
+    func clearPublishedState() {
+        guard let session = connectivity.session, session.activationState == .activated else {
+            return
+        }
+        var context = session.applicationContext
+        Self.removePreviousEpoch(from: &context)
+        context.removeValue(forKey: WatchExperimentTransport.screenKey)
+        context.removeValue(forKey: WatchSessionOpenResponse.messageKey)
+        try? session.updateApplicationContext(context)
+    }
+
+    private static func removePreviousEpoch(from context: inout [String: Any]) {
+        context.removeValue(forKey: WatchExperimentTransport.snapshotKey)
+        context.removeValue(forKey: WatchExperimentTransport.listSnapshotKey)
+        context.removeValue(forKey: WatchExperimentTransport.listVersionKey)
+        context.removeValue(forKey: WatchExperimentTransport.backgroundResponseKey)
+        context.removeValue(forKey: WatchRecordTransport.snapshotKey)
     }
 
     func navigate(_ command: WatchExperimentCommand) async throws -> WatchExperimentResponse {
@@ -109,7 +149,7 @@ extension PhoneWatchExperimentCoordinator {
               lastScreenError != .invalidPayload else {
             throw WatchExperimentError.storageFailed
         }
-        guard candidate.revision == current.revision else {
+        guard candidate.matchesRevision(of: current) else {
             throw WatchExperimentError.staleRevision
         }
         if command.discardTimerDraft == true {
@@ -131,7 +171,7 @@ extension PhoneWatchExperimentCoordinator {
                 destination: candidate.destination, experimentID: candidate.experimentID,
                 stage: candidate.stage, countdownEndsAt: candidate.countdownEndsAt,
                 revision: candidate.revision, recordedAt: candidate.recordedAt,
-                timerDraftSeconds: candidate.timerDraftSeconds
+                timerDraftSeconds: candidate.timerDraftSeconds, epoch: candidate.epoch
             ),
             discardTimerDraft: command.discardTimerDraft
         )
@@ -157,7 +197,7 @@ extension PhoneWatchExperimentCoordinator {
             sessionVisibility[id] = active
         }
         return state.snapshot(
-            revision: revisions[id] ?? 0, at: .now, phoneSessionActive: active
+            revision: revisions[id] ?? 0, at: .now, phoneSessionActive: active, epoch: stateEpoch
         )
     }
 

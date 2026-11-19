@@ -50,9 +50,10 @@ public extension WatchExperimentClient {
     func startCameraRecord(
         experimentID: UUID, recordID: UUID, kind: WatchRecordSnapshot.Kind
     ) async throws -> WatchExperimentResponse {
-        let revision = try await cameraRevision(experimentID)
+        let current = try await cameraSnapshot(experimentID)
         let preparation = try await waitForCameraCommand(.init(
-            operation: .prepareStart, experimentID: experimentID, expectedRevision: revision
+            operation: .prepareStart, experimentID: experimentID,
+            expectedRevision: current.revision, expectedEpoch: current.epoch
         ))
         guard let token = preparation.startToken else {
             throw preparation.error ?? WatchExperimentError.requestExpired
@@ -64,8 +65,9 @@ public extension WatchExperimentClient {
         return try await waitForCameraCommand(.init(
             requestID: recordID, operation: kind == .photo ? .takePhoto : .startVideo,
             experimentID: experimentID,
-            expectedRevision: preparation.snapshot?.revision ?? revision,
-            targetID: recordID, startToken: token, recordKind: kind
+            expectedRevision: preparation.snapshot?.revision ?? current.revision,
+            targetID: recordID, startToken: token, recordKind: kind,
+            expectedEpoch: current.epoch
         ))
     }
 
@@ -73,10 +75,10 @@ public extension WatchExperimentClient {
         experimentID: UUID, recordID: UUID, kind: WatchRecordSnapshot.Kind,
         operation: WatchExperimentCommand.Operation
     ) async throws -> WatchExperimentResponse {
-        let revision = try await cameraRevision(experimentID)
+        let current = try await cameraSnapshot(experimentID)
         return try await waitForCameraCommand(.init(
-            operation: operation, experimentID: experimentID, expectedRevision: revision,
-            targetID: recordID, recordKind: kind
+            operation: operation, experimentID: experimentID, expectedRevision: current.revision,
+            targetID: recordID, recordKind: kind, expectedEpoch: current.epoch
         ))
     }
 
@@ -97,12 +99,12 @@ public extension WatchExperimentClient {
         "watch.camera.pending.\(kind.rawValue).\(experimentID.uuidString)"
     }
 
-    private func cameraRevision(_ experimentID: UUID) async throws -> UInt64 {
+    private func cameraSnapshot(_ experimentID: UUID) async throws -> WatchExperimentSnapshot {
         let response = try await send(.init(operation: .snapshot, experimentID: experimentID))
         guard response.phase == .completed, let snapshot = response.snapshot else {
             throw response.error ?? WatchExperimentError.resultUnknown
         }
-        return snapshot.revision
+        return snapshot
     }
 
     private func waitForCameraCommand(

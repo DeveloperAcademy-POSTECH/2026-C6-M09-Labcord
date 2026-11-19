@@ -29,7 +29,8 @@ extension PhoneWatchExperimentCoordinator {
         }
         guard let id = command.experimentID else { throw WatchExperimentError.invalidPayload }
         let current = try snapshot(id)
-        guard command.expectedRevision == current.revision else {
+        guard command.expectedRevision == current.revision,
+              command.expectedEpoch == nil || command.expectedEpoch == current.epoch else {
             throw WatchExperimentError.staleRevision
         }
         if let visibleExperimentID, visibleExperimentID != id {

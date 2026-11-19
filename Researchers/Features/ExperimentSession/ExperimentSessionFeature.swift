@@ -24,6 +24,7 @@ struct ExperimentSessionFeature {
         var videoScreenElapsed: TimeInterval?
         var detail: ExperimentSessionDetail?
         var isLoadingDetail = false
+        var watchOpenRequestID: UUID?
         var detailLoadFailed = false
         var timer: SessionTimerFeature.State
 
@@ -173,6 +174,12 @@ private extension ExperimentSessionFeature {
             case .appEnteredBackground:
                 return .send(.capture(.camera(.appEnteredBackground)))
             case .setupLeaveTapped:
+                if let requestID = state.watchOpenRequestID {
+                    PhoneWatchExperimentCoordinator.shared.finishOpenSession(
+                        requestID, error: .requestExpired
+                    )
+                    return .none
+                }
                 return .merge(
                     .send(.permissions(.cancelRequest)),
                     .send(.pause(.delegate(.returnHomeRequested)))
@@ -371,26 +378,4 @@ private extension ExperimentSessionFeature {
         }
     }
 
-    func prepareVoiceRecording(state: inout State) -> Effect<Action> {
-        guard state.watchCommand == nil, !state.isRemotePreview,
-              !PhoneWatchAudioService.shared.hasUnsettledRecording(in: state.experimentID)
-        else { return .none }
-        guard state.detail != nil else {
-            if state.isLoadingDetail {
-                state.voice.errorMessage = "실험 정보를 불러오고 있어요. 잠시 후 다시 시도해 주세요."
-            } else {
-                state.detailLoadFailed = true
-            }
-            return .none
-        }
-        guard state.voice.phase == .hidden,
-              state.capture.isCameraViewVisible,
-              !state.capture.isCapturingPhoto,
-              state.capture.capturedPhotoData == nil,
-              state.capture.videoPhase == .idle else { return .none }
-        return .merge(
-            .send(.capture(.cancelPhotoGesture)),
-            .send(.voice(.prepareRequested))
-        )
-    }
 }

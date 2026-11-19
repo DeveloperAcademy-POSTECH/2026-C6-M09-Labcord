@@ -45,11 +45,8 @@ extension ExperimentFeature {
         _ snapshot: WatchExperimentSnapshot, state: inout State
     ) -> Effect<Action> {
         guard snapshot.experiment.id == state.experimentID,
-              state.snapshot.map({ current in
-                  snapshot.revision > current.revision
-                      || snapshot.revision == current.revision
-                          && snapshot.recordedAt >= current.recordedAt
-              }) ?? true else { return .none }
+              state.snapshot.map({ snapshot.isNewer(than: $0) }) ?? true else { return .none }
+        let changedEpoch = state.snapshot.map { $0.epoch != snapshot.epoch } ?? false
         state.snapshot = snapshot
         state.isLoading = false
         let remoteIDs = Set(snapshot.timers.map(\.id))
@@ -75,6 +72,9 @@ extension ExperimentFeature {
         case .completed where state.hasObservedRunning:
             state.closeResult = .completed
             state.overlay = nil
+        case .ready where changedEpoch && state.hasObservedRunning:
+            state.closeResult = .sessionUnavailable
+            state.overlay = nil
         default:
             break
         }
@@ -89,7 +89,8 @@ extension ExperimentFeature {
                 let snapshot = try await currentSnapshot(experimentID: experimentID)
                 let command = WatchExperimentCommand(
                     operation: operation, experimentID: experimentID,
-                    expectedRevision: snapshot.revision, targetID: id
+                    expectedRevision: snapshot.revision, targetID: id,
+                    expectedEpoch: snapshot.epoch
                 )
                 try await sendUntilCompleted(command, experimentID: experimentID)
                 let refreshed = try await watchExperimentClient.send(
@@ -130,7 +131,8 @@ extension ExperimentFeature {
                     targetID: pendingID,
                     durationSeconds: pending.timer.durationSeconds,
                     timerStartedAt: pending.timer.startedAt,
-                    timerPauseIntervals: pending.timer.pauseIntervals
+                    timerPauseIntervals: pending.timer.pauseIntervals,
+                    expectedEpoch: snapshot.epoch
                 )
                 try await sendUntilCompleted(command, experimentID: experimentID)
                 let refreshed = try await watchExperimentClient.send(
@@ -219,7 +221,7 @@ extension ExperimentFeature {
                     }
                     let command = WatchExperimentCommand(
                         operation: operation, experimentID: experimentID,
-                        expectedRevision: snapshot.revision
+                        expectedRevision: snapshot.revision, expectedEpoch: snapshot.epoch
                     )
                     do {
                         var response = try await watchExperimentClient.send(command)

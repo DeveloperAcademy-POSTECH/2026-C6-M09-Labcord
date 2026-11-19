@@ -29,12 +29,13 @@ public struct WatchRecordSnapshot: Codable, Equatable, Sendable {
     public let phase: Phase
     public let startedAt: Date?
     public let canAutoSave: Bool?
+    public let epoch: WatchStateEpoch?
 
     public init(
         id: UUID, kind: Kind, phase: Phase, startedAt: Date? = nil, canAutoSave: Bool? = nil,
         experimentID: UUID? = nil, revision: UInt64? = nil, transcript: String? = nil,
         isFinalTranscript: Bool? = nil, originalRetained: Bool? = nil,
-        error: WatchExperimentError? = nil
+        error: WatchExperimentError? = nil, epoch: WatchStateEpoch? = nil
     ) {
         self.experimentID = experimentID
         self.revision = revision
@@ -47,13 +48,17 @@ public struct WatchRecordSnapshot: Codable, Equatable, Sendable {
         self.phase = phase
         self.startedAt = startedAt
         self.canAutoSave = canAutoSave
+        self.epoch = epoch
     }
 
-    public func withContext(experimentID: UUID, revision: UInt64?) -> Self {
+    public func withContext(
+        experimentID: UUID, revision: UInt64?, epoch: WatchStateEpoch? = nil
+    ) -> Self {
         Self(
             id: id, kind: kind, phase: phase, startedAt: startedAt, canAutoSave: canAutoSave,
             experimentID: experimentID, revision: revision, transcript: transcript,
-            isFinalTranscript: isFinalTranscript, originalRetained: originalRetained, error: error
+            isFinalTranscript: isFinalTranscript, originalRetained: originalRetained, error: error,
+            epoch: epoch ?? self.epoch
         )
     }
 }

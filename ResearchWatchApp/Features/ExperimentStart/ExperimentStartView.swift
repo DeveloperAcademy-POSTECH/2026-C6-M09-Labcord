@@ -8,18 +8,15 @@ struct ExperimentStartView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
     @State private var store: StoreOf<ExperimentStartFeature>
-    let onCountdownChanged: (Bool) -> Void
     let onExperimentStarted: () -> Void
 
     init(
         experiment: WatchExperimentSummary,
-        onCountdownChanged: @escaping (Bool) -> Void = { _ in },
         onExperimentStarted: @escaping () -> Void
     ) {
         _store = State(initialValue: Store(initialState: .init(experiment: experiment)) {
             ExperimentStartFeature()
         })
-        self.onCountdownChanged = onCountdownChanged
         self.onExperimentStarted = onExperimentStarted
     }
 
@@ -55,7 +52,7 @@ struct ExperimentStartView: View {
                 .padding(.bottom, 10)
 
             case .checkingActiveExperiment, .requestingPermission:
-                Color.clear
+                ProgressView()
 
             case .permissionDenied:
                 VStack(spacing: 8) {
@@ -70,6 +67,21 @@ struct ExperimentStartView: View {
             case let .countdown(number):
                 CountdownRingView(number: number)
                     .padding(.horizontal, 7)
+
+            case .waitingForPhone:
+                VStack(spacing: 8) {
+                    ProgressView()
+                    Text("iPhone에서 실험을 준비하고 있어요.")
+                        .multilineTextAlignment(.center)
+                }
+
+            case let .failed(error):
+                VStack(spacing: 8) {
+                    Text(message(for: error))
+                        .multilineTextAlignment(.center)
+                    Button("다시 시도") { store.send(.startTapped) }
+                }
+                .padding(.horizontal, 9.5)
 
             case .experiment:
                 Color.clear
@@ -99,11 +111,6 @@ struct ExperimentStartView: View {
             }
         }
         .onChange(of: store.phase) { _, phase in
-            if case .countdown = phase {
-                onCountdownChanged(true)
-            } else {
-                onCountdownChanged(false)
-            }
             if phase == .experiment { onExperimentStarted() }
         }
         .onChange(of: scenePhase) { _, phase in
@@ -114,6 +121,21 @@ struct ExperimentStartView: View {
 }
 
 private extension ExperimentStartView {
+    func message(for error: WatchExperimentError) -> String {
+        switch error {
+        case .phoneUnlockRequired: "iPhone 잠금을 해제해 주세요."
+        case .notReachable: "iPhone과 연결할 수 없어요."
+        case .deliveryTimeout, .requestExpired: "iPhone의 실험 시작 확인을 기다리다 시간이 지났어요."
+        case .permissionDenied: "iPhone에서 실험에 필요한 권한을 확인해 주세요."
+        case .activeExperimentConflict: "iPhone에서 다른 실험이 진행 중이에요."
+        case .phoneBusy: "iPhone의 작업을 마친 뒤 다시 시도해 주세요."
+        case .unsupportedVersion: "iPhone의 LabCord를 업데이트해 주세요."
+        case .cameraUnavailable: "iPhone에서 카메라를 준비하지 못했어요."
+        case .experimentNotFound: "선택한 실험을 iPhone에서 찾을 수 없어요."
+        default: "iPhone에서 실험을 시작하지 못했어요."
+        }
+    }
+
     func closeActiveExperimentConflict() {
         store.send(.activeExperimentConflictDismissed)
         dismiss()

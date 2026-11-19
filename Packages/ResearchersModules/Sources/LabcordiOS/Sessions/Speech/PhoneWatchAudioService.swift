@@ -213,7 +213,8 @@ public final class PhoneWatchAudioService {
             experimentID: receipt.header.experimentID, revision: revision,
             transcript: receipt.transcript?.text, isFinalTranscript: receipt.transcript?.isFinal,
             originalRetained: !receipt.receivedSequences.isEmpty,
-            error: receipt.failure?.watchExperimentError
+            error: receipt.failure?.watchExperimentError,
+            epoch: PhoneWatchExperimentCoordinator.shared.stateEpoch
         )
         if changed {
             latest[recordID] = receipt

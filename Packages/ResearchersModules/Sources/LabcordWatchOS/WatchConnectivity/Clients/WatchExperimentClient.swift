@@ -17,11 +17,10 @@ public struct WatchExperimentClient: Sendable {
     public var isReachable: @Sendable () async -> Bool
     public var connectionStatus: @Sendable () async -> WatchConnectionStatus
     public var retryActivation: @Sendable () async -> Void
-    public var list: @Sendable () async throws -> [WatchExperimentSummary]
-    public var lists: @Sendable () async -> AsyncStream<[WatchExperimentSummary]>
-    public var cachedList: @Sendable () async -> [WatchExperimentSummary]?
-    public var requestPhoneSession: @Sendable (UUID) async -> Void
-    public var cancelPhoneSession: @Sendable (UUID) async -> Void
+    public var list: @Sendable () async throws -> WatchExperimentList
+    public var lists: @Sendable () async -> AsyncStream<WatchExperimentListUpdate>
+    public var requestPhoneSession: @Sendable (WatchSessionOpenRequest) async throws -> Void
+    public var cancelPhoneSession: @Sendable (WatchSessionOpenRequest) async -> Void
     public var enterPhoneSession: @Sendable (UUID) async -> Void
     public var leavePhoneSession: @Sendable (UUID) async -> Void
 
@@ -31,13 +30,15 @@ public struct WatchExperimentClient: Sendable {
         isReachable: @escaping @Sendable () async -> Bool,
         connectionStatus: @escaping @Sendable () async -> WatchConnectionStatus,
         retryActivation: @escaping @Sendable () async -> Void,
-        list: @escaping @Sendable () async throws -> [WatchExperimentSummary] = { [] },
-        lists: @escaping @Sendable () async -> AsyncStream<[WatchExperimentSummary]> = {
+        list: @escaping @Sendable () async throws -> WatchExperimentList = {
+            throw WatchExperimentError.notReachable
+        },
+        lists: @escaping @Sendable () async -> AsyncStream<WatchExperimentListUpdate> = {
             AsyncStream { $0.finish() }
         },
-        cachedList: @escaping @Sendable () async -> [WatchExperimentSummary]? = { nil },
-        requestPhoneSession: @escaping @Sendable (UUID) async -> Void = { _ in },
-        cancelPhoneSession: @escaping @Sendable (UUID) async -> Void = { _ in },
+        requestPhoneSession: @escaping @Sendable (WatchSessionOpenRequest) async throws -> Void
+            = { _ in throw WatchExperimentError.notReachable },
+        cancelPhoneSession: @escaping @Sendable (WatchSessionOpenRequest) async -> Void = { _ in },
         enterPhoneSession: @escaping @Sendable (UUID) async -> Void = { _ in },
         leavePhoneSession: @escaping @Sendable (UUID) async -> Void = { _ in },
         screens: @escaping @Sendable () async -> AsyncStream<WatchScreenSnapshot> = {
@@ -52,7 +53,6 @@ public struct WatchExperimentClient: Sendable {
         self.retryActivation = retryActivation
         self.list = list
         self.lists = lists
-        self.cachedList = cachedList
         self.requestPhoneSession = requestPhoneSession
         self.cancelPhoneSession = cancelPhoneSession
         self.enterPhoneSession = enterPhoneSession
@@ -73,8 +73,7 @@ extension WatchExperimentClient: DependencyKey {
                     guard record.experimentID == command.experimentID else {
                         throw WatchExperimentError.invalidPayload
                     }
-                    let data = try JSONEncoder().encode(record)
-                    await connectivity.records.receive(data)
+                    await connectivity.records.receive(record)
                 }
                 return response
             },
@@ -104,14 +103,11 @@ extension WatchExperimentClient: DependencyKey {
             lists: {
                 await connectivity.experimentLists()
             },
-            cachedList: {
-                await connectivity.cachedExperiments()
+            requestPhoneSession: { request in
+                try await connectivity.requestPhoneSession(request)
             },
-            requestPhoneSession: { id in
-                await connectivity.requestPhoneSession(id)
-            },
-            cancelPhoneSession: { id in
-                await connectivity.cancelPhoneSession(id)
+            cancelPhoneSession: { request in
+                await connectivity.cancelPhoneSession(request)
             },
             enterPhoneSession: { id in
                 await connectivity.enterPhoneSession(id)
@@ -180,7 +176,9 @@ extension WatchExperimentClient: DependencyKey {
             "WatchExperimentClient.connectionStatus", placeholder: .unsupported
         ),
         retryActivation: unimplemented("WatchExperimentClient.retryActivation"),
-        list: unimplemented("WatchExperimentClient.list", placeholder: [])
+        list: unimplemented(
+            "WatchExperimentClient.list", placeholder: WatchExperimentList(experiments: [])
+        )
     )
 }
 

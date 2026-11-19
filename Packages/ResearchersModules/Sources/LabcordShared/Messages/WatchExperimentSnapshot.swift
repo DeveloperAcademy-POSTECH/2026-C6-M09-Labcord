@@ -12,6 +12,21 @@ public struct WatchExperimentSummary: Codable, Hashable, Identifiable, Sendable 
     }
 }
 
+public struct WatchExperimentList: Equatable, Sendable {
+    public let experiments: [WatchExperimentSummary]
+    public let version: WatchStateVersion?
+
+    public init(experiments: [WatchExperimentSummary], version: WatchStateVersion? = nil) {
+        self.experiments = experiments
+        self.version = version
+    }
+}
+
+public enum WatchExperimentListUpdate: Sendable {
+    case snapshot(WatchExperimentList)
+    case invalidated(WatchStateEpoch)
+}
+
 public struct WatchTimerSnapshot: Codable, Equatable, Identifiable, Sendable {
     public enum Status: String, Codable, Sendable {
         case running
@@ -56,6 +71,7 @@ public struct WatchExperimentSnapshot: Codable, Equatable, Sendable {
     public let recordedAt: Date
 
     public let phoneSessionActive: Bool?
+    public let epoch: WatchStateEpoch?
 
     public init(
         experiment: WatchExperimentSummary,
@@ -64,7 +80,8 @@ public struct WatchExperimentSnapshot: Codable, Equatable, Sendable {
         timers: [WatchTimerSnapshot] = [],
         recordedAt: Date = .now,
         mode: ExperimentMode? = nil,
-        phoneSessionActive: Bool? = nil
+        phoneSessionActive: Bool? = nil,
+        epoch: WatchStateEpoch? = nil
     ) {
         self.experiment = experiment
         self.revision = revision
@@ -73,5 +90,34 @@ public struct WatchExperimentSnapshot: Codable, Equatable, Sendable {
         self.timers = timers
         self.recordedAt = recordedAt
         self.phoneSessionActive = phoneSessionActive
+        self.epoch = epoch
+    }
+
+    public func isNewer(than previous: Self) -> Bool {
+        if epoch != previous.epoch {
+            guard let epoch else { return false }
+            return previous.epoch.map { epoch.isNewer(than: $0) } ?? true
+        }
+        return revision > previous.revision
+            || revision == previous.revision && recordedAt > previous.recordedAt
+                && hasSameState(as: previous)
+    }
+
+    private func hasSameState(as previous: Self) -> Bool {
+        guard experiment == previous.experiment, mode == previous.mode,
+              phoneSessionActive == previous.phoneSessionActive,
+              protocolTimerSeconds == previous.protocolTimerSeconds,
+              timers.count == previous.timers.count else { return false }
+        return zip(timers, previous.timers).allSatisfy { current, old in
+            guard current.id == old.id, current.durationSeconds == old.durationSeconds,
+                  current.status == old.status,
+                  current.startedAt == old.startedAt else { return false }
+            if current.status == .running {
+                let end = current.measuredAt.addingTimeInterval(Double(current.remainingSeconds))
+                let oldEnd = old.measuredAt.addingTimeInterval(Double(old.remainingSeconds))
+                return abs(end.timeIntervalSince(oldEnd)) < 0.000_001
+            }
+            return current.remainingSeconds == old.remainingSeconds
+        }
     }
 }

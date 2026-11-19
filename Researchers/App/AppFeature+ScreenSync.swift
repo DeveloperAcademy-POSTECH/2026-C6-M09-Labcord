@@ -95,7 +95,7 @@ extension AppFeature {
               screen.destination != .registration else {
             return rejectNavigation(command.requestID, error: .invalidPayload)
         }
-        guard screen.revision == PhoneWatchExperimentCoordinator.shared.currentScreen.revision
+        guard screen.matchesRevision(of: PhoneWatchExperimentCoordinator.shared.currentScreen)
         else {
             return rejectNavigation(command.requestID, error: .staleRevision)
         }
@@ -132,7 +132,7 @@ extension AppFeature {
               let screen = command.screen else { return .none }
         state.screenNavigation = nil
         if state.watchRequestID == requestID { state.watchRequestID = nil }
-        guard screen.revision == PhoneWatchExperimentCoordinator.shared.currentScreen.revision
+        guard screen.matchesRevision(of: PhoneWatchExperimentCoordinator.shared.currentScreen)
         else {
             return rejectNavigation(requestID, error: .staleRevision)
         }

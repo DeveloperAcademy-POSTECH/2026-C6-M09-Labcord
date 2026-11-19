@@ -10,15 +10,6 @@ struct ResearchWatchApp: App {
         case start(WatchExperimentSummary)
         case experiment(WatchExperimentSummary)
         case sort(UUID)
-
-        var experimentID: UUID {
-            switch self {
-            case let .start(experiment), let .experiment(experiment):
-                return experiment.id
-            case let .sort(id):
-                return id
-            }
-        }
     }
 
     @Dependency(\.watchConnectivitySession) var connectivity
@@ -26,46 +17,41 @@ struct ResearchWatchApp: App {
     @State private var path: [Route] = []
     @State private var remoteScreen: WatchScreenSnapshot?
     @State private var pendingPhoneReentryID: UUID?
-    @State private var countdownExperimentID: UUID?
-    @State private var phoneResultReadyIDs: Set<UUID> = []
+    @State private var dismissedStart: (id: UUID, until: Date)?
     @State private var isVoiceRecordPresented = false
+    @State private var isRemoteNavigationBlocked = false
+    @State private var needsRouteReconciliation = false
     @State private var suppressLeaveNotification = false
 
     @State private var debugRootRevision = 0
 
     private struct ScreenSyncKey: Hashable {
+        let epoch: WatchStateEpoch?
         let revision: UInt64?
-        let isVoiceRecordPresented: Bool
+        let isNavigationBlocked: Bool
     }
 
     var body: some Scene {
         WindowGroup {
             NavigationStack(path: $path) {
                 SelectExperimentView { experiment in
+                    dismissedStart = nil
                     path = [.start(experiment)]
                 }
                 .id(debugRootRevision)
                 .navigationDestination(for: Route.self) { route in
                     switch route {
                     case let .start(experiment):
-                        ExperimentStartView(
-                            experiment: experiment,
-                            onCountdownChanged: { isCountingDown in
-                                if isCountingDown {
-                                    countdownExperimentID = experiment.id
-                                } else if countdownExperimentID == experiment.id {
-                                    countdownExperimentID = nil
-                                }
-                            },
-                            onExperimentStarted: {
-                                path = [.experiment(experiment)]
-                            }
-                        )
+                        ExperimentStartView(experiment: experiment) {
+                            guard path.last == .start(experiment) else { return }
+                            path = [.experiment(experiment)]
+                        }
                         .id(experiment.id)
                     case let .experiment(experiment):
                         ExperimentView(
                             experiment: experiment,
                             isVoiceRecordPresented: $isVoiceRecordPresented,
+                            onNavigationBlockedChanged: { isRemoteNavigationBlocked = $0 },
                             onPaused: {
                                 suppressLeaveNotification = true
                                 path = []
@@ -77,17 +63,24 @@ struct ResearchWatchApp: App {
                         )
                     case let .sort(experimentID):
                         SortRecordView(
-                            isPhoneResultReady: phoneResultReadyIDs.contains(experimentID)
+                            experimentID: experimentID,
+                            isPhoneResultReady: remoteScreen?.destination == .result
+                                && remoteScreen?.experimentID == experimentID,
+                            sendCommand: watchExperimentClient.send
                         ) {
-                                phoneResultReadyIDs.remove(experimentID)
-                                path = []
-                            }
+                            path = []
+                        }
                     }
                 }
                 .onChange(of: path) { previous, current in
                     if case let .some(.experiment(entered)) = current.last,
                        previous.last != current.last {
                         Task { await watchExperimentClient.enterPhoneSession(entered.id) }
+                    }
+                    if case let .some(.start(experiment)) = previous.last, current.isEmpty {
+                        let until = Date.now.addingTimeInterval(WatchSessionOpenRequest.lifetime)
+                        dismissedStart = (experiment.id, until)
+                        pendingPhoneReentryID = nil
                     }
                     if case .some(.sort) = previous.last { return }
                     if case let .some(.experiment(experiment)) = previous.last {
@@ -98,20 +91,16 @@ struct ResearchWatchApp: App {
                             stillInExperiment = false
                         }
                         if !stillInExperiment {
+                            isRemoteNavigationBlocked = false
                             let shouldNotify = !suppressLeaveNotification
                             suppressLeaveNotification = false
                             if shouldNotify {
                                 Task {
                                     await watchExperimentClient.leavePhoneSession(experiment.id)
                                 }
-                                return
                             }
                         }
                     }
-                    guard let experimentID = previous.last?.experimentID,
-                          !current.contains(where: { $0.experimentID == experimentID })
-                    else { return }
-                    Task { await watchExperimentClient.cancelPhoneSession(experimentID) }
                 }
             }
             .modifier(WatchDebugMenuModifier())
@@ -125,14 +114,23 @@ struct ResearchWatchApp: App {
             }
             .task {
                 for await screen in await watchExperimentClient.screens() {
-                    if screen.destination == .result, let id = screen.experimentID {
-                        phoneResultReadyIDs.insert(id)
+                    let previous = remoteScreen
+                    if let previous, previous.epoch != screen.epoch {
+                        dismissedStart = nil
+                        needsRouteReconciliation = true
                     }
-                    let previousDestination = remoteScreen?.destination
-                    if screen.destination != .experiment {
+                    if previous?.destination == .experiment,
+                       previous?.experimentID == dismissedStart?.id,
+                       screen.destination != .experiment
+                        || screen.experimentID != dismissedStart?.id {
+                        dismissedStart = nil
+                    }
+                    if screen.destination != .experiment
+                        || ignoresRemoteStart(screen.experimentID) {
                         pendingPhoneReentryID = nil
-                    } else if previousDestination != nil,
-                              previousDestination != .experiment,
+                    } else if let previous,
+                              previous.destination != .experiment
+                                || previous.experimentID != screen.experimentID,
                               path.isEmpty {
                         pendingPhoneReentryID = screen.experimentID
                     }
@@ -140,10 +138,13 @@ struct ResearchWatchApp: App {
                 }
             }
             .task(id: ScreenSyncKey(
-                revision: remoteScreen?.revision,
-                isVoiceRecordPresented: isVoiceRecordPresented
+                epoch: remoteScreen?.epoch, revision: remoteScreen?.revision,
+                isNavigationBlocked: isVoiceRecordPresented || isRemoteNavigationBlocked
             )) {
-                guard !isVoiceRecordPresented, let screen = remoteScreen else { return }
+                guard !isVoiceRecordPresented, !isRemoteNavigationBlocked,
+                      let screen = remoteScreen else { return }
+                let reconcileRoute = needsRouteReconciliation
+                needsRouteReconciliation = false
                 if case let .some(.experiment(experiment)) = path.last {
                     switch screen.destination {
                     case .home:
@@ -155,7 +156,13 @@ struct ResearchWatchApp: App {
                         path = [.sort(experiment.id)]
                         return
                     default:
-                        break
+                        if reconcileRoute, screen.experimentID != experiment.id {
+                            suppressLeaveNotification = true
+                            path = []
+                            if screen.destination == .experiment {
+                                pendingPhoneReentryID = screen.experimentID
+                            }
+                        }
                     }
                 }
                 guard screen.destination == .experiment,
@@ -163,12 +170,12 @@ struct ResearchWatchApp: App {
                       canOpenRemoteExperiment(experimentID),
                       screen.stage == .active || screen.stage == .timers
                           || screen.stage == .timerEditor else { return }
-                while !Task.isCancelled, remoteScreen?.revision == screen.revision,
-                      !isVoiceRecordPresented,
+                while !Task.isCancelled, isCurrent(screen),
+                      !isVoiceRecordPresented, !isRemoteNavigationBlocked,
                       canOpenRemoteExperiment(experimentID) {
                     if let experiment = await experiment(for: experimentID),
-                       !Task.isCancelled, remoteScreen?.revision == screen.revision,
-                       !isVoiceRecordPresented,
+                       !Task.isCancelled, isCurrent(screen),
+                       !isVoiceRecordPresented, !isRemoteNavigationBlocked,
                        canOpenRemoteExperiment(experimentID) {
                         pendingPhoneReentryID = nil
                         path = [.experiment(experiment)]
@@ -186,23 +193,29 @@ struct ResearchWatchApp: App {
     private func resetToStart() {
         isVoiceRecordPresented = false
         pendingPhoneReentryID = nil
-        countdownExperimentID = nil
-        phoneResultReadyIDs.removeAll()
-        remoteScreen = nil
-        suppressLeaveNotification = false
+        dismissedStart = nil
+        needsRouteReconciliation = false
+        isRemoteNavigationBlocked = false
+        if case .some(.experiment) = path.last { suppressLeaveNotification = true }
         path.removeAll()
         debugRootRevision += 1
     }
 
     private func canOpenRemoteExperiment(_ id: UUID) -> Bool {
-        if case let .some(.start(selected)) = path.last {
-            return selected.id == id && countdownExperimentID != id
-        }
-        return path.isEmpty && pendingPhoneReentryID == id
+        path.isEmpty && pendingPhoneReentryID == id && !ignoresRemoteStart(id)
+    }
+
+    private func ignoresRemoteStart(_ id: UUID?) -> Bool {
+        guard let dismissedStart else { return false }
+        return dismissedStart.id == id && .now < dismissedStart.until
+    }
+
+    private func isCurrent(_ screen: WatchScreenSnapshot) -> Bool {
+        remoteScreen?.epoch == screen.epoch && remoteScreen?.revision == screen.revision
     }
 
     private func experiment(for id: UUID) async -> WatchExperimentSummary? {
-        if let listed = try? await watchExperimentClient.list().first(where: {
+        if let listed = try? await watchExperimentClient.list().experiments.first(where: {
             $0.id == id && $0.status == .running
         }) {
             return listed

@@ -11,6 +11,7 @@ private let shortcutLogger = Logger(
 
 struct ExperimentView: View {
     let experiment: WatchExperimentSummary
+    let onNavigationBlockedChanged: (Bool) -> Void
     let onPaused: () -> Void
     let onCompleted: () -> Void
     @State private var store: StoreOf<ExperimentFeature>
@@ -26,6 +27,11 @@ struct ExperimentView: View {
         store.snapshot?.mode == .procedure
     }
 
+    private var isNavigationBlocked: Bool {
+        isVoiceRecordPresented || isPhotoRecordPresented || isVideoRecordPresented
+            || isAddTimerPresented || isTimerPresetPresented || store.isClosing
+    }
+
     /// 프로토콜 모드는 프리셋 화면 대신 타이머 목록이 보일 때만 표시합니다.
     /// 종료된 타이머만 남아도 목록이 보이므로 버튼을 유지합니다.
     private var showsTimerAddButton: Bool {
@@ -36,10 +42,12 @@ struct ExperimentView: View {
     init(
         experiment: WatchExperimentSummary,
         isVoiceRecordPresented: Binding<Bool>,
+        onNavigationBlockedChanged: @escaping (Bool) -> Void = { _ in },
         onPaused: @escaping () -> Void,
         onCompleted: @escaping () -> Void
     ) {
         self.experiment = experiment
+        self.onNavigationBlockedChanged = onNavigationBlockedChanged
         self.onPaused = onPaused
         self.onCompleted = onCompleted
         _isVoiceRecordPresented = isVoiceRecordPresented
@@ -58,7 +66,7 @@ struct ExperimentView: View {
                 .padding(.bottom, WatchScreenMetrics.scaledHeight(4.5))
 
             TabView(selection: $selectedPage) {
-                ExperimentRecordView(title: experiment.title) {
+                ExperimentRecordView(title: store.snapshot?.experiment.title ?? experiment.title) {
                     isVoiceRecordPresented = true
                 } onPhotoRecordTap: {
                     isPhotoRecordPresented = true
@@ -148,12 +156,15 @@ struct ExperimentView: View {
             store.send(.disappeared)
             shortcutLogger.info("ExperimentView disappeared")
         }
-        .onChange(of: store.closeResult) { _, result in
+        .onChange(of: isNavigationBlocked ? nil : store.closeResult) { _, result in
             switch result {
-            case .paused: onPaused()
+            case .paused, .sessionUnavailable: onPaused()
             case .completed: onCompleted()
             case nil: break
             }
+        }
+        .onChange(of: isNavigationBlocked) { _, blocked in
+            onNavigationBlockedChanged(blocked)
         }
         .sheet(isPresented: Binding(
             get: { store.overlay == .stop },

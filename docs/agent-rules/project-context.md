@@ -11,7 +11,8 @@
 | 로컬 패키지 | 단일 `Packages/ResearchersModules/Package.swift` 아래 네 개 타깃 |
 | 기기별 저장·통신 | 기기별 구현은 `LabcordiOS`·`LabcordWatchOS`에도 있음. 새 저장 구현의 경로는 해당 작업에서 팀과 확인 |
 | SwiftData | `LabcordShared/Models`의 모델 선언과 iPhone의 저장 실행 책임을 구분. Watch에 저장 구현을 새로 두거나 기존 모델을 자동 이동하지 않음 |
-| iPhone·Watch 화면 | `WatchScreenSnapshot`으로 같은 실험·진행 단계·기록 표시를 공유. iPhone이 화면 revision을 확정하고 Watch의 이동 요청은 이를 확인한 뒤 반영. 화면 이동은 실험 시작·재개와 별도 처리하며 녹음·저장 미확정·편집 초안은 보호 |
+| iPhone·Watch 화면 | iPhone 실행과 Debug 데이터 초기화마다 새 epoch를 발행하고, 목록·화면·실험·기록의 revision은 해당 epoch 안에서 비교. Watch의 화면 이동은 iPhone의 현재 화면 버전을 확인한 뒤 반영하며 녹음·저장 미확정·편집 초안은 보호 |
+| Watch 실험 시작·결과 | Watch 시작 요청은 20초 동안 유효. iPhone은 저장 직전 취소·만료를 확인하고, 진입을 저장한 뒤 요청 ID로 응답. 준비 중 해당 요청을 취소하면 기존 실험 이력을 보존. 결과 화면이 사라지면 Watch에서 닫거나 iPhone 화면을 다시 조회할 수 있음 |
 | Watch 실험 타이머 정보 | Watch 실험 화면은 해당 실험의 `WatchExperimentSnapshot`을 요청·구독하고, `mode`를 타이머 페이지에 표시. 프로토콜 타이머 시간과 진행 중인 타이머 배열도 snapshot에 포함 |
 | 타이머 Live Activity | 세션에서 홈으로 나가면 실행 중인 타이머를 동기화. iPhone·Watch에서 실험 종료를 저장하면 같은 실험의 앞선 동기화가 끝난 뒤 타이머 Activity를 모두 종료 |
 | Watch 녹음 표시 | iPhone 앱 상단에 기존 녹음 카드로 Apple Watch 녹음 상태를 표시. 녹음이 끝나거나 마지막 상태의 유효 시간이 지나면 숨기고 iPhone의 녹음·녹화 카드가 우선 |

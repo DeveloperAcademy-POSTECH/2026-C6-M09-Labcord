@@ -15,6 +15,7 @@ public final class PhoneWatchExperimentCoordinator {
     public var visibleExperimentID: UUID?
     public internal(set) var pendingStartID: UUID?
     public internal(set) var currentScreen = WatchScreenSnapshot(destination: .home)
+    public internal(set) var stateEpoch = WatchStateEpoch()
     public internal(set) var lastScreenError: WatchExperimentError?
 
     public enum Event: Sendable {
@@ -39,6 +40,10 @@ public final class PhoneWatchExperimentCoordinator {
     var journal: WatchExperimentRequestJournal?
     var requests: [UUID: WatchExperimentRequestJournal.Entry] = [:]
     private var recentQueries = WatchExperimentQueryCache()
+    var lastPublishedList: (summaries: [WatchExperimentSummary], version: WatchStateVersion)?
+    var latestWatchPresenceAt: Date?
+    var watchOpenUnavailableBefore: Date?
+    var openSessionExpiryTask: Task<Void, Never>?
     var tokens: [UUID: (experimentID: UUID, expiresAt: ContinuousClock.Instant)] = [:]
     var states: [UUID: WatchExperimentState] = [:]
     var recordResults: [UUID: WatchRecordSnapshot] = [:]
@@ -67,6 +72,9 @@ public final class PhoneWatchExperimentCoordinator {
             self?.receive(command) ?? WatchExperimentResponse(
                 requestID: command.requestID, phase: .failed, error: .phoneBusy
             )
+        }
+        connectivity.records.acceptsRemoteEpoch = { [weak self] epoch in
+            self.map { epoch == $0.stateEpoch } ?? false
         }
         connectivity.activate()
     }
@@ -165,10 +173,10 @@ public final class PhoneWatchExperimentCoordinator {
         }
         if command.operation == .list {
             do {
-                let summaries = try availableExperiments()
+                let list = try versionedExperiments()
                 return WatchExperimentResponse(
-                    requestID: command.requestID, phase: .completed, experiments: summaries,
-                    screen: refreshedScreen()
+                    requestID: command.requestID, phase: .completed, experiments: list.summaries,
+                    screen: refreshedScreen(), listVersion: list.version
                 )
             } catch { return failure(command, .storageFailed) }
         }
@@ -216,7 +224,7 @@ public final class PhoneWatchExperimentCoordinator {
             experiments: response.experiments, snapshot: response.snapshot,
             error: interrupted ? .resultUnknown : response.error,
             startToken: response.startToken, record: response.record, queriedRequestID: id,
-            screen: response.screen
+            screen: response.screen, listVersion: response.listVersion
         )
     }
 
@@ -289,6 +297,12 @@ extension PhoneWatchExperimentCoordinator {
         interruptingMediaRequestID = nil
         journal = nil
         clearDebugOpenSessionRequest()
+        stateEpoch = WatchStateEpoch()
+        watchOpenUnavailableBefore = stateEpoch.startedAt
+        currentScreen = WatchScreenSnapshot(destination: .home)
+        lastPublishedList = nil
+        connectivity.records.clearSnapshots()
+        clearPublishedState()
     }
 
     func endDebugDataReset() {

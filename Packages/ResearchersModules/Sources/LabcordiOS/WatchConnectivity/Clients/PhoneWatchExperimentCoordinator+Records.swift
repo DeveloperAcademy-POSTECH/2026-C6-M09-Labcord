@@ -114,13 +114,16 @@ extension PhoneWatchExperimentCoordinator {
                 return previous
             }
         }
-        let value = record.withContext(experimentID: experimentID, revision: nil)
+        let value = record.withContext(
+            experimentID: experimentID, revision: nil, epoch: stateEpoch
+        )
         if let previous = recordSnapshots[record.id],
            previous.withContext(experimentID: experimentID, revision: nil) == value {
             return previous
         }
         let identified = record.withContext(
-            experimentID: experimentID, revision: try record.revision ?? nextRevision()
+            experimentID: experimentID, revision: try record.revision ?? nextRevision(),
+            epoch: stateEpoch
         )
         if let previous = recordSnapshots[record.id],
            previous.experimentID != experimentID || previous.kind != identified.kind {

@@ -37,6 +37,7 @@ public struct WatchExperimentCommand: Codable, Equatable, Sendable {
     public let screen: WatchScreenSnapshot?
     public let discardTimerDraft: Bool?
     public let recordKind: WatchRecordSnapshot.Kind?
+    public let expectedEpoch: WatchStateEpoch?
 
     public init(
         version: Int = Self.schemaVersion,
@@ -51,7 +52,8 @@ public struct WatchExperimentCommand: Codable, Equatable, Sendable {
         startToken: UUID? = nil,
         screen: WatchScreenSnapshot? = nil,
         discardTimerDraft: Bool? = nil,
-        recordKind: WatchRecordSnapshot.Kind? = nil
+        recordKind: WatchRecordSnapshot.Kind? = nil,
+        expectedEpoch: WatchStateEpoch? = nil
     ) {
         self.version = version
         self.requestID = requestID
@@ -66,6 +68,7 @@ public struct WatchExperimentCommand: Codable, Equatable, Sendable {
         self.screen = screen
         self.discardTimerDraft = discardTimerDraft
         self.recordKind = recordKind
+        self.expectedEpoch = expectedEpoch
     }
 
     public var isCameraCommand: Bool {

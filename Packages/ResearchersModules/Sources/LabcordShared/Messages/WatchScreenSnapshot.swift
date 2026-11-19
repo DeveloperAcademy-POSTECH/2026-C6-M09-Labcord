@@ -31,11 +31,13 @@ public struct WatchScreenSnapshot: Codable, Equatable, Sendable {
     public let recording: WatchScreenRecording?
     public let revision: UInt64
     public let recordedAt: Date
+    public let epoch: WatchStateEpoch?
 
     public init(
         destination: Destination, experimentID: UUID? = nil, stage: Stage? = nil,
         countdownEndsAt: Date? = nil, recording: WatchScreenRecording? = nil,
-        revision: UInt64 = 0, recordedAt: Date = .now, timerDraftSeconds: Int? = nil
+        revision: UInt64 = 0, recordedAt: Date = .now, timerDraftSeconds: Int? = nil,
+        epoch: WatchStateEpoch? = nil
     ) {
         self.destination = destination
         self.experimentID = experimentID
@@ -45,6 +47,7 @@ public struct WatchScreenSnapshot: Codable, Equatable, Sendable {
         self.recording = recording
         self.revision = revision
         self.recordedAt = recordedAt
+        self.epoch = epoch
     }
 
     public var isValid: Bool {
@@ -68,11 +71,18 @@ public struct WatchScreenSnapshot: Codable, Equatable, Sendable {
             && recording == other.recording && timerDraftSeconds == other.timerDraftSeconds
     }
 
-    public func withRevision(_ revision: UInt64, recordedAt: Date = .now) -> Self {
+    public func matchesRevision(of current: Self) -> Bool {
+        revision == current.revision && (epoch == nil || epoch == current.epoch)
+    }
+
+    public func withRevision(
+        _ revision: UInt64, recordedAt: Date = .now, epoch: WatchStateEpoch? = nil
+    ) -> Self {
         Self(
             destination: destination, experimentID: experimentID, stage: stage,
             countdownEndsAt: countdownEndsAt, recording: recording,
-            revision: revision, recordedAt: recordedAt, timerDraftSeconds: timerDraftSeconds
+            revision: revision, recordedAt: recordedAt, timerDraftSeconds: timerDraftSeconds,
+            epoch: epoch ?? self.epoch
         )
     }
 }

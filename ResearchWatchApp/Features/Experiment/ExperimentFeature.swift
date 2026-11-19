@@ -13,7 +13,7 @@ import LabcordWatchOS
 @Reducer
 struct ExperimentFeature {
     enum Overlay: Equatable { case stop, end }
-    enum CloseResult: Equatable { case paused, completed }
+    enum CloseResult: Equatable { case paused, completed, sessionUnavailable }
     enum TimerStartSyncResult {
         case confirmed(WatchExperimentSnapshot)
         case retry

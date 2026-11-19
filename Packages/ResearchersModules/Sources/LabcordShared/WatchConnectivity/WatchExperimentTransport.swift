@@ -8,6 +8,7 @@ public final class WatchExperimentTransport {
     public nonisolated static let backgroundCommandKey = "experiment.background.command.v1"
     public nonisolated static let backgroundResponseKey = "experiment.background.response.v1"
     public nonisolated static let listSnapshotKey = "experiment.list.snapshot.v1"
+    public nonisolated static let listVersionKey = "experiment.list.version.v1"
     public static let snapshotKey = "experiment.snapshot.v1"
     public nonisolated static let screenKey = "screen.snapshot.v1"
 
@@ -15,6 +16,8 @@ public final class WatchExperimentTransport {
     public var refreshScreen: (() async -> Void)?
     private var refreshTask: Task<Void, Never>?
     public var receiveCommand: ((WatchExperimentCommand) -> WatchExperimentResponse)?
+    public private(set) var remoteEpoch: WatchStateEpoch?
+    public var remoteEpochChanged: ((WatchStateEpoch) -> Void)?
     private var transmissions: [UUID: UUID] = [:]
     private var pending: [UUID: CheckedContinuation<WatchExperimentResponse, Error>] = [:]
     private var deadlines: [UUID: Task<Void, Never>] = [:]
@@ -24,6 +27,19 @@ public final class WatchExperimentTransport {
     private var latestScreen: WatchScreenSnapshot?
 
     public init() {}
+
+    public func acceptEpoch(_ epoch: WatchStateEpoch?) -> Bool {
+        guard let epoch else { return remoteEpoch == nil }
+        if let remoteEpoch {
+            if epoch == remoteEpoch { return true }
+            guard epoch.isNewer(than: remoteEpoch) else { return false }
+        }
+        remoteEpoch = epoch
+        latest.removeAll()
+        latestScreen = nil
+        remoteEpochChanged?(epoch)
+        return true
+    }
 
     public func send(_ command: WatchExperimentCommand, session: WCSession?) async throws
         -> WatchExperimentResponse {
@@ -105,14 +121,25 @@ public final class WatchExperimentTransport {
             ))
             return
         }
-        if let screen = response.screen, let data = try? JSONEncoder().encode(screen) {
-            receiveScreen(data)
+        if let screen = response.screen { receiveScreen(screen) }
+        if let snapshot = response.snapshot { receiveSnapshot(snapshot) }
+        let snapshot = response.snapshot.flatMap { latest[$0.experiment.id] }
+        let screen = response.screen == nil ? nil : latestScreen
+        if (command.operation == .snapshot && response.snapshot != nil && snapshot == nil)
+            || (command.operation == .screen && response.screen != nil && screen == nil) {
+            finish(command.requestID, transmissionID: transmissionID, result: .failure(
+                WatchExperimentError.staleRevision
+            ))
+            return
         }
-        if let snapshot = response.snapshot,
-           let data = try? JSONEncoder().encode(snapshot) {
-            receiveSnapshot(data)
-        }
-        finish(command.requestID, transmissionID: transmissionID, result: .success(response))
+        let current = WatchExperimentResponse(
+            version: response.version, requestID: response.requestID, phase: response.phase,
+            experiments: response.experiments, snapshot: snapshot, error: response.error,
+            startToken: response.startToken, record: response.record,
+            queriedRequestID: response.queriedRequestID, screen: screen,
+            listVersion: response.listVersion
+        )
+        finish(command.requestID, transmissionID: transmissionID, result: .success(current))
     }
 
     private func finish(
@@ -159,14 +186,13 @@ public final class WatchExperimentTransport {
     public func receiveSnapshot(_ data: Data) {
         guard let snapshot = try? JSONDecoder().decode(WatchExperimentSnapshot.self, from: data)
         else { return }
+        receiveSnapshot(snapshot)
+    }
+
+    private func receiveSnapshot(_ snapshot: WatchExperimentSnapshot) {
+        guard acceptEpoch(snapshot.epoch) else { return }
         let id = snapshot.experiment.id
-        if let previous = latest[id] {
-            guard snapshot.revision >= previous.revision else { return }
-            if snapshot.revision == previous.revision {
-                guard snapshot.recordedAt > previous.recordedAt,
-                      hasSameState(snapshot, as: previous) else { return }
-            }
-        }
+        guard latest[id].map({ snapshot.isNewer(than: $0) }) ?? true else { return }
         latest[id] = snapshot
         for subscriber in subscribers.values { subscriber.yield(snapshot) }
     }
@@ -178,28 +204,6 @@ public final class WatchExperimentTransport {
             requestID: command.requestID, phase: .failed, error: .phoneBusy
         )
         return try? JSONEncoder().encode(response)
-    }
-}
-
-private extension WatchExperimentTransport {
-    func hasSameState(
-        _ snapshot: WatchExperimentSnapshot, as previous: WatchExperimentSnapshot
-    ) -> Bool {
-        guard snapshot.experiment == previous.experiment, snapshot.mode == previous.mode,
-              snapshot.phoneSessionActive == previous.phoneSessionActive,
-              snapshot.protocolTimerSeconds == previous.protocolTimerSeconds,
-              snapshot.timers.count == previous.timers.count else { return false }
-        return zip(snapshot.timers, previous.timers).allSatisfy { current, old in
-            guard current.id == old.id, current.durationSeconds == old.durationSeconds,
-                  current.status == old.status,
-                  current.startedAt == old.startedAt else { return false }
-            if current.status == .running {
-                let end = current.measuredAt.addingTimeInterval(Double(current.remainingSeconds))
-                let oldEnd = old.measuredAt.addingTimeInterval(Double(old.remainingSeconds))
-                return abs(end.timeIntervalSince(oldEnd)) < 0.000_001
-            }
-            return current.remainingSeconds == old.remainingSeconds
-        }
     }
 }
 
@@ -218,8 +222,13 @@ extension WatchExperimentTransport {
 
     public func receiveScreen(_ data: Data) {
         guard data.count <= 16_384,
-              let screen = try? JSONDecoder().decode(WatchScreenSnapshot.self, from: data),
-              screen.isValid else { return }
+              let screen = try? JSONDecoder().decode(WatchScreenSnapshot.self, from: data)
+        else { return }
+        receiveScreen(screen)
+    }
+
+    public func receiveScreen(_ screen: WatchScreenSnapshot) {
+        guard screen.isValid, acceptEpoch(screen.epoch) else { return }
         if let previous = latestScreen {
             guard screen.revision >= previous.revision else { return }
             if screen.revision == previous.revision {

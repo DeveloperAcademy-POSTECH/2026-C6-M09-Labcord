@@ -16,7 +16,8 @@ struct SelectExperimentView: View {
                 .foregroundStyle(Color("General/Brand/Primary"))
                 .padding(.horizontal, 9.5)
 
-            if store.isLoading, store.experiments.isEmpty {
+            if store.errorMessage == nil,
+               store.list == nil || (store.isLoading && store.experiments.isEmpty) {
                 VStack(spacing: 4) {
                     Text("실험 불러오는 중")
 
@@ -48,6 +49,12 @@ struct SelectExperimentView: View {
             } else {
                 ScrollView {
                     LazyVStack(spacing: 10) {
+                        if let message = store.errorMessage {
+                            Text(message)
+                                .font(.caption2)
+                                .multilineTextAlignment(.center)
+                            Button("다시 시도") { store.send(.retryTapped) }
+                        }
                         ForEach(store.experiments) { experiment in
                             Button {
                                 onSelect(experiment)

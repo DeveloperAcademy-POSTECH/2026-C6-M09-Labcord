@@ -8,8 +8,14 @@ public final class WatchRecordTransport {
     private var latest: [UUID: WatchRecordSnapshot] = [:]
     private var observers: [UUID: AsyncStream<WatchRecordSnapshot>.Continuation] = [:]
     public private(set) var lastPublishError: WatchExperimentError?
+    public var acceptsRemoteEpoch: ((WatchStateEpoch?) -> Bool)?
 
     public init() {}
+
+    public func clearSnapshots() {
+        latest.removeAll()
+        lastPublishError = nil
+    }
 
     public func stream() -> AsyncStream<WatchRecordSnapshot> {
         let id = UUID()
@@ -26,10 +32,16 @@ public final class WatchRecordTransport {
     public func receive(_ data: Data) {
         guard data.count <= Self.maximumPayloadBytes else { return }
         if let records = try? JSONDecoder().decode([WatchRecordSnapshot].self, from: data) {
-            records.forEach { accept($0) }
+            records.forEach { receive($0) }
         } else if let record = try? JSONDecoder().decode(WatchRecordSnapshot.self, from: data) {
-            accept(record)
+            receive(record)
         }
+    }
+
+    public func receive(_ record: WatchRecordSnapshot) {
+        guard record.experimentID != nil, record.revision != nil,
+              acceptsRemoteEpoch?(record.epoch) ?? true else { return }
+        accept(record)
     }
 
     public func publish(_ record: WatchRecordSnapshot, session: WCSession?) {

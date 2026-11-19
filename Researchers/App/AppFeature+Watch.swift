@@ -7,6 +7,25 @@ import UIKit
 extension AppFeature {
     var watchPendingOpenReducer: some Reducer<State, Action> {
         Reduce { state, _ in
+            let coordinator = PhoneWatchExperimentCoordinator.shared
+            let request = coordinator.pendingOpenSession()
+            if let id = state.path.ids.last,
+               let session = state.path[id: id, case: \.session],
+               let preparingID = session.watchOpenRequestID {
+                let error: WatchExperimentError
+                if request?.requestID != preparingID || session.isReturningHome {
+                    error = .requestExpired
+                } else if session.permissions.issue != nil {
+                    error = .permissionDenied
+                } else if session.cameraPreparationTimedOut {
+                    error = .cameraUnavailable
+                } else {
+                    return .none
+                }
+                coordinator.finishOpenSession(preparingID, error: error)
+                state.path.pop(from: id)
+                return .send(.home(.list(.load)))
+            }
             guard state.hasCompletedOnboarding, state.watchIsActive,
                   state.watchSplashPhase == .ready,
                   UIApplication.shared.applicationState == .active,
@@ -14,17 +33,33 @@ extension AppFeature {
                   state.screenNavigation == nil else {
                 return .none
             }
-            let coordinator = PhoneWatchExperimentCoordinator.shared
-            guard let experimentID = coordinator.pendingOpenSessionID() else { return .none }
+            guard let request else { return .none }
+            let experimentID = request.experimentID
             if let id = state.path.ids.last,
-               state.path[id: id, case: \.session]?.experimentID == experimentID {
-                coordinator.didHandleOpenSession(experimentID)
+               let session = state.path[id: id, case: \.session],
+               session.experimentID == experimentID, !session.isRemotePreview {
+                if request.expiresAt == nil || session.isReady,
+                   coordinator.canPrepareOpenSession(request) {
+                    coordinator.finishOpenSession(request.requestID)
+                } else if session.permissions.issue != nil {
+                    coordinator.finishOpenSession(request.requestID, error: .permissionDenied)
+                } else if session.cameraPreparationTimedOut {
+                    coordinator.finishOpenSession(request.requestID, error: .cameraUnavailable)
+                } else if session.detailLoadFailed {
+                    coordinator.finishOpenSession(request.requestID, error: .storageFailed)
+                }
                 return .none
             }
-            guard canLeaveCurrentScreen(state) else { return .none }
-            coordinator.didHandleOpenSession(experimentID)
+            guard canLeaveCurrentScreen(state), coordinator.canPrepareOpenSession(request)
+            else { return .none }
+            var session = ExperimentSessionFeature.State(experimentID: experimentID)
+            if request.expiresAt != nil {
+                session.watchOpenRequestID = request.requestID
+            } else {
+                coordinator.finishOpenSession(request.requestID)
+            }
             state.path.removeAll()
-            state.path.append(.session(.init(experimentID: experimentID)))
+            state.path.append(.session(session))
             return .send(.home(.list(.cancelLoad)))
         }
     }
