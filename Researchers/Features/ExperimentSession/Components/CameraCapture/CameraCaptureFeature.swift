@@ -2,6 +2,9 @@ import ComposableArchitecture
 import Foundation
 import LabcordiOS
 import LabcordShared
+import OSLog
+
+private let cameraCaptureLog = Logger(subsystem: "Labcord", category: "Capture")
 
 @Reducer
 struct CameraCaptureFeature {
@@ -26,11 +29,13 @@ struct CameraCaptureFeature {
         var previewConnector: CameraPreviewConnector? { camera.previewConnector }
         var isCameraSwitching: Bool { camera.isSwitching }
         var isCameraReadyForCapture: Bool {
-            camera.isViewVisible && camera.previewConnector != nil && !camera.isSwitching
+            camera.isViewVisible && !camera.isAppInBackground
+                && camera.previewConnector != nil && !camera.isSwitching
         }
         var canSwitchCamera: Bool {
             camera.previewConnector != nil && !camera.isSwitching &&
-            !photo.isCapturing && photo.capturedData == nil && video.phase == .idle
+            photo.watchCaptureID == nil && !photo.isCapturing
+                && photo.capturedData == nil && video.phase == .idle
         }
         var isPhotoCaptureScheduled: Bool { photo.isScheduled }
         var isCapturingPhoto: Bool { photo.isCapturing }
@@ -96,11 +101,13 @@ struct CameraCaptureFeature {
                 return .send(.camera(.viewAppeared))
 
             case .cameraViewDisappeared:
-                return .merge(
-                    .send(.camera(.viewDisappeared)),
-                    .send(.photo(.cancelGesture)),
-                    .send(.video(.cancelRequested))
+                let stopCamera: Effect<Action> = .merge(
+                    .send(.camera(.viewDisappeared)), .send(.photo(.cancelGesture))
                 )
+                if case .preview = state.video.phase, state.video.requiresExternalConfirmation {
+                    return stopCamera
+                }
+                return .merge(stopCamera, .send(.video(.cancelRequested)))
 
             case .cameraActivationRequested:
                 return .send(.camera(.activationRequested))
@@ -150,6 +157,11 @@ struct CameraCaptureFeature {
                 return .send(.photo(.gestureEvent(event)))
 
             case .cancelPhotoGesture:
+                if state.photo.isSessionClosing, state.photo.isScheduled,
+                   let id = state.photo.watchCaptureID {
+                    cameraCaptureLog.notice("Watch photo stopped id=\(id) reason=sessionClosing")
+                    return .send(.photo(.captureFailed(id, "실험 종료로 촬영이 중단되었어요.")))
+                }
                 return .send(.photo(.cancelGesture))
 
             case .voiceButtonTapped:
@@ -199,14 +211,25 @@ struct CameraCaptureFeature {
             case let .photoCaptureRequested(id):
                 guard state.isCameraReadyForCapture, state.video.phase == .idle,
                       !state.photo.isSessionClosing else {
-                    guard let id, state.photo.requiresExternalConfirmation else { return .none }
+                    let requestID = id?.uuidString ?? "-"
+                    let cameraReady = state.isCameraReadyForCapture
+                    let videoIdle = state.video.phase == .idle
+                    let closing = state.photo.isSessionClosing
+                    cameraCaptureLog.notice("""
+                        photo blocked id=\(requestID, privacy: .public) \
+                        cameraReady=\(cameraReady) \
+                        videoIdle=\(videoIdle) \
+                        closing=\(closing)
+                        """)
+                    guard let id, state.photo.isWatchCapture else { return .none }
                     return .send(.photo(.captureFailed(id, "카메라를 사용할 수 없어요.")))
                 }
                 return .send(.photo(.captureRequested(id)))
 
-            case .photo(.captured):
-                guard !state.camera.isViewVisible else { return .none }
-                return .send(.photo(.retakeRequested))
+            case let .photo(.captured(id, _)):
+                guard !state.camera.isViewVisible, state.photo.recordID == id,
+                      state.photo.watchCaptureID == nil else { return .none }
+                return .send(.photo(.discardHiddenLocalCapture(id)))
 
             case .camera, .photo, .video, .delegate, .watchCommand, .watchCommandExpired:
                 return .none

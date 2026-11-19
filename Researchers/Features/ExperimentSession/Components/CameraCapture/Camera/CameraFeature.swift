@@ -9,6 +9,7 @@ struct CameraFeature {
     struct State: Equatable {
         var ownerID = UUID()
         var isViewVisible = false
+        var isAppInBackground = false
         var errorMessage: String?
         var previewConnector: CameraPreviewConnector?
         var isSwitching = false
@@ -63,6 +64,7 @@ struct CameraFeature {
                 )
 
             case .appEnteredBackground:
+                state.isAppInBackground = true
                 guard state.isViewVisible, state.previewConnector != nil else { return .none }
                 return .run { _ in
                     guard !Task.isCancelled else { return }
@@ -71,6 +73,7 @@ struct CameraFeature {
                 .cancellable(id: CancelID.cameraSuspension, cancelInFlight: true)
 
             case .resumeIfNeeded:
+                state.isAppInBackground = false
                 guard state.isViewVisible, state.previewConnector != nil else { return .none }
                 return .concatenate(
                     .cancel(id: CancelID.cameraSuspension),
