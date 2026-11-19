@@ -292,9 +292,6 @@ private extension ExperimentSessionFeature {
             case let .homeExitFailed(attemptID, requestID):
                 return failHomeExit(attemptID, requestID: requestID, state: &state)
 
-            case .permissions(.microphoneStatusUpdated(.authorized)):
-                return .send(.capture(.prepareVideoRecordingRequested))
-
             case .permissions(.camera(.statusUpdated(.authorized))):
                 return .send(.capture(.cameraActivationRequested))
 

@@ -62,8 +62,10 @@ nonisolated public enum PermissionIssue: Equatable, Sendable {
                     return "\(requirement.kind.title) 접근 권한을 먼저 허용해 주세요."
                 case .denied:
                     switch requirement.kind {
-                    case .camera, .microphone:
-                        return "사진과 영상을 촬영하려면 아이폰 설정에서 카메라 접근을 허용해 주세요."
+                    case .camera:
+                        return "사진과 영상을 촬영하려면 iPhone 설정에서 카메라 접근을 허용해 주세요."
+                    case .microphone:
+                        return "소리를 기록하려면 iPhone 설정에서 마이크 접근을 허용해 주세요."
                     case .speechRecognition:
                         return "녹음 결과를 확인할려면 아이폰 설정에서 음성 인식 접근을 허용해요주세요."
                     }

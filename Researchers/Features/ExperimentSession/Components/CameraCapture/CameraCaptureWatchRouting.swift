@@ -142,12 +142,12 @@ extension CameraCaptureFeature {
             return finishWatchReview(command, kind: .photo, state: &state)
         case .photo(.saveFailed):
             return failWatchReview(command, kind: .photo, state: &state)
-        case .photo(.captureFailed):
+        case let .photo(.captureFailed(_, _, error)):
             let id = recordID(command)
             watchPhotoLog.notice("photo failed id=\(id, privacy: .public) originalRetained=false")
             state.watchPhotoRequest = nil
             return watchReply(
-                command, phase: .failed, error: .cameraUnavailable,
+                command, phase: .failed, error: error,
                 kind: .photo, recordPhase: .failed, originalRetained: false
             )
         default: return nil
@@ -228,7 +228,7 @@ extension CameraCaptureFeature {
         case let .photo(.saved(eventID)): eventID == id && photo.lastSavedRecordID == id
         case let .photo(.saveFailed(eventID, _)):
             eventID == id && photo.recordID == id && photo.saveError != nil
-        case let .photo(.captureFailed(eventID, _)):
+        case let .photo(.captureFailed(eventID, _, _)):
             eventID == id && photo.watchCaptureID == nil && photo.capturedData == nil
         default: false
         }
@@ -345,7 +345,7 @@ extension CameraCaptureFeature {
         guard AVCaptureDevice.authorizationStatus(for: .video) == .authorized else {
             throw WatchExperimentError.permissionDenied
         }
-        guard state.isCameraReadyForCapture else { throw WatchExperimentError.cameraUnavailable }
+        guard state.canRequestCameraCapture else { throw WatchExperimentError.cameraUnavailable }
     }
 
     private func failWatchReview(

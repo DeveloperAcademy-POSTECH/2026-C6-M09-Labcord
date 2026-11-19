@@ -1,6 +1,7 @@
 import ComposableArchitecture
 import Foundation
 import LabcordiOS
+import LabcordShared
 
 @Reducer
 struct PhotoFeature {
@@ -39,7 +40,7 @@ struct PhotoFeature {
         case watchCaptureRequested(UUID)
         case shortcutCaptureRequested(UUID)
         case captured(UUID, Data)
-        case captureFailed(UUID, String)
+        case captureFailed(UUID, String, error: WatchExperimentError = .cameraUnavailable)
         case retakeRequested
         case discardHiddenLocalCapture(UUID)
         case watchCancelRequested(UUID)
@@ -166,6 +167,10 @@ struct PhotoFeature {
                         do {
                             let data = try await cameraSessionClient.capturePhoto()
                             await send(.captured(id, data))
+                        } catch let error as PermissionAccessError {
+                            await send(.captureFailed(
+                                id, error.localizedDescription, error: .permissionDenied
+                            ))
                         } catch {
                             await send(.captureFailed(id, error.localizedDescription))
                         }
@@ -187,7 +192,7 @@ struct PhotoFeature {
                 }
                 .cancellable(id: CancelID.autoSave, cancelInFlight: true)
 
-            case let .captureFailed(id, message):
+            case let .captureFailed(id, message, _):
                 guard state.requestedRecordID == id, state.capturedData == nil,
                       state.isScheduled || state.isCapturing else { return .none }
                 state.isCapturing = false

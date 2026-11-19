@@ -28,9 +28,12 @@ struct CameraCaptureFeature {
         var isCameraViewVisible: Bool { camera.isViewVisible }
         var previewConnector: CameraPreviewConnector? { camera.previewConnector }
         var isCameraSwitching: Bool { camera.isSwitching }
-        var isCameraReadyForCapture: Bool {
+        var canRequestCameraCapture: Bool {
             camera.isViewVisible && !camera.isAppInBackground
-                && camera.previewConnector != nil && !camera.isSwitching
+                && camera.hasRequestedActivation && !camera.isSwitching
+        }
+        var isCameraReadyForCapture: Bool {
+            canRequestCameraCapture && camera.previewConnector != nil
         }
         var canSwitchCamera: Bool {
             camera.previewConnector != nil && !camera.isSwitching &&
@@ -54,7 +57,6 @@ struct CameraCaptureFeature {
         case cameraViewAppeared
         case cameraViewDisappeared
         case cameraActivationRequested
-        case prepareVideoRecordingRequested
         case cameraSwitchRequested
         case cameraErrorDismissed
         case photoGestureEvent(CameraHandEvent)
@@ -111,10 +113,6 @@ struct CameraCaptureFeature {
 
             case .cameraActivationRequested:
                 return .send(.camera(.activationRequested))
-
-            case .prepareVideoRecordingRequested:
-                guard state.camera.isViewVisible else { return .none }
-                return .send(.video(.prepareRequested))
 
             case .cameraSwitchRequested:
                 guard state.canSwitchCamera else { return .none }
@@ -187,7 +185,7 @@ struct CameraCaptureFeature {
                 )
 
             case .videoRecordRequested:
-                guard state.isCameraReadyForCapture,
+                guard state.canRequestCameraCapture,
                       !state.photo.isCapturing,
                       !state.photo.isScheduled,
                       state.photo.capturedData == nil,
@@ -209,10 +207,10 @@ struct CameraCaptureFeature {
                 )
 
             case let .photoCaptureRequested(id):
-                guard state.isCameraReadyForCapture, state.video.phase == .idle,
+                guard state.canRequestCameraCapture, state.video.phase == .idle,
                       !state.photo.isSessionClosing else {
                     let requestID = id?.uuidString ?? "-"
-                    let cameraReady = state.isCameraReadyForCapture
+                    let cameraReady = state.canRequestCameraCapture
                     let videoIdle = state.video.phase == .idle
                     let closing = state.photo.isSessionClosing
                     cameraCaptureLog.notice("""

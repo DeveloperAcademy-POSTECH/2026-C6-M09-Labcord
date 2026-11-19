@@ -10,6 +10,7 @@ struct CameraFeature {
         var ownerID = UUID()
         var isViewVisible = false
         var isAppInBackground = false
+        var hasRequestedActivation = false
         var errorMessage: String?
         var previewConnector: CameraPreviewConnector?
         var isSwitching = false
@@ -23,6 +24,7 @@ struct CameraFeature {
         case activationRequested
         case started(UUID, CameraPreviewConnector)
         case startFailed(UUID, String)
+        case permissionFailed(UUID, PermissionKind)
         case switchRequested
         case switched(CameraPreviewConnector)
         case switchFailed(String)
@@ -39,6 +41,7 @@ struct CameraFeature {
     private nonisolated enum CancelID: Hashable, Sendable {
         case handTracking
         case cameraSuspension
+        case activation
     }
 
     @Dependency(\.cameraSessionClient) var cameraSessionClient
@@ -55,33 +58,39 @@ struct CameraFeature {
             case .viewDisappeared:
                 guard state.isViewVisible else { return .none }
                 state.isViewVisible = false
+                state.hasRequestedActivation = false
                 state.previewConnector = nil
                 let ownerID = state.ownerID
                 return .merge(
                     .cancel(id: CancelID.handTracking),
                     .cancel(id: CancelID.cameraSuspension),
+                    .cancel(id: CancelID.activation),
                     .run { _ in await cameraSessionClient.deactivate(ownerID) }
                 )
 
             case .appEnteredBackground:
                 state.isAppInBackground = true
-                guard state.isViewVisible, state.previewConnector != nil else { return .none }
-                return .run { _ in
-                    guard !Task.isCancelled else { return }
-                    await cameraSessionClient.suspend()
-                }
-                .cancellable(id: CancelID.cameraSuspension, cancelInFlight: true)
+                guard state.isViewVisible else { return .none }
+                return .concatenate(
+                    .cancel(id: CancelID.activation),
+                    .run { _ in
+                        guard !Task.isCancelled else { return }
+                        await cameraSessionClient.suspend()
+                    }
+                    .cancellable(id: CancelID.cameraSuspension, cancelInFlight: true)
+                )
 
             case .resumeIfNeeded:
                 state.isAppInBackground = false
-                guard state.isViewVisible, state.previewConnector != nil else { return .none }
+                guard state.isViewVisible, state.hasRequestedActivation else { return .none }
                 return .concatenate(
                     .cancel(id: CancelID.cameraSuspension),
                     .send(.activationRequested)
                 )
 
             case .activationRequested:
-                guard state.isViewVisible else { return .none }
+                guard state.isViewVisible, !state.isAppInBackground else { return .none }
+                state.hasRequestedActivation = true
                 let ownerID = state.ownerID
                 return .run { send in
                     do {
@@ -89,16 +98,20 @@ struct CameraFeature {
                         let connector = await cameraSessionClient.previewConnector()
                         await send(.started(ownerID, connector))
                     } catch let error as PermissionAccessError {
-                        await send(.delegate(.permissionAccessFailed(error.kind)))
+                        await send(.permissionFailed(ownerID, error.kind))
+                    } catch is CancellationError {
+                        return
                     } catch {
                         await send(.startFailed(ownerID, error.localizedDescription))
                     }
                 }
+                .cancellable(id: CancelID.activation, cancelInFlight: true)
 
             case let .started(ownerID, connector):
                 guard state.isViewVisible, ownerID == state.ownerID else {
                     return .run { _ in await cameraSessionClient.deactivate(ownerID) }
                 }
+                guard !state.isAppInBackground else { return .none }
                 state.errorMessage = nil
                 state.previewConnector = connector
                 return .run { send in
@@ -129,8 +142,15 @@ struct CameraFeature {
                 state.previewConnector = connector
                 return .none
 
+            case let .permissionFailed(ownerID, kind):
+                guard state.isViewVisible, !state.isAppInBackground,
+                      ownerID == state.ownerID else { return .none }
+                state.previewConnector = nil
+                return .send(.delegate(.permissionAccessFailed(kind)))
+
             case let .startFailed(ownerID, message):
-                guard state.isViewVisible, ownerID == state.ownerID else { return .none }
+                guard state.isViewVisible, !state.isAppInBackground,
+                      ownerID == state.ownerID else { return .none }
                 state.previewConnector = nil
                 state.errorMessage = message
                 return .none

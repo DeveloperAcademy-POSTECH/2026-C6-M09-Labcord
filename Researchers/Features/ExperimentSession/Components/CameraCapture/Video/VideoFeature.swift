@@ -38,7 +38,6 @@ struct VideoFeature {
     }
 
     enum Action: Equatable {
-        case prepareRequested
         case recordRequested
         case watchRecordRequested(UUID)
         case shortcutRecordRequested(UUID)
@@ -107,11 +106,6 @@ struct VideoFeature {
 
             case .stopRequested:
                 return stopRecording(state: &state)
-
-            case .prepareRequested:
-                return .run { _ in
-                    try? await cameraSessionClient.prepareVideoRecording()
-                }
 
             case .recordRequested:
                 guard state.phase == .idle else { return .none }
@@ -361,8 +355,7 @@ private extension VideoFeature {
 private extension VideoFeature.Action {
     var isBlockedDuringSessionClose: Bool {
         switch self {
-        case .prepareRequested,
-                 .recordRequested,
+        case .recordRequested,
                  .watchRecordRequested,
                  .shortcutRecordRequested,
                  .retakeRequested,

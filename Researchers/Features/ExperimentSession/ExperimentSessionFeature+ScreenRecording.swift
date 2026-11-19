@@ -114,7 +114,7 @@ extension ExperimentSessionFeature.State {
             phase = .saved
         case .voice(.startFailed), .voice(.event(_, .failed)), .capture(.video(.recordingFailed)):
             phase = .failed
-        case let .capture(.photo(.captureFailed(id, _)))
+        case let .capture(.photo(.captureFailed(id, _, _)))
             where previous.id == id && previous.phase == .capturing:
             phase = .failed
         case .voice(.retakeRequested), .capture(.video(.cancelCleanupFinished)):
