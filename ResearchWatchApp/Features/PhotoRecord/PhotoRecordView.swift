@@ -1,12 +1,7 @@
 import ComposableArchitecture
 import LabcordDesignSystem
 import LabcordWatchOS
-import OSLog
 import SwiftUI
-
-private let watchPhotoCancelLog = Logger(
-    subsystem: "com.researchers.Researchers.watchkitapp", category: "WatchPhotoCancel"
-)
 
 struct PhotoRecordView: View {
     @Environment(\.dismiss) private var dismiss
@@ -29,6 +24,17 @@ struct PhotoRecordView: View {
                     ProgressView()
                         .progressViewStyle(.circular)
                         .fixedSize()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            case .recovering:
+                ProgressView("촬영 상태 확인 중")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            case .failed:
+                VStack(spacing: 8) {
+                    Text("사진 촬영에 실패했어요")
+                    Button("다시 시도") { store.send(.retryTapped) }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
@@ -64,16 +70,11 @@ struct PhotoRecordView: View {
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button {
-                    if store.phase == .saved {
-                        watchPhotoCancelLog.info("X after saved")
-                        dismiss()
-                    } else {
-                        watchPhotoCancelLog.info("X before saved")
-                        store.send(.closeTapped)
-                    }
+                    store.send(.closeTapped)
                 } label: {
                     Image(systemName: "xmark")
                 }
+                .disabled(store.phase == .saving || store.phase == .closing)
             }
         }
         .interactiveDismissDisabled(store.phase != .saved)

@@ -36,6 +36,7 @@ public struct WatchExperimentCommand: Codable, Equatable, Sendable {
     public let startToken: UUID?
     public let screen: WatchScreenSnapshot?
     public let discardTimerDraft: Bool?
+    public let recordKind: WatchRecordSnapshot.Kind?
 
     public init(
         version: Int = Self.schemaVersion,
@@ -49,7 +50,8 @@ public struct WatchExperimentCommand: Codable, Equatable, Sendable {
         timerPauseIntervals: [ExperimentTimer.PauseInterval]? = nil,
         startToken: UUID? = nil,
         screen: WatchScreenSnapshot? = nil,
-        discardTimerDraft: Bool? = nil
+        discardTimerDraft: Bool? = nil,
+        recordKind: WatchRecordSnapshot.Kind? = nil
     ) {
         self.version = version
         self.requestID = requestID
@@ -63,6 +65,28 @@ public struct WatchExperimentCommand: Codable, Equatable, Sendable {
         self.startToken = startToken
         self.screen = screen
         self.discardTimerDraft = discardTimerDraft
+        self.recordKind = recordKind
+    }
+
+    public var isCameraCommand: Bool {
+        switch operation {
+        case .takePhoto, .startVideo, .stopVideo: true
+        case .confirmRecord, .cancelRecord: recordKind != .audio
+        default: false
+        }
+    }
+
+    public func canInterruptCameraCommand(_ active: Self) -> Bool {
+        guard requestID != active.requestID, let experimentID,
+              experimentID == active.experimentID,
+              let targetID, targetID == (active.targetID ?? active.requestID) else {
+            return false
+        }
+        switch (active.operation, operation) {
+        case (.takePhoto, .cancelRecord): return recordKind == nil || recordKind == .photo
+        case (.startVideo, .stopVideo): return recordKind == nil || recordKind == .video
+        default: return false
+        }
     }
 }
 

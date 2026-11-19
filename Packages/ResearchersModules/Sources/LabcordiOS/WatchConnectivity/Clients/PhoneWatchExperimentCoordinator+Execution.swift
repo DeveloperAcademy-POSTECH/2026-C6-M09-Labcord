@@ -7,6 +7,7 @@ extension PhoneWatchExperimentCoordinator {
     func executionResponse(_ command: WatchExperimentCommand) async throws
         -> WatchExperimentResponse {
         if command.operation == .navigate { return try await navigate(command) }
+        if command.isCameraCommand { try validateCameraPayload(command) }
         let current = try validate(command)
         let token = try await perform(command, current: current)
         if command.operation == .pause || command.operation == .complete {
@@ -73,11 +74,22 @@ extension PhoneWatchExperimentCoordinator {
                 guard current.experiment.status == .running else {
                     throw WatchExperimentError.invalidState
                 }
-                try consumeToken(command, experimentID: id)
+                try validateCameraTarget(command)
+                try consumeCameraToken(command, experimentID: id)
             }
             try await recordHandler(command)
         }
         return nil
+    }
+
+    private func consumeCameraToken(
+        _ command: WatchExperimentCommand, experimentID: UUID
+    ) throws {
+        guard let token = command.startToken,
+              let prepared = tokens[token], prepared.experimentID == experimentID else {
+            throw WatchExperimentError.requestExpired
+        }
+        try consumeToken(command, experimentID: experimentID)
     }
 
     func start(

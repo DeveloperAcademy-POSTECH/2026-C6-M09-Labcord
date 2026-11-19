@@ -18,9 +18,10 @@ public struct CameraSessionClient: Sendable {
     public var handEvents: @Sendable () async -> AsyncStream<CameraHandEvent>
     public var capturePhoto: @Sendable () async throws -> Data
     public var prepareVideoRecording: @Sendable () async throws -> Void
-    public var recordVideo: @Sendable (@escaping @Sendable () -> Void) async throws -> URL
+    public var recordVideo: @Sendable (UUID, @escaping @Sendable () -> Void) async throws -> URL
     public var cancelVideoRecording: @Sendable () async -> Void
-    public var stopVideoRecording: @Sendable () async -> Void
+    public var cancelVideoRecordingForSession: @Sendable (UUID) async -> Void
+    public var stopVideoRecording: @Sendable (UUID) async -> Void
     public var discardVideo: @Sendable (URL) async -> Void
 
     public init(
@@ -33,9 +34,12 @@ public struct CameraSessionClient: Sendable {
         handEvents: @escaping @Sendable () async -> AsyncStream<CameraHandEvent>,
         capturePhoto: @escaping @Sendable () async throws -> Data,
         prepareVideoRecording: @escaping @Sendable () async throws -> Void,
-        recordVideo: @escaping @Sendable (@escaping @Sendable () -> Void) async throws -> URL,
+        recordVideo: @escaping @Sendable (
+            UUID, @escaping @Sendable () -> Void
+        ) async throws -> URL,
         cancelVideoRecording: @escaping @Sendable () async -> Void,
-        stopVideoRecording: @escaping @Sendable () async -> Void,
+        cancelVideoRecordingForSession: @escaping @Sendable (UUID) async -> Void,
+        stopVideoRecording: @escaping @Sendable (UUID) async -> Void,
         discardVideo: @escaping @Sendable (URL) async -> Void
     ) {
         self.activate = activate
@@ -49,6 +53,7 @@ public struct CameraSessionClient: Sendable {
         self.prepareVideoRecording = prepareVideoRecording
         self.recordVideo = recordVideo
         self.cancelVideoRecording = cancelVideoRecording
+        self.cancelVideoRecordingForSession = cancelVideoRecordingForSession
         self.stopVideoRecording = stopVideoRecording
         self.discardVideo = discardVideo
     }
@@ -67,9 +72,10 @@ extension CameraSessionClient: DependencyKey {
             handEvents: { await session.handEvents() },
             capturePhoto: { try await session.capturePhoto() },
             prepareVideoRecording: { try await session.prepareVideoRecording() },
-            recordVideo: { try await session.recordVideo(onStarted: $0) },
+            recordVideo: { try await session.recordVideo(id: $0, onStarted: $1) },
             cancelVideoRecording: { await session.cancelVideoRecording() },
-            stopVideoRecording: { await session.stopVideoRecording() },
+            cancelVideoRecordingForSession: { await session.cancelVideoRecording(id: $0) },
+            stopVideoRecording: { await session.stopVideoRecording(id: $0) },
             discardVideo: { await session.discardVideo(at: $0) }
         )
     }()

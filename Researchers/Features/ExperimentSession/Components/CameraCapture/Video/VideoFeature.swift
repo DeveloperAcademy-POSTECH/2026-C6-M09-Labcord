@@ -12,6 +12,11 @@ struct VideoFeature {
         case preview(URL)
     }
 
+    struct RecordingFailure: Equatable {
+        let message: String
+        let watchError: WatchExperimentError
+    }
+
     @ObservableState
     struct State: Equatable {
         var phase: Phase = .idle
@@ -37,12 +42,15 @@ struct VideoFeature {
         case recordRequested
         case watchRecordRequested(UUID)
         case shortcutRecordRequested(UUID)
+        case watchStopRequested(UUID)
         case stopRequested
         case stopAndSaveRequested
         case started(UUID, Date)
         case recorded(UUID, URL)
-        case recordingFailed(UUID, String)
+        case recordingFailed(UUID, RecordingFailure)
+        case watchCancelRequested(UUID)
         case retakeRequested
+        case watchSaveRequested(UUID)
         case saveRequested
         case playbackFinished(UUID)
         case autoSaveElapsed(UUID)
@@ -76,10 +84,9 @@ struct VideoFeature {
             if state.isSessionClosing, action.isBlockedDuringSessionClose { return .none }
             switch action {
             case let .watchRecordRequested(id):
-                guard state.phase == .idle else { return .none }
-                state.requestedRecordID = id
+                guard state.phase == .idle, state.requestedRecordID == nil else { return .none }
                 state.requiresExternalConfirmation = true
-                return .send(.recordRequested)
+                return startRecording(recordID: id, state: &state)
 
             case let .shortcutRecordRequested(id):
                 guard state.phase == .idle, state.requestedRecordID == nil else { return .none }
@@ -92,16 +99,14 @@ struct VideoFeature {
                 if case .preview = state.phase { return saveVideo(state: &state) }
                 return .send(.stopRequested)
 
-            case .stopRequested:
-                switch state.phase {
-                case .starting:
-                    state.shouldStopOnStart = true
-                    return .none
-                case .recording:
-                    return .run { _ in await cameraSessionClient.stopVideoRecording() }
-                case .idle, .preview:
+            case let .watchStopRequested(id):
+                guard state.requestedRecordID == id, state.requiresExternalConfirmation else {
                     return .none
                 }
+                return stopRecording(state: &state)
+
+            case .stopRequested:
+                return stopRecording(state: &state)
 
             case .prepareRequested:
                 return .run { _ in
@@ -110,35 +115,12 @@ struct VideoFeature {
 
             case .recordRequested:
                 guard state.phase == .idle else { return .none }
-                state.sessionID = UUID()
-                state.requestedRecordID = state.requestedRecordID ?? uuid()
-                state.phase = .starting
-                let id = state.sessionID
-                return .run { send in
-                    do {
-                        let url = try await cameraSessionClient.recordVideo {
-                            Task { await send(.started(id, .now)) }
-                        }
-                        guard !Task.isCancelled else {
-                            await cameraSessionClient.discardVideo(url)
-                            return
-                        }
-                        await send(.recorded(id, url))
-                    } catch let error as PermissionAccessError {
-                        await send(.delegate(.permissionAccessFailed(error.kind)))
-                        await send(.recordingFailed(id, error.localizedDescription))
-                    } catch is CancellationError {
-                        return
-                    } catch {
-                        await send(.recordingFailed(id, error.localizedDescription))
-                    }
-                }
-                .cancellable(id: CancelID.recording, cancelInFlight: true)
+                return startRecording(recordID: state.requestedRecordID ?? uuid(), state: &state)
 
             case let .started(id, startedAt):
                 guard id == state.sessionID, state.phase == .starting else { return .none }
                 state.phase = .recording(startedAt)
-                if state.shouldStopOnStart { return .send(.stopRequested) }
+                if state.shouldStopOnStart { return stopRecording(state: &state) }
                 return .none
 
             case let .recorded(id, url):
@@ -154,15 +136,27 @@ struct VideoFeature {
                 if state.shouldSaveOnStop { return saveVideo(state: &state) }
                 return .none
 
-            case let .recordingFailed(id, message):
+            case let .recordingFailed(id, failure):
                 guard id == state.sessionID else { return .none }
                 state.phase = .idle
-                state.errorMessage = message
+                state.errorMessage = failure.message
                 resetReview(state: &state)
                 return .none
 
+            case let .watchCancelRequested(id):
+                guard state.recordID == id, state.requiresExternalConfirmation else {
+                    return .none
+                }
+                return retakeVideo(state: &state)
+
             case .retakeRequested:
                 return retakeVideo(state: &state)
+
+            case let .watchSaveRequested(id):
+                guard state.recordID == id, state.requiresExternalConfirmation else {
+                    return .none
+                }
+                return saveVideo(state: &state)
 
             case .saveRequested:
                 return saveVideo(state: &state)
@@ -209,6 +203,7 @@ struct VideoFeature {
                 return .none
 
             case .cancelRequested:
+                let sessionID = state.sessionID
                 let cancelledRecordID = state.requestedRecordID ?? state.recordID
                 let videoURL: URL?
                 if case let .preview(url) = state.phase {
@@ -226,7 +221,7 @@ struct VideoFeature {
                     .cancel(id: CancelID.autoSave),
                     .cancel(id: CancelID.save),
                     .run { send in
-                        await cameraSessionClient.cancelVideoRecording()
+                        await cameraSessionClient.cancelVideoRecordingForSession(sessionID)
                         if let videoURL {
                             if let savingRecordID {
                                 do {
@@ -256,7 +251,52 @@ struct VideoFeature {
         }
     }
 
-    private func saveVideo(state: inout State) -> Effect<Action> {
+}
+
+private extension VideoFeature {
+    func stopRecording(state: inout State) -> Effect<Action> {
+        if state.phase == .starting { state.shouldStopOnStart = true }
+        switch state.phase {
+        case .starting, .recording:
+            let id = state.sessionID
+            return .run { _ in await cameraSessionClient.stopVideoRecording(id) }
+        case .idle, .preview:
+            return .none
+        }
+    }
+
+    func startRecording(recordID: UUID, state: inout State) -> Effect<Action> {
+        state.sessionID = UUID()
+        state.requestedRecordID = recordID
+        state.phase = .starting
+        let id = state.sessionID
+        return .run { send in
+            do {
+                let url = try await cameraSessionClient.recordVideo(id) {
+                    Task { await send(.started(id, .now)) }
+                }
+                guard !Task.isCancelled else {
+                    await cameraSessionClient.discardVideo(url)
+                    return
+                }
+                await send(.recorded(id, url))
+            } catch let error as PermissionAccessError {
+                await send(.recordingFailed(id, .init(
+                    message: error.localizedDescription, watchError: .permissionDenied
+                )))
+                await send(.delegate(.permissionAccessFailed(error.kind)))
+            } catch is CancellationError {
+                return
+            } catch {
+                await send(.recordingFailed(id, .init(
+                    message: error.localizedDescription, watchError: .cameraUnavailable
+                )))
+            }
+        }
+        .cancellable(id: CancelID.recording, cancelInFlight: true)
+    }
+
+    func saveVideo(state: inout State) -> Effect<Action> {
         guard let id = state.recordID,
               let recordedAt = state.recordedAt,
               case let .preview(url) = state.phase,
@@ -283,9 +323,6 @@ struct VideoFeature {
         )
     }
 
-}
-
-private extension VideoFeature {
     func retakeVideo(state: inout State) -> Effect<Action> {
         guard case let .preview(url) = state.phase, !state.isSaving else { return .none }
         let discardedRecordID = state.requestedRecordID ?? state.recordID

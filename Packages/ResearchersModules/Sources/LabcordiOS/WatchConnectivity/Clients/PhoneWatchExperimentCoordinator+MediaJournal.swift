@@ -2,6 +2,59 @@ import Foundation
 import LabcordShared
 
 extension PhoneWatchExperimentCoordinator {
+    func validateCameraPayload(_ command: WatchExperimentCommand) throws {
+        guard command.experimentID != nil else { throw WatchExperimentError.invalidPayload }
+        guard command.expectedRevision != nil else { throw WatchExperimentError.staleRevision }
+        switch command.operation {
+        case .takePhoto, .startVideo, .stopVideo:
+            if let requestedKind = command.recordKind, requestedKind != mediaKind(command) {
+                throw WatchExperimentError.invalidPayload
+            }
+            if command.operation != .stopVideo { return }
+        default:
+            break
+        }
+        guard command.targetID != nil else { throw WatchExperimentError.invalidPayload }
+    }
+
+    func validateCameraTarget(_ command: WatchExperimentCommand) throws {
+        let id = command.targetID ?? command.requestID
+        let record = recordSnapshots[id]
+        if let record, record.experimentID != command.experimentID || record.kind == .audio {
+            throw WatchExperimentError.invalidPayload
+        }
+        switch command.operation {
+        case .takePhoto, .startVideo:
+            guard record == nil, captureCommand(for: command, targetID: id) == nil else {
+                throw WatchExperimentError.duplicateConflict
+            }
+        case .stopVideo, .confirmRecord, .cancelRecord:
+            let origin = captureCommand(for: command, targetID: id)
+            let kind = record?.kind ?? origin.flatMap(mediaKind)
+            guard let kind else { throw WatchExperimentError.invalidState }
+            let claimedKind = command.operation == .stopVideo ? .video : command.recordKind
+            guard claimedKind == nil || claimedKind == kind else {
+                throw WatchExperimentError.invalidPayload
+            }
+        default:
+            break
+        }
+    }
+
+    func recoverStoppedVideo(_ command: WatchExperimentCommand) -> Bool {
+        guard command.operation == .stopVideo, let id = command.targetID,
+              let record = recordSnapshots[id] else { return false }
+        if [.previewing, .review, .saving, .saved].contains(record.phase) {
+            recordResults[command.requestID] = record
+            return true
+        }
+        if record.phase == .failed, record.originalRetained == true {
+            recordResults[command.requestID] = record
+            return true
+        }
+        return false
+    }
+
     func validateMediaRecord(
         _ record: WatchRecordSnapshot, requestID: UUID, experimentID: UUID
     ) throws {
@@ -10,7 +63,7 @@ extension PhoneWatchExperimentCoordinator {
               entry.command.experimentID == experimentID,
               (entry.command.targetID ?? entry.command.requestID) == record.id,
               record.experimentID == nil || record.experimentID == experimentID,
-              mediaKind(entry.command) == record.kind else {
+              (mediaKind(entry.command) ?? entry.response.record?.kind) == record.kind else {
             throw WatchExperimentError.duplicateConflict
         }
     }
@@ -24,11 +77,11 @@ extension PhoneWatchExperimentCoordinator {
               journal != nil else { throw WatchExperimentError.storageFailed }
         if let previous = entry.response.record,
            (previous.revision ?? 0) >= (record.revision ?? 0) { return }
-        let saved = record.phase == .saved
+        let outcome = mediaOutcome(for: entry.command.operation, record: record)
         let result = WatchExperimentResponse(
-            requestID: response.requestID, phase: saved ? .completed : response.phase,
+            requestID: response.requestID, phase: outcome?.0 ?? response.phase,
             snapshot: response.snapshot ?? entry.response.snapshot,
-            error: saved ? nil : response.error, record: record,
+            error: outcome == nil ? response.error : outcome?.1, record: record,
             screen: response.screen ?? entry.response.screen
         )
         try journal?.save(entry.command, response: result)
@@ -57,11 +110,11 @@ extension PhoneWatchExperimentCoordinator {
         for entry in latest.values {
             guard let record = entry.response.record else { continue }
             let restarted = requests[entry.command.requestID] == nil
-            if restarted, record.phase != .cancelled,
+            if restarted, record.phase != .cancelled, record.error != .resultUnknown,
                record.phase != .failed || record.originalRetained != false {
                 let unknown = WatchRecordSnapshot(
                     id: record.id, kind: record.kind, phase: .failed, startedAt: record.startedAt,
-                    canAutoSave: false, originalRetained: false, error: .resultUnknown
+                    canAutoSave: false, error: .resultUnknown
                 )
                 let value = try publishRecord(unknown, experimentID: experimentID)
                 try updateMediaJournal(WatchExperimentResponse(
@@ -78,7 +131,8 @@ extension PhoneWatchExperimentCoordinator {
               let targetID = command.targetID, let record = recordSnapshots[targetID],
               record.experimentID == experimentID, record.kind != .audio,
               record.phase == .cancelled
-                || record.phase == .failed && record.originalRetained == false else {
+                || record.phase == .failed && record.originalRetained == false
+                    && record.error != .resultUnknown else {
             return false
         }
         if record.phase == .cancelled {
@@ -114,27 +168,43 @@ extension PhoneWatchExperimentCoordinator {
                 screen: response.screen ?? latest.screen
             )
         }
+        guard command.isCameraCommand, let kind = mediaKind(command), kind != .audio,
+              result.phase != .failed || result.error == .resultUnknown else { return result }
         let targetID = command.targetID ?? command.requestID
-        guard let record = recordSnapshots[targetID], record.kind != .audio,
+        guard let record = recordSnapshots[targetID], record.kind == kind,
               record.experimentID == command.experimentID,
-              (record.revision ?? 0) > (result.record?.revision ?? 0) else { return result }
-        let phase: WatchExperimentResponse.Phase
-        let error: WatchExperimentError?
-        switch record.phase {
-        case .saved, .cancelled:
-            phase = .completed
-            error = nil
-        case .failed:
-            phase = .failed
-            error = record.error ?? .resultUnknown
-        default:
-            phase = result.phase
-            error = result.error
+              (record.revision ?? 0) >= (result.record?.revision ?? 0) else { return result }
+        if result.record == nil, result.phase == .received || result.phase == .processing {
+            guard requests[command.requestID] == nil, targetID == command.requestID,
+                  [.takePhoto, .startVideo].contains(command.operation), record.phase == .saved
+            else { return result }
         }
+        let outcome = mediaOutcome(for: command.operation, record: record)
         return WatchExperimentResponse(
-            requestID: response.requestID, phase: phase, snapshot: result.snapshot,
-            error: error, startToken: result.startToken, record: record, screen: result.screen
+            requestID: response.requestID, phase: outcome?.0 ?? result.phase,
+            snapshot: result.snapshot, error: outcome == nil ? result.error : outcome?.1,
+            startToken: result.startToken, record: record, screen: result.screen
         )
+    }
+
+    private func mediaOutcome(
+        for operation: WatchExperimentCommand.Operation, record: WatchRecordSnapshot
+    ) -> (WatchExperimentResponse.Phase, WatchExperimentError?)? {
+        switch (operation, record.phase) {
+        case (.cancelRecord, .saved), (.confirmRecord, .cancelled), (.stopVideo, .cancelled):
+            return (.failed, .invalidState)
+        case (.cancelRecord, .cancelled), (.confirmRecord, .saved),
+             (.stopVideo, .previewing), (.stopVideo, .review), (.stopVideo, .saved),
+             (.takePhoto, .review), (.startVideo, .recording),
+             (.startVideo, .previewing), (.startVideo, .review),
+             (.takePhoto, .saved), (.startVideo, .saved),
+             (.takePhoto, .cancelled), (.startVideo, .cancelled):
+            return (.completed, nil)
+        case (_, .failed):
+            return (.failed, record.error ?? .resultUnknown)
+        default:
+            return nil
+        }
     }
 
     private func mediaPriority(_ phase: WatchRecordSnapshot.Phase) -> Int {
@@ -157,7 +227,7 @@ extension PhoneWatchExperimentCoordinator {
         }
     }
 
-    private func mediaKind(_ command: WatchExperimentCommand) -> WatchRecordSnapshot.Kind? {
+    func mediaKind(_ command: WatchExperimentCommand) -> WatchRecordSnapshot.Kind? {
         switch command.operation {
         case .takePhoto: return .photo
         case .startVideo, .stopVideo: return .video
@@ -165,12 +235,20 @@ extension PhoneWatchExperimentCoordinator {
             guard let targetID = command.targetID else { return nil }
             if let previous = recordSnapshots[targetID],
                previous.experimentID == command.experimentID { return previous.kind }
-            return mediaEntries().first { entry in
-                entry.command.experimentID == command.experimentID
-                    && (entry.command.targetID ?? entry.command.requestID) == targetID
-                    && [.takePhoto, .startVideo].contains(entry.command.operation)
-            }.map { $0.command.operation == .takePhoto ? .photo : .video }
+            return captureCommand(for: command, targetID: targetID).flatMap(mediaKind)
+                ?? command.recordKind
         default: return nil
+        }
+    }
+
+    private func captureCommand(
+        for command: WatchExperimentCommand, targetID: UUID
+    ) -> WatchExperimentCommand? {
+        mediaEntries().map(\.command).first { candidate in
+            candidate.requestID != command.requestID
+                && candidate.experimentID == command.experimentID
+                && (candidate.targetID ?? candidate.requestID) == targetID
+                && [.takePhoto, .startVideo].contains(candidate.operation)
         }
     }
 }

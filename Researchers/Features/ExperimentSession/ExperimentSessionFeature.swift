@@ -309,7 +309,12 @@ private extension ExperimentSessionFeature {
             case let .photoStartRequested(id):
                 guard !state.isPausePresented, state.watchCommand == nil, !state.isRemotePreview,
                       !PhoneWatchAudioService.shared.hasUnsettledRecording(in: state.experimentID)
-                else { return .none }
+                else {
+                    guard let id, state.capture.photo.requiresExternalConfirmation else {
+                        return .none
+                    }
+                    return .send(.capture(.photo(.captureFailed(id, "촬영을 시작할 수 없어요."))))
+                }
                 guard state.voice.phase == .hidden else {
                     return .send(.capture(.cancelPhotoGesture))
                 }

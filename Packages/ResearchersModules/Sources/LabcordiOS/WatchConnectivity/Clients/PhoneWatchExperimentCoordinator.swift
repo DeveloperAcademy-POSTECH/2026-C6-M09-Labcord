@@ -4,10 +4,6 @@ import LabcordShared
 import OSLog
 import UIKit
 
-private let watchPhotoCancelLog = Logger(
-    subsystem: "com.researchers.Researchers", category: "WatchPhotoCancel"
-)
-
 private let watchCommandLog = Logger(
     subsystem: "com.researchers.Researchers", category: "WatchCommand"
 )
@@ -23,7 +19,7 @@ public final class PhoneWatchExperimentCoordinator {
 
     public enum Event: Sendable {
         case command(WatchExperimentCommand)
-        case photoCancellationRequested(UUID, UUID)
+        case mediaCommandExpired(WatchExperimentCommand)
         case started(UUID)
         case navigation(WatchExperimentCommand)
         case openSessionRequested
@@ -50,10 +46,11 @@ public final class PhoneWatchExperimentCoordinator {
     var revisions: [UUID: UInt64] = [:]
     var sessionVisibility: [UUID: Bool] = [:]
     var executing: UUID?
-    var photoCancellationID: UUID?
+    var interruptingMediaRequestID: UUID?
     var subscriberID: UUID?
     var commandSubscriber: AsyncStream<Event>.Continuation?
     var completions: [UUID: CheckedContinuation<Void, Error>] = [:]
+    var mediaDeadlines: [UUID: Task<Void, Never>] = [:]
     var refreshTask: Task<Void, Never>?
 
     public init() {
@@ -105,10 +102,12 @@ public final class PhoneWatchExperimentCoordinator {
     }
 
     func failPendingCommands() {
-        let pending = completions.values
-        completions.removeAll()
-        for continuation in pending {
-            continuation.resume(throwing: WatchExperimentError.resultUnknown)
+        for requestID in Array(completions.keys) {
+            if let command = requests[requestID]?.command, mediaDeadlines[requestID] != nil {
+                expireMediaCommand(command)
+            } else {
+                finish(requestID, error: .resultUnknown)
+            }
         }
     }
 
@@ -117,6 +116,7 @@ public final class PhoneWatchExperimentCoordinator {
     }
 
     public func finish(_ id: UUID, error: WatchExperimentError? = nil) {
+        mediaDeadlines.removeValue(forKey: id)?.cancel()
         guard let continuation = completions.removeValue(forKey: id) else { return }
         if let error { continuation.resume(throwing: error) } else { continuation.resume() }
     }
@@ -127,11 +127,6 @@ public final class PhoneWatchExperimentCoordinator {
         }
         guard UIApplication.shared.isProtectedDataAvailable else {
             return failure(command, .phoneUnlockRequired)
-        }
-        if command.operation == .cancelRecord,
-           let experimentID = command.experimentID, let recordID = command.targetID {
-            watchPhotoCancelLog.info("received \(recordID.uuidString, privacy: .public)")
-            commandSubscriber?.yield(.photoCancellationRequested(experimentID, recordID))
         }
         loadJournal()
         if let response = existingResponse(command) { return response }
@@ -192,6 +187,13 @@ public final class PhoneWatchExperimentCoordinator {
         guard let id = command.targetID else { return failure(command, .invalidPayload) }
         if let original = requests[id]?.command ?? journal?.entries[id]?.command,
            original.operation != .navigate, let experimentID = original.experimentID {
+            if let kind = mediaKind(original), kind != .audio {
+                let requestedKind = original.recordKind ?? kind
+                guard command.experimentID == experimentID,
+                      command.recordKind == nil || command.recordKind == requestedKind else {
+                    return failure(command, .invalidPayload)
+                }
+            }
             do { try restoreSavedRecords(experimentID) } catch {
                 return failure(command, error as? WatchExperimentError ?? .storageFailed)
             }
@@ -201,7 +203,9 @@ public final class PhoneWatchExperimentCoordinator {
         let response = entry.map { latestMediaResult($0.command, response: $0.response) } ?? cached
         guard let response else {
             return WatchExperimentResponse(
-                requestID: command.requestID, phase: .unknown, error: .resultUnknown,
+                requestID: command.requestID, phase: .unknown,
+                error: command.recordKind == .photo || command.recordKind == .video
+                    ? .requestExpired : .resultUnknown,
                 queriedRequestID: id
             )
         }
@@ -226,7 +230,10 @@ public final class PhoneWatchExperimentCoordinator {
             )
             response = try await executionResponse(command)
         } catch {
-            response = failure(command, error as? WatchExperimentError ?? .storageFailed)
+            response = failure(
+                command, error as? WatchExperimentError ?? .storageFailed,
+                record: command.isCameraCommand ? recordResults[command.requestID] : nil
+            )
         }
         let result = latestMediaResult(command, response: response)
         do {
@@ -237,7 +244,10 @@ public final class PhoneWatchExperimentCoordinator {
         }
     }
 
-    func failure(_ command: WatchExperimentCommand, _ error: WatchExperimentError)
+    func failure(
+        _ command: WatchExperimentCommand, _ error: WatchExperimentError,
+        record: WatchRecordSnapshot? = nil
+    )
         -> WatchExperimentResponse {
         watchCommandLog.error("""
             rejected \(command.operation.rawValue, privacy: .public) \
@@ -249,14 +259,15 @@ public final class PhoneWatchExperimentCoordinator {
             executing=\(self.executing != nil, privacy: .public)
             """)
         return WatchExperimentResponse(
-            requestID: command.requestID, phase: .failed, error: error, screen: refreshedScreen()
+            requestID: command.requestID, phase: .failed, error: error,
+            record: record, screen: refreshedScreen()
         )
     }
 }
 
 extension PhoneWatchExperimentCoordinator {
     func checkDebugDataResetAvailability() throws {
-        guard executing == nil, photoCancellationID == nil,
+        guard executing == nil, interruptingMediaRequestID == nil,
               !requests.values.contains(where: { $0.response.phase == .received }),
               PhoneWatchAudioService.shared.canResetDebugData
         else { throw WatchExperimentError.phoneBusy }
@@ -275,7 +286,7 @@ extension PhoneWatchExperimentCoordinator {
         sessionVisibility.removeAll()
         pendingStartID = nil
         visibleExperimentID = nil
-        photoCancellationID = nil
+        interruptingMediaRequestID = nil
         journal = nil
         clearDebugOpenSessionRequest()
     }

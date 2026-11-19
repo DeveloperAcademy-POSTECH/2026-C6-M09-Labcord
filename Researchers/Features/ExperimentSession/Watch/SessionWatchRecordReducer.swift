@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import Foundation
+import LabcordiOS
 import LabcordShared
 
 extension ExperimentSessionFeature {
@@ -7,6 +8,10 @@ extension ExperimentSessionFeature {
         Reduce { state, action in
             switch action {
             case let .watchRecordControl(command):
+                if command.isCameraCommand,
+                   !PhoneWatchExperimentCoordinator.shared.isAwaitingCameraCommand(
+                    command.requestID
+                   ) { return .none }
                 guard command.experimentID == state.experimentID, state.watchCommand == nil,
                       !state.isPausePresented,
                       !state.isReturningHome else {
@@ -15,9 +20,7 @@ extension ExperimentSessionFeature {
                     )))
                 }
                 if let pending = state.watchMediaCommand {
-                    guard pending.operation == .takePhoto, command.operation == .cancelRecord,
-                          let targetID = command.targetID, pending.targetID == targetID,
-                          pending.requestID != command.requestID,
+                    guard command.canInterruptCameraCommand(pending),
                           state.voice.phase == .hidden else {
                         return .send(.watchRecordResponse(.init(
                             requestID: command.requestID, phase: .failed, error: .phoneBusy
@@ -46,6 +49,11 @@ extension ExperimentSessionFeature {
             case let .timer(.delegate(response)),
                  let .capture(.delegate(.watchResponse(response))):
                 return .send(.watchRecordResponse(response))
+            case let .capture(.watchCommandExpired(requestID)):
+                if state.watchMediaCommand?.requestID == requestID {
+                    state.watchMediaCommand = nil
+                }
+                return .none
             case let .watchRecordResponse(response):
                 if state.watchMediaCommand?.requestID == response.requestID,
                    response.phase == .failed || response.phase == .completed

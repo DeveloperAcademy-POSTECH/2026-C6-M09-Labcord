@@ -33,6 +33,10 @@ nonisolated final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDel
         finish(.failure(error))
     }
 
+    func timeout() {
+        finish(.failure(CameraSessionError.photoDataUnavailable))
+    }
+
     private func finish(_ result: Result<Data, Error>) {
         completionLock.lock()
         guard !completed else {

@@ -24,6 +24,7 @@ public actor CameraSession {
     private let movieOutput = AVCaptureMovieFileOutput()
     private var microphoneInput: AVCaptureDeviceInput?
     private var videoDelegate: VideoRecordingDelegate?
+    private var videoSessionID: UUID?
     private let handEventHub: CameraHandEventHub
     private let handOverlayHub: CameraHandOverlayHub
     private let handDetector: CameraHandDetector
@@ -190,27 +191,42 @@ public actor CameraSession {
         ))
         handTrackingQueue.async { [handDetector] in handDetector.reset() }
     }
+}
 
+extension CameraSession {
     public func capturePhoto() async throws -> Data {
         guard session.isRunning else { throw CameraSessionError.cameraUnavailable }
         guard photoDelegate == nil else { throw CameraSessionError.alreadyCapturingPhoto }
-        defer { photoDelegate = nil }
+        var deadline: Task<Void, Never>?
+        defer {
+            deadline?.cancel()
+            photoDelegate = nil
+        }
 
         configureCaptureRotation(for: photoOutput.connection(with: .video))
 
         return try await withCheckedThrowingContinuation { continuation in
             let delegate = PhotoCaptureDelegate(continuation: continuation)
             photoDelegate = delegate
+            deadline = Task {
+                try? await Task.sleep(for: .seconds(8))
+                if !Task.isCancelled { delegate.timeout() }
+            }
             photoOutput.capturePhoto(with: AVCapturePhotoSettings(), delegate: delegate)
         }
     }
 
-    public func recordVideo(onStarted: @escaping @Sendable () -> Void) async throws -> URL {
+    public func recordVideo(
+        id: UUID, onStarted: @escaping @Sendable () -> Void
+    ) async throws -> URL {
         try Task.checkCancellation()
         guard session.isRunning else { throw CameraSessionError.cameraUnavailable }
         guard videoDelegate == nil else { throw CameraSessionError.alreadyRecording }
         try prepareVideoRecording()
-        defer { videoDelegate = nil }
+        defer {
+            videoDelegate = nil
+            videoSessionID = nil
+        }
         try Task.checkCancellation()
 
         configureCaptureRotation(for: movieOutput.connection(with: .video))
@@ -223,18 +239,19 @@ public actor CameraSession {
                     continuation: continuation,
                     onStarted: onStarted
                 ) { [weak self] in
-                        Task { await self?.cancelVideoRecording() }
+                        Task { await self?.cancelVideoRecording(id: id) }
                     }
                 videoDelegate = delegate
+                videoSessionID = id
                 movieOutput.startRecording(to: url, recordingDelegate: delegate)
             }
         } onCancel: {
-            Task { await self.cancelVideoRecording() }
+            Task { await self.cancelVideoRecording(id: id) }
         }
     }
 
-    public func cancelVideoRecording() {
-        guard let videoDelegate else { return }
+    public func cancelVideoRecording(id: UUID? = nil) {
+        guard id == nil || id == videoSessionID, let videoDelegate else { return }
         videoDelegate.cancel()
         if movieOutput.isRecording {
             movieOutput.stopRecording()
@@ -245,8 +262,9 @@ public actor CameraSession {
         try? FileManager.default.removeItem(at: url)
     }
 
-    public func stopVideoRecording() {
-        if movieOutput.isRecording { movieOutput.stopRecording() }
+    public func stopVideoRecording(id: UUID) {
+        guard videoSessionID == id, movieOutput.isRecording else { return }
+        movieOutput.stopRecording()
     }
 
     public func prepareVideoRecording() throws {

@@ -2,12 +2,7 @@ import ComposableArchitecture
 import Foundation
 import LabcordiOS
 import LabcordShared
-import OSLog
 import UIKit
-
-private let watchPhotoCancelLog = Logger(
-    subsystem: "com.researchers.Researchers", category: "WatchPhotoCancel"
-)
 
 extension AppFeature {
     var watchPendingOpenReducer: some Reducer<State, Action> {
@@ -75,31 +70,14 @@ extension AppFeature {
                     return .none
                 }
 
-            case let .watchEvent(.photoCancellationRequested(experimentID, recordID)):
+            case let .watchEvent(.mediaCommandExpired(command)):
+                if state.watchRequestID == command.requestID { state.watchRequestID = nil }
                 guard let id = state.path.ids.last,
-                      let session = state.path[id: id, case: \.session],
-                      session.experimentID == experimentID else {
-                    watchPhotoCancelLog.info("no matching session")
-                    return .none
-                }
-                let photo = session.capture.photo
-                watchPhotoCancelLog.info(
-                    "r \(recordID.uuidString, privacy: .public) ready \(photo.capturedData != nil)"
-                )
-                watchPhotoCancelLog.info(
-                    "scheduled \(photo.isScheduled) external \(photo.requiresExternalConfirmation)"
-                )
-                if photo.requestedRecordID == recordID, photo.isScheduled {
-                    return .send(.path(.element(
-                        id: id, action: .session(.capture(.photo(.watchCancelRequested(recordID))))
-                    )))
-                }
-                if photo.capturedData != nil, !photo.isSaving {
-                    return .send(.path(.element(
-                        id: id, action: .session(.capture(.photo(.retakeRequested)))
-                    )))
-                }
-                return .none
+                      state.path[id: id, case: \.session]?.experimentID == command.experimentID
+                else { return .none }
+                return .send(.path(.element(
+                    id: id, action: .session(.capture(.watchCommandExpired(command.requestID)))
+                )))
 
             case let .watchSceneChanged(active):
                 state.watchIsActive = active
@@ -114,17 +92,19 @@ extension AppFeature {
                     )
                     return .none
                 }
-                let cancelsPhoto = command.operation == .cancelRecord
-                    && session.watchMediaCommand?.operation == .takePhoto
-                    && session.watchMediaCommand?.targetID == command.targetID
-                    && command.targetID != nil
-                guard state.watchRequestID == nil || cancelsPhoto else {
+                if command.isCameraCommand,
+                   !PhoneWatchExperimentCoordinator.shared.isAwaitingCameraCommand(
+                    command.requestID
+                   ) { return .none }
+                let interrupts = session.watchMediaCommand.map(command.canInterruptCameraCommand)
+                    ?? false
+                guard state.watchRequestID == nil || interrupts else {
                     PhoneWatchExperimentCoordinator.shared.finish(
                         command.requestID, error: .phoneBusy
                     )
                     return .none
                 }
-                if !cancelsPhoto {
+                if !interrupts {
                     state.watchRequestID = command.requestID
                     switch command.operation {
                     case .pause:

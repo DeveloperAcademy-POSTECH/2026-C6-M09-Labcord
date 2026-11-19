@@ -29,7 +29,7 @@ struct VideoRecordView: View {
                 Spacer()
 
                 VStack(spacing: WatchScreenMetrics.scaledHeight(4)) {
-                    Text("녹화 중")
+                    Text(store.isRecovering ? "녹화 상태 확인 중" : "녹화 중")
                         .font(.headline)
                     HStack(alignment: .center, spacing: 2) {
                         Circle()
@@ -62,7 +62,7 @@ struct VideoRecordView: View {
                     width: WatchScreenMetrics.scaledWidth(40),
                     height: WatchScreenMetrics.scaledHeight(40)
                 )
-                .disabled(store.startedAt == nil || store.isStopping)
+                .disabled(store.recordID == nil || store.isStopping)
                 .buttonBorderShape(.circle)
 
             case .review:
@@ -97,7 +97,7 @@ struct VideoRecordView: View {
             case .failed:
                 VStack(spacing: 8) {
                     Text("영상 촬영에 실패했어요")
-                    Button("다시 시도") { store.send(.start(UUID())) }
+                    Button("다시 시도") { store.send(.retryTapped) }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -114,6 +114,7 @@ struct VideoRecordView: View {
                 } label: {
                     Image(systemName: "xmark")
                 }
+                .disabled(store.phase == .saving || store.phase == .closing || store.isStopping)
             }
         }
         .interactiveDismissDisabled(store.phase != .saved)

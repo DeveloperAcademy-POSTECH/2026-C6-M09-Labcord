@@ -37,6 +37,7 @@ struct PhotoFeature {
         case captureFailed(UUID, String)
         case retakeRequested
         case watchCancelRequested(UUID)
+        case watchSaveRequested(UUID)
         case saveRequested
         case autoSaveElapsed(UUID)
         case saved(UUID)
@@ -48,7 +49,6 @@ struct PhotoFeature {
 
     enum Delegate: Equatable {
         case captureRequested(UUID)
-        case captureScheduled(UUID, Date)
     }
 
     private nonisolated enum CancelID: Hashable, Sendable {
@@ -96,14 +96,12 @@ struct PhotoFeature {
                 return scheduleCapture(id: id, at: now, in: &state)
 
             case let .watchCaptureRequested(id):
-                guard state.pendingWatchCaptureID == id,
-                      !state.isCapturing, !state.isScheduled,
-                      state.capturedData == nil else { return .none }
+                guard state.pendingWatchCaptureID == id else { return .none }
                 state.pendingWatchCaptureID = nil
+                guard !state.isCapturing, !state.isScheduled,
+                      state.capturedData == nil else { return .none }
                 state.requiresExternalConfirmation = true
-                let scheduledAt = now
-                let delay = scheduleCapture(id: id, at: scheduledAt, in: &state)
-                return .merge(delay, .send(.delegate(.captureScheduled(id, scheduledAt))))
+                return scheduleCapture(id: id, at: now, in: &state)
 
             case let .gestureEvent(.openHandHeld(detectedAt)):
                 guard !state.isScheduled, !state.isCapturing,
@@ -187,19 +185,24 @@ struct PhotoFeature {
                 state.requestedRecordID = nil
                 state.requiresExternalConfirmation = false
                 state.errorMessage = message
-                return .none
+                return cancelScheduledCapture(in: &state)
 
             case .retakeRequested:
-                guard !state.isSaving else { return .none }
+                guard !state.isSaving, !state.isCapturing else { return .none }
                 return resetPhoto(in: &state)
 
             case let .watchCancelRequested(id):
-                guard !state.isSaving,
-                      state.requestedRecordID == id || state.recordID == id
-                        || state.capturedData != nil else {
+                guard !state.isSaving, !state.isCapturing,
+                      state.requestedRecordID == id || state.recordID == id else {
                     return .none
                 }
                 return resetPhoto(in: &state)
+
+            case let .watchSaveRequested(id):
+                guard state.recordID == id, state.requiresExternalConfirmation else {
+                    return .none
+                }
+                return savePhoto(state: &state)
 
             case .saveRequested:
                 return savePhoto(state: &state)

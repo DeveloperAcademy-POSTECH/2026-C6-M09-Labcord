@@ -12,6 +12,7 @@ struct CameraCaptureFeature {
         var video: VideoFeature.State
         var watchPhotoRequest: WatchExperimentCommand?
         var watchPhotoCancellationRequest: WatchExperimentCommand?
+        var watchVideoCancellationRequest: WatchExperimentCommand?
         var watchVideoRequest: WatchExperimentCommand?
         var watchReviewRequest: WatchExperimentCommand?
         var watchStopRequest: WatchExperimentCommand?
@@ -61,6 +62,7 @@ struct CameraCaptureFeature {
         case photoRetakeAndCaptureRequested
         case photoCaptureRequested(UUID?)
         case watchCommand(WatchExperimentCommand)
+        case watchCommandExpired(UUID)
     }
 
     enum Delegate: Equatable {
@@ -195,15 +197,18 @@ struct CameraCaptureFeature {
                 )
 
             case let .photoCaptureRequested(id):
-                guard state.isCameraReadyForCapture,
-                      state.video.phase == .idle else { return .none }
+                guard state.isCameraReadyForCapture, state.video.phase == .idle,
+                      !state.photo.isSessionClosing else {
+                    guard let id, state.photo.requiresExternalConfirmation else { return .none }
+                    return .send(.photo(.captureFailed(id, "카메라를 사용할 수 없어요.")))
+                }
                 return .send(.photo(.captureRequested(id)))
 
             case .photo(.captured):
                 guard !state.camera.isViewVisible else { return .none }
                 return .send(.photo(.retakeRequested))
 
-            case .camera, .photo, .video, .delegate, .watchCommand:
+            case .camera, .photo, .video, .delegate, .watchCommand, .watchCommandExpired:
                 return .none
             }
         }
