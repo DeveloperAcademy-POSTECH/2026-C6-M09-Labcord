@@ -9,6 +9,7 @@ struct CapturedMediaReviewView<Content: View>: View {
     let isSaving: Bool
     let isCloseEnabled: Bool
     let showsAutoSaveNotice: Bool
+    let autoSaveEndsAt: Date?
     @ViewBuilder let content: () -> Content
 
     init(
@@ -19,6 +20,7 @@ struct CapturedMediaReviewView<Content: View>: View {
         isSaving: Bool,
         isCloseEnabled: Bool = true,
         showsAutoSaveNotice: Bool = true,
+        autoSaveEndsAt: Date? = nil,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.title = title
@@ -28,6 +30,7 @@ struct CapturedMediaReviewView<Content: View>: View {
         self.isSaving = isSaving
         self.isCloseEnabled = isCloseEnabled
         self.showsAutoSaveNotice = showsAutoSaveNotice
+        self.autoSaveEndsAt = autoSaveEndsAt
         self.content = content
     }
 
@@ -62,6 +65,7 @@ struct CapturedMediaReviewView<Content: View>: View {
                 retakeLabel: "다시 찍기",
                 isSaving: isSaving,
                 showsAutoSaveNotice: showsAutoSaveNotice,
+                autoSaveEndsAt: autoSaveEndsAt,
                 onRetake: onRetake,
                 onSave: onSave
             )

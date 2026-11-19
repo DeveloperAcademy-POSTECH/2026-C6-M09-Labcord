@@ -3,6 +3,9 @@ import ComposableArchitecture
 import Foundation
 import LabcordiOS
 import LabcordShared
+import OSLog
+
+private let watchPhotoLog = Logger(subsystem: "Labcord", category: "Capture")
 
 extension CameraCaptureFeature {
     func reduceWatch(state: inout State, action: Action) -> Effect<Action>? {
@@ -67,6 +70,11 @@ extension CameraCaptureFeature {
             return cancellation.map { watchReply($0, phase: .failed, error: .invalidState) }
         }
         state.watchPhotoRequest = nil
+        let source = cancellation == nil ? "phonePreview" : "watchCancel"
+        let id = recordID(command)
+        watchPhotoLog.notice("""
+            photo cancelled id=\(id, privacy: .public) source=\(source, privacy: .public)
+            """)
         let cancelled = watchReply(
             command, phase: .completed, kind: .photo, recordPhase: .cancelled
         )
@@ -111,10 +119,12 @@ extension CameraCaptureFeature {
 
     private func watchPhotoEvent(state: inout State, action: Action) -> Effect<Action>? {
         guard let command = state.watchPhotoRequest,
-              matchesPhotoEvent(action, command: command) else { return nil }
+              matchesPhotoEvent(action, id: recordID(command), photo: state.photo)
+        else { return nil }
         switch action {
-        case .photo(.watchCaptureRequested):
-            guard state.photo.requestedRecordID == recordID(command),
+        case let .photo(.watchCaptureRequested(id)):
+            if state.photo.requestedRecordID == id, !state.photo.isScheduled { return nil }
+            guard state.photo.requestedRecordID == id,
                   state.photo.isScheduled, let date = state.photo.scheduledAt else {
                 state.watchPhotoRequest = nil
                 state.photo.pendingWatchCaptureID = nil
@@ -133,17 +143,12 @@ extension CameraCaptureFeature {
         case .photo(.saveFailed):
             return failWatchReview(command, kind: .photo, state: &state)
         case .photo(.captureFailed):
+            let id = recordID(command)
+            watchPhotoLog.notice("photo failed id=\(id, privacy: .public) originalRetained=false")
             state.watchPhotoRequest = nil
             return watchReply(
                 command, phase: .failed, error: .cameraUnavailable,
                 kind: .photo, recordPhase: .failed, originalRetained: false
-            )
-        case .photo(.cancelGesture):
-            guard state.photo.requestedRecordID != recordID(command),
-                  state.photo.recordID != recordID(command) else { return nil }
-            state.watchPhotoRequest = nil
-            return watchReply(
-                command, phase: .completed, kind: .photo, recordPhase: .cancelled
             )
         default: return nil
         }
@@ -180,31 +185,29 @@ extension CameraCaptureFeature {
                 ),
                 finishWatchStop(state: &state, error: failure.watchError)
             )
-        case .video(.cancelCleanupFinished):
-            return finishVideoCancellation(command, state: &state)
+        case let .video(.cancelCleanupFinished(_, confirmed)):
+            return finishVideoCancellation(command, state: &state, confirmed: confirmed)
         default: return nil
         }
     }
 
     private func finishVideoCancellation(
-        _ command: WatchExperimentCommand, state: inout State
+        _ command: WatchExperimentCommand, state: inout State, confirmed: Bool
     ) -> Effect<Action> {
-        if let cancellation = state.watchVideoCancellationRequest {
-            state.watchVideoCancellationRequest = nil
-            state.watchVideoRequest = nil
-            return .merge(
-                watchReply(command, phase: .completed, kind: .video, recordPhase: .cancelled),
-                watchReply(cancellation, phase: .completed, kind: .video, recordPhase: .cancelled)
-            )
-        }
+        let affected = [command, state.watchVideoCancellationRequest,
+                        state.watchReviewRequest, state.watchStopRequest].compactMap { $0 }
         state.watchVideoRequest = nil
-        let review = state.watchReviewRequest
+        state.watchVideoCancellationRequest = nil
         state.watchReviewRequest = nil
-        return .merge(
-            watchUnknownVideo(command),
-            review.map { watchUnknownVideo($0) } ?? .none,
-            finishWatchStop(state: &state, error: .resultUnknown)
-        )
+        state.watchStopRequest = nil
+        return .merge(affected.map { request in
+            guard confirmed else { return watchUnknownVideo(request) }
+            let rejected = request.operation == .confirmRecord || request.operation == .stopVideo
+            return watchReply(
+                request, phase: rejected ? .failed : .completed,
+                error: rejected ? .invalidState : nil, kind: .video, recordPhase: .cancelled
+            )
+        })
     }
 
     private func watchUnknownVideo(_ command: WatchExperimentCommand) -> Effect<Action> {
@@ -217,15 +220,17 @@ extension CameraCaptureFeature {
         ))))
     }
 
-    private func matchesPhotoEvent(
-        _ action: Action, command: WatchExperimentCommand
-    ) -> Bool {
+    private func matchesPhotoEvent(_ action: Action, id: UUID, photo: PhotoFeature.State) -> Bool {
         switch action {
-        case let .photo(.watchCaptureRequested(id)),
-             let .photo(.captured(id, _)), let .photo(.saved(id)),
-             let .photo(.saveFailed(id, _)), let .photo(.captureFailed(id, _)):
-            return recordID(command) == id
-        default: return true
+        case let .photo(.watchCaptureRequested(eventID)): eventID == id
+        case let .photo(.captured(eventID, _)):
+            eventID == id && photo.recordID == id && !photo.isSaving
+        case let .photo(.saved(eventID)): eventID == id && photo.lastSavedRecordID == id
+        case let .photo(.saveFailed(eventID, _)):
+            eventID == id && photo.recordID == id && photo.saveError != nil
+        case let .photo(.captureFailed(eventID, _)):
+            eventID == id && photo.watchCaptureID == nil && photo.capturedData == nil
+        default: false
         }
     }
 
@@ -237,7 +242,7 @@ extension CameraCaptureFeature {
              let .video(.recordingFailed(id, _)):
             return sessionID == id
         case let .video(.saved(id)),
-             let .video(.saveFailed(id, _)), let .video(.cancelCleanupFinished(id)):
+             let .video(.saveFailed(id, _)), let .video(.cancelCleanupFinished(id, _)):
             return recordID(command) == id
         default: return true
         }
@@ -300,12 +305,11 @@ extension CameraCaptureFeature {
     private func confirmWatch(
         _ id: UUID, command: WatchExperimentCommand, state: inout State
     ) throws -> Effect<Action> {
-        guard state.watchReviewRequest == nil, !state.photo.isSaving, !state.video.isSaving else {
-            throw WatchExperimentError.phoneBusy
-        }
+        guard state.watchReviewRequest == nil, !state.video.isSaving
+        else { throw WatchExperimentError.phoneBusy }
         if state.watchPhotoRequest.map(recordID) == id, state.photo.recordID == id {
             state.watchReviewRequest = command
-            return .send(.photo(.watchSaveRequested(id)))
+            return state.photo.isSaving ? .none : .send(.photo(.watchSaveRequested(id)))
         }
         if state.watchVideoRequest.map(recordID) == id, state.video.recordID == id {
             state.watchReviewRequest = command
@@ -341,8 +345,7 @@ extension CameraCaptureFeature {
         guard AVCaptureDevice.authorizationStatus(for: .video) == .authorized else {
             throw WatchExperimentError.permissionDenied
         }
-        guard state.camera.isViewVisible, state.camera.previewConnector != nil,
-              !state.camera.isSwitching else { throw WatchExperimentError.cameraUnavailable }
+        guard state.isCameraReadyForCapture else { throw WatchExperimentError.cameraUnavailable }
     }
 
     private func failWatchReview(

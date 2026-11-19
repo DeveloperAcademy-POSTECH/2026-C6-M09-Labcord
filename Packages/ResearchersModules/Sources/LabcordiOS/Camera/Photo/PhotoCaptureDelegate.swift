@@ -1,9 +1,12 @@
 import AVFoundation
 import Foundation
+import OSLog
 
 nonisolated final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
     private let continuation: CheckedContinuation<Data, Error>
     private let completionLock = NSLock()
+    private static let logger = Logger(subsystem: "Labcord", category: "Camera")
+    private var processedPhoto: Result<Data, Error>?
     private var completed = false
 
     init(continuation: CheckedContinuation<Data, Error>) {
@@ -12,15 +15,26 @@ nonisolated final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDel
 
     func photoOutput(
         _ output: AVCapturePhotoOutput,
+        willCapturePhotoFor resolvedSettings: AVCaptureResolvedPhotoSettings
+    ) {
+        Self.logger.notice("native photo exposure request=\(resolvedSettings.uniqueID)")
+    }
+
+    func photoOutput(
+        _ output: AVCapturePhotoOutput,
         didFinishProcessingPhoto photo: AVCapturePhoto,
         error: Error?
     ) {
+        let result: Result<Data, Error>
         if let error {
-            finish(.failure(error))
+            result = .failure(error)
         } else if let data = photo.fileDataRepresentation() {
-            finish(.success(data))
+            result = .success(data)
         } else {
-            finish(.failure(CameraSessionError.photoDataUnavailable))
+            result = .failure(CameraSessionError.photoDataUnavailable)
+        }
+        completionLock.withLock {
+            if !completed { processedPhoto = result }
         }
     }
 
@@ -29,21 +43,22 @@ nonisolated final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDel
         didFinishCaptureFor resolvedSettings: AVCaptureResolvedPhotoSettings,
         error: Error?
     ) {
-        guard let error else { return }
-        finish(.failure(error))
+        finish(error: error)
     }
 
     func timeout() {
-        finish(.failure(CameraSessionError.photoDataUnavailable))
+        finish(error: CameraSessionError.photoDataUnavailable)
     }
 
-    private func finish(_ result: Result<Data, Error>) {
+    private func finish(error: Error?) {
         completionLock.lock()
         guard !completed else {
             completionLock.unlock()
             return
         }
         completed = true
+        let result = processedPhoto ?? .failure(error ?? CameraSessionError.photoDataUnavailable)
+        processedPhoto = nil
         completionLock.unlock()
         continuation.resume(with: result)
     }
