@@ -1,4 +1,3 @@
-#if DEBUG
 import ComposableArchitecture
 import Foundation
 import LabcordiOS
@@ -256,4 +255,3 @@ struct RecordingDemoSeeder {
         try files.removeItem(at: destination)
     }
 }
-#endif

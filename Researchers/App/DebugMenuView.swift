@@ -1,4 +1,3 @@
-#if DEBUG
 import ComposableArchitecture
 import SwiftUI
 
@@ -48,4 +47,3 @@ struct DebugMenuView: View {
         }
     }
 }
-#endif

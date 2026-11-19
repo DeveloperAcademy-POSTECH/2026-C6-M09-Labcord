@@ -115,7 +115,6 @@ public actor ProtocolAnalysisJobManager {
         }
     }
 
-    #if DEBUG
     public func resetDebugData() async throws {
         if let id = record?.id { _ = stopExecution(id: id) }
         record = nil
@@ -126,7 +125,6 @@ public actor ProtocolAnalysisJobManager {
             try FileManager.default.removeItem(at: store.directory)
         }
     }
-    #endif
 
     public func enteredBackground() async {
         guard !backgroundAvailable, let id = record?.id,

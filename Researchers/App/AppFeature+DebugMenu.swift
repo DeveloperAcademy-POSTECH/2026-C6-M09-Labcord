@@ -1,4 +1,3 @@
-#if DEBUG
 import ComposableArchitecture
 import Foundation
 import LabcordiOS
@@ -202,14 +201,9 @@ extension AppFeature {
         state.debugMenu.didReset = false
     }
 }
-#endif
 
 extension AppFeature.State {
     var isDebugMenuPresented: Bool {
-        #if DEBUG
         debugMenu.isPresented
-        #else
-        false
-        #endif
     }
 }

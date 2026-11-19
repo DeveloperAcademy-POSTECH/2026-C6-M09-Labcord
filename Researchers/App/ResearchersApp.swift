@@ -35,14 +35,12 @@ struct ResearchersApp: App {
                     AppView()
                 }
             }
-            #if DEBUG
             .background {
                 let store = PhoneIntentRuntime.shared.store
                 DebugMenuShortcut(store: store, isPresented: store.debugMenu.isPresented)
                     .accessibilityHidden(true)
                     .allowsHitTesting(false)
             }
-            #endif
             .onChange(of: scenePhase) { _, phase in
                 let store = PhoneIntentRuntime.shared.store
                 if phase == .active {

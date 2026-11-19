@@ -56,11 +56,9 @@ struct HomeFeature {
                 return .none
 
             case .addTapped:
-                #if DEBUG
                 if state.list.includesDemo, state.isFirstHome {
                     state.$hasCompletedFirstHome.withLock { $0 = true }
                 }
-                #endif
                 return .none
 
             case .settingsTapped, .list:
