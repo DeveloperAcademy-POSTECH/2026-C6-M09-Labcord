@@ -1,4 +1,3 @@
-#if DEBUG
 import ComposableArchitecture
 import SwiftUI
 
@@ -13,6 +12,22 @@ struct DebugMenuView: View {
                     get: { store.debugMenu.includesDemo },
                     set: { store.send(.debugMenu(.setDemo($0))) }
                 ))
+
+                Toggle("캐싱 모드", isOn: Binding(
+                    get: { store.debugMenu.protocolDemoCacheEnabled },
+                    set: { store.send(.debugMenu(.setProtocolDemoCache($0))) }
+                ))
+
+                if store.debugMenu.protocolDemoCacheEnabled {
+                    Stepper(
+                        "재생 시간 \(store.debugMenu.protocolDemoCacheSeconds)초",
+                        value: Binding(
+                            get: { store.debugMenu.protocolDemoCacheSeconds },
+                            set: { store.send(.debugMenu(.setProtocolDemoCacheSeconds($0))) }
+                        ),
+                        in: AppFeature.DebugMenuState.cacheSecondsRange
+                    )
+                }
 
                 Button("앱 초기화", role: .destructive) {
                     confirmsReset = true
@@ -48,4 +63,3 @@ struct DebugMenuView: View {
         }
     }
 }
-#endif

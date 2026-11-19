@@ -254,7 +254,6 @@ public final class PhoneWatchExperimentCoordinator {
     }
 }
 
-#if DEBUG
 extension PhoneWatchExperimentCoordinator {
     func checkDebugDataResetAvailability() throws {
         guard executing == nil, photoCancellationID == nil,
@@ -287,4 +286,3 @@ extension PhoneWatchExperimentCoordinator {
         refresh()
     }
 }
-#endif

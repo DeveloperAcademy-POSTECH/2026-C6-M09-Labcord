@@ -30,7 +30,6 @@ final class TermStringCache: @unchecked Sendable {
         save()
     }
 
-    #if DEBUG
     func resetDebugData() throws {
         lock.lock()
         defer { lock.unlock() }
@@ -39,7 +38,6 @@ final class TermStringCache: @unchecked Sendable {
             try FileManager.default.removeItem(at: fileURL)
         }
     }
-    #endif
 
     private func load() {
         guard storage == nil else { return }

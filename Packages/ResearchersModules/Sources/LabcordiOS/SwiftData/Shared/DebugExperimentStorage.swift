@@ -1,4 +1,3 @@
-#if DEBUG
 import Foundation
 import LabcordShared
 import SwiftData
@@ -98,4 +97,3 @@ public enum DebugExperimentStorage {
         try FileManager.default.removeItem(at: url)
     }
 }
-#endif

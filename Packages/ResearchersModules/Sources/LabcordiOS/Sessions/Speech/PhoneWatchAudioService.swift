@@ -324,7 +324,6 @@ private extension WatchAudioMessage {
     }
 }
 
-#if DEBUG
 extension PhoneWatchAudioService {
     var canResetDebugData: Bool {
         !hasUnsettledRecording() && receiver.processing.isEmpty
@@ -341,4 +340,3 @@ extension PhoneWatchAudioService {
         damagedRecordingIDs.removeAll()
     }
 }
-#endif

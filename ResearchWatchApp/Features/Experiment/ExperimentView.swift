@@ -165,6 +165,7 @@ struct ExperimentView: View {
                     onCancel: { store.send(.overlayDismissed) }
                 )
             }
+            .modifier(WatchDebugMenuModifier())
             .presentationBackground(.black)
         }
         .sheet(isPresented: Binding(
@@ -174,6 +175,7 @@ struct ExperimentView: View {
             NavigationStack {
                 EndExperimentView { store.send(.overlayDismissed) }
             }
+            .modifier(WatchDebugMenuModifier())
             .presentationBackground(.black)
         }
         .alert("실험을 변경하지 못했어요", isPresented: Binding(
@@ -188,18 +190,21 @@ struct ExperimentView: View {
             NavigationStack {
                 VoiceRecordView(experimentID: experiment.id)
             }
+            .modifier(WatchDebugMenuModifier())
             .presentationBackground(.black)
         }
         .sheet(isPresented: $isPhotoRecordPresented) {
             NavigationStack {
                 PhotoRecordView(experimentID: experiment.id)
             }
+            .modifier(WatchDebugMenuModifier())
             .presentationBackground(.black)
         }
         .sheet(isPresented: $isVideoRecordPresented) {
             NavigationStack {
                 VideoRecordView(experimentID: experiment.id)
             }
+            .modifier(WatchDebugMenuModifier())
             .presentationBackground(.black)
         }
     }

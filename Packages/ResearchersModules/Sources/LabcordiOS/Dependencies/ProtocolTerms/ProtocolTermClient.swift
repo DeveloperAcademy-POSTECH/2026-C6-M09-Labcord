@@ -4,7 +4,7 @@ import Foundation
 import FoundationModels
 import OmniParser
 
-nonisolated public struct ProtocolExtractedTerms: Equatable, Sendable {
+nonisolated public struct ProtocolExtractedTerms: Codable, Equatable, Sendable {
     public var materials: [String]
     public var samples: [String]
     public var glossaryTerms: [String]

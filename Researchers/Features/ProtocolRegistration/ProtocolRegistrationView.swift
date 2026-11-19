@@ -23,7 +23,8 @@ struct ProtocolRegistrationView: View {
                     store: store.scope(state: \.analysisProgress, action: \.analysisProgress),
                     progress: input.analysisProgress,
                     isCancelling: input.analysisCancellationRequested,
-                    notice: input.analysisMessage
+                    notice: input.analysisMessage,
+                    isCacheReplay: input.isCacheReplay
                 )
                 .background(Color(
                     "General/Background/Primary"

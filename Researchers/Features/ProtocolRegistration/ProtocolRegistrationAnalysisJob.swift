@@ -18,7 +18,7 @@ extension ProtocolInputAnalysisFeature {
             guard state.analysisJobID == snapshot.id,
                   Set(state.selectedInputs.map(\.id)) == Set(snapshot.inputs.map(\.id))
             else { return .none }
-            state.analysisProgress = max(state.analysisProgress, snapshot.progress)
+            state.applyAnalysisProgress(snapshot)
             state.analysisMessage = snapshot.message
             state.analysisPaused = snapshot.status == .paused
             state.analysisResults = Dictionary(
@@ -75,7 +75,10 @@ private extension ProtocolInputAnalysisFeature {
               !state.importing, !state.isSaving,
               !state.pendingInputs.isEmpty || state.analysisPaused else { return .none }
         let isResuming = state.analysisJobID != nil
-        if !isResuming { state.analysisProgress = 0 }
+        if !isResuming {
+            state.analysisProgress = 0
+            state.isCacheReplay = false
+        }
         let inputs = state.selectedInputs.map { input in
             ProtocolAnalysisJobInput(
                 id: input.id, url: input.url, name: input.name,
@@ -98,16 +101,29 @@ private extension ProtocolInputAnalysisFeature {
         state.analysisFailed = false
         return .run { send in
             do {
-                if isResuming {
-                    try await jobManager.resume(id: id)
-                } else {
-                    try await jobManager.start(id: id, inputs: inputs)
-                }
+                try await launchAnalysis(id, inputs: inputs, resuming: isResuming)
                 await send(.analysisStartFinished(id, true))
             } catch {
                 await send(.analysisStartFinished(id, false))
             }
         }
+    }
+
+    func launchAnalysis(
+        _ id: UUID, inputs: [ProtocolAnalysisJobInput], resuming: Bool
+    ) async throws {
+        if resuming {
+            try await jobManager.resume(id: id)
+            return
+        }
+        @Shared(.appStorage("protocolDemoCacheEnabled")) var cacheEnabled = false
+        @Shared(.appStorage("protocolDemoCacheSeconds")) var cacheSeconds = 15
+        let duration = cacheSeconds
+        if cacheEnabled, let entries = await ProtocolDemoCache.results(for: inputs) {
+            try await jobManager.startCached(id: id, entries: entries, seconds: duration)
+            return
+        }
+        try await jobManager.start(id: id, inputs: inputs)
     }
 
     func finishStartingAnalysis(
@@ -154,6 +170,20 @@ extension ProtocolInputAnalysisFeature.State {
         selectedInputs.firstIndex { $0.id == analysisInputID }.map { $0 + 1 }
     }
 
+    mutating func applyAnalysisProgress(_ snapshot: ProtocolAnalysisJobSnapshot) {
+        isCacheReplay = snapshot.isCacheReplay
+        guard isCacheReplay else {
+            analysisProgress = max(analysisProgress, snapshot.progress)
+            return
+        }
+
+        analysisProgress = snapshot.progress
+        let orderedPhotoIDs = snapshot.inputs.filter(\.isPhoto).map(\.id)
+        guard importedPhotos.map(\.id) != orderedPhotoIDs else { return }
+        let photos = Dictionary(uniqueKeysWithValues: importedPhotos.map { ($0.id, $0) })
+        importedPhotos = orderedPhotoIDs.compactMap { photos[$0] }
+    }
+
     mutating func applyAnalysisPhase(_ phase: ProtocolAnalysisJobPhase) {
         switch phase {
         case .queued:
@@ -168,9 +198,7 @@ extension ProtocolInputAnalysisFeature.State {
     }
 
     var hasAmbiguousTimers: Bool {
-        successfulResults.contains { item in
-            item.extractedText.map { ProtocolTimerExtractor.needsManualReview(in: $0) } ?? false
-        }
+        successfulResults.contains(where: \.hasAmbiguousTimers)
     }
 
     var extractedTerms: [ProtocolTermCategory: [String]] {

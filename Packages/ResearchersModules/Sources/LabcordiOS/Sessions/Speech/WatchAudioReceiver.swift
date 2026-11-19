@@ -377,7 +377,6 @@ private extension WatchAudioReceiver {
     }
 }
 
-#if DEBUG
 extension WatchAudioReceiver {
     func clearDebugData() {
         for pipeline in pipelines.values { pipeline.transcriber.cancel() }
@@ -390,4 +389,3 @@ extension WatchAudioReceiver {
         hasIncomingFileFailure = false
     }
 }
-#endif

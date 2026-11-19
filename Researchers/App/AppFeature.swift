@@ -13,9 +13,7 @@ struct AppFeature {
     @ObservableState
     struct State: Equatable {
         @Shared(.appStorage("onboardingHasCompleted")) var hasCompletedOnboarding = false
-        #if DEBUG
         var debugMenu = DebugMenuState()
-        #endif
         var onboarding: OnboardingFeature.State?
         var watchPendingStartID: UUID?
         var watchSplashPhase = WatchSplashPhase.waiting
@@ -38,9 +36,7 @@ struct AppFeature {
         var readyLiveActivityExperimentID: UUID?
     }
     enum Action {
-        #if DEBUG
         case debugMenu(DebugMenuAction)
-        #endif
         case appeared
         case openLiveActivityExperiment(UUID)
         case liveActivityExperimentLoaded(UUID, Bool)
@@ -85,9 +81,7 @@ struct AppFeature {
             .ifLet(\.onboarding, action: \.onboarding) { OnboardingFeature() }
         CombineReducers {
             appReducer
-            #if DEBUG
             debugMenuReducer
-            #endif
         }
         .forEach(\.path, action: \.path)
         watchCompletionNavigationReducer
@@ -100,9 +94,7 @@ private extension AppFeature {
     var appReducer: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
-            #if DEBUG
             case .debugMenu: return .none
-            #endif
             case .appeared, .onboarding:
                 return handleLaunch(&state, action)
 
@@ -212,10 +204,7 @@ private extension AppFeature {
                       registration.analysisID == nil, !registration.analysisStarting,
                       registration.invalidatingJobID == nil,
                       !registration.successfulResults.isEmpty else { return .none }
-                let seconds = registration.successfulResults.flatMap { item -> [Int] in
-                    guard let text = item.extractedText else { return [] }
-                    return ProtocolTimerExtractor.extract(from: text)
-                }
+                let seconds = registration.successfulResults.flatMap(\.timerSeconds)
                 let terms = registration.extractedTerms.mapValues { values in
                     values.map { ProtocolReviewTerm(id: uuid(), value: $0) }
                 }

@@ -150,7 +150,15 @@
           "note": "S-01 pH 6.38 확인",
           "previousNote": "데모 관찰. S-01의 최종 pH 표시는 6.38이었다. 온도 23.5도는 음성에 남겼다."
         }
-      ]
+      ],
+      "cache": {
+        "sha256": "e18c0255ece2b58da17c458bc90b14b8a6ee26061846e198d14021612a4cbf05",
+        "filenames": [
+          "토양 및 폐기물 pH 측정 매뉴얼.pdf",
+          "01 토양 및 폐기물 pH 측정.pdf"
+        ],
+        "hasAmbiguousTimers": true
+      }
     },
     {
       "id": "D3A00000-0000-4000-8000-000000000102",
@@ -319,7 +327,16 @@
           "note": "농도가 높을수록 탁함",
           "previousNote": "데모 관찰. 저농도부터 고농도 표준까지 현탁액의 탁도가 단계적으로 커졌다."
         }
-      ]
+      ],
+      "cache": {
+        "sha256": "bf125130227c57ecf7d556873aad1a4ae0d5003689315e817e63bda3d07f6c1b",
+        "filenames": [
+          "황산염 탁도 분석.pdf",
+          "02 황산염 탁도 분석.pdf"
+        ],
+        "hasWarnings": true,
+        "hasAmbiguousTimers": true
+      }
     },
     {
       "id": "D3A00000-0000-4000-8000-000000000103",
@@ -483,7 +500,16 @@
           "note": "시료 청색, 공시험 무색",
           "previousNote": "데모 관찰. 측정 후 시료의 청색이 공시험과 뚜렷하게 구분됐다."
         }
-      ]
+      ],
+      "cache": {
+        "sha256": "cb05f8a62a488f78e94c9b1ade54b7ee97fc8ac441da06178f9b7e651b425c51",
+        "filenames": [
+          "포스포리움 컬러라이트 분석 매뉴얼.pdf",
+          "03 포스포리움 컬러라이트 분석.pdf"
+        ],
+        "hasWarnings": true,
+        "hasAmbiguousTimers": true
+      }
     },
     {
       "id": "D3A00000-0000-4000-8000-000000000104",
@@ -637,7 +663,102 @@
           "note": "가장자리 얼룩·뭉침 없음",
           "previousNote": "데모 관찰. 낮은 정측면에서 확인한 결과 가장자리에 눈에 띄는 얼룩이나 덩어리가 없었다."
         }
-      ]
+      ],
+      "cache": {
+        "sha256": "329a77b2e9c1e494de37e28157029c1881bafdddd6bfa268825cbeffe1c4122e",
+        "filenames": [
+          "Spin Coater 공정 매뉴얼.pdf",
+          "04 Spin Coater 공정.pdf"
+        ],
+        "usedFallback": true,
+        "hasAmbiguousTimers": true
+      }
+    }
+  ],
+  "cachePhotos": [
+    {
+      "match": {
+        "sha256": "18944a480fffb1492eea65c1531a4421a96b62c16ab4ea767b587b4e977b93b8",
+        "filenames": [],
+        "page": 1,
+        "signatureAsset": "LabcordDemo-protocol-buffer-1-signature"
+      },
+      "protocol": {
+        "timerSeconds": [],
+        "materials": [
+          "스포이트",
+          "피펫",
+          "눈금 실린더",
+          "비커",
+          "pH 미터",
+          "아세트산",
+          "염산",
+          "증류수",
+          "아세트산나트륨",
+          "수산화나트륨"
+        ],
+        "samples": [
+          "아세트산 수용액",
+          "염산 수용액",
+          "아세트산나트륨 수용액",
+          "수산화나트륨 수용액"
+        ],
+        "glossaryTerms": [
+          "완충용액",
+          "공통이온효과",
+          "염",
+          "화학 반응",
+          "젖산"
+        ],
+        "units": [
+          "pH",
+          "M",
+          "mL",
+          "방울"
+        ]
+      }
+    },
+    {
+      "match": {
+        "sha256": "1bdfe19b20db1e51a0a4fbf11e35f9ee513929445d38d6ce3ce8be2e037c8f4e",
+        "filenames": [],
+        "page": 2,
+        "signatureAsset": "LabcordDemo-protocol-buffer-2-signature"
+      },
+      "protocol": {
+        "timerSeconds": [],
+        "materials": [
+          "염산",
+          "수산화나트륨",
+          "증류수",
+          "아세트산",
+          "아세트산나트륨"
+        ],
+        "samples": [
+          "염산 수용액",
+          "수산화나트륨 수용액",
+          "아세트산 수용액",
+          "아세트산나트륨 수용액",
+          "혼합 용액"
+        ],
+        "glossaryTerms": [
+          "완충용액",
+          "강산",
+          "강염기",
+          "약한 산",
+          "짝염기",
+          "짝산",
+          "산화 반응",
+          "탄산수소 이온",
+          "이온화 평형",
+          "르 샤틀리에의 원리",
+          "젖산"
+        ],
+        "units": [
+          "pH",
+          "방울"
+        ]
+      }
     }
   ]
 }

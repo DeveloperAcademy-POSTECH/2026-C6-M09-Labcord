@@ -7,9 +7,7 @@ import SwiftUI
 struct ExperimentListFeature {
     @ObservableState
     struct State: Equatable {
-        #if DEBUG
         @Shared(.appStorage("includesRecordingDemo")) var includesDemo = false
-        #endif
         var entries: [ExperimentListEntry] = []
         var isDeleting = false
         var pendingDeletion: ExperimentListEntry?
@@ -70,13 +68,9 @@ struct ExperimentListFeature {
                 guard revision == state.loadRevision else { return .none }
                 switch result {
                 case let .success(entries):
-                    #if DEBUG
                     state.entries = entries.filter {
                         RecordingDemoSeeder.isVisible($0.id, includesDemo: state.includesDemo)
                     }
-                    #else
-                    state.entries = entries
-                    #endif
                     if let entry = state.createdEntry {
                         state.entries.removeAll { $0.id == entry.id }
                         state.entries.append(entry)

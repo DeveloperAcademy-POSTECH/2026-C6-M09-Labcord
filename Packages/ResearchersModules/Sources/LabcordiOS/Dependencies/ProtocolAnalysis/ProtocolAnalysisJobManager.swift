@@ -4,12 +4,13 @@ import OmniParser
 public actor ProtocolAnalysisJobManager {
     public static let shared = ProtocolAnalysisJobManager()
     private let store: ProtocolAnalysisJobStore
-    private let parser: ProtocolAnalysisClient
-    private let termClient: ProtocolTermClient
+    let parser: ProtocolAnalysisClient
+    let termClient: ProtocolTermClient
     private let usesSystemScheduler: Bool
-    private var record: ProtocolAnalysisJobRecord?
+    var record: ProtocolAnalysisJobRecord?
     private var phase: ProtocolAnalysisJobPhase = .queued
     private var backgroundAvailable = false
+    private var cacheProgress = 0.0
     private var execution: Task<Void, Never>?
     private var draining: (id: UUID, task: Task<Void, Never>)?
     private var runID: UUID?
@@ -42,6 +43,24 @@ public actor ProtocolAnalysisJobManager {
     }
 
     public func start(id: UUID, inputs: [ProtocolAnalysisJobInput]) async throws {
+        try await start(id: id, inputs: inputs, cached: [])
+    }
+
+    public func startCached(
+        id: UUID,
+        entries: [(input: ProtocolAnalysisJobInput, result: ProtocolAnalysisCachedResult)],
+        seconds: Int
+    ) async throws {
+        try await start(
+            id: id, inputs: entries.map(\.input), cached: entries.map(\.result),
+            cacheSeconds: seconds
+        )
+    }
+
+    private func start(
+        id: UUID, inputs: [ProtocolAnalysisJobInput], cached: [ProtocolAnalysisCachedResult],
+        cacheSeconds: Int? = nil
+    ) async throws {
         guard execution == nil, record?.status != .queued, record?.status != .running else {
             throw CocoaError(.userCancelled)
         }
@@ -50,7 +69,22 @@ public actor ProtocolAnalysisJobManager {
             throw CocoaError(.userCancelled)
         }
         let previousID = record?.id
-        record = try store.prepare(id: id, inputs: inputs, now: Date())
+        var prepared = try store.prepare(id: id, inputs: inputs, now: Date())
+        if !cached.isEmpty {
+            prepared.replaysCache = true
+            prepared.cacheReplaySeconds = cacheSeconds
+            do {
+                for (input, result) in zip(inputs, cached) {
+                    _ = try prepared.recordOutcome(.cached(result), key: input.id.uuidString)
+                }
+                try store.save(prepared)
+            } catch {
+                try? store.remove(id)
+                throw error
+            }
+        }
+        record = prepared
+        cacheProgress = 0
         if let previousID, previousID != id { try? store.remove(previousID) }
         phase = .queued
         publish()
@@ -115,7 +149,6 @@ public actor ProtocolAnalysisJobManager {
         }
     }
 
-    #if DEBUG
     public func resetDebugData() async throws {
         if let id = record?.id { _ = stopExecution(id: id) }
         record = nil
@@ -126,7 +159,6 @@ public actor ProtocolAnalysisJobManager {
             try FileManager.default.removeItem(at: store.directory)
         }
     }
-    #endif
 
     public func enteredBackground() async {
         guard !backgroundAvailable, let id = record?.id,
@@ -135,7 +167,7 @@ public actor ProtocolAnalysisJobManager {
     }
 }
 
-private extension ProtocolAnalysisJobManager {
+extension ProtocolAnalysisJobManager {
     private func schedule(_ id: UUID) async {
         let submission = UUID()
         submissionID = submission
@@ -144,7 +176,7 @@ private extension ProtocolAnalysisJobManager {
         #else
         let shouldSchedule = usesSystemScheduler
         #endif
-        if shouldSchedule {
+        if shouldSchedule && record?.replaysCache != true {
             do {
                 backgroundAvailable = true
                 try await ProtocolAnalysisBackgroundScheduler.shared.submit(
@@ -179,6 +211,7 @@ private extension ProtocolAnalysisJobManager {
         runID = attempt
         record?.status = .running
         record?.runStartedAt = Date()
+        cacheProgress = 0
         do {
             try persist()
         } catch {
@@ -198,10 +231,15 @@ private extension ProtocolAnalysisJobManager {
         do {
             guard let current = record else { return }
             let inputs = try store.inputs(current)
-            for input in inputs {
-                try await process(input, id: id, attempt: attempt)
-                publish()
-                await updateSystemProgress(id: id)
+            if current.replaysCache == true {
+                let seconds = current.cacheReplaySeconds ?? 15
+                try await replayCache(id: id, attempt: attempt, seconds: seconds)
+            } else {
+                for input in inputs {
+                    try await process(input, id: id, attempt: attempt)
+                    publish()
+                    await updateSystemProgress(id: id)
+                }
             }
             try check(id: id, attempt: attempt)
             let success = record?.failures?.isEmpty != false
@@ -228,106 +266,30 @@ private extension ProtocolAnalysisJobManager {
         }
     }
 
-    private func process(
-        _ input: ProtocolAnalysisJobInput, id: UUID, attempt: UUID
-    ) async throws {
-        try check(id: id, attempt: attempt)
-        let key = input.id.uuidString
-        if record?.documents[key] == nil {
-            let items = try await parser.parseReportingProgress([
-                ProtocolAnalysisInput(id: input.id, url: input.url)
-            ]) { inputID, value in
-                await self.progress(.reading(inputID, value), id: id, attempt: attempt)
-            }
+    private func replayCache(id: UUID, attempt: UUID, seconds: Int) async throws {
+        let clock = ContinuousClock()
+        let started = clock.now
+        let totalSeconds = min(max(seconds, 1), 60)
+        let tickCount = totalSeconds * 10 - 3
+        let samples = ProtocolAnalysisCacheProgress.samples(count: tickCount)
+        for (index, progress) in samples.enumerated() {
+            try await clock.sleep(until: started + .milliseconds((index + 1) * 100))
             try check(id: id, attempt: attempt)
-            guard items.count == 1, let item = items.first, item.id == input.id else {
-                throw CocoaError(.coderReadCorrupt)
-            }
-            guard var value = record else { throw CocoaError(.coderReadCorrupt) }
-            let succeeded = try value.recordOutcome(item.outcome, key: key)
-            record = value
-            try persist()
-            if !succeeded { return }
+            cacheProgress = progress
+            publish()
         }
-        guard let saved = record?.documents[key] else {
-            throw CocoaError(.coderReadCorrupt)
-        }
-        let document = try saved.restored()
-        if record?.selected[key] == nil {
-            let terms = try await termClient.selectDocumentTerms(document) { value in
-                await self.progress(.terms(input.id, value), id: id, attempt: attempt)
-            }
-            try check(id: id, attempt: attempt)
-            record?.selected[key] = terms
-            try persist()
-        }
-        if record?.finished.contains(key) != true {
-            let selected = record?.selected[key] ?? []
-            let terms = try await classify(
-                selected, document: document, input: input.id, id: id, attempt: attempt
-            )
-            try check(id: id, attempt: attempt)
-            record?.classified[key] = ProtocolAnalysisSavedTerms(terms)
-            record?.finished.insert(key)
-            try persist()
-        }
+        // Keep the completed ring visible before publishing the result screen.
+        try await clock.sleep(until: started + .seconds(totalSeconds))
     }
 
-    private func classify(
-        _ selected: [String], document: DocumentParseResult, input: UUID,
-        id: UUID, attempt: UUID
-    ) async throws -> ProtocolExtractedTerms {
-        let key = input.uuidString
-        let report: ProtocolTermClient.Progress = { value in
-            await self.progress(.terms(input, value), id: id, attempt: attempt)
-        }
-        if let policy = record?.reviewPolicyVersion, let review = termClient.reviewDocumentTerms {
-            guard policy == ProtocolTermReviewCheckpoint.currentPolicyVersion else {
-                throw ProtocolTermClassifier.ClassificationError.invalidCheckpoint
-            }
-            return try await review(selected, document, record?.reviews?[key], report) { partial in
-                try await self.saveReview(partial, key: key, id: id, attempt: attempt)
-            }
-        } else {
-            let seed = record?.classified[key]?.restored
-            return try await termClient.classifyDocumentTerms(
-                selected, document.fullText, seed, report
-            ) { partial in
-                try await self.saveClassification(partial, key: key, id: id, attempt: attempt)
-            }
-        }
-    }
-
-    private func saveReview(
-        _ review: ProtocolTermReviewCheckpoint, key: String, id: UUID, attempt: UUID
-    ) throws {
-        try check(id: id, attempt: attempt)
-        guard let selected = record?.selected[key],
-              let document = record?.documents[key] else {
-            throw ProtocolTermClassifier.ClassificationError.invalidCheckpoint
-        }
-        try review.validate(terms: selected, source: document.restored().fullText)
-        if record?.reviews == nil { record?.reviews = [:] }
-        record?.reviews?[key] = review
-        try persist()
-    }
-
-    private func saveClassification(
-        _ terms: ProtocolExtractedTerms, key: String, id: UUID, attempt: UUID
-    ) throws {
-        try check(id: id, attempt: attempt)
-        record?.classified[key] = ProtocolAnalysisSavedTerms(terms)
-        try persist()
-    }
-
-    private func check(id: UUID, attempt: UUID) throws {
+    func check(id: UUID, attempt: UUID) throws {
         try Task.checkCancellation()
         guard record?.id == id, record?.status == .running, runID == attempt else {
             throw CancellationError()
         }
     }
 
-    private func progress(_ value: ProtocolAnalysisJobPhase, id: UUID, attempt: UUID) async {
+    func progress(_ value: ProtocolAnalysisJobPhase, id: UUID, attempt: UUID) async {
         guard record?.id == id, runID == attempt, record?.status == .running else { return }
         phase = value
         publish()
@@ -381,11 +343,12 @@ private extension ProtocolAnalysisJobManager {
     internal func snapshot() throws -> ProtocolAnalysisJobSnapshot? {
         guard let record else { return nil }
         return try record.snapshot(
-            inputs: store.inputs(record), phase: phase, backgroundAvailable: backgroundAvailable
+            inputs: store.inputs(record), phase: phase, backgroundAvailable: backgroundAvailable,
+            cacheProgress: cacheProgress
         )
     }
 
-    private func persist() throws {
+    func persist() throws {
         guard var value = record else { return }
         value.updatedAt = Date()
         try store.save(value)
