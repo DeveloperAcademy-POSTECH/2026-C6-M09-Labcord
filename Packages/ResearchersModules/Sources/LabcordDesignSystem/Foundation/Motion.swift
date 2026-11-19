@@ -10,12 +10,12 @@ public enum LabcordMotion: Sendable {
 
     public var animation: Animation {
         switch self {
-        case .press: .spring(response: 0.18, dampingFraction: 0.9)
-        case .release: .spring(response: 0.34, dampingFraction: 0.68)
-        case .state: .spring(response: 0.28, dampingFraction: 0.82)
-        case .layout: .spring(response: 0.36, dampingFraction: 0.84)
-        case .entrance: .spring(response: 0.4, dampingFraction: 0.86)
-        case .settle: .spring(response: 0.36, dampingFraction: 1)
+        case .press: .spring(response: 0.18, dampingFraction: 0.95)
+        case .release: .spring(response: 0.3, dampingFraction: 0.82)
+        case .state: .spring(response: 0.22, dampingFraction: 1)
+        case .layout: .spring(response: 0.34, dampingFraction: 0.9)
+        case .entrance: .spring(response: 0.36, dampingFraction: 0.92)
+        case .settle: .spring(response: 0.28, dampingFraction: 1)
         }
     }
 }
@@ -68,7 +68,7 @@ private struct LabcordPressModifier: ViewModifier {
     private var pressedOpacity: Double { isSubtle ? 0.94 : 0.86 }
 
     private var releaseAnimation: Animation {
-        isSubtle ? .easeOut(duration: 0.16) : LabcordMotion.release.animation
+        isSubtle ? LabcordMotion.state.animation : LabcordMotion.release.animation
     }
 
     func body(content: Content) -> some View {

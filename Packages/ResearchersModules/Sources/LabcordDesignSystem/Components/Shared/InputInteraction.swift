@@ -125,7 +125,7 @@ private struct InputDismissalModifier: ViewModifier {
         guard let focusedInput, !viewportBounds.isEmpty, !focusedInput.frame.isEmpty,
               !viewportBounds.contains(focusedInput.frame) else { return }
         let anchor: UnitPoint = focusedInput.height > viewportBounds.height ? .top : .bottom
-        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) {
+        withAnimation(reduceMotion ? nil : LabcordMotion.settle.animation) {
             scroll.scrollTo(focusedInput.id, anchor: anchor)
         }
     }

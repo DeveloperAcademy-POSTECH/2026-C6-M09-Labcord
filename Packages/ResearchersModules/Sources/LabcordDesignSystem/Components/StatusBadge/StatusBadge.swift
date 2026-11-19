@@ -18,6 +18,7 @@ public struct StatusBadge: View {
 
     public var body: some View {
         Text(label)
+            .contentTransition(.opacity)
             .typography(Typography.subheadline)
             .foregroundStyle(status.foregroundColor)
             .multilineTextAlignment(.center)
@@ -26,6 +27,8 @@ public struct StatusBadge: View {
             .padding(.vertical, LayoutTokens.spacing4)
             .frame(minWidth: 70, minHeight: 28)
             .background(status.backgroundColor, in: RoundedRectangle(cornerRadius: 8))
+            .labcordMotion(.state, value: status)
+            .labcordMotion(.state, value: label)
             .accessibilityLabel(Text(label))
     }
 }

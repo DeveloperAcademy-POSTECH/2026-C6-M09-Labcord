@@ -32,16 +32,23 @@ public struct DropdownTriggerLabel: View {
     public var body: some View {
         HStack(spacing: LayoutTokens.spacing8) {
             Text(value)
+                .contentTransition(.opacity)
+                .labcordMotion(.state, value: value)
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            IconArtwork(
-                icon: effectiveState == .open ? .caretUp : .caretDown,
-                size: iconSize,
-                relativeTo: fontTextStyle
-            )
+            ZStack {
+                IconArtwork(
+                    icon: effectiveState == .open ? .caretUp : .caretDown,
+                    size: iconSize,
+                    relativeTo: fontTextStyle
+                )
+                .id(effectiveState == .open)
+                .transition(.opacity)
+            }
             .foregroundStyle(iconColor)
+            .labcordMotion(.state, value: effectiveState)
         }
         .typography(textStyle)
         .foregroundStyle((foregroundColor))

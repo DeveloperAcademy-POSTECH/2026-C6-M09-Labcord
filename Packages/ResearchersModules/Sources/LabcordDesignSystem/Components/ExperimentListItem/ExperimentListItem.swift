@@ -11,7 +11,6 @@ public struct ExperimentListItem: View {
     private let showRunningTimer: Bool
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.isEnabled) private var isEnabled
 
     public init(
@@ -65,7 +64,7 @@ public struct ExperimentListItem: View {
             Rectangle()
                 .fill(Color(.General.Fill.selected))
                 .opacity(isSelected ? 1 : 0)
-                .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: isSelected)
+                .labcordMotion(.state, value: isSelected)
         }
         .overlay(alignment: .bottom) {
             Rectangle()

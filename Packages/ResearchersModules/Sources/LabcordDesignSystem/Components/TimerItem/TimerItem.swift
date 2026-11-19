@@ -132,6 +132,7 @@ public struct TimerItem<ID: Hashable>: View {
                     role: .destructive,
                     action: onRemove
                 )
+                .transition(.opacity)
             }
 
             TimerItemActionButton(
@@ -144,6 +145,7 @@ public struct TimerItem<ID: Hashable>: View {
                 action: action
             )
         }
+        .labcordMotion(.layout, value: state == .paused)
     }
 
     private var setDurationTypography: TypographyStyle {

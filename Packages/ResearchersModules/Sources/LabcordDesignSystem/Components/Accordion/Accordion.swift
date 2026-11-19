@@ -87,7 +87,7 @@ public struct Accordion<Content: View>: View {
                 }
                 .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PressFeedbackButtonStyle())
             .disabled(isDisabled)
 
             if isOpen {
@@ -116,7 +116,7 @@ public struct Accordion<Content: View>: View {
     }
 
     private var expansionAnimation: Animation? {
-        reduceMotion ? nil : .easeOut(duration: 0.2)
+        reduceMotion ? nil : LabcordMotion.layout.animation
     }
 
     private var hasCount: Bool {
