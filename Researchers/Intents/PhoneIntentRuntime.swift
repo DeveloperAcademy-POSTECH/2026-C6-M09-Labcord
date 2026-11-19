@@ -220,7 +220,7 @@ private final class WatchReply {
                 }
                 gate.continuation = continuation
                 gate.timeout = Task { @MainActor in
-                    try? await Task.sleep(until: deadline, clock: .continuous)
+                    try? await Task.sleep(until: deadline, tolerance: .zero, clock: .continuous)
                     guard !Task.isCancelled else { return }
                     WatchConnectivityDiagnostics.failure(
                         "intent.timeout", id: requestID.uuidString,
