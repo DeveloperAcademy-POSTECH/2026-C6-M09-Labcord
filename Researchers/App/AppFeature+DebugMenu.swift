@@ -7,6 +7,10 @@ extension AppFeature {
     @ObservableState
     struct DebugMenuState: Equatable {
         @Shared(.appStorage("includesRecordingDemo")) var includesDemo = false
+        @Shared(.appStorage("protocolDemoCacheEnabled")) var protocolDemoCacheEnabled = false
+        @Shared(.appStorage("protocolDemoCacheSeconds")) var protocolDemoCacheSeconds = 15
+        static let cacheSecondsRange = 1...60
+
         var didReconcileBundle = false
         var isPresented = false
         var isWorking = false
@@ -18,6 +22,8 @@ extension AppFeature {
         case open
         case close
         case setDemo(Bool)
+        case setProtocolDemoCache(Bool)
+        case setProtocolDemoCacheSeconds(Int)
         case reset
         case demoInstalled(String?)
         case resetFinished(didReset: Bool, error: String?)
@@ -49,6 +55,15 @@ extension AppFeature {
 
             case let .setDemo(enabled):
                 return changeDemoVisibility(enabled, state: &state)
+
+            case let .setProtocolDemoCache(enabled):
+                state.debugMenu.$protocolDemoCacheEnabled.withLock { $0 = enabled }
+                return .none
+
+            case let .setProtocolDemoCacheSeconds(seconds):
+                guard DebugMenuState.cacheSecondsRange.contains(seconds) else { return .none }
+                state.debugMenu.$protocolDemoCacheSeconds.withLock { $0 = seconds }
+                return .none
 
             case let .demoInstalled(error):
                 state.debugMenu.isWorking = false

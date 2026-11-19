@@ -8,13 +8,19 @@ struct ProtocolAnalysisProgressView: View {
     let progress: Double
     let isCancelling: Bool
     var notice: String?
+    var isCacheReplay = false
+
+    private var progressAnimation: Animation? {
+        guard !reduceMotion else { return nil }
+        return isCacheReplay ? .linear(duration: 0.1) : .easeInOut(duration: 0.3)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(spacing: 0) {
                     ProgressRing(value: progress)
-                        .animation(reduceMotion ? nil : .easeInOut(duration: 0.3), value: progress)
+                        .animation(progressAnimation, value: progress)
                         .accessibilityLabel("프로토콜 분석 진행률")
 
                     VStack(spacing: 8) {

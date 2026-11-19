@@ -31,6 +31,10 @@ struct ResearchWatchApp: App {
     @State private var isVoiceRecordPresented = false
     @State private var suppressLeaveNotification = false
 
+    #if DEBUG
+    @State private var debugRootRevision = 0
+    #endif
+
     private struct ScreenSyncKey: Hashable {
         let revision: UInt64?
         let isVoiceRecordPresented: Bool
@@ -42,6 +46,9 @@ struct ResearchWatchApp: App {
                 SelectExperimentView { experiment in
                     path = [.start(experiment)]
                 }
+                #if DEBUG
+                .id(debugRootRevision)
+                #endif
                 .navigationDestination(for: Route.self) { route in
                     switch route {
                     case let .start(experiment):
@@ -111,6 +118,10 @@ struct ResearchWatchApp: App {
                     Task { await watchExperimentClient.cancelPhoneSession(experimentID) }
                 }
             }
+            #if DEBUG
+            .modifier(WatchDebugMenuModifier())
+            .environment(\.watchDebugReset, WatchDebugResetAction(call: resetToStart))
+            #endif
             .task { WatchVoiceRecordingService.shared.activate() }
             .task {
                 connectivity.remoteIntentHandler = { request in
@@ -177,6 +188,19 @@ struct ResearchWatchApp: App {
             await connectivity.waitForPendingUserInfo()
         }
     }
+
+    #if DEBUG
+    private func resetToStart() {
+        isVoiceRecordPresented = false
+        pendingPhoneReentryID = nil
+        countdownExperimentID = nil
+        phoneResultReadyIDs.removeAll()
+        remoteScreen = nil
+        suppressLeaveNotification = false
+        path.removeAll()
+        debugRootRevision += 1
+    }
+    #endif
 
     private func canOpenRemoteExperiment(_ id: UUID) -> Bool {
         if case let .some(.start(selected)) = path.last {

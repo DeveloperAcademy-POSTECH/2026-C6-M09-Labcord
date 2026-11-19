@@ -1,0 +1,48 @@
+[
+  {
+    "sha256": "e18c0255ece2b58da17c458bc90b14b8a6ee26061846e198d14021612a4cbf05",
+    "filenames": [
+      "토양 및 폐기물 pH 측정 매뉴얼.pdf",
+      "01 토양 및 폐기물 pH 측정.pdf"
+    ],
+    "checkpointAsset": "LabcordDemo-protocol-ph"
+  },
+  {
+    "sha256": "bf125130227c57ecf7d556873aad1a4ae0d5003689315e817e63bda3d07f6c1b",
+    "filenames": [
+      "황산염 탁도 분석.pdf",
+      "02 황산염 탁도 분석.pdf"
+    ],
+    "checkpointAsset": "LabcordDemo-protocol-sulfate"
+  },
+  {
+    "sha256": "cb05f8a62a488f78e94c9b1ade54b7ee97fc8ac441da06178f9b7e651b425c51",
+    "filenames": [
+      "포스포리움 컬러라이트 분석 매뉴얼.pdf",
+      "03 포스포리움 컬러라이트 분석.pdf"
+    ],
+    "checkpointAsset": "LabcordDemo-protocol-phosphorus"
+  },
+  {
+    "sha256": "329a77b2e9c1e494de37e28157029c1881bafdddd6bfa268825cbeffe1c4122e",
+    "filenames": [
+      "Spin Coater 공정 매뉴얼.pdf",
+      "04 Spin Coater 공정.pdf"
+    ],
+    "checkpointAsset": "LabcordDemo-protocol-spin"
+  },
+  {
+    "sha256": "18944a480fffb1492eea65c1531a4421a96b62c16ab4ea767b587b4e977b93b8",
+    "filenames": [],
+    "checkpointAsset": "LabcordDemo-protocol-buffer-1",
+    "imageAsset": "LabcordDemo-protocol-buffer-1-image",
+    "page": 1
+  },
+  {
+    "sha256": "1bdfe19b20db1e51a0a4fbf11e35f9ee513929445d38d6ce3ce8be2e037c8f4e",
+    "filenames": [],
+    "checkpointAsset": "LabcordDemo-protocol-buffer-2",
+    "imageAsset": "LabcordDemo-protocol-buffer-2-image",
+    "page": 2
+  }
+]
