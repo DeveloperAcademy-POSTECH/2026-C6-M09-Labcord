@@ -14,6 +14,7 @@ public final class PhoneWatchExperimentCoordinator {
     public var isBusy = false
     public var visibleExperimentID: UUID?
     public internal(set) var pendingStartID: UUID?
+    var currentScreenPathID: StackElementID?
     public internal(set) var currentScreen = WatchScreenSnapshot(destination: .home)
     public internal(set) var stateEpoch = WatchStateEpoch()
     public internal(set) var lastScreenError: WatchExperimentError?

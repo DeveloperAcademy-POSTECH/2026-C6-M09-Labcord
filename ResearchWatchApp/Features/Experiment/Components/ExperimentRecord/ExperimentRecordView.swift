@@ -27,10 +27,9 @@ struct ExperimentRecordView: View {
                 Text(title)
                     .font(.caption2)
                     .foregroundStyle(.white)
-                    .frame(
-                        height: WatchScreenMetrics.scaledHeight(35),
-                        alignment: .topLeading
-                    )
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 LazyVGrid(
                     columns: [

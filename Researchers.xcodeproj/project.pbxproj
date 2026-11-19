@@ -71,6 +71,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		BA1300013000000000000003 /* Shared recording intents in Watch app */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Intents/PhoneRecordingIntents.swift,
+			);
+			target = 8E2E27283084877E0043EEB3 /* ResearchWatch Watch App */;
+		};
 		8E1BA54B30A84FFE00544554 /* Exceptions for "LabcordWidget" folder in "LabcordWidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -109,6 +116,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				BA1300013000000000000001 /* Exceptions for "Researchers" folder in "Researchers" target */,
+				BA1300013000000000000003 /* Shared recording intents in Watch app */,
 			);
 			path = Researchers;
 			sourceTree = "<group>";

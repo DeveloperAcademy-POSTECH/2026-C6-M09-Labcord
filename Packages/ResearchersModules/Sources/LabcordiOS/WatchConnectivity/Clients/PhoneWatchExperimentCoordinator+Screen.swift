@@ -1,3 +1,4 @@
+import ComposableArchitecture
 import Foundation
 import LabcordShared
 import UIKit
@@ -27,28 +28,49 @@ extension PhoneWatchExperimentCoordinator {
         }
     }
 
-    public func updateScreen(_ candidate: WatchScreenSnapshot) {
+    public func updateScreen(_ candidate: WatchScreenSnapshot, pathID: StackElementID? = nil) {
         guard candidate.isValid else {
             lastScreenError = .invalidPayload
             return
         }
-        guard currentScreen.revision == 0 || !candidate.hasSameContent(as: currentScreen) else {
+        let pathChanged = currentScreenPathID != pathID
+        guard pathChanged || currentScreen.revision == 0 || !candidate.hasSameContent(
+            as: currentScreen
+        ) else {
             return
         }
         do {
-            let updated = candidate.withRevision(try nextRevision(), epoch: stateEpoch)
+            let sameSession = !pathChanged && currentScreen.epoch == stateEpoch
+                && currentScreen.recordingExperimentID == candidate.recordingExperimentID
+            let session = sameSession ? currentScreen.gestureSession : nil
+            let revision = try nextRevision()
+            let start = WatchStateVersion(epoch: stateEpoch, revision: revision)
+            let updated = candidate.withRevision(
+                revision, epoch: stateEpoch,
+                gestureSession: candidate.recordingExperimentID.map { _ in
+                    session ?? .init(start: start)
+                }
+            )
             if currentScreen.destination != updated.destination
                 || currentScreen.experimentID != updated.experimentID
                 || currentScreen.stage != updated.stage {
                 tokens.removeAll()
             }
             if pendingStartID != updated.experimentID { pendingStartID = nil }
+            currentScreenPathID = pathID
             currentScreen = updated
             lastScreenError = nil
             publishScreen()
         } catch {
             lastScreenError = .storageFailed
         }
+    }
+
+    public func runningGestureExperiment(_ id: UUID) -> WatchExperimentSummary? {
+        guard currentScreen.recordingExperimentID == id,
+              let experiment = try? client.watchState(id)?.experiment,
+              experiment.status == .running else { return nil }
+        return experiment
     }
 
     public func validPendingStartID() throws -> UUID? {

@@ -17,6 +17,8 @@ struct ProgressTimerView: View {
 
     var showsTitle = true
 
+    @State private var revealedTimerID: UUID?
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if showsTitle {
@@ -35,7 +37,8 @@ struct ProgressTimerView: View {
                             isCreating: creatingTimerIDs.contains(timer.id),
                             onPause: { onTimerCommand(timer.id, .pauseTimer) },
                             onResume: { onTimerCommand(timer.id, .resumeTimer) },
-                            onDelete: { onTimerCommand(timer.id, .deleteTimer) }
+                            onDelete: { onTimerCommand(timer.id, .deleteTimer) },
+                            revealedTimerID: $revealedTimerID
                         )
                         .padding(.horizontal, WatchScreenMetrics.scaledWidth(0.5))
                     }

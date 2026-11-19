@@ -237,7 +237,7 @@ extension AppFeature {
                 PhoneWatchAudioService.shared.dismissFinishedScreenRecording()
                 screen = screenSnapshot(state)
             }
-            coordinator.updateScreen(screen)
+            coordinator.updateScreen(screen, pathID: sessionID == nil ? nil : state.path.ids.last)
             coordinator.refresh()
             return .none
         }

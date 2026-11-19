@@ -29,14 +29,14 @@ public final class WatchExperimentTransport {
     private var subscribers: [UUID: SnapshotObserver] = [:]
     private var latest: [UUID: WatchExperimentSnapshot] = [:]
     private var screenSubscribers: [UUID: AsyncStream<WatchScreenSnapshot>.Continuation] = [:]
-    private var latestScreen: WatchScreenSnapshot?
+    public private(set) var latestScreen: WatchScreenSnapshot?
 
     public init() {}
 
     public func acceptEpoch(_ epoch: WatchStateEpoch?) -> Bool {
         guard let epoch else { return remoteEpoch == nil }
         if let remoteEpoch {
-            if epoch == remoteEpoch { return true }
+            if epoch.id == remoteEpoch.id { return true }
             guard epoch.isNewer(than: remoteEpoch) else { return false }
         }
         remoteEpoch = epoch
@@ -264,8 +264,14 @@ extension WatchExperimentTransport {
         if let previous = latestScreen {
             guard screen.revision >= previous.revision else { return }
             if screen.revision == previous.revision {
-                guard screen.recordedAt > previous.recordedAt,
-                      screen.hasSameContent(as: previous) else { return }
+                guard screen.hasSameContent(as: previous) else { return }
+                if let prior = previous.gestureSession {
+                    guard let next = screen.gestureSession, prior.hasSameStart(as: next) else {
+                        return
+                    }
+                }
+                let addsSession = previous.gestureSession == nil && screen.gestureSession != nil
+                guard addsSession || screen.recordedAt > previous.recordedAt else { return }
             }
         }
         latestScreen = screen

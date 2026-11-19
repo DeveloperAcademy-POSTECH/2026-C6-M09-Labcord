@@ -19,7 +19,6 @@ struct ExperimentView: View {
     @Binding var isVoiceRecordPresented: Bool
     @State private var isPhotoRecordPresented = false
     @State private var isVideoRecordPresented = false
-    @State private var shortcutRegistration: WatchRecordingShortcutCenter.Registration?
     @State private var isTimerPresetPresented = false
     @State private var isAddTimerPresented = false
 
@@ -144,11 +143,9 @@ struct ExperimentView: View {
         .onAppear {
             store.send(.appeared)
             shortcutLogger.info("ExperimentView appeared")
-            if shortcutRegistration == nil {
-                let center = WatchRecordingShortcutCenter.shared
-                shortcutRegistration = center.register { shortcut, id in
-                    handle(shortcut, experimentID: id)
-                }
+            let center = WatchRecordingShortcutCenter.shared
+            center.register(.experiment, in: experiment.id) { shortcut, id in
+                handle(shortcut, experimentID: id)
             }
         }
         .onDisappear {

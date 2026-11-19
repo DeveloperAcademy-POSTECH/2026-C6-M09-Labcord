@@ -12,6 +12,10 @@ struct ResearchersApp: App {
     @State private var isSplashActive = true
 
     init() {
+        @Dependency(\.watchConnectivitySession) var connectivity
+        connectivity.resolveGestureRoute = { kind in
+            PhoneIntentRuntime.shared.resolveWatchGesture(kind)
+        }
         PhoneWatchExperimentCoordinator.shared.activate()
         PhoneWatchAudioService.shared.activate()
         PhoneWatchExperimentCoordinator.shared.configureRecordHandling()

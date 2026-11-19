@@ -187,7 +187,10 @@ extension AppFeature {
     private func completeNavigation(_ requestID: UUID, state: State) {
         let coordinator = PhoneWatchExperimentCoordinator.shared
         PhoneWatchAudioService.shared.dismissFinishedScreenRecording()
-        coordinator.updateScreen(screenSnapshot(state))
+        let screen = screenSnapshot(state)
+        coordinator.updateScreen(
+            screen, pathID: screen.destination == .experiment ? state.path.ids.last : nil
+        )
         coordinator.finish(requestID, error: coordinator.lastScreenError)
     }
 

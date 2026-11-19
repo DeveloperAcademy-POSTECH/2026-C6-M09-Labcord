@@ -1,4 +1,5 @@
 import AppIntents
+import LabcordShared
 
 struct ToggleWatchVoiceRecordingIntent: AppIntent {
     static let title: LocalizedStringResource = "Watch 실험 음성 녹음"
@@ -9,7 +10,7 @@ struct ToggleWatchVoiceRecordingIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        WatchRecordingShortcutCenter.shared.send(.voice)
+        try await WatchRecordingShortcutCenter.shared.performLocal(.voice)
         return .result()
     }
 }
@@ -21,7 +22,7 @@ struct TakeWatchExperimentPhotoIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        WatchRecordingShortcutCenter.shared.send(.photo)
+        try await WatchRecordingShortcutCenter.shared.performLocal(.photo)
         return .result()
     }
 }
@@ -33,7 +34,7 @@ struct StartWatchExperimentVideoIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        WatchRecordingShortcutCenter.shared.send(.video)
+        try await WatchRecordingShortcutCenter.shared.performLocal(.video)
         return .result()
     }
 }

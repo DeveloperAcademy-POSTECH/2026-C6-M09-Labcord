@@ -7,6 +7,7 @@
 
 import ComposableArchitecture
 import LabcordDesignSystem
+import LabcordShared
 import LabcordWatchOS
 import OSLog
 import SwiftUI
@@ -18,7 +19,6 @@ private let shortcutLogger = Logger(
 struct VoiceRecordView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var store: StoreOf<VoiceRecordFeature>
-    @State private var shortcutRegistration: WatchRecordingShortcutCenter.Registration?
 
     init(experimentID: UUID) {
         _store = State(initialValue: Store(
@@ -109,16 +109,14 @@ struct VoiceRecordView: View {
         .onAppear {
             store.send(.appeared)
             shortcutLogger.info("VoiceRecordView appeared")
-            if shortcutRegistration == nil {
-                let center = WatchRecordingShortcutCenter.shared
-                shortcutRegistration = center.register { shortcut, id in
-                    stopRecording(for: shortcut, experimentID: id)
-                }
+            let center = WatchRecordingShortcutCenter.shared
+            center.register(.voiceRecording, in: store.experimentID) { shortcut, id in
+                stopRecording(for: shortcut, experimentID: id)
             }
         }
         .onDisappear {
             store.send(.disappeared)
-            shortcutRegistration = nil
+            WatchRecordingShortcutCenter.shared.dismissVoice(in: store.experimentID)
             shortcutLogger.info("VoiceRecordView disappeared")
         }
         .onChange(of: store.shouldDismiss) { _, shouldDismiss in

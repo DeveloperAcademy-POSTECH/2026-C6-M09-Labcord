@@ -9,6 +9,8 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
     nonisolated public let observerStore = WatchConnectivityObserverStore()
     public let experiments = WatchExperimentTransport()
     public let records = WatchRecordTransport()
+    public var resolveGestureRoute:
+        ((WatchRemoteIntentRequest.Kind) -> WatchGestureRouteReply.Route?)?
     public private(set) var lastAudioTransferError: WatchAudioError?
     private var didRetryActivation = false
     private var connectionState: WatchConnectivityState?
@@ -90,6 +92,22 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         didReceiveMessage message: [String: Any],
         replyHandler: @escaping ([String: Any]) -> Void
     ) {
+        if let data = message[WatchGesturePracticeRequest.messageKey] as? Data {
+            Task { @MainActor in
+                guard data.count <= 4_096,
+                      let request = try? JSONDecoder().decode(
+                        WatchGesturePracticeRequest.self, from: data
+                      ), request.isLive(at: .now), let route = resolveGestureRoute?(request.kind)
+                else {
+                    replyHandler([:])
+                    return
+                }
+                let reply = WatchGestureRouteReply(requestID: request.requestID, route: route)
+                let data = try? JSONEncoder().encode(reply)
+                replyHandler(data.map { [WatchGesturePracticeRequest.messageKey: $0] } ?? [:])
+            }
+            return
+        }
         let confirmed = message[WatchSessionOpenRequest.confirmedMessageKey] as? Data
         if let request = confirmed ?? message[WatchSessionOpenRequest.messageKey] as? Data {
             Task { @MainActor in
