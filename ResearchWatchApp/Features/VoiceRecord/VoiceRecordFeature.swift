@@ -6,7 +6,7 @@ import LabcordWatchOS
 @Reducer
 struct VoiceRecordFeature {
     enum Phase: Equatable {
-        case starting, recording, transcribing, transcript, saving, saved, failed
+        case starting, recording, awaitingTransfer, transcribing, transcript, saving, saved, failed
     }
 
     @ObservableState
@@ -121,7 +121,7 @@ struct VoiceRecordFeature {
 
             case .finishTapped:
                 guard state.phase == .recording, !state.isClosing else { return .none }
-                state.phase = .transcribing
+                state.phase = .awaitingTransfer
                 state.isVoiceDetected = false
                 state.isVoiceReleasePending = false
                 return .merge(
@@ -137,8 +137,7 @@ struct VoiceRecordFeature {
                 )
 
             case let .stopped(header):
-                guard !state.isClosing, state.phase == .transcribing else { return .none }
-                state.header = header
+                guard !state.isClosing, state.header == header else { return .none }
                 state.hasRetainedAudio = true
                 return .none
 
@@ -215,11 +214,15 @@ struct VoiceRecordFeature {
             case .retryTapped:
                 guard state.phase == .failed else { return .none }
                 if state.hasRetainedAudio {
-                    state.phase = .transcribing
+                    state.phase = .awaitingTransfer
                     state.errorMessage = nil
                     let header = state.header
-                    return .run { _ in
-                        await WatchVoiceRecordingService.shared.retryDelivery(for: header)
+                    return .run { send in
+                        if let receipt = await WatchVoiceRecordingService.shared.retryDelivery(
+                            for: header
+                        ) {
+                            await send(.receipt(receipt))
+                        }
                     }
                 }
                 state.phase = .starting
@@ -269,7 +272,7 @@ private extension VoiceRecordFeature {
     func handleReceipt(
         state: inout State, receipt: WatchAudioReceipt
     ) -> Effect<Action> {
-        guard !state.isClosing else { return .none }
+        guard !state.isClosing, state.phase != .saved else { return .none }
         guard receipt.header.experimentID == state.experimentID,
               receipt.header.recordingID == state.header?.recordingID else { return .none }
         if receipt.savedRecordID == receipt.header.recordingID {
@@ -289,8 +292,13 @@ private extension VoiceRecordFeature {
         if let transcript = receipt.transcript, transcript.isFinal {
             state.transcript = transcript.text
         }
+        if state.phase == .awaitingTransfer, let manifest = receipt.manifest,
+           manifest.header == receipt.header, manifest.chunkCount > 0,
+           receipt.receivedSequences.elementsEqual(0..<manifest.chunkCount) {
+            state.phase = .transcribing
+        }
         if receipt.isReviewing, receipt.transcript?.isFinal == true,
-           state.phase == .transcribing {
+           state.phase == .transcribing || state.phase == .awaitingTransfer {
             state.phase = .transcript
             state.autoSaveSeconds = 3
             let recordingID = receipt.header.recordingID
