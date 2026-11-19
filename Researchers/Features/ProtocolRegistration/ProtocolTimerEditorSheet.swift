@@ -6,17 +6,47 @@ struct ProtocolTimerEditorSheet: View {
     let onConfirm: (Int?, Int) -> Void
     let onDelete: (Int?) -> Void
     let onCancel: () -> Void
+    @GestureState private var dragOffset: CGFloat = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        if editor.duration.components.seconds >= 86_400 {
-            LongTimerEditorSheet(
-                editor: editor, onConfirm: onConfirm, onDelete: onDelete, onCancel: onCancel
-            )
-        } else {
-            TimerEditorSheet(
-                editor: editor, onConfirm: onConfirm, onDelete: onDelete, onCancel: onCancel
-            )
+        VStack(spacing: 0) {
+            Capsule()
+                .fill(Color("General/Timer/Sheet/Grabber"))
+                .frame(width: 36, height: 5)
+                .frame(width: 76, height: 44)
+                .contentShape(Rectangle())
+                .gesture(grabberDrag)
+                .accessibilityHidden(true)
+
+            if editor.duration.components.seconds >= 86_400 {
+                LongTimerEditorSheet(
+                    editor: editor, onConfirm: onConfirm, onDelete: onDelete, onCancel: onCancel
+                )
+            } else {
+                TimerEditorSheet(
+                    editor: editor, onConfirm: onConfirm, onDelete: onDelete, onCancel: onCancel
+                )
+            }
         }
+        .frame(maxWidth: .infinity)
+        .background(Color("General/Background/Grouped/Secondary"))
+        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 28, topTrailingRadius: 28))
+        .offset(y: reduceMotion ? 0 : dragOffset)
+    }
+
+    private var grabberDrag: some Gesture {
+        DragGesture(coordinateSpace: .global)
+            .updating($dragOffset) { value, offset, _ in
+                let translation = value.translation
+                offset = translation.height > abs(translation.width) ? translation.height : 0
+            }
+            .onEnded { value in
+                let translation = value.translation
+                if translation.height > 80, translation.height > abs(translation.width) {
+                    onCancel()
+                }
+            }
     }
 }
 
@@ -64,7 +94,7 @@ private struct LongTimerEditorSheet: View {
                 .buttonStyle(.labcord(.primary, size: .large))
                 .disabled(isUnchanged)
         }
-        .padding(16)
+        .padding([.horizontal, .bottom], 16)
         .alert("타이머 시간을 확인해 주세요", isPresented: $invalidDuration) {
             Button("확인", role: .cancel) {}
         } message: {
@@ -137,12 +167,6 @@ private struct TimerEditorSheet: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Capsule()
-                .fill(Color(
-                    "General/Timer/Sheet/Grabber"
-                ))
-                .frame(width: 36, height: 5)
-                .accessibilityHidden(true)
             HStack {
                 Button(action: onCancel) {
                     Image(labcordIcon: .x)
@@ -178,7 +202,6 @@ private struct TimerEditorSheet: View {
                 .disabled(editor.index != nil && duration == editor.duration)
             }
         }
-        .padding(.top, 16)
         .padding(.horizontal, 16)
         .padding(.bottom, 32)
         .alert("타이머 시간을 확인해 주세요", isPresented: $invalidDuration) {
