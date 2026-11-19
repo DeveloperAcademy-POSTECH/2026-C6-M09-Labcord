@@ -91,11 +91,11 @@ struct RecordingDemoSeeder {
         let sources = try fixtures.map { try $0.records.map(source(for:)) }
 
         for (fixture, files) in zip(fixtures, sources) {
-            try install(fixture, sources: files)
+            try await install(fixture, sources: files)
         }
     }
 
-    private func install(_ fixture: Fixture, sources: [Data]) throws {
+    private func install(_ fixture: Fixture, sources: [Data]) async throws {
         let existing = try experiments.loadResultDetail(fixture.id)
         if let existing, !isRecoverableSeed(existing, for: fixture) {
             try updateDemoText(in: existing, from: fixture)
@@ -113,7 +113,7 @@ struct RecordingDemoSeeder {
         guard let result = try experiments.loadResultDetail(fixture.id),
               hasAllDemoMedia(in: result, for: fixture)
         else { throw SeedError.incompleteResult }
-        try experiments.complete(fixture.id, fixture.completedAt)
+        try await experiments.complete(fixture.id, fixture.completedAt)
     }
 
     private func isRecoverableSeed(

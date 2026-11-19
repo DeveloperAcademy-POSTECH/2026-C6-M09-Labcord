@@ -337,13 +337,12 @@ private extension AppFeature {
                 let experimentID = session.experimentID
                 let experimentTitle = session.detail?.title ?? ""
                 let timers = runningTimers(in: session.timer.timerCollection, at: now)
+                let synchronization = timerLiveActivityClient.scheduleSynchronization(
+                    experimentID, experimentTitle, timers
+                )
                 return .merge(
                     .send(.home(.list(.load))),
-                    .run { _ in
-                        await timerLiveActivityClient.synchronize(
-                            experimentID, experimentTitle, timers
-                        )
-                    }
+                    .run { _ in await synchronization.value }
                 )
 
             case let .path(.element(id: id, action: .session(.detailLoaded(_)))):

@@ -124,7 +124,7 @@ extension PhoneWatchExperimentCoordinator {
         } else if command.operation == .pause {
             try client.leaveSession(id, command.requestID, .now)
         } else {
-            try client.complete(id, .now)
+            try await client.complete(id, .now)
         }
         if pendingStartID == id { pendingStartID = nil }
     }

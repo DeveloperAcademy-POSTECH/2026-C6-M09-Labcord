@@ -45,7 +45,7 @@ public struct ExperimentClient: Sendable {
     public var saveAudio: @MainActor @Sendable (UUID, UUID, Date, URL, String) throws -> Void
     public var cancelVideoSave: @MainActor @Sendable (UUID, UUID, URL) throws -> Void
     public var cancelAudioSave: @MainActor @Sendable (UUID, UUID, URL) throws -> Void
-    public var complete: @MainActor @Sendable (UUID, Date) throws -> Void
+    public var complete: @MainActor @Sendable (UUID, Date) async throws -> Void
     public var resumeCompleted: @MainActor @Sendable (UUID, Date) throws -> Void
     public var delete: @MainActor @Sendable (UUID) throws -> Void
 
@@ -72,7 +72,7 @@ public struct ExperimentClient: Sendable {
         saveAudio: @escaping @MainActor @Sendable (UUID, UUID, Date, URL, String) throws -> Void,
         cancelVideoSave: @escaping @MainActor @Sendable (UUID, UUID, URL) throws -> Void,
         cancelAudioSave: @escaping @MainActor @Sendable (UUID, UUID, URL) throws -> Void,
-        complete: @escaping @MainActor @Sendable (UUID, Date) throws -> Void,
+        complete: @escaping @MainActor @Sendable (UUID, Date) async throws -> Void,
         resumeCompleted: @escaping @MainActor @Sendable (UUID, Date) throws -> Void,
         delete: @escaping @MainActor @Sendable (UUID) throws -> Void,
         loadRecentProtocols: @escaping @MainActor @Sendable () throws -> [RecentProtocolEntry] = {
@@ -187,7 +187,11 @@ extension ExperimentClient: DependencyKey {
                 experimentID: $0, id: $1, sourceURL: $2
             )
         },
-        complete: { try ExperimentSessionRepository.shared.complete(id: $0, at: $1) },
+        complete: { id, date in
+            try ExperimentSessionRepository.shared.complete(id: id, at: date)
+            @Dependency(\.timerLiveActivityClient) var timerActivities
+            await timerActivities.endAll(for: id)
+        },
         resumeCompleted: {
             try ExperimentSessionRepository.shared.resumeCompleted(id: $0, at: $1)
         },

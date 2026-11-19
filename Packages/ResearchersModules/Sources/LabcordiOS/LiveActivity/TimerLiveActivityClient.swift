@@ -4,10 +4,13 @@ import Foundation
 import LabcordShared
 
 public struct TimerLiveActivityClient: Sendable {
-    public var synchronize: @MainActor @Sendable (
+    private let applyTimers: @MainActor @Sendable (
         UUID, String, [TimerActivityAttributes.ContentState]
     ) async -> Void
     public var dismissCompleted: @MainActor @Sendable (UUID) async -> Void
+
+    @MainActor private static var pendingSynchronizations:
+        [UUID: (id: UUID, task: Task<Void, Never>)] = [:]
 
     public init(
         synchronize: @escaping @MainActor @Sendable (
@@ -15,8 +18,30 @@ public struct TimerLiveActivityClient: Sendable {
         ) async -> Void,
         dismissCompleted: @escaping @MainActor @Sendable (UUID) async -> Void
     ) {
-        self.synchronize = synchronize
+        self.applyTimers = synchronize
         self.dismissCompleted = dismissCompleted
+    }
+
+    @MainActor
+    public func scheduleSynchronization(
+        _ experimentID: UUID, _ title: String, _ timers: [TimerActivityAttributes.ContentState]
+    ) -> Task<Void, Never> {
+        let previous = Self.pendingSynchronizations[experimentID]?.task
+        let id = UUID()
+        let task = Task {
+            await previous?.value
+            await applyTimers(experimentID, title, timers)
+            if Self.pendingSynchronizations[experimentID]?.id == id {
+                Self.pendingSynchronizations[experimentID] = nil
+            }
+        }
+        Self.pendingSynchronizations[experimentID] = (id, task)
+        return task
+    }
+
+    @MainActor
+    public func endAll(for experimentID: UUID) async {
+        await scheduleSynchronization(experimentID, "", []).value
     }
 }
 
