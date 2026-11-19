@@ -12,6 +12,7 @@ struct ProtocolReviewFeature {
         var title: String
         var timerSeconds: [Int]
         var terms: [ProtocolTermCategory: [ProtocolReviewTerm]]
+        var isPartial = false
         var expanded: Set<ProtocolTermCategory> = []
         var inputCategory: ProtocolTermCategory?
         var termInput = ""

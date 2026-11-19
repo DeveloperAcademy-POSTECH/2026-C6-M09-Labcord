@@ -115,14 +115,19 @@ struct AppView: View {
         } message: {
             Text("이 분석으로 저장한 실험이 있어요. 이번에 편집한 내용은 반영되지 않아요.")
         }
-        .alert("실험 등록을 종료할까요?", isPresented: Binding(
+        .alert(store.reviewReturningToAnalysis ? "분석 화면으로 돌아갈까요?" : "실험 등록을 종료할까요?",
+               isPresented: Binding(
             get: { store.reviewExitRequested },
             set: { if !$0 { store.send(.cancelReviewExit) } }
         )) {
             Button("취소", role: .cancel) { store.send(.cancelReviewExit) }
-            Button("실험 등록 종료", role: .destructive) { store.send(.confirmReviewExit) }
+            Button(store.reviewReturningToAnalysis ? "돌아가기" : "실험 등록 종료", role: .destructive) {
+                store.send(.confirmReviewExit)
+            }
         } message: {
-            Text("이 화면을 나가면 분석 결과가 초기화 돼요.")
+            Text(store.reviewReturningToAnalysis
+                 ? "이 화면에서 수정한 내용은 저장되지 않아요."
+                 : "이 화면을 나가면 분석 결과가 초기화 돼요.")
         }
     }
 }

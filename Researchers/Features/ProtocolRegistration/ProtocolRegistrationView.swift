@@ -326,7 +326,7 @@ private extension ProtocolRegistrationView {
             messages.append("일부 내용을 읽지 못했을 수 있어요.")
         }
         if input.termExtractionFailed {
-            messages.append("일부 파일에서 용어를 추출하지 못했어요. 직접 입력해 주세요.")
+            messages.append("용어 분석이 끝나지 않아 부분 결과만 표시돼요. 다시 시도할 수 있어요.")
         } else if input.extractedTerms.isEmpty {
             messages.append("타이머를 확인하고 용어를 직접 입력해 주세요.")
         } else {
