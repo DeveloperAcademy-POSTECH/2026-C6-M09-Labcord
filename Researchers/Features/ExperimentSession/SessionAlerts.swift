@@ -51,7 +51,7 @@ struct SessionAlerts: ViewModifier {
             Text(store.permissions.issue?.message ?? "")
         }
         .alert(
-            "카메라 오류",
+            "촬영을 완료하지 못했어요",
             isPresented: Binding(
                 get: { store.isReady && captureStore.cameraErrorMessage != nil },
                 set: { if !$0 { captureStore.send(.cameraErrorDismissed) } }
@@ -61,7 +61,7 @@ struct SessionAlerts: ViewModifier {
                 captureStore.send(.cameraErrorDismissed)
             }
         } message: {
-            Text(captureStore.cameraErrorMessage ?? "")
+            Text("카메라를 사용할 수 있는 상태인지 확인한 뒤 다시 시도해 주세요.")
         }
         .alert("홈으로 이동하지 못했어요", isPresented: Binding(
             get: { !store.isReady && store.pause.exitFailed },
@@ -77,7 +77,7 @@ struct SessionAlerts: ViewModifier {
     private func voiceAlerts<V: View>(on content: V) -> some View {
         content
         .alert(
-            "음성 기록 오류",
+            "음성 기록을 완료하지 못했어요",
             isPresented: Binding(
                 get: {
                     voiceStore.errorMessage != nil
@@ -91,7 +91,7 @@ struct SessionAlerts: ViewModifier {
                 voiceStore.send(.errorDismissed)
             }
         } message: {
-            Text(voiceStore.errorMessage ?? "")
+            Text("마이크를 사용할 수 있는 상태인지 확인한 뒤 다시 시도해 주세요.")
         }
     }
 

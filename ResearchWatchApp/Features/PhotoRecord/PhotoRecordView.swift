@@ -38,7 +38,12 @@ struct PhotoRecordView: View {
 
             case .failed:
                 VStack(spacing: 8) {
-                    Text("사진 촬영에 실패했어요")
+                    Text("사진을 찍지 못했어요")
+                        .font(.headline)
+                    Text(store.failureDetail)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
                     Button("다시 시도") { store.send(.retryTapped) }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

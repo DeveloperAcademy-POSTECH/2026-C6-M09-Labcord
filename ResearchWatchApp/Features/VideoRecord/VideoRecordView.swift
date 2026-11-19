@@ -102,7 +102,12 @@ struct VideoRecordView: View {
 
             case .failed, .saveFailed:
                 VStack(spacing: 8) {
-                    Text(store.failureMessage ?? "영상 촬영에 실패했어요")
+                    Text("영상을 기록하지 못했어요")
+                        .font(.headline)
+                    Text(store.failureMessage ?? "iPhone의 Labcord 실험 화면과 연결을 확인해 주세요.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
                     Button(retryTitle) {
                         store.send(.retryTapped)
                     }

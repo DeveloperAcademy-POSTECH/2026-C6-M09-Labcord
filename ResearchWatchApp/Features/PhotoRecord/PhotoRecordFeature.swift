@@ -19,6 +19,16 @@ struct PhotoRecordFeature {
         var phaseBeforeClose: Phase?
         var autoSaveSeconds: Int? = 3
         var shouldDismiss = false
+        var captureError: WatchExperimentError?
+
+        var failureDetail: String {
+            switch captureError {
+            case .permissionDenied: "iPhone 설정에서 카메라 권한을 확인해 주세요."
+            case .cameraUnavailable: "iPhone에서 카메라를 준비한 뒤 다시 시도해 주세요."
+            case .phoneBusy: "iPhone에서 진행 중인 기록을 마친 뒤 다시 시도해 주세요."
+            default: "iPhone의 Labcord 실험 화면과 연결을 확인해 주세요."
+            }
+        }
     }
 
     enum Action {
@@ -82,6 +92,7 @@ struct PhotoRecordFeature {
                 guard state.phase == .capturing || state.phase == .recovering else { return .none }
                 if response.phase == .failed && response.error != .resultUnknown
                     || response.error == .requestExpired {
+                    state.captureError = response.error
                     return failCapture(state: &state, recordID: id)
                 }
                 if response.phase == .unknown || response.error == .resultUnknown {
@@ -179,6 +190,7 @@ private extension PhotoRecordFeature {
     func start(_ id: UUID, resume: Bool, state: inout State) -> Effect<Action> {
         state.recordID = id
         state.recordRevision = nil
+        state.captureError = nil
         state.phase = resume ? .recovering : .capturing
         state.autoSaveSeconds = 3
         let experimentID = state.experimentID
@@ -247,6 +259,7 @@ private extension PhotoRecordFeature {
             return finishRecord(record, state: &state)
         case .failed:
             if record.originalRetained == false {
+                state.captureError = record.error
                 return failCapture(state: &state, recordID: record.id)
             }
             if state.phase != .closing {
