@@ -42,7 +42,9 @@ extension PhoneWatchExperimentCoordinator {
         }
         let active = try client.load().compactMap { try client.watchState($0.id) }
             .first { $0.experiment.status == .running && $0.experiment.id != id }
-        guard active == nil else { throw WatchExperimentError.activeExperimentConflict }
+        guard visibleExperimentID == id || active == nil else {
+            throw WatchExperimentError.activeExperimentConflict
+        }
         return current
     }
 
