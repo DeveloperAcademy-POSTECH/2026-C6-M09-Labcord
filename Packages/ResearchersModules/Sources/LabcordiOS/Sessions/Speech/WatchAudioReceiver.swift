@@ -22,6 +22,7 @@ public final class WatchAudioReceiver {
     var processing: [UUID: Task<Void, Never>] = [:]
     private var processIDs: [UUID: UUID] = [:]
     private var pendingRerun: Set<UUID> = []
+    private var recognitionRetries: Set<UUID> = []
     private var observers: [UUID: AsyncStream<WatchAudioTranscript>.Continuation] = [:]
     private var cancelling: Set<UUID> = []
     private var verifiedSaved: Set<UUID> = []
@@ -69,7 +70,13 @@ public final class WatchAudioReceiver {
         let receipt: WatchAudioReceipt
         switch message {
         case let .chunk(chunk): receipt = try await acceptChunk(chunk)
-        case let .finish(manifest): receipt = try await archive.finish(manifest)
+        case let .finish(manifest):
+            receipt = try await archive.finish(manifest)
+            let id = manifest.header.recordingID
+            if failures[id] == .recognitionUnavailable {
+                failures.removeValue(forKey: id)
+                recognitionRetries.remove(id)
+            }
         case let .status(header): receipt = try await archive.statusIfPresent(header)
         case let .confirm(header):
             try await archive.confirm(header)
@@ -133,6 +140,7 @@ public final class WatchAudioReceiver {
         processing.removeValue(forKey: id)?.cancel()
         processIDs.removeValue(forKey: id)
         pendingRerun.remove(id)
+        recognitionRetries.remove(id)
         pipelines.removeValue(forKey: id)?.transcriber.cancel()
         releaseTranscript(id)
         failures.removeValue(forKey: id)
@@ -157,19 +165,7 @@ public final class WatchAudioReceiver {
     }
 
     public func retryRetainedFiles() async {
-        let incoming = (try? FileManager.default.contentsOfDirectory(
-            at: Self.incomingRoot, includingPropertiesForKeys: nil
-        )) ?? []
-        hasIncomingFileFailure = false
-        for url in incoming where url.pathExtension == "chunk" {
-            do { _ = try await receiveRetainedFile(url) } catch { hasIncomingFileFailure = true }
-        }
-    }
-
-    func acceptRetainedChunk(_ chunk: WatchAudioChunk) async throws -> WatchAudioReceipt {
-        let receipt = try await acceptChunk(chunk)
-        scheduleIfNeeded(receipt)
-        return try await checkedReceipt(receipt)
+        hasIncomingFileFailure = await retryIncomingFiles()
     }
 
     public func stop() {
@@ -177,6 +173,7 @@ public final class WatchAudioReceiver {
         processing.removeAll()
         processIDs.removeAll()
         pendingRerun.removeAll()
+        recognitionRetries.removeAll()
         pipelines.values.forEach { $0.transcriber.cancel() }
         pipelines.removeAll()
     }
@@ -229,6 +226,7 @@ private extension WatchAudioReceiver {
     func scheduleIfNeeded(_ receipt: WatchAudioReceipt) {
         guard !receipt.isCancelled, receipt.savedRecordID == nil,
               !receipt.receivedSequences.isEmpty,
+              failures[receipt.header.recordingID] != .recognitionUnavailable,
               !cancelling.contains(receipt.header.recordingID) else { return }
         schedule(receipt.header)
     }
@@ -249,7 +247,8 @@ private extension WatchAudioReceiver {
                     self.processing.removeValue(forKey: recordingID)
                     self.processIDs.removeValue(forKey: recordingID)
                 }
-                if current, self.pendingRerun.remove(recordingID) != nil {
+                if current, self.pendingRerun.remove(recordingID) != nil,
+                   self.failures[recordingID] != .recognitionUnavailable {
                     self.schedule(header)
                 }
             }
@@ -257,6 +256,7 @@ private extension WatchAudioReceiver {
                 try await self.process(header)
                 if self.processIDs[recordingID] == processID {
                     self.failures.removeValue(forKey: recordingID)
+                    self.recognitionRetries.remove(recordingID)
                 }
             } catch is CancellationError {
                 return
@@ -267,8 +267,13 @@ private extension WatchAudioReceiver {
                 let domain = underlying.domain
                 let code = underlying.code
                 self.logger.error("Watch audio error: \(domain, privacy: .public) code=\(code)")
-                self.failures[recordingID] = (error as? WatchAudioError)
-                    ?? .recognitionUnavailable
+                let failure = (error as? WatchAudioError) ?? .recognitionUnavailable
+                if failure == .recognitionUnavailable,
+                   self.recognitionRetries.insert(recordingID).inserted {
+                    self.pendingRerun.insert(recordingID)
+                } else {
+                    self.failures[recordingID] = failure
+                }
             }
         }
     }

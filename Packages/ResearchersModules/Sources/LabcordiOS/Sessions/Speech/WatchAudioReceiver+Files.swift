@@ -36,6 +36,17 @@ extension WatchAudioReceiver {
         return destination
     }
 
+    func retryIncomingFiles() async -> Bool {
+        let incoming = (try? FileManager.default.contentsOfDirectory(
+            at: Self.incomingRoot, includingPropertiesForKeys: nil
+        )) ?? []
+        var hasFailure = false
+        for url in incoming where url.pathExtension == "chunk" {
+            do { _ = try await receiveRetainedFile(url) } catch { hasFailure = true }
+        }
+        return hasFailure
+    }
+
     public func receiveRetainedFile(_ url: URL) async throws -> WatchAudioReceipt {
         let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
         guard size > 0, size <= 200_000 else { throw WatchAudioError.invalidAudio }
@@ -43,7 +54,7 @@ extension WatchAudioReceiver {
         guard data.count <= 200_000 else { throw WatchAudioError.invalidAudio }
         let chunk = try JSONDecoder().decode(WatchAudioChunk.self, from: data)
         return try await WatchAudioRetainedHandoff.deliver(url: url, root: Self.incomingRoot) {
-            try await acceptRetainedChunk(chunk)
+            try await receive(.chunk(chunk))
         }
     }
 
