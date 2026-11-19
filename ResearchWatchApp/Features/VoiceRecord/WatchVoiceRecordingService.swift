@@ -57,7 +57,6 @@ final class WatchVoiceRecordingService {
         guard startupRecovery == nil else { return }
         startupRecovery = Task {
             do { try await recorder.recoverInterruptedRecordings() } catch {
-                // Outbox recovery still checks the readable recordings.
             }
             transfer.startRecovery()
         }
@@ -81,7 +80,6 @@ final class WatchVoiceRecordingService {
                     try await transfer.receive(remote)
                     continue
                 } catch WatchAudioError.conflict {
-                    // Reopen the recording so a verified reply can be fetched.
                 }
             }
             return header

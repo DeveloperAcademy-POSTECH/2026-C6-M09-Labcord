@@ -96,7 +96,6 @@ public struct WatchScreenSnapshot: Codable, Equatable, Sendable {
     }
 }
 
-/// iPhone이 같은 실험의 기록 가능한 화면에 연속해서 머문 구간입니다.
 public struct WatchGestureSession: Codable, Equatable, Sendable {
     public let start: WatchStateVersion
     public let startedAt: Date
