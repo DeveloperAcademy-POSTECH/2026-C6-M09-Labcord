@@ -43,8 +43,9 @@ extension ExperimentSessionFeature.State {
         } else {
             phase = .capturing
         }
+        let origin: WatchScreenRecording.Origin = photo.watchCaptureID == id ? .watch : .phone
         return .init(
-            id: id, experimentID: experimentID, origin: .phone, kind: .photo, phase: phase,
+            id: id, experimentID: experimentID, origin: origin, kind: .photo, phase: phase,
             startedAt: photo.scheduledAt ?? photo.recordedAt,
             countdownEndsAt: photo.countdownEndAt
         )
@@ -111,11 +112,19 @@ extension ExperimentSessionFeature.State {
              let .capture(.photo(.saved(id))) where previous.id == id,
              let .capture(.video(.saved(id))) where previous.id == id:
             phase = .saved
-        case .voice(.startFailed), .voice(.event(_, .failed)),
-             .capture(.photo(.captureFailed)), .capture(.video(.recordingFailed)):
+        case .voice(.startFailed), .voice(.event(_, .failed)), .capture(.video(.recordingFailed)):
             phase = .failed
-        case .voice(.retakeRequested), .capture(.photo(.retakeRequested)),
-             .capture(.photo(.cancelGesture)), .capture(.video(.cancelCleanupFinished)):
+        case let .capture(.photo(.captureFailed(id, _)))
+            where previous.id == id && previous.phase == .capturing:
+            phase = .failed
+        case .voice(.retakeRequested), .capture(.video(.cancelCleanupFinished)):
+            phase = .cancelled
+        case .capture(.photo(.retakeRequested)) where previous.kind == .photo
+            && previous.phase == .review,
+             .capture(.photo(.cancelGesture)) where previous.kind == .photo
+            && previous.phase == .capturing:
+            phase = .cancelled
+        case let .capture(.photo(.discardHiddenLocalCapture(id))) where previous.id == id:
             phase = .cancelled
         default:
             phase = nil

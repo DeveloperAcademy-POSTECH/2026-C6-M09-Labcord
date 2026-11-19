@@ -18,11 +18,16 @@ struct PhotoFeature {
         var isSaving = false
         var isSessionClosing = false
         var saveError: String?
+        var autoSaveEndsAt: Date?
         var lastSavedRecordID: UUID?
         var countdownEndAt: Date?
         var requestedRecordID: UUID?
         var pendingWatchCaptureID: UUID?
-        var requiresExternalConfirmation = false
+        var isWatchCapture = false
+
+        var watchCaptureID: UUID? {
+            pendingWatchCaptureID ?? (isWatchCapture ? requestedRecordID : nil)
+        }
     }
 
     enum Action: Equatable {
@@ -36,6 +41,7 @@ struct PhotoFeature {
         case captured(UUID, Data)
         case captureFailed(UUID, String)
         case retakeRequested
+        case discardHiddenLocalCapture(UUID)
         case watchCancelRequested(UUID)
         case watchSaveRequested(UUID)
         case saveRequested
@@ -90,7 +96,7 @@ struct PhotoFeature {
             switch action {
             case let .shortcutCaptureRequested(id):
                 guard !state.isCapturing, !state.isScheduled,
-                      state.capturedData == nil, !state.requiresExternalConfirmation else {
+                      state.capturedData == nil, state.watchCaptureID == nil else {
                     return .none
                 }
                 return scheduleCapture(id: id, at: now, in: &state)
@@ -100,12 +106,13 @@ struct PhotoFeature {
                 state.pendingWatchCaptureID = nil
                 guard !state.isCapturing, !state.isScheduled,
                       state.capturedData == nil else { return .none }
-                state.requiresExternalConfirmation = true
+                state.isGestureArmed = false
+                state.isWatchCapture = true
                 return scheduleCapture(id: id, at: now, in: &state)
 
             case let .gestureEvent(.openHandHeld(detectedAt)):
                 guard !state.isScheduled, !state.isCapturing,
-                      state.capturedData == nil,
+                      state.capturedData == nil, state.watchCaptureID == nil,
                       detectedAt.timeIntervalSinceNow > -0.5 else { return .none }
                 state.isGestureArmed = true
                 return .none
@@ -114,7 +121,7 @@ struct PhotoFeature {
                 let wasArmed = state.isGestureArmed
                 state.isGestureArmed = false
                 guard !state.isScheduled, !state.isCapturing,
-                      state.capturedData == nil, wasArmed,
+                      state.capturedData == nil, state.watchCaptureID == nil, wasArmed,
                       detectedAt.timeIntervalSinceNow > -0.5 else { return .none }
                 return scheduleCapture(id: uuid(), at: now, in: &state)
 
@@ -126,11 +133,11 @@ struct PhotoFeature {
                 return .none
 
             case .cancelGesture:
-                state.pendingWatchCaptureID = nil
                 state.isGestureArmed = false
+                guard state.watchCaptureID == nil else { return .none }
                 if !state.isCapturing, state.capturedData == nil {
                     state.requestedRecordID = nil
-                    state.requiresExternalConfirmation = false
+                    state.isWatchCapture = false
                 }
                 return cancelScheduledCapture(in: &state)
 
@@ -145,7 +152,7 @@ struct PhotoFeature {
                         return .none
                     }
                 } else {
-                    guard !state.isScheduled, !state.requiresExternalConfirmation else {
+                    guard !state.isScheduled, state.watchCaptureID == nil else {
                         return .none
                     }
                 }
@@ -166,13 +173,14 @@ struct PhotoFeature {
                 )
 
             case let .captured(id, data):
-                guard state.requestedRecordID == id else { return .none }
+                guard state.isCapturing, state.requestedRecordID == id else { return .none }
                 state.isCapturing = false
                 state.capturedData = data
                 state.recordID = id
-                state.recordedAt = now
+                let capturedAt = now
+                state.recordedAt = capturedAt
+                state.autoSaveEndsAt = capturedAt.addingTimeInterval(3)
                 state.saveError = nil
-                if state.requiresExternalConfirmation { return .none }
                 return .run { send in
                     try await Task.sleep(for: .seconds(3))
                     await send(.autoSaveElapsed(id))
@@ -180,15 +188,21 @@ struct PhotoFeature {
                 .cancellable(id: CancelID.autoSave, cancelInFlight: true)
 
             case let .captureFailed(id, message):
-                guard state.requestedRecordID == id else { return .none }
+                guard state.requestedRecordID == id, state.capturedData == nil,
+                      state.isScheduled || state.isCapturing else { return .none }
                 state.isCapturing = false
                 state.requestedRecordID = nil
-                state.requiresExternalConfirmation = false
+                state.isWatchCapture = false
                 state.errorMessage = message
                 return cancelScheduledCapture(in: &state)
 
             case .retakeRequested:
                 guard !state.isSaving, !state.isCapturing else { return .none }
+                return resetPhoto(in: &state)
+
+            case let .discardHiddenLocalCapture(id):
+                guard state.recordID == id, state.watchCaptureID == nil,
+                      !state.isSaving else { return .none }
                 return resetPhoto(in: &state)
 
             case let .watchCancelRequested(id):
@@ -199,7 +213,7 @@ struct PhotoFeature {
                 return resetPhoto(in: &state)
 
             case let .watchSaveRequested(id):
-                guard state.recordID == id, state.requiresExternalConfirmation else {
+                guard state.recordID == id, state.isWatchCapture else {
                     return .none
                 }
                 return savePhoto(state: &state)
@@ -208,7 +222,7 @@ struct PhotoFeature {
                 return savePhoto(state: &state)
 
             case let .autoSaveElapsed(id):
-                guard state.recordID == id else { return .none }
+                guard state.recordID == id, state.autoSaveEndsAt != nil else { return .none }
                 return savePhoto(state: &state)
 
             case let .saved(id):
@@ -220,7 +234,7 @@ struct PhotoFeature {
                 state.recordID = nil
                 state.recordedAt = nil
                 state.saveError = nil
-                state.requiresExternalConfirmation = false
+                state.isWatchCapture = false
                 return .none
 
             case let .saveFailed(id, message):
@@ -242,12 +256,15 @@ struct PhotoFeature {
             }
         }
     }
+}
 
-    private func resetPhoto(in state: inout State) -> Effect<Action> {
+private extension PhotoFeature {
+    func resetPhoto(in state: inout State) -> Effect<Action> {
         state.pendingWatchCaptureID = nil
         state.requestedRecordID = nil
-        state.requiresExternalConfirmation = false
+        state.isWatchCapture = false
         state.capturedData = nil
+        state.autoSaveEndsAt = nil
         state.recordID = nil
         state.recordedAt = nil
         state.saveError = nil
@@ -257,25 +274,23 @@ struct PhotoFeature {
         )
     }
 
-    private func savePhoto(state: inout State) -> Effect<Action> {
+    func savePhoto(state: inout State) -> Effect<Action> {
         guard let id = state.recordID,
               let recordedAt = state.recordedAt,
               let data = state.capturedData,
               !state.isSaving else { return .none }
         state.isSaving = true
+        state.autoSaveEndsAt = nil
         state.saveError = nil
         let experimentID = state.experimentID
-        return .concatenate(
-            .cancel(id: CancelID.autoSave),
-            .run { send in
-                do {
-                    try await experimentClient.savePhoto(experimentID, id, recordedAt, data)
-                    await send(.saved(id))
-                } catch {
-                    await send(.saveFailed(id, error.localizedDescription))
-                }
+        return .run { send in
+            do {
+                try await experimentClient.savePhoto(experimentID, id, recordedAt, data)
+                await send(.saved(id))
+            } catch {
+                await send(.saveFailed(id, error.localizedDescription))
             }
-        )
+        }
     }
 }
 
@@ -283,7 +298,7 @@ private extension PhotoFeature.Action {
     var isBlockedDuringSessionClose: Bool {
         switch self {
         case .watchCaptureRequested, .shortcutCaptureRequested, .gestureEvent,
-             .captureRequested, .retakeRequested: true
+             .captureRequested, .retakeRequested, .discardHiddenLocalCapture: true
         default: false
         }
     }

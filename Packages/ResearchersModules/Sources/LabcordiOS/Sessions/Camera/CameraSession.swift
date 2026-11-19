@@ -1,6 +1,7 @@
 import AVFoundation
 import Dispatch
 import Foundation
+import OSLog
 
 public actor CameraSession {
     private let session = AVCaptureSession()
@@ -197,23 +198,39 @@ extension CameraSession {
     public func capturePhoto() async throws -> Data {
         guard session.isRunning else { throw CameraSessionError.cameraUnavailable }
         guard photoDelegate == nil else { throw CameraSessionError.alreadyCapturingPhoto }
+        let audioSession = AVAudioSession.sharedInstance()
+        let usesAudioInput = microphoneInput != nil || !audioSession.currentRoute.inputs.isEmpty
+        let permitsRecordingSounds = audioSession.allowHapticsAndSystemSoundsDuringRecording
+        let restoreRecordingAudio = usesAudioInput && !permitsRecordingSounds
+            && setRecordingSystemSounds(true)
         var deadline: Task<Void, Never>?
         defer {
             deadline?.cancel()
             photoDelegate = nil
+            if restoreRecordingAudio {
+                _ = setRecordingSystemSounds(false)
+            }
         }
 
         configureCaptureRotation(for: photoOutput.connection(with: .video))
 
-        return try await withCheckedThrowingContinuation { continuation in
+        let data: Data = try await withCheckedThrowingContinuation { continuation in
             let delegate = PhotoCaptureDelegate(continuation: continuation)
             photoDelegate = delegate
             deadline = Task {
                 try? await Task.sleep(for: .seconds(8))
                 if !Task.isCancelled { delegate.timeout() }
             }
-            photoOutput.capturePhoto(with: AVCapturePhotoSettings(), delegate: delegate)
+            let settings = AVCapturePhotoSettings()
+            let allowsSystemSounds = audioSession.allowHapticsAndSystemSoundsDuringRecording
+            Self.logger.notice("""
+                native shutter request=\(settings.uniqueID) audioInput=\(usesAudioInput) \
+                systemSoundsAllowed=\(allowsSystemSounds)
+                """)
+            photoOutput.capturePhoto(with: settings, delegate: delegate)
         }
+        Self.logger.info("Photo captured: \(data.count) bytes")
+        return data
     }
 
     public func recordVideo(
@@ -307,6 +324,19 @@ extension CameraSession {
 }
 
 private extension CameraSession {
+    static let logger = Logger(subsystem: "Labcord", category: "Camera")
+
+    func setRecordingSystemSounds(_ allowed: Bool) -> Bool {
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setAllowHapticsAndSystemSoundsDuringRecording(allowed)
+            return true
+        } catch {
+            Self.logger.error("Capture sound setting failed: \(error.localizedDescription)")
+            return false
+        }
+    }
+
     func configureCaptureRotation(for connection: AVCaptureConnection?) {
         guard let connection, let activeCamera else { return }
         let coordinator = AVCaptureDevice.RotationCoordinator(
