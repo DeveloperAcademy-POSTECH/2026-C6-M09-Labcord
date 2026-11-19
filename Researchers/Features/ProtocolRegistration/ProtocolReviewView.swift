@@ -140,6 +140,10 @@ private extension ProtocolReviewView {
             .labcordTextFieldStyle(
                 text: store.title, focus: $titleFocused, isError: store.titleError != nil
             )
+            .submitLabel(.done)
+            .onSubmit {
+                titleFocused = false
+            }
             HStack(spacing: 8) {
                 if store.title.isEmpty || store.titleError != nil {
                     Text("최대 60자까지 입력할 수 있습니다.")
