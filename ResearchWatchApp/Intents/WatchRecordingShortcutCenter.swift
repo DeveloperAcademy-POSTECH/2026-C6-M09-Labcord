@@ -13,7 +13,6 @@ private let logger = Logger(
 typealias WatchRecordingShortcut = WatchRemoteIntentRequest.Kind
 
 /// Watch 단축어와 iPhone 단축어 요청을 현재 화면에 전달합니다.
-/// Watch에서 시작한 단축어는 앱을 여는 동안만 화면 등록을 기다립니다.
 @MainActor
 @Observable
 final class WatchRecordingShortcutCenter {
@@ -177,7 +176,6 @@ final class WatchRecordingShortcutCenter {
             let screen = connectivity.experiments.latestScreen
             let matches = proof?.matches(screen, id: id) ?? true
             if matches, let receiver, receiver.experimentID == id {
-                // ExperimentView.onAppear가 path.onChange보다 먼저 올 수 있습니다.
                 if let firstWait { trace(attempt, "wait=\(firstWait) resolved") }
                 let handled = receiver.handle(attempt.kind, id)
                 trace(attempt, "delivery handled=\(handled)")
@@ -219,7 +217,6 @@ final class WatchRecordingShortcutCenter {
             let deadline = ContinuousClock.now.advanced(by: .seconds(remaining))
             let task = Task { @MainActor in
                 do {
-                    // 이전 iPhone 요청은 식별 가능한 현재 화면에서만 즉시 처리합니다.
                     if request.gestureSession == nil,
                        receiver?.experimentID != request.experimentID {
                         throw Failure.noRoute

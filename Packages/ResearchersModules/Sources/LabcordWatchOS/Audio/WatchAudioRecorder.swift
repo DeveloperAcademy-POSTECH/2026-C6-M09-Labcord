@@ -252,7 +252,6 @@ private extension WatchAudioRecorder {
                     failure = (error as? WatchAudioError) ?? .interrupted
                     engine.stop()
                     removeTap()
-                    // 이미 받은 입력에서 변환기에 남은 프레임도 보관합니다.
                     source = nil
                 }
                 pending.append(try source.map(converter.append) ?? converter.finish())
