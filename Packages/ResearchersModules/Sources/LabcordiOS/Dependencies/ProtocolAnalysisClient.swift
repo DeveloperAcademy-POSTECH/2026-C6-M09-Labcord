@@ -12,8 +12,26 @@ nonisolated public struct ProtocolAnalysisInput: Equatable, Sendable {
     }
 }
 
+nonisolated public struct ProtocolAnalysisCachedResult: Codable, Equatable, Sendable {
+    public let timerSeconds: [Int]
+    public let terms: ProtocolExtractedTerms
+    public let hasWarnings: Bool
+    public let hasAmbiguousTimers: Bool
+
+    public init(
+        timerSeconds: [Int], terms: ProtocolExtractedTerms,
+        hasWarnings: Bool, hasAmbiguousTimers: Bool
+    ) {
+        self.timerSeconds = timerSeconds
+        self.terms = terms
+        self.hasWarnings = hasWarnings
+        self.hasAmbiguousTimers = hasAmbiguousTimers
+    }
+}
+
 nonisolated public enum ProtocolAnalysisOutcome: Equatable, Sendable {
     case success(DocumentParseResult)
+    case cached(ProtocolAnalysisCachedResult)
     case failure(DocumentParsingError)
 }
 
@@ -39,7 +57,18 @@ nonisolated public struct ProtocolAnalysisItem: Equatable, Sendable {
         }
     }
 
+    public var timerSeconds: [Int] {
+        if case let .cached(result) = outcome { return result.timerSeconds }
+        return extractedText.map { ProtocolTimerExtractor.extract(from: $0) } ?? []
+    }
+
+    public var hasAmbiguousTimers: Bool {
+        if case let .cached(result) = outcome { return result.hasAmbiguousTimers }
+        return extractedText.map { ProtocolTimerExtractor.needsManualReview(in: $0) } ?? false
+    }
+
     public var hasWarnings: Bool {
+        if case let .cached(result) = outcome { return result.hasWarnings }
         guard case let .success(document) = outcome else { return false }
         return !document.warnings.isEmpty
     }

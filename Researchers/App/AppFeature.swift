@@ -212,10 +212,7 @@ private extension AppFeature {
                       registration.analysisID == nil, !registration.analysisStarting,
                       registration.invalidatingJobID == nil,
                       !registration.successfulResults.isEmpty else { return .none }
-                let seconds = registration.successfulResults.flatMap { item -> [Int] in
-                    guard let text = item.extractedText else { return [] }
-                    return ProtocolTimerExtractor.extract(from: text)
-                }
+                let seconds = registration.successfulResults.flatMap(\.timerSeconds)
                 let terms = registration.extractedTerms.mapValues { values in
                     values.map { ProtocolReviewTerm(id: uuid(), value: $0) }
                 }

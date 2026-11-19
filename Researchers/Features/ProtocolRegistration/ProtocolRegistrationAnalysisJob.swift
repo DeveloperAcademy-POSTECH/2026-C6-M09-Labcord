@@ -120,7 +120,7 @@ private extension ProtocolInputAnalysisFeature {
         @Shared(.appStorage("protocolDemoCacheEnabled")) var cacheEnabled = false
         @Shared(.appStorage("protocolDemoCacheSeconds")) var cacheSeconds = 15
         let duration = cacheSeconds
-        if cacheEnabled, let entries = await ProtocolDemoCache.checkpoints(for: inputs) {
+        if cacheEnabled, let entries = await ProtocolDemoCache.results(for: inputs) {
             try await jobManager.startCached(id: id, entries: entries, seconds: duration)
             return
         }
@@ -200,9 +200,7 @@ extension ProtocolInputAnalysisFeature.State {
     }
 
     var hasAmbiguousTimers: Bool {
-        successfulResults.contains { item in
-            item.extractedText.map { ProtocolTimerExtractor.needsManualReview(in: $0) } ?? false
-        }
+        successfulResults.contains(where: \.hasAmbiguousTimers)
     }
 
     var extractedTerms: [ProtocolTermCategory: [String]] {

@@ -48,24 +48,19 @@ public actor ProtocolAnalysisJobManager {
 
     #if DEBUG
     public func startCached(
-        id: UUID, entries: [(input: ProtocolAnalysisJobInput, checkpoint: Data)], seconds: Int
+        id: UUID,
+        entries: [(input: ProtocolAnalysisJobInput, result: ProtocolAnalysisCachedResult)],
+        seconds: Int
     ) async throws {
-        let inputs = entries.map(\.input)
-        var cached: [CachedInput] = []
-        do {
-            for entry in entries {
-                cached.append(try CachedInput(checkpoint: entry.checkpoint))
-            }
-        } catch {
-            try await start(id: id, inputs: inputs)
-            return
-        }
-        try await start(id: id, inputs: inputs, cached: cached, cacheSeconds: seconds)
+        try await start(
+            id: id, inputs: entries.map(\.input), cached: entries.map(\.result),
+            cacheSeconds: seconds
+        )
     }
     #endif
 
     private func start(
-        id: UUID, inputs: [ProtocolAnalysisJobInput], cached: [CachedInput],
+        id: UUID, inputs: [ProtocolAnalysisJobInput], cached: [ProtocolAnalysisCachedResult],
         cacheSeconds: Int? = nil
     ) async throws {
         guard execution == nil, record?.status != .queued, record?.status != .running else {
@@ -80,13 +75,10 @@ public actor ProtocolAnalysisJobManager {
         if !cached.isEmpty {
             prepared.replaysCache = true
             prepared.cacheReplaySeconds = cacheSeconds
-            for (input, cachedInput) in zip(inputs, cached) {
-                let key = input.id.uuidString
-                prepared.documents[key] = cachedInput.document
-                prepared.classified[key] = cachedInput.terms
-                prepared.finished.insert(key)
-            }
             do {
+                for (input, result) in zip(inputs, cached) {
+                    _ = try prepared.recordOutcome(.cached(result), key: input.id.uuidString)
+                }
                 try store.save(prepared)
             } catch {
                 try? store.remove(id)
@@ -370,23 +362,5 @@ extension ProtocolAnalysisJobManager {
     private func publish() {
         guard let value = try? snapshot() else { return }
         for listener in listeners.values { listener.yield(value) }
-    }
-}
-
-private nonisolated struct CachedInput {
-    let document: ProtocolAnalysisSavedDocument
-    let terms: ProtocolAnalysisSavedTerms
-
-    init(checkpoint: Data) throws {
-        let source = try JSONDecoder().decode(ProtocolAnalysisJobRecord.self, from: checkpoint)
-        guard source.status == .completed, source.inputs.count == 1,
-              let key = source.inputs.first?.id.uuidString,
-              source.finished.contains(key), let document = source.documents[key],
-              let terms = source.classified[key] else {
-            throw CocoaError(.coderReadCorrupt)
-        }
-        _ = try document.restored()
-        self.document = document
-        self.terms = terms
     }
 }

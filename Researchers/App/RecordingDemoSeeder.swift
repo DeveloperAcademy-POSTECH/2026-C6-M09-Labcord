@@ -61,6 +61,7 @@ struct RecordingDemoSeeder {
 
     private struct Manifest: Decodable {
         let experiments: [Fixture]
+        let cachePhotos: [ProtocolDemoCache.Photo]?
     }
 
     private struct Fixture: Decodable {
@@ -70,6 +71,7 @@ struct RecordingDemoSeeder {
         let completedAt: Date
         let `protocol`: ExperimentProtocol
         let records: [Record]
+        let cache: ProtocolDemoCache.Match?
     }
 
     private enum SeedError: LocalizedError {
@@ -151,12 +153,26 @@ struct RecordingDemoSeeder {
         _ = try experiments.updateRecordContent(fixture.id, record.id, record.note, nil, nil)
     }
 
-    private func loadFixtures() throws -> [Fixture] {
-        guard let manifest = Self.manifestAsset else { throw SeedError.invalidManifest }
+    static func protocolCacheEntries() throws -> [ProtocolDemoCache.Entry] {
+        let manifest = try loadManifest()
+        let documents = manifest.experiments.compactMap { fixture in
+            fixture.cache.map { ProtocolDemoCache.Entry(match: $0, procedure: fixture.protocol) }
+        }
+        let photos = (manifest.cachePhotos ?? []).map {
+            ProtocolDemoCache.Entry(match: $0.match, procedure: $0.protocol)
+        }
+        return documents + photos
+    }
+
+    private static func loadManifest() throws -> Manifest {
+        guard let manifest = manifestAsset else { throw SeedError.invalidManifest }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        let fixtures = try decoder.decode(Manifest.self, from: manifest.data)
-            .experiments
+        return try decoder.decode(Manifest.self, from: manifest.data)
+    }
+
+    private func loadFixtures() throws -> [Fixture] {
+        let fixtures = try Self.loadManifest().experiments
         let recordIDs = fixtures.flatMap { $0.records.map(\.id) }
         guard fixtures.count == Self.replacementIDs.count,
               Set(fixtures.map(\.id)) == Set(Self.replacementIDs),

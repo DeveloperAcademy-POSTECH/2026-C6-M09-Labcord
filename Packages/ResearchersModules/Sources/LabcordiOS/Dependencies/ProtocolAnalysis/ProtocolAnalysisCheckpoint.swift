@@ -178,11 +178,18 @@ nonisolated struct ProtocolAnalysisJobRecord: Codable {
     var reviews: [String: ProtocolTermReviewCheckpoint]?
     var replaysCache: Bool?
     var cacheReplaySeconds: Int?
+    var cachedResults: [String: ProtocolAnalysisCachedResult]?
 
     mutating func recordOutcome(_ outcome: ProtocolAnalysisOutcome, key: String) throws -> Bool {
         switch outcome {
         case let .success(document):
             documents[key] = ProtocolAnalysisSavedDocument(document)
+            failures?.removeValue(forKey: key)
+            return true
+        case let .cached(result):
+            if cachedResults == nil { cachedResults = [:] }
+            cachedResults?[key] = result
+            finished.insert(key)
             failures?.removeValue(forKey: key)
             return true
         case let .failure(error):
@@ -201,6 +208,9 @@ nonisolated struct ProtocolAnalysisJobRecord: Codable {
         let visibleInputs = isReplaying ? [] : self.inputs
         let results = try visibleInputs.compactMap { input -> ProtocolAnalysisItem? in
             let key = input.id.uuidString
+            if let cached = cachedResults?[key] {
+                return ProtocolAnalysisItem(id: input.id, outcome: .cached(cached))
+            }
             if let value = documents[key] {
                 return try ProtocolAnalysisItem(id: input.id, outcome: .success(value.restored()))
             }
@@ -211,7 +221,8 @@ nonisolated struct ProtocolAnalysisJobRecord: Codable {
         }
         var terms: [UUID: ProtocolExtractedTerms] = [:]
         for input in visibleInputs where finished.contains(input.id.uuidString) {
-            terms[input.id] = classified[input.id.uuidString]?.restored
+            let key = input.id.uuidString
+            terms[input.id] = cachedResults?[key]?.terms ?? classified[key]?.restored
         }
         let progress = ProtocolAnalysisProgress.values(record: self, phase: phase)
         let fraction = progress.total > 0 ? Double(progress.completed) / Double(progress.total) : 0
