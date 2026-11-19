@@ -139,13 +139,17 @@ extension PhoneWatchExperimentCoordinator {
             throw WatchExperimentError.phoneUnlockRequired
         }
         let summaries = try client.watchSummaries()
-        guard summaries.contains(where: { $0.id == request.experimentID }) else {
+        guard let target = summaries.first(where: { $0.id == request.experimentID }) else {
             if try client.watchState(request.experimentID)?.experiment.status == .completed {
                 throw WatchExperimentError.invalidState
             }
             throw WatchExperimentError.experimentNotFound
         }
-        guard !summaries.contains(where: {
+        let isCurrentRunningSession = target.status == .running
+            && visibleExperimentID == request.experimentID
+            && currentScreen.destination == .experiment
+            && currentScreen.experimentID == request.experimentID
+        guard isCurrentRunningSession || !summaries.contains(where: {
             $0.id != request.experimentID && $0.status == .running
         }) else { throw WatchExperimentError.activeExperimentConflict }
         guard request.isLive(at: .now) else { throw WatchExperimentError.requestExpired }
