@@ -123,6 +123,7 @@ public struct WatchAudioReceipt: Codable, Equatable, Sendable {
     public let transcript: WatchAudioTranscript?
 
     public let hasTranscriptConflict: Bool?
+    public let stateRevision: UInt64?
 
     public init(
         header: WatchAudioHeader, receivedSequences: [Int], manifest: WatchAudioManifest?,
@@ -130,7 +131,8 @@ public struct WatchAudioReceipt: Codable, Equatable, Sendable {
         verificationProgress: Int64? = nil,
         isCancelled: Bool = false,
         isReviewing: Bool = false, failure: WatchAudioError? = nil,
-        transcript: WatchAudioTranscript? = nil, hasTranscriptConflict: Bool? = nil
+        transcript: WatchAudioTranscript? = nil, hasTranscriptConflict: Bool? = nil,
+        stateRevision: UInt64? = nil
     ) {
         self.header = header
         self.receivedSequences = receivedSequences
@@ -144,6 +146,49 @@ public struct WatchAudioReceipt: Codable, Equatable, Sendable {
         self.failure = failure
         self.transcript = transcript
         self.hasTranscriptConflict = hasTranscriptConflict
+        self.stateRevision = stateRevision
+    }
+
+    public func withStateRevision(_ revision: UInt64) -> Self {
+        Self(
+            header: header, receivedSequences: receivedSequences, manifest: manifest,
+            savedRecordID: savedRecordID, contentDigest: contentDigest,
+            verificationID: verificationID, verificationProgress: verificationProgress,
+            isCancelled: isCancelled, isReviewing: isReviewing, failure: failure,
+            transcript: transcript, hasTranscriptConflict: hasTranscriptConflict,
+            stateRevision: revision
+        )
+    }
+
+    public var isSavedAcknowledgement: Bool {
+        savedRecordID == header.recordingID && contentDigest != nil
+            && !isCancelled && failure == nil
+    }
+
+    public func canReplace(_ previous: Self) -> Bool {
+        guard header == previous.header else { return false }
+        if previous.isSavedAcknowledgement { return isSavedAcknowledgement }
+        if previous.isCancelled { return isCancelled }
+        if isSavedAcknowledgement || isCancelled { return true }
+        if let old = previous.stateRevision, (stateRevision ?? 0) < old { return false }
+        guard savedRecordID == nil,
+              previous.manifest == nil || previous.manifest == manifest,
+              Set(previous.receivedSequences).isSubset(of: Set(receivedSequences)) else {
+            return false
+        }
+        let newer = (stateRevision ?? 0) > (previous.stateRevision ?? 0)
+        guard allowsTranscript(after: previous.transcript, newer: newer) else { return false }
+        return !previous.isReviewing || isReviewing || failure != nil || newer
+    }
+
+    private func allowsTranscript(after old: WatchAudioTranscript?, newer: Bool) -> Bool {
+        guard let old else { return true }
+        if newer && failure != nil { return true }
+        guard let transcript, !old.isFinal || transcript.isFinal else { return false }
+        if transcript.generationID == old.generationID {
+            return transcript.revision >= old.revision
+        }
+        return !old.isFinal || newer
     }
 }
 

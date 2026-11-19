@@ -27,12 +27,20 @@ public final class PhoneWatchAudioService {
 
     public private(set) var liveRecording: LiveRecording?
     private var screenState = WatchRecordingScreenState()
+    private var hasScannedInbox = false
     public var screenRecording: WatchScreenRecording? { screenState.recording }
 
     public func hasUnsettledRecording(in experimentID: UUID? = nil) -> Bool {
-        screenState.hasUnsettledRecording(in: experimentID)
+        !hasScannedInbox || screenState.hasUnsettledRecording(in: experimentID)
     }
-    private var lastLiveStatusAt: Date = .distantPast
+
+    func requireSettledRecording(in experimentID: UUID) throws {
+        guard !hasUnsettledRecording(in: experimentID) else {
+            throw WatchExperimentError.phoneBusy
+        }
+    }
+
+    private var lastLiveStatusAt: [UUID: Date] = [:]
     public private(set) var lastError: WatchAudioError?
 
     public private(set) var damagedRecordingIDs: [UUID] = []
@@ -77,12 +85,14 @@ public final class PhoneWatchAudioService {
     }
 
     private func monitorRecords() async {
-        do { try await receiver.recover() } catch {
-            lastError = (error as? WatchAudioError) ?? .storageFailed
-        }
         while !Task.isCancelled {
             do {
-                await receiver.retryRetainedFiles()
+                expireLiveRecording(at: .now)
+                if hasScannedInbox {
+                    await receiver.retryRetainedFiles()
+                } else {
+                    try await receiver.recover()
+                }
                 let scan = try await archive.scanHeaders()
                 damagedRecordingIDs = scan.damagedRecordingIDs
                 if !damagedRecordingIDs.isEmpty { lastError = .invalidAudio }
@@ -96,6 +106,7 @@ public final class PhoneWatchAudioService {
                         lastError = (error as? WatchAudioError) ?? .storageFailed
                     }
                 }
+                hasScannedInbox = true
                 try await Task.sleep(for: .seconds(1))
             } catch is CancellationError {
                 return
@@ -132,14 +143,12 @@ public final class PhoneWatchAudioService {
             return try verificationJobs.begin(header, challenge: challenge)
         case let .savedVerificationResult(header, challenge):
             return try verificationJobs.result(header, challenge: challenge)
+        case .verifySaved:
+            return try await receiver.receive(data)
         default:
-            break
+            let receipt = try await receiver.receive(message)
+            return try JSONEncoder().encode(canonicalReceipt(receipt))
         }
-        let reply = try await receiver.receive(data)
-        let receipt = try JSONDecoder().decode(WatchAudioReceipt.self, from: reply)
-
-        if receipt.verificationID == nil { try publish(receipt) }
-        return reply
     }
 
     public func reply(to data: Data) async -> Data {
@@ -159,8 +168,7 @@ public final class PhoneWatchAudioService {
     public func receiveRetainedFile(_ url: URL) async throws {
         activate()
         let receipt = try await receiver.receiveRetainedFile(url)
-        try publish(receipt)
-        sendReceipt(receipt)
+        sendReceipt(try canonicalReceipt(receipt))
     }
 
     public func containsRecord(experimentID: UUID, recordID: UUID) async throws -> Bool {
@@ -179,10 +187,8 @@ public final class PhoneWatchAudioService {
         guard let id = command.targetID,
               let header = try await archive.headers().first(where: { $0.recordingID == id })
         else { throw WatchAudioError.conflict }
-        let message = try JSONEncoder().encode(WatchAudioMessage.status(header))
-        let data = try await receiver.receive(message)
-        let receipt = try JSONDecoder().decode(WatchAudioReceipt.self, from: data)
-        let record = try publish(receipt)
+        let receipt = try await receiver.currentReceipt(header)
+        let record = makeRecord(try canonicalReceipt(receipt))
         return WatchExperimentResponse(
             requestID: response.requestID, phase: response.phase,
             error: response.error, record: record
@@ -191,49 +197,46 @@ public final class PhoneWatchAudioService {
 
     private func refresh(_ header: WatchAudioHeader) async {
         do {
-            let message = try JSONEncoder().encode(WatchAudioMessage.status(header))
-            let data = try await receiver.receive(message)
-            _ = try publish(JSONDecoder().decode(WatchAudioReceipt.self, from: data))
+            _ = try canonicalReceipt(await receiver.currentReceipt(header))
         } catch { lastError = (error as? WatchAudioError) ?? .storageFailed }
     }
 
-    @discardableResult
-    private func publish(_ receipt: WatchAudioReceipt) throws -> WatchRecordSnapshot {
-        let recordID = receipt.header.recordingID
-        if receipt.hasTranscriptConflict == true {
-            guard let transcript = receipt.transcript, transcript.header == receipt.header,
-                  transcript.isFinal else { throw WatchAudioError.conflict }
+    private func canonicalReceipt(_ receipt: WatchAudioReceipt) throws -> WatchAudioReceipt {
+        let id = receipt.header.recordingID
+        if let previous = latest[id],
+           let revision = recordRevisions[id],
+           previous == receipt || !receipt.canReplace(previous) {
+            return previous.withStateRevision(revision)
         }
-        if let saved = receipt.savedRecordID, saved != recordID { throw WatchAudioError.conflict }
-        let changed = latest[recordID] != receipt
-        let revision = changed ? try nextRevision() : recordRevisions[recordID] ?? 0
-        let record = WatchRecordSnapshot(
-            id: recordID, kind: .audio, phase: phase(receipt),
-            startedAt: receipt.header.startedAt, canAutoSave: receipt.isReviewing,
-            experimentID: receipt.header.experimentID, revision: revision,
-            transcript: receipt.transcript?.text, isFinalTranscript: receipt.transcript?.isFinal,
-            originalRetained: !receipt.receivedSequences.isEmpty,
-            error: receipt.failure?.watchExperimentError,
-            epoch: PhoneWatchExperimentCoordinator.shared.stateEpoch
-        )
-        if changed {
-            latest[recordID] = receipt
-            recordRevisions[recordID] = revision
+        if receipt.savedRecordID == nil, !receipt.isCancelled,
+           receipt.receivedSequences.isEmpty, receipt.manifest == nil {
+            return receipt
+        }
+        if let saved = receipt.savedRecordID, saved != id { throw WatchAudioError.conflict }
+        let elapsed = receipt.manifest.map {
+            Double($0.totalSamples) / Double($0.header.sampleRate)
+        }
+        screenState.receive(makeRecord(receipt), elapsedSeconds: elapsed)
+        if phase(receipt) != .recording, liveRecording?.recordingID == id {
+            liveRecording = nil
+        }
+        let revision = try nextRevision()
+        latest[id] = receipt
+        recordRevisions[id] = revision
+        let stamped = receipt.withStateRevision(revision)
+        let record = makeRecord(stamped)
+        Task { [weak self] in
+            guard let self, recordRevisions[id] == revision,
+                  record.epoch == PhoneWatchExperimentCoordinator.shared.stateEpoch
+            else { return }
             connectivity.records.publish(record, session: connectivity.session)
-            let elapsed = receipt.manifest.map {
-                Double($0.totalSamples) / Double($0.header.sampleRate)
-            }
-            screenState.receive(record, elapsedSeconds: elapsed)
-            if record.phase != .recording, liveRecording?.recordingID == record.id {
-                liveRecording = nil
-            }
             PhoneWatchExperimentCoordinator.shared.recordDidChange(record)
-            if receipt.savedRecordID != nil || receipt.isCancelled || receipt.isReviewing
+            if receipt.isSavedAcknowledgement || receipt.isCancelled || receipt.isReviewing
                 || receipt.failure != nil {
-                sendReceipt(receipt)
+                sendReceipt(stamped)
             }
         }
-        return record
+        return stamped
     }
 
     private func sendReceipt(_ receipt: WatchAudioReceipt) {
@@ -262,9 +265,35 @@ public final class PhoneWatchAudioService {
         )
         return next
     }
+}
 
-    private func phase(_ receipt: WatchAudioReceipt) -> WatchRecordSnapshot.Phase {
-        if receipt.savedRecordID != nil { return .saved }
+private extension PhoneWatchAudioService {
+    func expireLiveRecording(at now: Date) {
+        if let liveRecording, liveRecording.expiresAt <= now { self.liveRecording = nil }
+        let previous = screenState.recording
+        screenState.expireCaptures(at: now)
+        if let previous, screenState.recording == nil {
+            PhoneWatchExperimentCoordinator.shared.recordDidChange(WatchRecordSnapshot(
+                id: previous.id, kind: .audio, phase: .failed,
+                experimentID: previous.experimentID
+            ))
+        }
+    }
+
+    func makeRecord(_ receipt: WatchAudioReceipt) -> WatchRecordSnapshot {
+        WatchRecordSnapshot(
+            id: receipt.header.recordingID, kind: .audio, phase: phase(receipt),
+            startedAt: receipt.header.startedAt, canAutoSave: receipt.isReviewing,
+            experimentID: receipt.header.experimentID, revision: receipt.stateRevision ?? 0,
+            transcript: receipt.transcript?.text, isFinalTranscript: receipt.transcript?.isFinal,
+            originalRetained: receipt.manifest != nil || !receipt.receivedSequences.isEmpty,
+            error: receipt.failure?.watchExperimentError,
+            epoch: PhoneWatchExperimentCoordinator.shared.stateEpoch
+        )
+    }
+
+    func phase(_ receipt: WatchAudioReceipt) -> WatchRecordSnapshot.Phase {
+        if receipt.isSavedAcknowledgement { return .saved }
         if receipt.isCancelled { return .cancelled }
         if receipt.failure != nil { return .failed }
         if receipt.isReviewing { return .review }
@@ -281,16 +310,17 @@ extension PhoneWatchAudioService {
         guard data.count <= 4096,
               let status = try? JSONDecoder().decode(WatchVoiceLiveStatus.self, from: data)
         else { return }
-        let isCancellation = status.phase == .cancelled
-        guard isCancellation || status.sentAt > lastLiveStatusAt,
+        guard status.phase != .cancelled,
+              status.sentAt > lastLiveStatusAt[status.recordingID, default: .distantPast],
               status.sentAt <= receivedAt.addingTimeInterval(2),
-              isCancellation || status.sentAt > receivedAt.addingTimeInterval(-3),
+              status.sentAt > receivedAt.addingTimeInterval(-3),
               status.startedAt <= status.sentAt,
               status.elapsedSeconds.map({ $0.isFinite && $0 >= 0 }) ?? true,
               latest[status.recordingID]?.savedRecordID == nil,
               latest[status.recordingID]?.failure == nil,
+              !status.isRecording || latest[status.recordingID]?.manifest == nil,
               latest[status.recordingID]?.isCancelled != true else { return }
-        lastLiveStatusAt = max(lastLiveStatusAt, status.sentAt)
+        lastLiveStatusAt[status.recordingID] = status.sentAt
         if status.isRecording {
             liveRecording = LiveRecording(
                 experimentID: status.experimentID, recordingID: status.recordingID,
@@ -309,7 +339,6 @@ extension PhoneWatchAudioService {
             ))
         }
     }
-
 }
 
 private extension WatchAudioMessage {
@@ -336,7 +365,7 @@ extension PhoneWatchAudioService {
         recordRevisions.removeAll()
         liveRecording = nil
         screenState = WatchRecordingScreenState()
-        lastLiveStatusAt = .distantPast
+        lastLiveStatusAt.removeAll()
         lastError = nil
         damagedRecordingIDs.removeAll()
     }

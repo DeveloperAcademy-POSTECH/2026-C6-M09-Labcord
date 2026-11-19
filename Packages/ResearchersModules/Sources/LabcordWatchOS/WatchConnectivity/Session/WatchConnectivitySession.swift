@@ -157,12 +157,8 @@ public final class WatchConnectivitySession: NSObject, WatchConnectivitySessionM
         guard data.count <= 200_000,
               let receipt = try? JSONDecoder().decode(WatchAudioReceipt.self, from: data),
               receipt.header.isValid else { return }
-        if let previous = latestAudioReceipts[receipt.header.recordingID] {
-            guard previous.header == receipt.header else { return }
-            guard previous.savedRecordID == nil, !previous.isCancelled else { return }
-            if let old = previous.transcript, let new = receipt.transcript,
-               old.generationID == new.generationID, new.revision < old.revision { return }
-        }
+        if let previous = latestAudioReceipts[receipt.header.recordingID],
+           !receipt.canReplace(previous) { return }
         if latestAudioReceipts[receipt.header.recordingID] != receipt {
             latestAudioReceipts[receipt.header.recordingID] = receipt
             audioReceiptObservers.values.forEach { $0.yield(receipt) }

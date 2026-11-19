@@ -3,24 +3,6 @@ import LabcordShared
 
 @MainActor
 enum WatchAudioRecoveryRunner {
-    static func forEach(
-        _ headers: [WatchAudioHeader],
-        process: (WatchAudioHeader) async throws -> Void,
-        onError: (Error) -> Void
-    ) async throws {
-        for header in headers {
-            try Task.checkCancellation()
-            do {
-                try await process(header)
-            } catch is CancellationError {
-                if Task.isCancelled { throw CancellationError() }
-                onError(CancellationError())
-            } catch {
-                onError(error)
-            }
-        }
-    }
-
     static func refreshSaved(
         _ header: WatchAudioHeader,
         query: (WatchAudioMessage) async throws -> WatchAudioReceipt,

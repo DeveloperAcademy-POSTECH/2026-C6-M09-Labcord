@@ -4,7 +4,7 @@ import Foundation
 public actor WatchAudioArchive {
     private let root: URL
     private let maximumBytes: Int
-    private let files = FileManager.default
+    let files = FileManager.default
 
     public init(root: URL, maximumBytes: Int = 256 * 1_024 * 1_024) {
         self.root = root
@@ -125,45 +125,37 @@ public actor WatchAudioArchive {
         return chunkURL(header, sequence: sequence)
     }
 
-    public func rememberRemoteReceipt(_ receipt: WatchAudioReceipt) throws {
+    @discardableResult
+    public func rememberRemoteReceipt(_ receipt: WatchAudioReceipt) throws -> Bool {
         try begin(receipt.header)
+        if let previous = try remoteReceipt(receipt.header) {
+            guard receipt.canReplace(previous) else { return false }
+            if receipt == previous, !receipt.isSavedAcknowledgement { return true }
+        }
         if let proof = try loadOrMigrateCleanupProof(receipt.header) {
             guard receipt.savedRecordID == receipt.header.recordingID,
                   receipt.header == proof.header, receipt.manifest == proof.manifest,
                   receipt.contentDigest == proof.digest, !receipt.isCancelled else {
                 throw WatchAudioError.conflict
             }
-            return
+            return true
         }
         let local = try statusEnsuringArchive(receipt.header)
         guard Set(receipt.receivedSequences).isSubset(of: Set(local.receivedSequences)) else {
             throw WatchAudioError.conflict
         }
-        try write(receipt, to: directory(receipt.header).appendingPathComponent("remote.json"))
-    }
-
-    public func remoteReceipt(_ header: WatchAudioHeader) throws -> WatchAudioReceipt? {
-        let url = directory(header).appendingPathComponent("remote.json")
-        guard files.fileExists(atPath: url.path) else { return nil }
-        return try read(WatchAudioReceipt.self, at: url)
-    }
-
-    public func sealInterrupted(_ header: WatchAudioHeader) throws -> WatchAudioReceipt {
-        let receipt = try statusEnsuringArchive(header)
-        guard receipt.manifest == nil else { return receipt }
-        guard !receipt.receivedSequences.isEmpty else { throw WatchAudioError.incomplete }
-        var sample: Int64 = 0
-        for (expected, sequence) in receipt.receivedSequences.enumerated() {
-            let chunk = try chunk(header, sequence)
-            guard sequence == expected, chunk.firstSample == sample else {
-                throw WatchAudioError.incomplete
-            }
-            sample += chunk.sampleCount
+        if receipt.savedRecordID != nil {
+            let manifest = try completeManifest(receipt.header)
+            guard receipt.savedRecordID == receipt.header.recordingID, !receipt.isCancelled,
+                  receipt.failure == nil, receipt.manifest == manifest,
+                  receipt.receivedSequences.elementsEqual(0..<manifest.chunkCount),
+                  receipt.contentDigest == (try contentDigest(receipt.header, manifest: manifest))
+            else { throw WatchAudioError.conflict }
         }
-        return try finish(WatchAudioManifest(
-            header: header, chunkCount: receipt.receivedSequences.count,
-            totalSamples: sample, interrupted: true
-        ))
+        if try remoteReceipt(receipt.header) != receipt {
+            try write(receipt, to: directory(receipt.header).appendingPathComponent("remote.json"))
+        }
+        return true
     }
 
     public func markSaved(_ header: WatchAudioHeader, recordID: UUID) throws -> WatchAudioReceipt {
@@ -228,7 +220,7 @@ public actor WatchAudioArchive {
         try resumeSavedCleanup(receipt.header)
     }
 
-    private func directory(_ header: WatchAudioHeader) -> URL {
+    func directory(_ header: WatchAudioHeader) -> URL {
         root.appendingPathComponent(header.recordingID.uuidString, isDirectory: true)
     }
 
@@ -236,11 +228,11 @@ public actor WatchAudioArchive {
         directory(header).appendingPathComponent("\(sequence).chunk")
     }
 
-    private func read<Value: Decodable>(_ type: Value.Type, at url: URL) throws -> Value {
+    func read<Value: Decodable>(_ type: Value.Type, at url: URL) throws -> Value {
         try JSONDecoder().decode(type, from: Data(contentsOf: url))
     }
 
-    private func write<Value: Encodable>(_ value: Value, to url: URL) throws {
+    func write<Value: Encodable>(_ value: Value, to url: URL) throws {
         let data = try JSONEncoder().encode(value)
         let existingSize = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
         var used = 0

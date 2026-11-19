@@ -38,6 +38,16 @@ struct VoiceRecordView: View {
                     ProgressView()
                         .progressViewStyle(.circular)
                         .fixedSize()
+
+                    if store.phase != .starting {
+                        if let notice = store.deliveryNotice {
+                            Text(notice)
+                                .font(.footnote)
+                                .multilineTextAlignment(.center)
+                        }
+                        Button("다시 시도") { store.send(.retryTapped) }
+                            .controlSize(.small)
+                    }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
@@ -85,18 +95,17 @@ struct VoiceRecordView: View {
         .navigationBarBackButtonHidden()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    if store.phase == .saved {
-                        dismiss()
-                    } else {
-                        store.send(.cancelTapped)
-                    }
-                } label: {
+                Button { store.send(.dismissTapped) } label: {
                     Image(systemName: "xmark")
+                }
+                .accessibilityLabel("닫기")
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                if store.phase != .saved, store.header != nil {
+                    Button("취소", role: .destructive) { store.send(.cancelTapped) }
                 }
             }
         }
-        .interactiveDismissDisabled(store.phase != .saved)
         .onAppear {
             store.send(.appeared)
             shortcutLogger.info("VoiceRecordView appeared")
@@ -109,16 +118,24 @@ struct VoiceRecordView: View {
         }
         .onDisappear {
             store.send(.disappeared)
+            shortcutRegistration = nil
             shortcutLogger.info("VoiceRecordView disappeared")
         }
         .onChange(of: store.shouldDismiss) { _, shouldDismiss in
             if shouldDismiss { dismiss() }
         }
         .task(id: store.phase) {
-            guard store.phase == .saved else { return }
-            try? await Task.sleep(for: .seconds(3))
-            guard !Task.isCancelled, store.phase == .saved else { return }
-            dismiss()
+            let phase = store.phase
+            switch phase {
+            case .saved:
+                do { try await Task.sleep(for: .seconds(3)) } catch { return }
+                store.send(.dismissTapped)
+            case .awaitingTransfer, .transcribing, .saving:
+                do { try await Task.sleep(for: .seconds(8)) } catch { return }
+                store.send(.deliveryDelayed(phase))
+            default:
+                break
+            }
         }
     }
 
@@ -144,7 +161,10 @@ struct VoiceRecordView: View {
     private var progressTitle: String {
         switch store.phase {
         case .starting: "마이크 준비 중"
-        case .awaitingTransfer: "iPhone 전송 대기 중"
+        case .awaitingTransfer:
+            store.receivedChunkCount > 0
+                ? "iPhone 전송 중 · \(store.receivedChunkCount)개 전송됨"
+                : "iPhone 전송 대기 중"
         case .transcribing: "전사 중"
         case .saving: "iPhone 저장 확인 중"
         default: ""

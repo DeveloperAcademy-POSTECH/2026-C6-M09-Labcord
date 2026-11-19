@@ -211,6 +211,14 @@ extension ExperimentFeature {
         let experimentID = state.experimentID
         return .run { send in
             do {
+                try await WatchVoiceRecordingService.shared.requireSettledRecordings(
+                    in: experimentID
+                )
+            } catch {
+                await send(.closeBlockedByAudio)
+                return
+            }
+            do {
                 for attempt in 0..<3 {
                     let snapshotResponse = try await watchExperimentClient.send(
                         WatchExperimentCommand(operation: .snapshot, experimentID: experimentID)
@@ -224,24 +232,7 @@ extension ExperimentFeature {
                         expectedRevision: snapshot.revision, expectedEpoch: snapshot.epoch
                     )
                     do {
-                        var response = try await watchExperimentClient.send(command)
-                        for _ in 0..<100 {
-                            if response.phase == .completed { break }
-                            if response.phase == .failed || response.phase == .unknown {
-                                throw response.error ?? WatchExperimentError.resultUnknown
-                            }
-                            try await Task.sleep(for: .milliseconds(200))
-                            response = try await watchExperimentClient.send(
-                                WatchExperimentCommand(
-                                    operation: .requestStatus,
-                                    experimentID: experimentID,
-                                    targetID: command.requestID
-                                )
-                            )
-                        }
-                        guard response.phase == .completed else {
-                            throw WatchExperimentError.deliveryTimeout
-                        }
+                        try await sendUntilCompleted(command, experimentID: experimentID)
                         await send(.closeSucceeded(operation))
                         return
                     } catch WatchExperimentError.staleRevision where attempt < 2 {

@@ -14,13 +14,9 @@ final class WatchVoiceRecordingService {
     private let transfer: WatchAudioTransferClient
     private let connectivity: WatchConnectivitySession
     private var incomingReceipts: Task<Void, Never>?
-    private var confirmationQueue: Task<Void, Never>?
+    private var startupRecovery: Task<Void, Never>?
     private var liveStatusTask: Task<Void, Never>?
     private var liveHeader: WatchAudioHeader?
-    private let pendingKey = "Labcord.WatchAudio.pendingConfirmations"
-    private var pendingConfirmations: [UUID: WatchAudioHeader] = [:]
-    private var requestedConfirmations: Set<UUID> = []
-
     var activeRecording: WatchAudioHeader? { recorder.activeRecording }
 
     private init() {
@@ -35,124 +31,140 @@ final class WatchVoiceRecordingService {
         transfer = WatchAudioTransferClient(archive: archive) { message in
             try await exchange.send(message)
         }
-        let pending = UserDefaults.standard.data(forKey: pendingKey)
-            .flatMap { try? JSONDecoder().decode([WatchAudioHeader].self, from: $0) } ?? []
-        pendingConfirmations = Dictionary(
-            pending.map { ($0.recordingID, $0) }
-        ) { first, _ in first }
-        requestedConfirmations = Set(pendingConfirmations.keys)
     }
 
-    func start(experimentID: UUID) async throws -> AsyncStream<WatchAudioCaptureEvent> {
+    func start(
+        experimentID: UUID, recordingID: UUID
+    ) async throws -> AsyncStream<WatchAudioCaptureEvent> {
         activate()
+        await startupRecovery?.value
+        try Task.checkCancellation()
         guard await microphonePermission() else { throw WatchAudioError.permissionDenied }
-        let events = try await recorder.start(experimentID: experimentID)
-        if let header = recorder.activeRecording { beginLiveStatus(header) }
+        try Task.checkCancellation()
+        let events = try await recorder.start(experimentID: experimentID, recordingID: recordingID)
+        if let header = recorder.activeRecording {
+            beginLiveStatus(header)
+            if Task.isCancelled { try? await stopAndQueue(header) }
+        }
+        try Task.checkCancellation()
         return events
     }
 
     func activate() {
         connectivity.activate()
         observeIncomingReceipts()
-        transfer.startRecovery()
-        flushConfirmations()
-    }
-
-    func receipts() -> AsyncStream<WatchAudioReceipt> { transfer.receipts() }
-
-    func stopAndQueue() async throws -> WatchAudioHeader {
-        guard let header = recorder.activeRecording else { throw WatchAudioError.invalidAudio }
-        await recorder.stop()
-        do {
-            let receipt = try await archive.statusEnsuringArchive(header)
-            guard !receipt.receivedSequences.isEmpty, receipt.manifest != nil else {
-                throw WatchAudioError.invalidAudio
+        guard startupRecovery == nil else { return }
+        startupRecovery = Task {
+            do { try await recorder.recoverInterruptedRecordings() } catch {
+                // Outbox recovery still checks the readable recordings.
             }
-        } catch {
-            endLiveStatus(header, phase: .failed)
-            throw error
+            transfer.startRecovery()
         }
-        endLiveStatus(header, phase: .previewing)
-        Task { await transfer.recover() }
-        return header
     }
 
-    func retryDelivery(for header: WatchAudioHeader?) async -> WatchAudioReceipt? {
-        if let header, requestedConfirmations.remove(header.recordingID) != nil {
-            await confirm(header)
-        }
-        await transfer.recover()
-        guard let header else { return nil }
-        return try? await archive.remoteReceipt(header)
-    }
+    func events() -> AsyncStream<WatchAudioDeliveryEvent> { transfer.events() }
 
-    func stopAndQueueIfNeeded() async {
-        if recorder.isStarting { _ = await recorder.cancelPendingStart() }
-        guard let header = recorder.activeRecording else {
-            if let liveHeader { endLiveStatus(liveHeader, phase: .failed) }
-            return
-        }
-        _ = try? await stopAndQueue()
-        sendLiveStatus(header, phase: .failed)
-    }
-
-    func confirm(_ header: WatchAudioHeader) async {
-        guard requestedConfirmations.insert(header.recordingID).inserted else { return }
-        pendingConfirmations[header.recordingID] = header
-        persistConfirmations()
-        flushConfirmations()
-    }
-
-    func cancelInBackground(_ header: WatchAudioHeader?) {
-        let target = header ?? recorder.activeRecording ?? liveHeader
-        if let target {
-            transfer.prepareCancellation(target)
-            pendingConfirmations.removeValue(forKey: target.recordingID)
-            requestedConfirmations.remove(target.recordingID)
-            persistConfirmations()
-            endLiveStatus(target, phase: .cancelled)
-        }
-        Task { await cancel(target) }
-    }
-
-    func cancel(_ header: WatchAudioHeader?) async {
-        if recorder.isStarting { _ = await recorder.cancelPendingStart() }
-        let target = header ?? recorder.activeRecording
-        if let target {
-            transfer.prepareCancellation(target)
-            pendingConfirmations.removeValue(forKey: target.recordingID)
-            requestedConfirmations.remove(target.recordingID)
-            persistConfirmations()
-            endLiveStatus(target, phase: .cancelled)
-        }
-        if recorder.activeRecording != nil { await recorder.stop() }
-        guard let target else { return }
-        transfer.releaseCancellation(target)
-        do { _ = try await transfer.cancel(target) } catch { await transfer.recover() }
-    }
-
-    private func flushConfirmations() {
-        guard confirmationQueue == nil, !pendingConfirmations.isEmpty else { return }
-        confirmationQueue = Task { [weak self] in
-            guard let self else { return }
-            while !Task.isCancelled, !pendingConfirmations.isEmpty {
-                connectivity.activate()
-                if connectivity.session?.activationState == .activated {
-                    for header in Array(pendingConfirmations.values) {
-                        guard pendingConfirmations[header.recordingID] != nil,
-                              !transfer.isCancellationPending(header) else { continue }
-                        guard let data = try? JSONEncoder().encode(
-                            WatchAudioMessage.confirm(header)
-                        ) else { continue }
-                        connectivity.transferUserInfo(["labcordAudioMessage": data])
-                        pendingConfirmations.removeValue(forKey: header.recordingID)
-                    }
-                    persistConfirmations()
-                } else {
-                    try? await Task.sleep(for: .seconds(2))
+    func pendingRecording(in experimentID: UUID) async throws -> WatchAudioHeader? {
+        activate()
+        await startupRecovery?.value
+        let headers = try await archive.headers().sorted { $0.startedAt > $1.startedAt }
+        for header in headers where header.experimentID == experimentID {
+            guard header != recorder.activeRecording, !transfer.isCancellationPending(header)
+            else { continue }
+            let local = try await archive.statusIfPresent(header)
+            let remote = try await archive.remoteReceipt(header)
+            guard !local.isCancelled, local.savedRecordID == nil,
+                  !local.receivedSequences.isEmpty else { continue }
+            if let remote, remote.isSavedAcknowledgement || remote.isCancelled {
+                do {
+                    try await transfer.receive(remote)
+                    continue
+                } catch WatchAudioError.conflict {
+                    // Reopen the recording so a verified reply can be fetched.
                 }
             }
-            confirmationQueue = nil
+            return header
+        }
+        return nil
+    }
+
+    func deliveryState(
+        for header: WatchAudioHeader
+    ) async throws -> (isConfirming: Bool, receipt: WatchAudioReceipt?) {
+        let receipt = try await archive.remoteReceipt(header)
+        if let receipt { try await transfer.receive(receipt) }
+        return (await transfer.hasPendingConfirmation(header), receipt)
+    }
+
+    func stopAndQueue(_ header: WatchAudioHeader) async throws {
+        if recorder.activeRecording == header { await recorder.stop() }
+        do {
+            let receipt = try await archive.statusIfPresent(header)
+            guard !receipt.receivedSequences.isEmpty else { throw WatchAudioError.invalidAudio }
+            if receipt.manifest == nil { _ = try await archive.sealInterrupted(header) }
+            endLiveStatus(header, phase: .previewing)
+        } catch {
+            let local = try? await archive.statusIfPresent(header)
+            endLiveStatus(
+                header, phase: local?.receivedSequences.isEmpty == false ? .previewing : .failed
+            )
+            if (error as? WatchAudioError) == .invalidAudio,
+               local?.receivedSequences.isEmpty == false { throw WatchAudioError.incomplete }
+            throw error
+        }
+        retryDelivery()
+    }
+
+    func dismiss(recordingID: UUID) {
+        Task {
+            if let header = recorder.activeRecording ?? liveHeader,
+               header.recordingID == recordingID {
+                try? await stopAndQueue(header)
+            }
+        }
+    }
+
+    func retryDelivery() {
+        activate()
+        Task { await transfer.recover() }
+    }
+
+    func confirm(_ header: WatchAudioHeader) async throws {
+        try await transfer.requestConfirmation(header)
+        retryDelivery()
+    }
+
+    func cancelInBackground(_ header: WatchAudioHeader?, recordingID: UUID) {
+        let target = header ?? recorder.activeRecording.flatMap {
+            $0.recordingID == recordingID ? $0 : nil
+        }
+        if let target { transfer.prepareCancellation(target) }
+        Task {
+            if recorder.activeRecording == target, target != nil { await recorder.stop() }
+            guard let target else { return }
+            endLiveStatus(target, phase: .previewing)
+            transfer.releaseCancellation(target)
+            await transfer.recover()
+        }
+    }
+
+    func requireSettledRecordings(in experimentID: UUID) async throws {
+        activate()
+        await startupRecovery?.value
+        guard recorder.activeRecording?.experimentID != experimentID,
+              !recorder.isStarting else { throw WatchExperimentError.phoneBusy }
+        for header in try await archive.headers() where header.experimentID == experimentID {
+            let local = try await archive.statusIfPresent(header)
+            let remote = try await archive.remoteReceipt(header)
+            if let remote, remote.isSavedAcknowledgement || remote.isCancelled {
+                try await transfer.receive(remote)
+                continue
+            }
+            if transfer.isCancellationPending(header) { throw WatchExperimentError.phoneBusy }
+            guard !local.isCancelled, local.savedRecordID == nil else { continue }
+            if !local.receivedSequences.isEmpty || local.manifest != nil {
+                throw WatchExperimentError.phoneBusy
+            }
         }
     }
 
@@ -161,6 +173,10 @@ final class WatchVoiceRecordingService {
         liveHeader = header
         liveStatusTask = Task {
             while !Task.isCancelled {
+                guard recorder.activeRecording == header else {
+                    try? await stopAndQueue(header)
+                    return
+                }
                 sendLiveStatus(header, phase: .recording)
                 do { try await Task.sleep(for: .seconds(1)) } catch { return }
             }
@@ -170,6 +186,7 @@ final class WatchVoiceRecordingService {
     private func endLiveStatus(
         _ header: WatchAudioHeader, phase: WatchRecordSnapshot.Phase
     ) {
+        guard liveHeader == header else { return }
         liveStatusTask?.cancel()
         liveStatusTask = nil
         liveHeader = nil
@@ -187,19 +204,11 @@ final class WatchVoiceRecordingService {
                 isRecording: phase == .recording, phase: phase,
                 elapsedSeconds: max(0, Date.now.timeIntervalSince(header.startedAt))
               )) else { return }
-        if phase == .cancelled {
-            connectivity.transferUserInfo([WatchVoiceLiveStatus.messageKey: data])
-        }
         guard session.isReachable else { return }
         session.sendMessage(
             [WatchVoiceLiveStatus.messageKey: data],
             replyHandler: { _ in }, errorHandler: { _ in }
         )
-    }
-
-    private func persistConfirmations() {
-        let values = Array(pendingConfirmations.values)
-        UserDefaults.standard.set(try? JSONEncoder().encode(values), forKey: pendingKey)
     }
 
     private func observeIncomingReceipts() {

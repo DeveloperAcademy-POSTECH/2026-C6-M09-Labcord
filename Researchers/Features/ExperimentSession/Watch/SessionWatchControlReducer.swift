@@ -17,6 +17,9 @@ extension ExperimentSessionFeature {
             case let .watchResourcesReleased(requestID):
                 guard let command = state.watchCommand, command.requestID == requestID,
                       state.watchClosingResources else { return .none }
+                guard !PhoneWatchAudioService.shared.hasUnsettledRecording(
+                    in: state.experimentID
+                ) else { return finishWatchClose(state: &state, error: .phoneBusy) }
                 if command.operation == .complete {
                     return .send(.pause(.completeRequested(command.requestID)))
                 }
@@ -41,7 +44,8 @@ extension ExperimentSessionFeature {
               command.operation == .pause || command.operation == .complete else {
             return .send(.watchControlFinished(command.requestID, .invalidState))
         }
-        guard state.watchCommand == nil, state.watchMediaCommand == nil,
+        guard !PhoneWatchAudioService.shared.hasUnsettledRecording(in: state.experimentID),
+              state.watchCommand == nil, state.watchMediaCommand == nil,
               state.timer.isConfigured, state.timer.pendingSave == nil, !state.timer.isClosing,
               !state.timer.hasUnsavedDraft,
               !state.pause.isCompleting, !state.isReturningHome,
@@ -82,6 +86,9 @@ extension ExperimentSessionFeature {
     func drainWatchClose(state: inout State) -> Effect<Action> {
         guard let command = state.watchCommand, let gate = state.watchDrainGate,
               !state.watchClosingResources else { return .none }
+        if PhoneWatchAudioService.shared.hasUnsettledRecording(in: state.experimentID) {
+            return finishWatchClose(state: &state, error: .phoneBusy)
+        }
         if gate.voiceSession != nil, state.voice.phase == .finished,
            !state.voice.isSaving,
            state.voice.recording == nil || state.voice.recordID == nil
@@ -167,6 +174,7 @@ extension ExperimentSessionFeature {
         guard let command = state.watchCommand else { return .none }
         let restoreCamera = state.watchCameraWasVisible && state.watchClosingResources
         clearWatchDrain(state: &state)
+        state.timer.isClosing = false
         state.watchCameraWasVisible = false
         let finished = Effect<Action>.send(.watchControlFinished(command.requestID, error))
         guard restoreCamera else { return finished }
