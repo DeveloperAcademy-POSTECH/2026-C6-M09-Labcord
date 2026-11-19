@@ -112,7 +112,7 @@ extension ExperimentSessionFeature.State {
              let .capture(.photo(.saved(id))) where previous.id == id,
              let .capture(.video(.saved(id))) where previous.id == id:
             phase = .saved
-        case .voice(.startFailed), .voice(.event(_, .failed)), .capture(.video(.recordingFailed)):
+        case .capture(.video(.recordingFailed)):
             phase = .failed
         case let .capture(.photo(.captureFailed(id, _)))
             where previous.id == id && previous.phase == .capturing:
@@ -127,7 +127,7 @@ extension ExperimentSessionFeature.State {
         case let .capture(.photo(.discardHiddenLocalCapture(id))) where previous.id == id:
             phase = .cancelled
         default:
-            phase = nil
+            phase = terminalVoicePhase(action, previous: previous)
         }
         guard let phase else { return }
         lastScreenRecording = .init(
@@ -135,5 +135,32 @@ extension ExperimentSessionFeature.State {
             kind: previous.kind, phase: phase, startedAt: previous.startedAt,
             elapsedSeconds: previous.elapsedSeconds
         )
+    }
+
+    private func terminalVoicePhase(
+        _ action: ExperimentSessionFeature.Action, previous: WatchScreenRecording
+    ) -> WatchRecordSnapshot.Phase? {
+        guard case let .voice(voiceAction) = action, previous.kind == .audio,
+              previous.id == voice.sessionID else { return nil }
+        let id: UUID
+        let phase: WatchRecordSnapshot.Phase
+        switch voiceAction {
+        case let .startFailed(requestID, _), let .startPermissionFailed(requestID, _),
+             let .event(requestID, .failed):
+            id = requestID
+            phase = .failed
+        case let .stopped(requestID, _), let .event(requestID, .finished),
+             let .event(requestID, .interrupted):
+            guard voice.hasRecordingFailure else { return nil }
+            id = requestID
+            phase = .failed
+        case let .watchPauseDiscarded(requestID):
+            guard !voice.isPauseCancellationPending else { return nil }
+            id = requestID
+            phase = .cancelled
+        default:
+            return nil
+        }
+        return id == previous.id ? phase : nil
     }
 }
