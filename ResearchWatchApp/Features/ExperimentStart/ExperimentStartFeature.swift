@@ -81,13 +81,6 @@ struct ExperimentStartFeature {
                     state.phase = .failed(.experimentNotFound)
                     return .none
                 }
-                if list.experiments.contains(where: {
-                    $0.status == .running && $0.id != state.experiment.id
-                }) {
-                    state.phase = .details
-                    state.isActiveExperimentConflictPresented = true
-                    return .none
-                }
                 guard let epoch = list.version?.epoch else {
                     state.phase = .failed(.unsupportedVersion)
                     return .none
@@ -145,7 +138,12 @@ struct ExperimentStartFeature {
                       request.requestID == id else { return .none }
                 state.openRequest = nil
                 if let error {
-                    state.phase = .failed(error)
+                    if error == .activeExperimentConflict {
+                        state.phase = .details
+                        state.isActiveExperimentConflictPresented = true
+                    } else {
+                        state.phase = .failed(error)
+                    }
                     return cancel(request)
                 }
                 state.phase = .experiment
