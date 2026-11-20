@@ -74,7 +74,7 @@ struct ExperimentView: View {
     }
 
     var body: some View {
-        VStack {
+        VStack(spacing: 0) {
             PhotoCountdownLabel(
                 countdown: phonePhotoCountdown, fallback: selectedPage == 1 ? "실험 중" : "타이머"
             )
@@ -82,7 +82,7 @@ struct ExperimentView: View {
                 .foregroundStyle(Color("General/Brand/Primary"))
                 .padding(.bottom, WatchScreenMetrics.scaledHeight(4.5))
 
-            TabView(selection: $selectedPage) {
+            ExperimentPager(selection: $selectedPage) {
                 ExperimentRecordView(title: store.snapshot?.experiment.title ?? experiment.title) {
                     openVoiceRecording()
                 } onPhotoRecordTap: {
@@ -94,8 +94,7 @@ struct ExperimentView: View {
                 } onEndTap: {
                     store.send(.endTapped)
                 }
-                    .tag(1)
-
+            } timers: {
                 ExperimentTimerView(
                     mode: store.snapshot?.mode,
                     timers: store.displayedTimers,
@@ -112,11 +111,16 @@ struct ExperimentView: View {
                     },
                     onAddTimer: { isAddTimerPresented = true }
                 )
-                    .tag(2)
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))
             .overlay(alignment: .bottom) {
                 PageControl(pageCount: 2, selection: $selectedPage)
+                    .accessibilityScrollAction { edge in
+                        switch edge {
+                        case .leading: selectedPage = max(1, selectedPage - 1)
+                        case .trailing: selectedPage = min(2, selectedPage + 1)
+                        default: break
+                        }
+                    }
             }
         }
         .padding(.top, WatchScreenMetrics.scaledHeight(24.5))
