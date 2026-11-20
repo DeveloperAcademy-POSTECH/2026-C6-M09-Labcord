@@ -12,6 +12,7 @@ import SwiftUI
 
 struct RunningTimerView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.isExperimentPageActive) private var isPageActive
     let timer: WatchTimerSnapshot
     let isCommandPending: Bool
     var isCreating = false
@@ -64,7 +65,23 @@ struct RunningTimerView: View {
                 }
         }
         .contentShape(Rectangle())
-        .simultaneousGesture(swipeGesture, including: canSwipeDelete ? .all : .subviews)
+        .background {
+            GeometryReader { geometry in
+                Color.clear.preference(
+                    key: ExperimentPagerRowFrames.self,
+                    value: canSwipeDelete && isPageActive
+                        ? [timer.id: geometry.frame(in: .named(
+                            ExperimentPagerCoordinateSpace.viewport
+                        ))] : [:]
+                )
+            }
+        }
+        .simultaneousGesture(
+            swipeGesture, including: canSwipeDelete && isPageActive ? .all : .subviews
+        )
+        .onChange(of: isPageActive) { _, active in
+            if !active { setDeleteRevealed(false) }
+        }
         .onChange(of: canSwipeDelete) { _, canSwipe in
             if !canSwipe { setDeleteRevealed(false) }
         }
@@ -107,7 +124,7 @@ struct RunningTimerView: View {
                 drag = value.translation.width
             }
             .onEnded { value in
-                guard canSwipeDelete else { return }
+                guard canSwipeDelete, isPageActive else { return }
                 guard abs(value.translation.width) > abs(value.translation.height) else {
                     setDeleteRevealed(false)
                     return
