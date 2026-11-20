@@ -1,4 +1,3 @@
-import LabcordDesignSystem
 import SwiftUI
 
 struct ExperimentPager<Record: View, Timers: View>: View {
@@ -7,7 +6,7 @@ struct ExperimentPager<Record: View, Timers: View>: View {
     @Binding var selection: Int
     @ViewBuilder let record: () -> Record
     @ViewBuilder let timers: () -> Timers
-    @GestureState private var isDragging = false
+    @GestureState private var gestureID: UUID?
     @State private var drag: PageDrag?
     @State private var rowFrames: [UUID: CGRect] = [:]
     @State private var gestureRevision = 0
@@ -18,13 +17,17 @@ struct ExperimentPager<Record: View, Timers: View>: View {
         return drag
     }
 
+    private var settleAnimation: Animation? {
+        reduceMotion ? nil : .easeOut(duration: 0.36)
+    }
+
     var body: some View {
         GeometryReader { geometry in
             HStack(spacing: 0) {
                 page(record(), number: 1, size: geometry.size)
                 page(timers(), number: 2, size: geometry.size)
             }
-            .animation(activeDrag == nil && !reduceMotion ? LabcordMotion.settle.animation : nil) {
+            .animation(activeDrag == nil ? settleAnimation : nil) {
                 $0.offset(x: -CGFloat(selection - 1) * geometry.size.width + dragOffset)
             }
             .frame(width: geometry.size.width, height: geometry.size.height, alignment: .leading)
@@ -34,10 +37,13 @@ struct ExperimentPager<Record: View, Timers: View>: View {
         }
         .coordinateSpace(name: ExperimentPagerCoordinateSpace.viewport)
         .onPreferenceChange(ExperimentPagerRowFrames.self) { rowFrames = $0 }
-        .onChange(of: isDragging) { _, active in
-            guard !active else { return }
-            drag?.isTracking = false
-            drag?.translation = 0
+        .onChange(of: gestureID) { previous, current in
+            guard current == nil, let previous else { return }
+            Task { @MainActor in
+                await Task.yield()
+                guard gestureID == nil, drag?.id == previous else { return }
+                withAnimation(settleAnimation) { drag?.isTracking = false }
+            }
         }
         .onChange(of: selection) { _, _ in invalidateDrag() }
         .onChange(of: scenePhase) { _, phase in
@@ -69,16 +75,17 @@ struct ExperimentPager<Record: View, Timers: View>: View {
             minimumDistance: 12,
             coordinateSpace: .named(ExperimentPagerCoordinateSpace.viewport)
         )
-        .updating($isDragging) { _, active, transaction in
+        .updating($gestureID) { _, identifier, transaction in
             transaction.animation = nil
-            active = true
+            if identifier == nil { identifier = UUID() }
         }
         .onChanged { value in
-            if drag?.isTracking != true {
+            guard let gestureID else { return }
+            if drag?.id != gestureID {
                 let startsOnRow = selection == 2
                     && rowFrames.values.contains { $0.contains(value.startLocation) }
                 drag = PageDrag(
-                    page: selection, revision: gestureRevision,
+                    id: gestureID, page: selection, revision: gestureRevision,
                     movesPage: !startsOnRow
                         && abs(value.translation.width) > abs(value.translation.height)
                 )
@@ -86,21 +93,29 @@ struct ExperimentPager<Record: View, Timers: View>: View {
             drag?.translation = value.translation.width
         }
         .onEnded { value in
-            defer { drag = nil }
-            guard let drag, drag.page == selection, drag.revision == gestureRevision,
-                  drag.movesPage, width > 0 else { return }
-            let distance = value.predictedEndTranslation.width
-            guard abs(distance) > width * 0.25 else { return }
-            selection = min(2, max(1, drag.page + (distance < 0 ? 1 : -1)))
+            settlePage(distance: value.predictedEndTranslation.width, width: width)
+        }
+    }
+
+    private func settlePage(distance: CGFloat, width: CGFloat) {
+        var target = selection
+        if let drag, drag.page == selection, drag.revision == gestureRevision,
+           drag.movesPage, width > 0, abs(distance) > width * 0.25 {
+            target = min(2, max(1, drag.page + (distance < 0 ? 1 : -1)))
+        }
+        withAnimation(settleAnimation) {
+            selection = target
+            drag = nil
         }
     }
 
     private func invalidateDrag() {
         gestureRevision &+= 1
-        if !isDragging { drag = nil }
+        if gestureID == nil { drag = nil }
     }
 
     private struct PageDrag {
+        let id: UUID
         let page: Int
         let revision: Int
         let movesPage: Bool
