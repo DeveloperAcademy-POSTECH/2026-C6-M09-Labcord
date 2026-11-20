@@ -7,13 +7,14 @@ struct ExperimentPager<Record: View, Timers: View>: View {
     @Binding var selection: Int
     @ViewBuilder let record: () -> Record
     @ViewBuilder let timers: () -> Timers
-    @GestureState private var drag: PageDrag?
+    @GestureState private var isDragging = false
+    @State private var drag: PageDrag?
     @State private var rowFrames: [UUID: CGRect] = [:]
     @State private var gestureRevision = 0
 
     private var activeDrag: PageDrag? {
         guard let drag, drag.page == selection, drag.revision == gestureRevision,
-              drag.movesPage else { return nil }
+              drag.movesPage, drag.isTracking else { return nil }
         return drag
     }
 
@@ -33,11 +34,16 @@ struct ExperimentPager<Record: View, Timers: View>: View {
         }
         .coordinateSpace(name: ExperimentPagerCoordinateSpace.viewport)
         .onPreferenceChange(ExperimentPagerRowFrames.self) { rowFrames = $0 }
-        .onChange(of: selection) { _, _ in gestureRevision &+= 1 }
-        .onChange(of: scenePhase) { _, phase in
-            if phase != .active { gestureRevision &+= 1 }
+        .onChange(of: isDragging) { _, active in
+            guard !active else { return }
+            drag?.isTracking = false
+            drag?.translation = 0
         }
-        .onDisappear { gestureRevision &+= 1 }
+        .onChange(of: selection) { _, _ in invalidateDrag() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active { invalidateDrag() }
+        }
+        .onDisappear { invalidateDrag() }
     }
 
     private var dragOffset: CGFloat {
@@ -63,31 +69,42 @@ struct ExperimentPager<Record: View, Timers: View>: View {
             minimumDistance: 12,
             coordinateSpace: .named(ExperimentPagerCoordinateSpace.viewport)
         )
-        .updating($drag) { value, state, transaction in
+        .updating($isDragging) { _, active, transaction in
             transaction.animation = nil
-            if state == nil {
+            active = true
+        }
+        .onChanged { value in
+            if drag?.isTracking != true {
                 let startsOnRow = selection == 2
                     && rowFrames.values.contains { $0.contains(value.startLocation) }
-                state = PageDrag(
+                drag = PageDrag(
                     page: selection, revision: gestureRevision,
                     movesPage: !startsOnRow
                         && abs(value.translation.width) > abs(value.translation.height)
                 )
             }
-            state?.translation = value.translation.width
+            drag?.translation = value.translation.width
         }
         .onEnded { value in
-            guard let drag = activeDrag, width > 0 else { return }
+            defer { drag = nil }
+            guard let drag, drag.page == selection, drag.revision == gestureRevision,
+                  drag.movesPage, width > 0 else { return }
             let distance = value.predictedEndTranslation.width
             guard abs(distance) > width * 0.25 else { return }
             selection = min(2, max(1, drag.page + (distance < 0 ? 1 : -1)))
         }
     }
 
+    private func invalidateDrag() {
+        gestureRevision &+= 1
+        if !isDragging { drag = nil }
+    }
+
     private struct PageDrag {
         let page: Int
         let revision: Int
         let movesPage: Bool
+        var isTracking = true
         var translation: CGFloat = 0
     }
 }
