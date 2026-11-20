@@ -65,13 +65,17 @@ struct PauseOverlay: ViewModifier {
 
     func body(content: Content) -> some View {
         content.overlay {
-            if store.isPausePresented {
-                ExperimentPauseView(
-                    store: store.scope(state: \.pause, action: \.pause),
-                    timerStore: store.scope(state: \.timer, action: \.timer),
-                    canCloseSession: store.canCloseSession
-                )
+            ZStack {
+                if store.isPausePresented {
+                    ExperimentPauseView(
+                        store: store.scope(state: \.pause, action: \.pause),
+                        timerStore: store.scope(state: \.timer, action: \.timer),
+                        canCloseSession: store.canCloseSession
+                    )
+                    .transition(.opacity)
+                }
             }
+            .labcordMotion(.state, value: store.isPausePresented)
         }
     }
 }

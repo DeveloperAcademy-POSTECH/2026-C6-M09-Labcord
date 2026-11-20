@@ -27,10 +27,9 @@ struct ExperimentRecordView: View {
                 Text(title)
                     .font(.caption2)
                     .foregroundStyle(.white)
-                    .frame(
-                        height: WatchScreenMetrics.scaledHeight(35),
-                        alignment: .topLeading
-                    )
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 LazyVGrid(
                     columns: [
@@ -49,26 +48,30 @@ struct ExperimentRecordView: View {
             .padding(.bottom, WatchScreenMetrics.scaledHeight(23))
 
             VStack(spacing: 4) {
-                Button("일시정지", systemImage: "pause.fill", action: onPauseTap)
-                    .font(.system(size: 18.5, weight: .medium))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: buttonHeight)
-                    .buttonStyle(.plain)
-                    .background(
-                        Color("General/LiveActivity/Secondary"),
-                        in: RoundedRectangle(cornerRadius: .infinity)
-                    )
+                Button(action: onPauseTap) {
+                    Label("일시정지", systemImage: "pause.fill")
+                        .font(.system(size: 18.5, weight: .medium))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: buttonHeight)
+                        .background(
+                            Color("General/LiveActivity/Secondary"),
+                            in: RoundedRectangle(cornerRadius: .infinity)
+                        )
+                }
+                .buttonStyle(PressFeedbackButtonStyle())
 
-                Button("종료", systemImage: "stop.fill", action: onEndTap)
-                    .font(.system(size: 18.5, weight: .medium))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: buttonHeight)
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.red)
-                    .background(
-                        Color(.red).opacity(0.15),
-                        in: RoundedRectangle(cornerRadius: .infinity)
-                    )
+                Button(action: onEndTap) {
+                    Label("종료", systemImage: "stop.fill")
+                        .font(.system(size: 18.5, weight: .medium))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: buttonHeight)
+                        .foregroundStyle(.red)
+                        .background(
+                            Color(.red).opacity(0.15),
+                            in: RoundedRectangle(cornerRadius: .infinity)
+                        )
+                }
+                .buttonStyle(PressFeedbackButtonStyle())
             }
         }
     }

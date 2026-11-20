@@ -56,7 +56,7 @@ struct NativeVideoPlayerPresenter: UIViewControllerRepresentable {
             controller.modalPresentationStyle = .fullScreen
             hasPresentedPlayer = true
             presentedPlayerController = controller
-            present(controller, animated: false) {
+            present(controller, animated: !UIAccessibility.isReduceMotionEnabled) {
                 controller.presentationController?.delegate = self
             }
         }

@@ -5,8 +5,6 @@ public struct GestureToast: View {
     private let subtitle: String
     private let showsFollowingIcon: Bool
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
     public init(
         title: String,
         subtitle: String,
@@ -47,7 +45,7 @@ public struct GestureToast: View {
                 .overlay { Rectangle().fill(Color(.Experiment.Fill.dark)) }
         }
         .clipShape(RoundedRectangle(cornerRadius: LayoutTokens.radiusSm, style: .circular))
-        .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: showsFollowingIcon)
+        .labcordMotion(.state, value: showsFollowingIcon)
         .accessibilityElement(children: .combine)
     }
 }

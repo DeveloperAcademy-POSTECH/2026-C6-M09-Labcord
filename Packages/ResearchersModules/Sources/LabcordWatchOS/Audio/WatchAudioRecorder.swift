@@ -68,9 +68,10 @@ public final class WatchAudioRecorder {
         let format = input.outputFormat(forBus: 0)
         guard format.commonFormat == .pcmFormatFloat32, !format.isInterleaved,
               format.channelCount > 0 else { throw WatchAudioError.invalidAudio }
+        let converter = try WatchAudioPCMConverter(inputSampleRate: format.sampleRate)
         let header = WatchAudioHeader(
             experimentID: experimentID, recordingID: recordingID, startedAt: .now,
-            sampleRate: Int(format.sampleRate)
+            sampleRate: WatchAudioPCMConverter.sampleRate
         )
         self.header = header
         do {
@@ -97,7 +98,7 @@ public final class WatchAudioRecorder {
             input: input, format: format, continuation: continuation,
             events: eventContinuation
         )
-        writer = Task { await self.consume(stream, header: header) }
+        writer = Task { await self.consume(stream, converter: converter, header: header) }
         interruptions = monitorInterruptions(header)
         do {
             try engine.start()
@@ -123,8 +124,18 @@ public final class WatchAudioRecorder {
                 continuation.finish(throwing: WatchAudioError.invalidAudio)
                 return
             }
-            var data = Data(capacity: Int(buffer.frameLength) * 2)
             let frameCount = Int(buffer.frameLength)
+            guard frameCount > 0 else { return }
+            let data = Data(bytes: samples, count: frameCount * MemoryLayout<Float>.stride)
+            switch continuation.yield(data) {
+            case .dropped:
+                continuation.finish(throwing: WatchAudioError.bufferOverflow)
+                return
+            case .enqueued:
+                break
+            default:
+                return
+            }
             var powers = [Float](repeating: 0, count: 7)
             var sampleCounts = [Int](repeating: 0, count: 7)
             for index in 0..<frameCount {
@@ -132,20 +143,14 @@ public final class WatchAudioRecorder {
                 let barIndex = min(6, index * 7 / frameCount)
                 powers[barIndex] += sample * sample
                 sampleCounts[barIndex] += 1
-                var value = Int16(max(-1, min(1, sample)) * 32767).littleEndian
-                withUnsafeBytes(of: &value) { data.append(contentsOf: $0) }
             }
-            if case .dropped = continuation.yield(data) {
-                continuation.finish(throwing: WatchAudioError.bufferOverflow)
-            } else if frameCount > 0 {
-                let levels = powers.indices.map { index -> Float in
-                    guard sampleCounts[index] > 0 else { return 0 }
-                    let rms = sqrt(powers[index] / Float(sampleCounts[index]))
-                    let decibels = 20 * log10(max(rms, 0.0001))
-                    return min(1, max(0, (decibels + 45) / 17))
-                }
-                events.yield(.levels(levels))
+            let levels = powers.indices.map { index -> Float in
+                guard sampleCounts[index] > 0 else { return 0 }
+                let rms = sqrt(powers[index] / Float(sampleCounts[index]))
+                let decibels = 20 * log10(max(rms, 0.0001))
+                return min(1, max(0, (decibels + 45) / 17))
             }
+            events.yield(.levels(levels))
         }
     }
 
@@ -229,16 +234,27 @@ extension WatchAudioRecorder {
 
 private extension WatchAudioRecorder {
     func consume(
-        _ stream: AsyncThrowingStream<Data, Error>, header: WatchAudioHeader
+        _ stream: AsyncThrowingStream<Data, Error>, converter: WatchAudioPCMConverter,
+        header: WatchAudioHeader
     ) async {
         var sequence = 0
         var firstSample: Int64 = 0
         var failure: WatchAudioError?
         var archiveFailed = false
         var pending = Data()
+        var iterator = stream.makeAsyncIterator()
         do {
-            for try await pcm in stream {
-                pending.append(pcm)
+            while true {
+                let source: Data?
+                do {
+                    source = try await iterator.next()
+                } catch {
+                    failure = (error as? WatchAudioError) ?? .interrupted
+                    engine.stop()
+                    removeTap()
+                    source = nil
+                }
+                pending.append(try source.map(converter.append) ?? converter.finish())
                 while pending.count >= 16_384 {
                     let chunk = WatchAudioChunk(
                         header: header, sequence: sequence, firstSample: firstSample,
@@ -253,9 +269,10 @@ private extension WatchAudioRecorder {
                     sequence += 1
                     events?.yield(.retaining(header, throughSample: firstSample))
                 }
+                if source == nil { break }
             }
         } catch {
-            failure = (error as? WatchAudioError) ?? .interrupted
+            failure = failure ?? (error as? WatchAudioError) ?? .interrupted
             engine.stop()
             removeTap()
         }
@@ -269,12 +286,20 @@ private extension WatchAudioRecorder {
                 sequence += 1
             } catch { failure = (error as? WatchAudioError) ?? .interrupted }
         }
-        failure = await seal(
+        await finishWriting(header, sequence: sequence, firstSample: firstSample, failure: failure)
+    }
+
+    func finishWriting(
+        _ header: WatchAudioHeader, sequence: Int, firstSample: Int64, failure: WatchAudioError?
+    ) async {
+        let failure = await seal(
             header, sequence: sequence, firstSample: firstSample, failure: failure
         )
         if let failure { events?.yield(.failed(failure)) }
         events?.finish()
         events = nil
+        continuation?.finish()
+        continuation = nil
         self.header = nil
         writer = nil
         interruptions?.cancel()

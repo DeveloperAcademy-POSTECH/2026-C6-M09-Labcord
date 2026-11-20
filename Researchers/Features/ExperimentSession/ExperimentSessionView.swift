@@ -11,7 +11,6 @@ import LabcordiOS
 import SwiftUI
 
 struct ExperimentSessionView: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.scenePhase) private var scenePhase
     @State private var voiceToast: VoiceToastPresentation?
@@ -102,10 +101,12 @@ struct ExperimentSessionView: View {
                 CapturedPhotoView(
                     photoData: data,
                     isSaving: captureStore.photo.isSaving,
+                    autoSaveEndsAt: captureStore.photo.autoSaveEndsAt,
                     onRetake: { captureStore.send(.photoRetakeAndCaptureRequested) },
                     onClose: { captureStore.send(.photo(.retakeRequested)) },
                     onSave: { captureStore.send(.photo(.saveRequested)) }
                 )
+                .id(captureStore.photo.recordID)
             }
         }
         .overlay {
@@ -141,40 +142,38 @@ struct ExperimentSessionView: View {
             }
         }
         .overlay {
-            if isPortraitVoiceActivityVisible {
-                GeometryReader { geometry in
-                    VoiceLiveActivityView(
-                        store: voiceStore,
-                        onRestart: { store.send(.voiceStartRequested) },
-                        onFailureAutoDismiss: {
-                            voiceToast = VoiceToastPresentation(kind: .recordingFailure)
-                        },
-                        availableWidth: geometry.size.width
-                    )
-                    .padding(.top, 14)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                }
-                .ignoresSafeArea(.container, edges: .top)
-                .transition(.opacity)
-            } else if isVideoActivityVisible {
-                GeometryReader { geometry in
-                    VideoLiveActivityView(store: videoStore, availableWidth: geometry.size.width)
+            ZStack {
+                if isPortraitVoiceActivityVisible {
+                    GeometryReader { geometry in
+                        VoiceLiveActivityView(
+                            store: voiceStore,
+                            onRestart: { store.send(.voiceStartRequested) },
+                            onFailureAutoDismiss: {
+                                voiceToast = VoiceToastPresentation(kind: .recordingFailure)
+                            },
+                            availableWidth: geometry.size.width
+                        )
+                        .padding(.top, 14)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    }
+                    .ignoresSafeArea(.container, edges: .top)
+                    .transition(.opacity)
+                } else if isVideoActivityVisible {
+                    GeometryReader { geometry in
+                        VideoLiveActivityView(
+                            store: videoStore, availableWidth: geometry.size.width
+                        )
                         .id(videoStore.sessionID)
                         .padding(.top, 14)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    }
+                    .ignoresSafeArea(.container, edges: .top)
+                    .transition(.opacity)
                 }
-                .ignoresSafeArea(.container, edges: .top)
-                .transition(.opacity)
             }
+            .labcordMotion(.state, value: isPortraitVoiceActivityVisible)
+            .labcordMotion(.state, value: isVideoActivityVisible)
         }
-        .animation(
-            reduceMotion ? nil : .spring(duration: 0.3, bounce: 0.08),
-            value: isPortraitVoiceActivityVisible
-        )
-        .animation(
-            reduceMotion ? nil : .spring(duration: 0.3, bounce: 0.08),
-            value: isVideoActivityVisible
-        )
         .modifier(
             WatchConnectedActivityOverlay(
                 noticeID: isWatchConnectedActivityVisible ? store.watchConnectedNoticeID : nil
@@ -215,11 +214,15 @@ struct ExperimentSessionView: View {
         }
         .modifier(PauseOverlay(store: store))
         .overlay {
-            if store.isGestureGuidePresented {
-                ExperimentGestureGuideView {
-                    store.send(.gestureGuidePresented(false))
+            ZStack {
+                if store.isGestureGuidePresented {
+                    ExperimentGestureGuideView {
+                        store.send(.gestureGuidePresented(false))
+                    }
+                    .transition(.opacity)
                 }
             }
+            .labcordMotion(.state, value: store.isGestureGuidePresented)
         }
         .task(id: [store.isRemotePreview, store.isSetupReady]) {
             if store.isRemotePreview || store.isSetupReady {

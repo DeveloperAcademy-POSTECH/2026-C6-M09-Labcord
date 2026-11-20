@@ -115,7 +115,7 @@ struct ProtocolReviewView: View {
                     }
                 }
             }
-            .animation(.easeInOut(duration: 0.3), value: timerEditor?.id)
+            .labcordMotion(.layout, value: timerEditor?.id)
         }
     }
 

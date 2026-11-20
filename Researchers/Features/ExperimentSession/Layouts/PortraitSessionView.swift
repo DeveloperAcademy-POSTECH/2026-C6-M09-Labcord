@@ -21,7 +21,7 @@ struct PortraitSessionView: View {
     let onShowGestureGuide: () -> Void
 
     private var areRecordButtonsDisabled: Bool {
-        PhoneWatchAudioService.shared.hasUnsettledRecording(in: sessionStore.experimentID)
+        PhoneWatchAudioService.shared.isCapturing(in: sessionStore.experimentID)
             || sessionStore.watchCommand != nil
             || sessionStore.watchMediaCommand != nil
             || sessionStore.voice.phase != .hidden

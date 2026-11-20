@@ -34,6 +34,7 @@ struct OnboardingView: View {
                         pageControl
                     }
                 }
+                .labcordMotion(.state, value: store.page)
                 .padding(.horizontal, LayoutTokens.spacing16)
                 .padding(.top, 19)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -50,7 +51,14 @@ struct OnboardingView: View {
     private var pageControl: some View {
         PageControl(
             pageCount: 3,
-            selection: .constant(store.page.rawValue + 1),
+            selection: Binding(
+                get: { store.page.rawValue + 1 },
+                set: { selection in
+                    guard let page = OnboardingFeature.Page(rawValue: selection - 1)
+                    else { return }
+                    store.send(.pageSelected(page))
+                }
+            ),
             appearance: .general
         )
     }

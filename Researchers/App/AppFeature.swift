@@ -85,8 +85,8 @@ struct AppFeature {
         }
         .forEach(\.path, action: \.path)
         watchCompletionNavigationReducer
-        watchContextReducer
         watchPendingOpenReducer
+        watchContextReducer
     }
 }
 

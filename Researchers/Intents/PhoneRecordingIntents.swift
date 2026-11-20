@@ -1,4 +1,17 @@
 import AppIntents
+import LabcordShared
+
+#if os(watchOS)
+@MainActor
+private func runRecordingAction(_ shortcut: WatchRecordingShortcut) async throws {
+    try await WatchRecordingShortcutCenter.shared.performLocal(shortcut)
+}
+#else
+@MainActor
+private func runRecordingAction(_ kind: PhoneIntentRuntime.Kind) async throws {
+    _ = try await PhoneIntentRuntime.shared.perform(kind)
+}
+#endif
 
 struct TogglePhoneVoiceRecordingIntent: AppIntent {
     static let title: LocalizedStringResource = "Watch 실험 음성 기록"
@@ -11,7 +24,7 @@ struct TogglePhoneVoiceRecordingIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        _ = try await PhoneIntentRuntime.shared.perform(.voice)
+        try await runRecordingAction(.voice)
         return .result()
     }
 }
@@ -25,7 +38,7 @@ struct TakePhoneExperimentPhotoIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        _ = try await PhoneIntentRuntime.shared.perform(.photo)
+        try await runRecordingAction(.photo)
         return .result()
     }
 }
@@ -33,18 +46,19 @@ struct TakePhoneExperimentPhotoIntent: AppIntent {
 struct StartPhoneExperimentVideoIntent: AppIntent {
     static let persistentIdentifier = "TogglePhoneExperimentVideoIntent"
     static let title: LocalizedStringResource = "Watch 실험 영상 녹화 요청"
-    static let description = IntentDescription("Watch 실험 화면에서 영상 녹화를 시작합니다.")
+    static let description = IntentDescription("Watch에서 영상 녹화를 시작하고, 다시 실행하면 중지합니다.")
     static let supportedModes: IntentModes = .foreground(.immediate)
     static let authenticationPolicy: IntentAuthenticationPolicy =
         .requiresLocalDeviceAuthentication
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        _ = try await PhoneIntentRuntime.shared.perform(.video)
+        try await runRecordingAction(.video)
         return .result()
     }
 }
 
+#if os(iOS)
 struct PhoneAppShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
@@ -64,3 +78,4 @@ struct PhoneAppShortcuts: AppShortcutsProvider {
         )
     }
 }
+#endif

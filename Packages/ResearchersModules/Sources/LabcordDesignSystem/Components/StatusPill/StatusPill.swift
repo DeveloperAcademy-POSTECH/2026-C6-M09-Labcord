@@ -56,8 +56,10 @@ public struct StatusPill: View {
                             ? Color(.General.Brand.primary) : Color(.Experiment.Brand.primary)
                     )
                     .accessibilityHidden(true)
+                    .transition(.opacity)
             }
         }
+        .labcordMotion(.state, value: showIcon)
         .padding(.horizontal, LayoutTokens.spacing20)
         .padding(.vertical, LayoutTokens.spacing12)
     }

@@ -29,9 +29,9 @@ extension WatchConnectivitySessionManaging {
         observerStore.removeUserInfoObserver(id)
     }
 
-    public func transferUserInfo(_ userInfo: [String: Any]) {
-        guard let session, session.activationState == .activated else { return }
-        session.transferUserInfo(userInfo)
+    @discardableResult
+    public func transferUserInfo(_ userInfo: [String: Any]) -> Bool {
+        WatchConnectivityDiagnostics.queueUserInfo(userInfo, on: session)
     }
 
     public func activate() {

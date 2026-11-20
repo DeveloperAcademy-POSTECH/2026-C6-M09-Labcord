@@ -13,7 +13,7 @@ import LabcordWatchOS
 @Reducer
 struct ExperimentFeature {
     enum Overlay: Equatable { case stop, end }
-    enum CloseResult: Equatable { case paused, completed }
+    enum CloseResult: Equatable { case paused, completed, sessionUnavailable }
     enum TimerStartSyncResult {
         case confirmed(WatchExperimentSnapshot)
         case retry
@@ -65,6 +65,7 @@ struct ExperimentFeature {
         case endDelayElapsed
         case closeSucceeded(WatchExperimentCommand.Operation)
         case closeFailed
+        case closeBlockedByAudio
     }
 
     nonisolated enum CancelID: Hashable, Sendable {
@@ -223,6 +224,12 @@ struct ExperimentFeature {
                 state.isClosing = false
                 state.overlay = nil
                 state.closeResult = operation == .pause ? .paused : .completed
+                return .none
+
+            case .closeBlockedByAudio:
+                state.isClosing = false
+                state.overlay = nil
+                state.errorMessage = "음성 녹음을 저장하거나 취소한 뒤 다시 시도해 주세요."
                 return .none
 
             case .closeFailed:

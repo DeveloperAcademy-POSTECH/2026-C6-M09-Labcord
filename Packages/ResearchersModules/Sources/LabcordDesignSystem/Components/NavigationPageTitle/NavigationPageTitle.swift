@@ -34,7 +34,7 @@ public struct NavigationPageTitle: View {
                         .frame(width: 50, height: 50)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressFeedbackButtonStyle())
                 .accessibilityLabel("뒤로")
             }
 

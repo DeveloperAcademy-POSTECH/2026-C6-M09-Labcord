@@ -5,6 +5,7 @@ import SwiftUI
 
 struct AppView: View {
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var store = PhoneIntentRuntime.shared.store
 
     private var showsLocalRecording: Bool {
@@ -23,6 +24,7 @@ struct AppView: View {
         Group {
             if let onboardingStore = store.scope(state: \.onboarding, action: \.onboarding) {
                 OnboardingView(store: onboardingStore)
+                    .transition(.opacity)
             } else {
                 NavigationStack(path: $store.scope(\.path, action: \.path)) {
                     HomeView(store: store.scope(state: \.home, action: \.home))
@@ -88,8 +90,10 @@ struct AppView: View {
                 .onChange(of: store.path.ids.last) { _, _ in
                     SessionOrientation.reset()
                 }
+                .transition(.opacity)
             }
         }
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: store.onboarding == nil)
         .overlay {
             if store.onboarding == nil, !showsLocalRecording {
                 WatchVoiceLiveActivityOverlay()
@@ -149,6 +153,7 @@ struct AppView: View {
 }
 
 private struct WatchVoiceLiveActivityOverlay: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isRecordingVisible = false
     private var recording: PhoneWatchAudioService.LiveRecording? {
         PhoneWatchAudioService.shared.liveRecording
@@ -168,8 +173,10 @@ private struct WatchVoiceLiveActivityOverlay: View {
                 }
                 .padding(.top, 14)
                 .frame(maxWidth: .infinity, alignment: .top)
+                .transition(.opacity)
             }
         }
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.18), value: isRecordingVisible)
         .ignoresSafeArea(.container, edges: .top)
         .allowsHitTesting(false)
         .task(id: recording) {

@@ -12,6 +12,7 @@ import SwiftUI
 
 struct VoiceRecordingOverlay: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
     let store: StoreOf<VoiceRecordingFeature>
 
     @State private var isSpeaking = false
@@ -122,7 +123,7 @@ struct VoiceRecordingOverlay: View {
 
     private var microphoneButton: some View {
         ZStack {
-            if isSpeaking && !reduceMotion {
+            if isSpeaking && !reduceMotion && scenePhase == .active {
                 TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
                     ZStack {
                         ForEach(0..<3) { index in

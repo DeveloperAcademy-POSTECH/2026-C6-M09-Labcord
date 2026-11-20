@@ -17,7 +17,7 @@ struct LandscapeSessionView: View {
     let sessionStore: StoreOf<ExperimentSessionFeature>
 
     private var areRecordButtonsDisabled: Bool {
-        PhoneWatchAudioService.shared.hasUnsettledRecording(in: sessionStore.experimentID)
+        PhoneWatchAudioService.shared.isCapturing(in: sessionStore.experimentID)
             || sessionStore.watchCommand != nil
             || sessionStore.watchMediaCommand != nil
             || sessionStore.voice.phase != .hidden

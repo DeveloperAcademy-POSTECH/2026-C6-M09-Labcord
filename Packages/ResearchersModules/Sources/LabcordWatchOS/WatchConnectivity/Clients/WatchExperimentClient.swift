@@ -12,32 +12,33 @@ public enum WatchConnectionStatus: Equatable, Sendable {
 
 public struct WatchExperimentClient: Sendable {
     public var send: @Sendable (WatchExperimentCommand) async throws -> WatchExperimentResponse
-    public var snapshots: @Sendable () async -> AsyncStream<WatchExperimentSnapshot>
+    public var snapshots: @Sendable (UUID) async -> AsyncStream<WatchExperimentSnapshot>
     public var screens: @Sendable () async -> AsyncStream<WatchScreenSnapshot>
     public var isReachable: @Sendable () async -> Bool
     public var connectionStatus: @Sendable () async -> WatchConnectionStatus
     public var retryActivation: @Sendable () async -> Void
-    public var list: @Sendable () async throws -> [WatchExperimentSummary]
-    public var lists: @Sendable () async -> AsyncStream<[WatchExperimentSummary]>
-    public var cachedList: @Sendable () async -> [WatchExperimentSummary]?
-    public var requestPhoneSession: @Sendable (UUID) async -> Void
-    public var cancelPhoneSession: @Sendable (UUID) async -> Void
+    public var list: @Sendable () async throws -> WatchExperimentList
+    public var lists: @Sendable () async -> AsyncStream<WatchExperimentListUpdate>
+    public var requestPhoneSession: @Sendable (WatchSessionOpenRequest) async throws -> Void
+    public var cancelPhoneSession: @Sendable (WatchSessionOpenRequest) async -> Void
     public var enterPhoneSession: @Sendable (UUID) async -> Void
     public var leavePhoneSession: @Sendable (UUID) async -> Void
 
     public init(
         send: @escaping @Sendable (WatchExperimentCommand) async throws -> WatchExperimentResponse,
-        snapshots: @escaping @Sendable () async -> AsyncStream<WatchExperimentSnapshot>,
+        snapshots: @escaping @Sendable (UUID) async -> AsyncStream<WatchExperimentSnapshot>,
         isReachable: @escaping @Sendable () async -> Bool,
         connectionStatus: @escaping @Sendable () async -> WatchConnectionStatus,
         retryActivation: @escaping @Sendable () async -> Void,
-        list: @escaping @Sendable () async throws -> [WatchExperimentSummary] = { [] },
-        lists: @escaping @Sendable () async -> AsyncStream<[WatchExperimentSummary]> = {
+        list: @escaping @Sendable () async throws -> WatchExperimentList = {
+            throw WatchExperimentError.notReachable
+        },
+        lists: @escaping @Sendable () async -> AsyncStream<WatchExperimentListUpdate> = {
             AsyncStream { $0.finish() }
         },
-        cachedList: @escaping @Sendable () async -> [WatchExperimentSummary]? = { nil },
-        requestPhoneSession: @escaping @Sendable (UUID) async -> Void = { _ in },
-        cancelPhoneSession: @escaping @Sendable (UUID) async -> Void = { _ in },
+        requestPhoneSession: @escaping @Sendable (WatchSessionOpenRequest) async throws -> Void
+            = { _ in throw WatchExperimentError.notReachable },
+        cancelPhoneSession: @escaping @Sendable (WatchSessionOpenRequest) async -> Void = { _ in },
         enterPhoneSession: @escaping @Sendable (UUID) async -> Void = { _ in },
         leavePhoneSession: @escaping @Sendable (UUID) async -> Void = { _ in },
         screens: @escaping @Sendable () async -> AsyncStream<WatchScreenSnapshot> = {
@@ -52,7 +53,6 @@ public struct WatchExperimentClient: Sendable {
         self.retryActivation = retryActivation
         self.list = list
         self.lists = lists
-        self.cachedList = cachedList
         self.requestPhoneSession = requestPhoneSession
         self.cancelPhoneSession = cancelPhoneSession
         self.enterPhoneSession = enterPhoneSession
@@ -73,24 +73,23 @@ extension WatchExperimentClient: DependencyKey {
                     guard record.experimentID == command.experimentID else {
                         throw WatchExperimentError.invalidPayload
                     }
-                    let data = try JSONEncoder().encode(record)
-                    await connectivity.records.receive(data)
+                    await connectivity.records.receive(record)
                 }
                 return response
             },
-            snapshots: {
+            snapshots: { experimentID in
                 await connectivity.activate()
                 if let data = await connectivity.session?.receivedApplicationContext[
                     WatchExperimentTransport.snapshotKey
                 ] as? Data {
                     await connectivity.experiments.receiveSnapshot(data)
                 }
-                return await snapshotStream(connectivity)
+                return await snapshotStream(connectivity, experimentID: experimentID)
 
             },
             isReachable: {
                 await connectivity.activate()
-                return await connectivity.session?.isReachable ?? false
+                return await canInteract(connectivity)
             },
             connectionStatus: {
                 await connectionStatus(connectivity)
@@ -104,14 +103,11 @@ extension WatchExperimentClient: DependencyKey {
             lists: {
                 await connectivity.experimentLists()
             },
-            cachedList: {
-                await connectivity.cachedExperiments()
+            requestPhoneSession: { request in
+                try await connectivity.requestPhoneSession(request)
             },
-            requestPhoneSession: { id in
-                await connectivity.requestPhoneSession(id)
-            },
-            cancelPhoneSession: { id in
-                await connectivity.cancelPhoneSession(id)
+            cancelPhoneSession: { request in
+                await connectivity.cancelPhoneSession(request)
             },
             enterPhoneSession: { id in
                 await connectivity.enterPhoneSession(id)
@@ -132,24 +128,31 @@ extension WatchExperimentClient: DependencyKey {
     ) -> WatchConnectionStatus {
         guard let session = connectivity.session else { return .unsupported }
         if session.activationState == .activated {
-            return session.isReachable ? .reachable : .unreachable
+            return canInteract(connectivity) ? .reachable : .unreachable
         }
         if connectivity.activationFailed { return .activationFailed }
         return .activating
     }
 
     @MainActor
+    private static func canInteract(_ connectivity: WatchConnectivitySession) -> Bool {
+        guard let session = connectivity.session else { return false }
+        let state = WatchConnectivityState(session)
+        return state.canTransfer && state.reachable
+    }
+
+    @MainActor
     private static func snapshotStream(
-        _ connectivity: WatchConnectivitySession
+        _ connectivity: WatchConnectivitySession, experimentID: UUID
     ) -> AsyncStream<WatchExperimentSnapshot> {
         connectivity.experiments.refreshSnapshot = { [weak connectivity] id in
-            guard let connectivity else { return }
+            guard let connectivity, canInteract(connectivity) else { return }
             _ = try? await connectivity.experiments.send(
                 WatchExperimentCommand(operation: .snapshot, experimentID: id),
                 session: connectivity.session
             )
         }
-        return connectivity.experiments.stream()
+        return connectivity.experiments.stream(experimentID: experimentID)
     }
 
     @MainActor
@@ -162,7 +165,7 @@ extension WatchExperimentClient: DependencyKey {
             connectivity.experiments.receiveScreen(data)
         }
         connectivity.experiments.refreshScreen = { [weak connectivity] in
-            guard let connectivity else { return }
+            guard let connectivity, canInteract(connectivity) else { return }
             _ = try? await connectivity.experiments.send(
                 WatchExperimentCommand(operation: .screen), session: connectivity.session
             )
@@ -180,7 +183,9 @@ extension WatchExperimentClient: DependencyKey {
             "WatchExperimentClient.connectionStatus", placeholder: .unsupported
         ),
         retryActivation: unimplemented("WatchExperimentClient.retryActivation"),
-        list: unimplemented("WatchExperimentClient.list", placeholder: [])
+        list: unimplemented(
+            "WatchExperimentClient.list", placeholder: WatchExperimentList(experiments: [])
+        )
     )
 }
 

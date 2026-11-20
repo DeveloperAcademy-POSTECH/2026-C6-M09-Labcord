@@ -6,7 +6,8 @@ struct ProtocolTimerEditorSheet: View {
     let onConfirm: (Int?, Int) -> Void
     let onDelete: (Int?) -> Void
     let onCancel: () -> Void
-    @GestureState private var dragOffset: CGFloat = 0
+    @State private var dragOffset: CGFloat = 0
+    @GestureState private var isDragging = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -32,21 +33,42 @@ struct ProtocolTimerEditorSheet: View {
         .frame(maxWidth: .infinity)
         .background(Color("General/Background/Grouped/Secondary"))
         .clipShape(UnevenRoundedRectangle(topLeadingRadius: 28, topTrailingRadius: 28))
-        .offset(y: reduceMotion ? 0 : dragOffset)
+        .offset(y: dragOffset)
+        .onChange(of: isDragging) { _, active in
+            if !active { restoreOffset() }
+        }
     }
 
     private var grabberDrag: some Gesture {
         DragGesture(coordinateSpace: .global)
-            .updating($dragOffset) { value, offset, _ in
+            .updating($isDragging) { _, active, transaction in
+                active = true
+                transaction.animation = nil
+            }
+            .onChanged { value in
                 let translation = value.translation
-                offset = translation.height > abs(translation.width) ? translation.height : 0
+                var transaction = Transaction(animation: nil)
+                transaction.disablesAnimations = true
+                withTransaction(transaction) {
+                    dragOffset = translation.height > abs(translation.width)
+                        ? translation.height : 0
+                }
             }
             .onEnded { value in
                 let translation = value.translation
                 if translation.height > 80, translation.height > abs(translation.width) {
                     onCancel()
+                } else {
+                    restoreOffset()
                 }
             }
+    }
+
+    private func restoreOffset() {
+        guard dragOffset > 0 else { return }
+        withAnimation(reduceMotion ? nil : LabcordMotion.settle.animation) {
+            dragOffset = 0
+        }
     }
 }
 

@@ -6,13 +6,25 @@
 //
 
 import ComposableArchitecture
+import Foundation
+import LabcordShared
 import SwiftUI
 
 struct SortRecordView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let isPhoneResultReady: Bool
     let onClose: () -> Void
-    @State private var store = Store(initialState: SortRecordFeature.State()) {
-        SortRecordFeature()
+    @State private var store: StoreOf<SortRecordFeature>
+
+    init(
+        experimentID: UUID, isPhoneResultReady: Bool,
+        sendCommand: @escaping SortRecordFeature.SendCommand, onClose: @escaping () -> Void
+    ) {
+        self.isPhoneResultReady = isPhoneResultReady
+        self.onClose = onClose
+        _store = State(initialValue: Store(initialState: .init(experimentID: experimentID)) {
+            SortRecordFeature(sendCommand: sendCommand)
+        })
     }
 
     var body: some View {
@@ -41,19 +53,23 @@ struct SortRecordView: View {
                 .padding(.bottom, 10)
             } else {
                 VStack(alignment: .center, spacing: 8) {
-                    Text("실험 기록을\n정리중이에요.")
+                    Text(store.feedback ?? "iPhone 결과 화면을 기다리고 있어요.")
                         .multilineTextAlignment(.center)
 
-                    ProgressView()
-                        .progressViewStyle(.circular)
+                    if store.isQuerying {
+                        ProgressView()
+                    } else {
+                        Button("다시 확인") { store.send(.requeryTapped) }
+                    }
                 }
+                .padding(.horizontal, 9.5)
             }
         }
-        .onAppear {
-            if isPhoneResultReady { store.send(.phoneResultReady) }
-        }
-        .onChange(of: isPhoneResultReady) { _, ready in
-            if ready { store.send(.phoneResultReady) }
+        .animation(
+            reduceMotion ? nil : .easeOut(duration: 0.18), value: store.isPhoneResultReady
+        )
+        .onChange(of: isPhoneResultReady, initial: true) { _, ready in
+            store.send(.phoneResultChanged(ready))
         }
         .onChange(of: store.shouldClose) { _, shouldClose in
             if shouldClose { onClose() }
@@ -62,19 +78,22 @@ struct SortRecordView: View {
         .preferredColorScheme(.dark)
         .navigationBarBackButtonHidden(true)
         .toolbar {
-            if store.isPhoneResultReady {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        store.send(.closeTapped)
-                    } label: {
-                        Image(systemName: "xmark")
-                    }
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    store.send(.closeTapped)
+                } label: {
+                    Image(systemName: "xmark")
                 }
+                .accessibilityLabel("닫기")
             }
         }
     }
 }
 
 #Preview {
-    SortRecordView(isPhoneResultReady: true) {}
+    SortRecordView(
+        experimentID: UUID(), isPhoneResultReady: true,
+        sendCommand: { .init(requestID: $0.requestID, phase: .completed) },
+        onClose: {}
+    )
 }

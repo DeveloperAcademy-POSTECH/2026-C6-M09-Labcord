@@ -59,6 +59,18 @@ struct ExperimentPauseView: View {
                 .padding(.bottom, isLandscape ? 22 : 0)
             }
         }
+        .alert("실험 종료 대기", isPresented: Binding(
+            get: { store.stopError != nil },
+            set: { if !$0 { store.send(.dismissStopError) } }
+        )) {
+            if canCloseSession,
+               PhoneWatchAudioService.shared.canSaveReviewedRecordings(in: store.experimentID) {
+                Button("Watch 녹음 저장하고 종료") { store.send(.saveWatchAudioAndStop) }
+            }
+            Button("닫기", role: .cancel) { store.send(.dismissStopError) }
+        } message: {
+            Text(store.stopError ?? "")
+        }
         .alert(
             "실험 일시정지 저장 실패",
             isPresented: Binding(

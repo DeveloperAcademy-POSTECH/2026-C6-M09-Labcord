@@ -1,12 +1,11 @@
 import AVFoundation
 import Dispatch
 import Foundation
+import OSLog
 
 public actor CameraSession {
     private let session = AVCaptureSession()
-    private let sessionQueue = DispatchSerialQueue(
-        label: "com.researchers.camera.capture"
-    )
+    private let sessionQueue = DispatchSerialQueue(label: "com.researchers.camera.capture")
     private let handTrackingQueue = DispatchQueue(
         label: "com.researchers.camera.hand-tracking",
         qos: .userInitiated
@@ -20,14 +19,19 @@ public actor CameraSession {
     private var activeCamera: AVCaptureDevice?
     private var cachedPreviewConnector: CameraPreviewConnector?
     private let photoOutput = AVCapturePhotoOutput()
-    private var photoDelegate: PhotoCaptureDelegate?
+    private var isCapturingPhoto = false
+    #if DEBUG
+    private let silentPhoto = SilentPreviewPhotoCapture()
+    #endif
     private let movieOutput = AVCaptureMovieFileOutput()
     private var microphoneInput: AVCaptureDeviceInput?
     private var videoDelegate: VideoRecordingDelegate?
+    private var videoSessionID: UUID?
     private let handEventHub: CameraHandEventHub
     private let handOverlayHub: CameraHandOverlayHub
     private let handDetector: CameraHandDetector
     private var activeOwners: Set<UUID> = []
+    private var isSuspended = false
     private var pendingStop: Task<Void, Never>?
 
     public init() {
@@ -35,19 +39,22 @@ public actor CameraSession {
         let overlayHub = CameraHandOverlayHub()
         handEventHub = hub
         handOverlayHub = overlayHub
+        #if DEBUG
+        let onFrame = silentPhoto.receive
+        #else
+        let onFrame: ((CVPixelBuffer, CGFloat) -> Void)? = nil
+        #endif
         handDetector = CameraHandDetector(
             queue: handTrackingQueue,
+            onFrame: onFrame,
             onHold: { hub.emit($0) },
             onOverlay: { overlayHub.emit($0) }
         )
     }
 
     public func configureCamera() throws {
+        try requireCameraPermission()
         guard !isConfigured else { return }
-
-        guard AVCaptureDevice.authorizationStatus(for: .video) == .authorized else {
-            throw PermissionAccessError(.camera)
-        }
 
         guard let camera = AVCaptureDevice.default(
             .builtInWideAngleCamera,
@@ -56,7 +63,6 @@ public actor CameraSession {
         ) else {
             throw CameraSessionError.cameraUnavailable
         }
-
         let input = try AVCaptureDeviceInput(device: camera)
 
         session.beginConfiguration()
@@ -87,24 +93,20 @@ public actor CameraSession {
     }
 
     public func activate(owner: UUID) throws {
+        try Task.checkCancellation()
+        try configureCamera()
         pendingStop?.cancel()
         pendingStop = nil
-        try configureCamera()
-        if AVAudioApplication.shared.recordPermission == .granted {
-            try? prepareVideoRecording()
-        }
+        isSuspended = false
 
         if activeOwners.isEmpty {
-
             handTrackingQueue.sync { [handDetector] in handDetector.reset() }
         }
-        if !session.isRunning {
-            session.startRunning()
-        }
+        activeOwners.insert(owner)
+        startSessionIfPossible()
         guard session.isRunning || session.isInterrupted else {
             throw CameraSessionError.cameraUnavailable
         }
-        activeOwners.insert(owner)
     }
 
     public func deactivate(owner: UUID) {
@@ -122,8 +124,11 @@ public actor CameraSession {
     }
 
     public func suspend() {
-        guard !activeOwners.isEmpty, session.isRunning else { return }
-        session.stopRunning()
+        guard !Task.isCancelled, !activeOwners.isEmpty else { return }
+        isSuspended = true
+        if session.isRunning || session.isInterrupted {
+            session.stopRunning()
+        }
         resetHandTracking()
     }
 
@@ -131,7 +136,7 @@ public actor CameraSession {
         guard activeOwners.isEmpty else { return }
         pendingStop = nil
         cancelVideoRecording()
-        if session.isRunning {
+        if session.isRunning || session.isInterrupted {
             session.stopRunning()
         }
         resetHandTracking()
@@ -190,30 +195,56 @@ public actor CameraSession {
         ))
         handTrackingQueue.async { [handDetector] in handDetector.reset() }
     }
+}
 
-    public func capturePhoto() async throws -> Data {
-        guard session.isRunning else { throw CameraSessionError.cameraUnavailable }
-        guard photoDelegate == nil else { throw CameraSessionError.alreadyCapturingPhoto }
-        defer { photoDelegate = nil }
-
-        configureCaptureRotation(for: photoOutput.connection(with: .video))
-
-        return try await withCheckedThrowingContinuation { continuation in
-            let delegate = PhotoCaptureDelegate(continuation: continuation)
-            photoDelegate = delegate
-            photoOutput.capturePhoto(with: AVCapturePhotoSettings(), delegate: delegate)
+extension CameraSession {
+    public func capturePhoto(suppressShutterSound: Bool) async throws -> Data {
+        try await waitForCaptureSession()
+        guard !isCapturingPhoto else { throw CameraSessionError.alreadyCapturingPhoto }
+        guard videoSessionID == nil else { throw CameraSessionError.alreadyRecording }
+        isCapturingPhoto = true
+        defer { isCapturingPhoto = false }
+        #if DEBUG
+        if suppressShutterSound && !photoOutput.isShutterSoundSuppressionSupported {
+            return try await silentPhoto.capture(camera: activeCamera)
         }
+        #endif
+        CameraCaptureConfiguration.configureCaptureRotation(
+            for: photoOutput.connection(with: .video), camera: activeCamera
+        )
+        return try await CameraCaptureConfiguration.captureNativePhoto(
+            output: photoOutput,
+            suppressShutterSound: suppressShutterSound,
+            usesMicrophone: microphoneInput != nil
+        )
     }
 
-    public func recordVideo(onStarted: @escaping @Sendable () -> Void) async throws -> URL {
-        try Task.checkCancellation()
-        guard session.isRunning else { throw CameraSessionError.cameraUnavailable }
-        guard videoDelegate == nil else { throw CameraSessionError.alreadyRecording }
+    public func recordVideo(
+        id: UUID, onStarted: @escaping @Sendable () -> Void
+    ) async throws -> URL {
+        try requireCameraPermission()
+        guard AVAudioApplication.shared.recordPermission == .granted else {
+            throw PermissionAccessError(.microphone)
+        }
+        let deadline = ContinuousClock().now + .milliseconds(1500)
+        try await waitForCaptureSession(until: deadline)
+        guard !isCapturingPhoto else { throw CameraSessionError.alreadyCapturingPhoto }
+        guard videoSessionID == nil else { throw CameraSessionError.alreadyRecording }
+        videoSessionID = id
+        defer {
+            videoDelegate = nil
+            videoSessionID = nil
+            releaseVideoInputs()
+        }
         try prepareVideoRecording()
-        defer { videoDelegate = nil }
-        try Task.checkCancellation()
+        try await waitForCaptureSession(until: deadline, output: movieOutput)
+        guard movieOutput.connection(with: .audio)?.isActive == true else {
+            throw CameraSessionError.microphoneUnavailable
+        }
 
-        configureCaptureRotation(for: movieOutput.connection(with: .video))
+        CameraCaptureConfiguration.configureCaptureRotation(
+            for: movieOutput.connection(with: .video), camera: activeCamera
+        )
 
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("video-\(UUID().uuidString).mov")
@@ -223,18 +254,18 @@ public actor CameraSession {
                     continuation: continuation,
                     onStarted: onStarted
                 ) { [weak self] in
-                        Task { await self?.cancelVideoRecording() }
+                        Task { await self?.cancelVideoRecording(id: id) }
                     }
                 videoDelegate = delegate
                 movieOutput.startRecording(to: url, recordingDelegate: delegate)
             }
         } onCancel: {
-            Task { await self.cancelVideoRecording() }
+            Task { await self.cancelVideoRecording(id: id) }
         }
     }
 
-    public func cancelVideoRecording() {
-        guard let videoDelegate else { return }
+    public func cancelVideoRecording(id: UUID? = nil) {
+        guard id == nil || id == videoSessionID, let videoDelegate else { return }
         videoDelegate.cancel()
         if movieOutput.isRecording {
             movieOutput.stopRecording()
@@ -245,16 +276,12 @@ public actor CameraSession {
         try? FileManager.default.removeItem(at: url)
     }
 
-    public func stopVideoRecording() {
-        if movieOutput.isRecording { movieOutput.stopRecording() }
+    public func stopVideoRecording(id: UUID) {
+        guard videoSessionID == id, movieOutput.isRecording else { return }
+        movieOutput.stopRecording()
     }
 
-    public func prepareVideoRecording() throws {
-        guard AVAudioApplication.shared.recordPermission == .granted else {
-            throw PermissionAccessError(.microphone)
-        }
-        guard isConfigured else { throw CameraSessionError.cameraUnavailable }
-        guard microphoneInput == nil else { return }
+    private func prepareVideoRecording() throws {
         guard let microphone = AVCaptureDevice.default(for: .audio) else {
             throw CameraSessionError.microphoneUnavailable
         }
@@ -289,15 +316,54 @@ public actor CameraSession {
 }
 
 private extension CameraSession {
-    func configureCaptureRotation(for connection: AVCaptureConnection?) {
-        guard let connection, let activeCamera else { return }
-        let coordinator = AVCaptureDevice.RotationCoordinator(
-            device: activeCamera,
-            previewLayer: nil
-        )
-        let angle = coordinator.videoRotationAngleForHorizonLevelCapture
-        guard connection.isVideoRotationAngleSupported(angle) else { return }
-        connection.videoRotationAngle = angle
+    static let logger = Logger(subsystem: "Labcord", category: "Camera")
+
+    func requireCameraPermission() throws {
+        guard AVCaptureDevice.authorizationStatus(for: .video) == .authorized else {
+            throw PermissionAccessError(.camera)
+        }
+    }
+
+    func startSessionIfPossible() {
+        if !session.isRunning && !session.isInterrupted {
+            session.startRunning()
+        }
+    }
+
+    func waitForCaptureSession(
+        until deadline: ContinuousClock.Instant = ContinuousClock().now + .milliseconds(1500),
+        output: AVCaptureOutput? = nil
+    ) async throws {
+        let clock = ContinuousClock()
+        var requestedStart = false
+        repeat {
+            try Task.checkCancellation()
+            try requireCameraPermission()
+            guard !activeOwners.isEmpty, !isSuspended else {
+                throw CameraSessionError.cameraUnavailable
+            }
+            if !requestedStart && !session.isRunning && !session.isInterrupted {
+                requestedStart = true
+                startSessionIfPossible()
+            }
+            if session.isRunning, !session.isInterrupted,
+               (output ?? photoOutput).connection(with: .video)?.isActive == true { return }
+            try await clock.sleep(for: .milliseconds(50))
+        } while clock.now < deadline
+        Self.logger.error("""
+            Capture session not ready running=\(self.session.isRunning) \
+            interrupted=\(self.session.isInterrupted)
+            """)
+        throw CameraSessionError.cameraUnavailable
+    }
+
+    func releaseVideoInputs() {
+        guard let microphoneInput else { return }
+        session.beginConfiguration()
+        session.removeOutput(movieOutput)
+        session.removeInput(microphoneInput)
+        self.microphoneInput = nil
+        session.commitConfiguration()
     }
 }
 
@@ -318,35 +384,5 @@ extension CameraSession {
         )
         cachedPreviewConnector = connector
         return connector
-    }
-}
-
-public enum CameraSessionError: LocalizedError {
-    case cameraUnavailable
-    case cannotAddInput
-    case cannotAddOutput
-    case photoDataUnavailable
-    case alreadyCapturingPhoto
-    case videoDataUnavailable
-    case microphoneUnavailable
-    case alreadyRecording
-
-    public var errorDescription: String? {
-        switch self {
-        case .cameraUnavailable:
-            return "카메라를 사용할 수 없습니다."
-        case .cannotAddInput, .cannotAddOutput:
-            return "카메라를 준비하지 못했습니다. 잠시 후 다시 시도해 주세요."
-        case .photoDataUnavailable:
-            return "촬영한 사진을 가져오지 못했습니다."
-        case .alreadyCapturingPhoto:
-            return "이미 사진을 촬영 중입니다."
-        case .videoDataUnavailable:
-            return "촬영한 영상을 가져오지 못했습니다."
-        case .microphoneUnavailable:
-            return "마이크를 사용할 수 없습니다."
-        case .alreadyRecording:
-            return "이미 영상을 촬영 중입니다."
-        }
     }
 }

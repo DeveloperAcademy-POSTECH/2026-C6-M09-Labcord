@@ -2,6 +2,7 @@ import LabcordDesignSystem
 import SwiftUI
 
 struct ExperimentResultHeaderView: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let title: String
     let dateRange: String?
     let selectedType: ExperimentResultFeature.RecordFilter
@@ -49,43 +50,55 @@ struct ExperimentResultHeaderView: View {
             VStack(alignment: .leading, spacing: LayoutTokens.spacing16) {
                 HStack(spacing: LayoutTokens.spacing12) {
                     Text("유형")
+                        .fixedSize(
+                            horizontal: dynamicTypeSize.isAccessibilitySize, vertical: false
+                        )
                         .typography(Typography.body)
                         .foregroundStyle(Color("General/Label/Tertiary"))
 
-                    HStack(spacing: LayoutTokens.spacing16) {
-                        ForEach(
-                            ExperimentResultFeature.RecordFilter.allCases,
-                            id: \.self
-                        ) { type in
-                            Button(type.label) {
-                                onSelectType(type)
+                    adaptiveControls {
+                        HStack(spacing: LayoutTokens.spacing16) {
+                            ForEach(
+                                ExperimentResultFeature.RecordFilter.allCases,
+                                id: \.self
+                            ) { type in
+                                Button(type.label) {
+                                    onSelectType(type)
+                                }
+                                .buttonStyle(.labcordChip(
+                                    size: .small,
+                                    style: selectedType == type ? .outline : .solid,
+                                    emphasis: .weak,
+                                    isSelected: selectedType == type
+                                ))
                             }
-                            .buttonStyle(.labcordChip(
-                                size: .small,
-                                style: selectedType == type ? .outline : .solid,
-                                emphasis: .weak,
-                                isSelected: selectedType == type
-                            ))
                         }
                     }
                 }
 
                 HStack(spacing: LayoutTokens.spacing12) {
                     Text("정렬")
+                        .fixedSize(
+                            horizontal: dynamicTypeSize.isAccessibilitySize, vertical: false
+                        )
                         .typography(Typography.body)
                         .foregroundStyle(Color("General/Label/Tertiary"))
 
-                    HStack(spacing: LayoutTokens.spacing16) {
-                        ForEach(ExperimentResultFeature.RecordSort.allCases, id: \.self) { sort in
-                            Button(sort.label) {
-                                onSelectSort(sort)
+                    adaptiveControls {
+                        HStack(spacing: LayoutTokens.spacing16) {
+                            ForEach(
+                                ExperimentResultFeature.RecordSort.allCases, id: \.self
+                            ) { sort in
+                                Button(sort.label) {
+                                    onSelectSort(sort)
+                                }
+                                .buttonStyle(.labcordChip(
+                                    size: .small,
+                                    style: selectedSort == sort ? .outline : .solid,
+                                    emphasis: .weak,
+                                    isSelected: selectedSort == sort
+                                ))
                             }
-                            .buttonStyle(.labcordChip(
-                                size: .small,
-                                style: selectedSort == sort ? .outline : .solid,
-                                emphasis: .weak,
-                                isSelected: selectedSort == sort
-                            ))
                         }
                     }
                 }
@@ -93,6 +106,20 @@ struct ExperimentResultHeaderView: View {
         }
         .padding(.horizontal, LayoutTokens.spacing16)
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private func adaptiveControls<Content: View>(
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            ScrollView(.horizontal) {
+                content().fixedSize(horizontal: true, vertical: false)
+            }
+            .scrollIndicators(.hidden)
+        } else {
+            content()
+        }
     }
 }
 

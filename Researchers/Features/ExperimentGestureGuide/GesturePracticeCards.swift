@@ -7,6 +7,7 @@ struct GesturePracticeCards: View {
     let device: GestureDevice
     let completed: Set<PracticeGesture>
     let onManualScroll: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var cardDrag: CGFloat = 0
     @State private var isDragging = false
     @GestureState private var gestureActive = false
@@ -38,12 +39,14 @@ struct GesturePracticeCards: View {
                             isDragging = true
                             onManualScroll()
                         }
-                        cardDrag = value.translation.width
+                        var transaction = Transaction(animation: nil)
+                        transaction.disablesAnimations = true
+                        withTransaction(transaction) { cardDrag = value.translation.width }
                     }
                     .onEnded { value in
                         isDragging = false
                         let distance = value.predictedEndTranslation.width
-                        withAnimation {
+                        withAnimation(reduceMotion ? nil : LabcordMotion.settle.animation) {
                             if abs(distance) > 40 {
                                 page = min(max(page + (distance < 0 ? 1 : -1), 1), 3)
                             }
@@ -54,7 +57,9 @@ struct GesturePracticeCards: View {
             .onChange(of: gestureActive) { _, active in
                 guard !active, isDragging else { return }
                 isDragging = false
-                withAnimation { cardDrag = 0 }
+                withAnimation(reduceMotion ? nil : LabcordMotion.settle.animation) {
+                    cardDrag = 0
+                }
             }
             PageControl(pageCount: 3, selection: $page)
         }
@@ -83,6 +88,7 @@ struct GesturePracticeCards: View {
                         Color("Experiment/Brand/Primary")
                     )
                     .accessibilityLabel("인식 완료")
+                    .transition(.opacity)
             }
         }
         .padding(.horizontal, LayoutTokens.spacing16)
@@ -91,6 +97,7 @@ struct GesturePracticeCards: View {
             Color("Experiment/Fill/Secondary"),
             in: RoundedRectangle(cornerRadius: LayoutTokens.radiusSm)
         )
+        .labcordMotion(.state, value: completed.contains(gesture))
         .accessibilityElement(children: .combine)
     }
 

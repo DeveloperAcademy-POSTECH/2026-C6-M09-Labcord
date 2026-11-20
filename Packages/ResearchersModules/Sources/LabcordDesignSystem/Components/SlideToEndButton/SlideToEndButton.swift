@@ -9,7 +9,8 @@ public struct SlideToEndButton: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .subheadline) private var scaledLabelWidth: CGFloat = 110
     @ScaledMetric(relativeTo: .subheadline) private var scaledHeight: CGFloat = 50
-    @GestureState private var dragDistance: CGFloat = 0
+    @GestureState(resetTransaction: Transaction(animation: LabcordMotion.settle.animation))
+    private var dragDistance: CGFloat = 0
 
     public init(isTriggered: Binding<Bool>, action: @escaping () -> Void) {
         _isTriggered = isTriggered
@@ -59,7 +60,10 @@ public struct SlideToEndButton: View {
             .frame(width: availableWidth, height: height, alignment: .trailing)
             .contentShape(Capsule())
             .gesture(dragGesture(travel: travel))
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: isTriggered)
+            .labcordMotion(.settle, value: isTriggered)
+            .transaction { transaction in
+                if reduceMotion { transaction.animation = nil }
+            }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("실험 종료")
             .accessibilityValue(isTriggered ? "종료 요청됨" : "대기 중")
@@ -88,8 +92,9 @@ public struct SlideToEndButton: View {
 
     private func dragGesture(travel: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: 3)
-            .updating($dragDistance) { value, state, _ in
+            .updating($dragDistance) { value, state, transaction in
                 guard isEnabled, !isTriggered else { return }
+                transaction.animation = nil
                 state = max(value.translation.width, 0)
             }
             .onEnded { value in

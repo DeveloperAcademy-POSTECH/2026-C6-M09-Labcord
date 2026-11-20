@@ -27,17 +27,20 @@ struct VoiceRecordToastOverlay: ViewModifier {
     func body(content: Content) -> some View {
         let toastLayer = content
             .overlay(alignment: .bottom) {
-                if let presentation {
-                    toast(for: presentation)
-                        .padding(.horizontal, LayoutTokens.spacing16)
-                        .safeAreaPadding(
-                            .bottom,
-                            verticalSizeClass == .compact ? 0 : LayoutTokens.spacing16
-                        )
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                ZStack {
+                    if let presentation {
+                        toast(for: presentation)
+                            .padding(.horizontal, LayoutTokens.spacing16)
+                            .safeAreaPadding(
+                                .bottom,
+                                verticalSizeClass == .compact ? 0 : LayoutTokens.spacing16
+                            )
+                            .transition(reduceMotion ? .opacity : .move(edge: .bottom)
+                                .combined(with: .opacity))
+                    }
                 }
+                .labcordMotion(.state, value: presentation?.id)
             }
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.25), value: presentation?.id)
 
         return observeFailures(on: observeSuccesses(on: toastLayer))
     }

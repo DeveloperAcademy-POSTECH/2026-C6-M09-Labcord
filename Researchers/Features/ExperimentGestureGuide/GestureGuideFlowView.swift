@@ -91,7 +91,8 @@ struct GestureGuideFlowView: View {
                 }
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressFeedbackButtonStyle())
+        .labcordMotion(.state, value: isSelected)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }

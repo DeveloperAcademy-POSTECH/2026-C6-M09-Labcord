@@ -53,7 +53,6 @@ struct SelectionIndicator: View {
     let isSelected: Bool
     var size: ComponentSize?
     @Environment(\.controlSize) private var controlSize
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ScaledMetric(relativeTo: .body) private var scale: CGFloat = 1
 
     private var resolvedSize: ComponentSize { size ?? ComponentSize(controlSize) }
@@ -88,7 +87,7 @@ struct SelectionIndicator: View {
             }
         }
         .frame(width: dimension * scale, height: dimension * scale)
-        .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: isSelected)
+        .labcordMotion(.state, value: isSelected)
         .accessibilityHidden(true)
         .allowsHitTesting(false)
     }

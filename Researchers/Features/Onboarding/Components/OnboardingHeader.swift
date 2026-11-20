@@ -19,13 +19,16 @@ struct OnboardingHeader: View {
             }
             .typography(Typography.title1Bold)
             .foregroundStyle(Color("General/Label/Primary"))
+            .contentTransition(.opacity)
 
             VStack(alignment: .leading, spacing: 0) {
                 Text(bodyText)
             }
             .typography(Typography.body)
             .foregroundStyle(Color("General/Label/Secondary"))
+            .contentTransition(.opacity)
         }
+        .labcordMotion(.state, value: store.page)
     }
 
     private var titleText: String {

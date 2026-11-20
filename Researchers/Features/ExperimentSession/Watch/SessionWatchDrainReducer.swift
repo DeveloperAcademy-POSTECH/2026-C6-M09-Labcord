@@ -40,7 +40,7 @@ extension ExperimentSessionFeature {
             case let .capture(.photo(.saved(id))):
                 signal = .photoSaved(id)
             case let .capture(.photo(.saveFailed(id, _))),
-                 let .capture(.photo(.captureFailed(id, _))):
+                 let .capture(.photo(.captureFailed(id, _, _))):
                 signal = .photoFailed(id)
             case let .capture(.video(.recorded(id, _))):
                 guard state.capture.video.sessionID == id else { return .none }

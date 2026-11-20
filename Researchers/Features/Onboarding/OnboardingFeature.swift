@@ -20,6 +20,7 @@ struct OnboardingFeature {
     }
 
     enum Action: Equatable {
+        case pageSelected(Page)
         case nextTapped
         case previousTapped
         case skipTapped
@@ -34,6 +35,10 @@ struct OnboardingFeature {
     var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
+            case let .pageSelected(page):
+                state.page = page
+                return .none
+
             case .nextTapped:
                 guard let next =
                         Page(rawValue: state.page.rawValue + 1)

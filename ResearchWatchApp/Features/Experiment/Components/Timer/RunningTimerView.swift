@@ -11,18 +11,31 @@ import LabcordWatchOS
 import SwiftUI
 
 struct RunningTimerView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let timer: WatchTimerSnapshot
     let isCommandPending: Bool
     var isCreating = false
     let onPause: () -> Void
     let onResume: () -> Void
     let onDelete: () -> Void
-    @State private var swipeOffset: CGFloat = 0
-    @State private var isDeleteRevealed = false
+    @Binding var revealedTimerID: UUID?
+    @GestureState private var horizontalDrag: CGFloat = 0
     @State private var showsCreatingIndicator = false
 
     private var canSwipeDelete: Bool {
         timer.status == .paused && !isCommandPending
+    }
+
+    private var isDeleteRevealed: Bool { revealedTimerID == timer.id }
+
+    private var swipeOffset: CGFloat {
+        guard canSwipeDelete else { return 0 }
+        let base = isDeleteRevealed ? -revealWidth : 0
+        return min(0, max(-revealWidth, base + horizontalDrag))
+    }
+
+    private var swipeAnimation: Animation? {
+        horizontalDrag == 0 && !reduceMotion ? LabcordMotion.settle.animation : nil
     }
 
     private let deleteButtonSize: CGFloat = 34
@@ -41,16 +54,21 @@ struct RunningTimerView: View {
             if canSwipeDelete {
                 deleteButton
                     .opacity(min(1, -swipeOffset / revealWidth))
+                    .allowsHitTesting(isDeleteRevealed)
+                    .accessibilityHidden(!isDeleteRevealed)
             }
 
             card
-                .offset(x: swipeOffset)
+                .animation(swipeAnimation) { content in
+                    content.offset(x: swipeOffset)
+                }
         }
-        .simultaneousGesture(swipeGesture, including: canOpenBySwipe ? .all : .subviews)
-        .highPriorityGesture(swipeGesture, including: isDeleteRevealed ? .all : .subviews)
+        .contentShape(Rectangle())
+        .simultaneousGesture(swipeGesture, including: canSwipeDelete ? .all : .subviews)
         .onChange(of: canSwipeDelete) { _, canSwipe in
             if !canSwipe { setDeleteRevealed(false) }
         }
+        .onDisappear { setDeleteRevealed(false) }
         .task(id: isCreating) {
             guard isCreating else {
                 showsCreatingIndicator = false
@@ -62,12 +80,11 @@ struct RunningTimerView: View {
         }
     }
 
-    private var canOpenBySwipe: Bool {
-        canSwipeDelete && !isDeleteRevealed
-    }
-
     private var deleteButton: some View {
-        Button(action: onDelete) {
+        Button {
+            setDeleteRevealed(false)
+            onDelete()
+        } label: {
             Image(systemName: "trash")
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(Color("General/Action/Destructive/Foreground"))
@@ -75,22 +92,24 @@ struct RunningTimerView: View {
                 .background(Color("General/Action/Destructive/Background"), in: Circle())
                 .contentShape(Circle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressFeedbackButtonStyle())
         .accessibilityLabel("타이머 삭제")
     }
 
     private var swipeGesture: some Gesture {
-        DragGesture(minimumDistance: 12)
-            .onChanged { value in
-                guard canSwipeDelete,
-                      abs(value.translation.width) > abs(value.translation.height) else { return }
-                let base = isDeleteRevealed ? -revealWidth : 0
-                swipeOffset = min(0, max(-revealWidth, base + value.translation.width))
+        DragGesture(minimumDistance: 12, coordinateSpace: .global)
+            .updating($horizontalDrag) { value, drag, transaction in
+                guard abs(value.translation.width) > abs(value.translation.height) else {
+                    drag = 0
+                    return
+                }
+                transaction.animation = nil
+                drag = value.translation.width
             }
             .onEnded { value in
-                guard canSwipeDelete,
-                      abs(value.translation.width) > abs(value.translation.height) else {
-                    setDeleteRevealed(isDeleteRevealed && canSwipeDelete)
+                guard canSwipeDelete else { return }
+                guard abs(value.translation.width) > abs(value.translation.height) else {
+                    setDeleteRevealed(false)
                     return
                 }
                 let base = isDeleteRevealed ? -revealWidth : 0
@@ -99,14 +118,16 @@ struct RunningTimerView: View {
     }
 
     private func setDeleteRevealed(_ revealed: Bool) {
-        withAnimation(.snappy(duration: 0.2)) {
-            isDeleteRevealed = revealed
-            swipeOffset = revealed ? -revealWidth : 0
+        guard revealed || isDeleteRevealed else { return }
+        withAnimation(reduceMotion ? nil : LabcordMotion.settle.animation) {
+            revealedTimerID = revealed ? timer.id : nil
         }
     }
 
     private var card: some View {
-        TimelineView(.animation(paused: timer.status != .running)) { context in
+        TimelineView(.animation(
+            minimumInterval: reduceMotion ? 1 : 1.0 / 30, paused: timer.status != .running
+        )) { context in
             let remaining = timer.remaining(at: context.date)
             let isFinished = timer.status == .finished || remaining == 0
             let ringProgress = timer.status == .running
@@ -134,6 +155,7 @@ struct RunningTimerView: View {
 
                 Button {
                     guard !showsCreatingIndicator else { return }
+                    setDeleteRevealed(false)
                     if isFinished {
                         onDelete()
                     } else if timer.status == .running {
@@ -166,7 +188,7 @@ struct RunningTimerView: View {
                     }
                     .contentShape(Circle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressFeedbackButtonStyle())
                 .disabled(isCommandPending && !showsCreatingIndicator)
                 .accessibilityLabel(accessibilityLabel(isFinished: isFinished))
             }
@@ -231,17 +253,21 @@ private struct TimerRingView: View {
             id: UUID(), durationSeconds: 60, remainingSeconds: 60,
             status: .running, measuredAt: .now
         ),
-        isCommandPending: false, onPause: {}, onResume: {}, onDelete: {}
+        isCommandPending: false, onPause: {}, onResume: {}, onDelete: {},
+        revealedTimerID: .constant(nil)
     )
 }
 
 #Preview("일시정지") {
+    @Previewable @State var revealedTimerID: UUID?
+
     RunningTimerView(
         timer: WatchTimerSnapshot(
             id: UUID(), durationSeconds: 90, remainingSeconds: 42,
             status: .paused, measuredAt: .now
         ),
-        isCommandPending: false, onPause: {}, onResume: {}, onDelete: {}
+        isCommandPending: false, onPause: {}, onResume: {}, onDelete: {},
+        revealedTimerID: $revealedTimerID
     )
 }
 
@@ -251,6 +277,7 @@ private struct TimerRingView: View {
             id: UUID(), durationSeconds: 30, remainingSeconds: 0,
             status: .finished, measuredAt: .now
         ),
-        isCommandPending: false, onPause: {}, onResume: {}, onDelete: {}
+        isCommandPending: false, onPause: {}, onResume: {}, onDelete: {},
+        revealedTimerID: .constant(nil)
     )
 }

@@ -12,7 +12,9 @@ extension PhoneWatchExperimentCoordinator {
         var savedIDs: Set<UUID> = []
         for record in detail.records {
             if let saved = savedMedia(record) {
-                _ = try publishRecord(saved, experimentID: experimentID)
+                _ = try publishRecord(
+                    saved, experimentID: experimentID, restoringRecord: true
+                )
                 savedIDs.insert(record.id)
             }
         }
@@ -22,7 +24,10 @@ extension PhoneWatchExperimentCoordinator {
     func handleSavedRecord(_ command: WatchExperimentCommand) throws -> Bool {
         guard [.confirmRecord, .cancelRecord].contains(command.operation),
               let saved = try savedRecord(command) else { return false }
-        if command.operation == .cancelRecord { throw WatchExperimentError.invalidState }
+        if command.operation == .cancelRecord {
+            recordResults[command.requestID] = saved
+            throw WatchExperimentError.invalidState
+        }
         recordResults[command.requestID] = saved
         return true
     }
@@ -34,6 +39,9 @@ extension PhoneWatchExperimentCoordinator {
         guard let record = detail.records.first(where: { $0.id == targetID }),
               record.type == .photo || record.type == .video else { return nil }
         guard let saved = savedMedia(record) else { throw WatchExperimentError.storageFailed }
+        guard command.recordKind == nil || command.recordKind == saved.kind else {
+            throw WatchExperimentError.invalidPayload
+        }
         return try publishRecord(saved, experimentID: experimentID)
     }
 

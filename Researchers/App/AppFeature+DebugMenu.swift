@@ -8,6 +8,7 @@ extension AppFeature {
         @Shared(.appStorage("includesRecordingDemo")) var includesDemo = false
         @Shared(.appStorage("protocolDemoCacheEnabled")) var protocolDemoCacheEnabled = false
         @Shared(.appStorage("protocolDemoCacheSeconds")) var protocolDemoCacheSeconds = 15
+        @Shared(.suppressPhotoShutterSound) var suppressPhotoShutterSound = false
         static let cacheSecondsRange = 1...60
 
         var didReconcileBundle = false
@@ -23,6 +24,7 @@ extension AppFeature {
         case setDemo(Bool)
         case setProtocolDemoCache(Bool)
         case setProtocolDemoCacheSeconds(Int)
+        case setPhotoShutterSoundSuppression(Bool)
         case reset
         case demoInstalled(String?)
         case resetFinished(didReset: Bool, error: String?)
@@ -62,6 +64,10 @@ extension AppFeature {
             case let .setProtocolDemoCacheSeconds(seconds):
                 guard DebugMenuState.cacheSecondsRange.contains(seconds) else { return .none }
                 state.debugMenu.$protocolDemoCacheSeconds.withLock { $0 = seconds }
+                return .none
+
+            case let .setPhotoShutterSoundSuppression(enabled):
+                state.debugMenu.$suppressPhotoShutterSound.withLock { $0 = enabled }
                 return .none
 
             case let .demoInstalled(error):
@@ -220,5 +226,11 @@ extension AppFeature {
 extension AppFeature.State {
     var isDebugMenuPresented: Bool {
         debugMenu.isPresented
+    }
+}
+
+extension SharedKey where Self == AppStorageKey<Bool> {
+    static var suppressPhotoShutterSound: Self {
+        .appStorage("suppressPhotoShutterSound")
     }
 }

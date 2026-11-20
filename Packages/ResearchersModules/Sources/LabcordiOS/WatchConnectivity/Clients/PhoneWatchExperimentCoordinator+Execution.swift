@@ -7,6 +7,7 @@ extension PhoneWatchExperimentCoordinator {
     func executionResponse(_ command: WatchExperimentCommand) async throws
         -> WatchExperimentResponse {
         if command.operation == .navigate { return try await navigate(command) }
+        if command.isCameraCommand { try validateCameraPayload(command) }
         let current = try validate(command)
         let token = try await perform(command, current: current)
         if command.operation == .pause || command.operation == .complete {
@@ -28,7 +29,8 @@ extension PhoneWatchExperimentCoordinator {
         }
         guard let id = command.experimentID else { throw WatchExperimentError.invalidPayload }
         let current = try snapshot(id)
-        guard command.expectedRevision == current.revision else {
+        guard command.expectedRevision == current.revision,
+              command.expectedEpoch == nil || command.expectedEpoch == current.epoch else {
             throw WatchExperimentError.staleRevision
         }
         if let visibleExperimentID, visibleExperimentID != id {
@@ -40,7 +42,9 @@ extension PhoneWatchExperimentCoordinator {
         }
         let active = try client.load().compactMap { try client.watchState($0.id) }
             .first { $0.experiment.status == .running && $0.experiment.id != id }
-        guard active == nil else { throw WatchExperimentError.activeExperimentConflict }
+        guard visibleExperimentID == id || active == nil else {
+            throw WatchExperimentError.activeExperimentConflict
+        }
         return current
     }
 
@@ -73,11 +77,22 @@ extension PhoneWatchExperimentCoordinator {
                 guard current.experiment.status == .running else {
                     throw WatchExperimentError.invalidState
                 }
-                try consumeToken(command, experimentID: id)
+                try validateCameraTarget(command)
+                try consumeCameraToken(command, experimentID: id)
             }
             try await recordHandler(command)
         }
         return nil
+    }
+
+    private func consumeCameraToken(
+        _ command: WatchExperimentCommand, experimentID: UUID
+    ) throws {
+        guard let token = command.startToken,
+              let prepared = tokens[token], prepared.experimentID == experimentID else {
+            throw WatchExperimentError.requestExpired
+        }
+        try consumeToken(command, experimentID: experimentID)
     }
 
     func start(

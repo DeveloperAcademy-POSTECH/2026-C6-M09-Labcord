@@ -16,7 +16,7 @@ struct SelectExperimentView: View {
                 .foregroundStyle(Color("General/Brand/Primary"))
                 .padding(.horizontal, 9.5)
 
-            if store.isLoading, store.experiments.isEmpty {
+            if store.isLoading, store.list == nil {
                 VStack(spacing: 4) {
                     Text("실험 불러오는 중")
 
@@ -25,9 +25,10 @@ struct SelectExperimentView: View {
                         .fixedSize()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if let errorMessage = store.errorMessage, store.experiments.isEmpty {
+            } else if store.experiments.isEmpty,
+                      store.list == nil || store.errorMessage != nil {
                 VStack(spacing: 12) {
-                    Text(errorMessage)
+                    Text(store.errorMessage ?? "실험 목록을 다시 불러와 주세요.")
                         .foregroundStyle(Color("Experiment/Label/Light"))
                         .multilineTextAlignment(.center)
                         .font(.headline)
@@ -48,15 +49,23 @@ struct SelectExperimentView: View {
             } else {
                 ScrollView {
                     LazyVStack(spacing: 10) {
+                        if let message = store.errorMessage {
+                            Text(message)
+                                .font(.caption2)
+                                .multilineTextAlignment(.center)
+                            Button("다시 시도") { store.send(.retryTapped) }
+                        }
                         ForEach(store.experiments) { experiment in
                             Button {
                                 onSelect(experiment)
                             } label: {
                                 ExperimentRow(title: experiment.title)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(PressFeedbackButtonStyle())
+                            .transition(.opacity)
                         }
                     }
+                    .labcordMotion(.layout, value: store.experiments.map(\.id))
                 }
                 .padding(.horizontal, 2)
             }

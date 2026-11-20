@@ -63,11 +63,11 @@ public struct AnimatedLiveActivityContainer<Content: View>: View {
                 style: isExpanded ? .continuous : .circular
             )
         )
-        .animation(reduceMotion ? nil : .spring(duration: 0.45, bounce: 0.08), value: isExpanded)
+        .labcordMotion(.layout, value: isExpanded)
         .onPreferenceChange(ExpandedHeightKey.self) { height in
             guard height > 0, abs(expandedHeight - height) > 0.5 else { return }
-            if animatesContentHeight && !reduceMotion {
-                withAnimation(.easeOut(duration: 0.25)) {
+            if isExpanded && animatesContentHeight && !reduceMotion {
+                withAnimation(LabcordMotion.settle.animation) {
                     expandedHeight = height
                 }
             } else {

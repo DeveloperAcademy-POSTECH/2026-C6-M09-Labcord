@@ -48,6 +48,7 @@ struct SessionTimerView: View {
                 )
             }
         }
+        .labcordMotion(.state, value: store.isEditorPresented)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
@@ -188,7 +189,7 @@ struct SessionTimerView: View {
                         width: isPortrait ? tileWidth : nil
                     )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressFeedbackButtonStyle())
                 .disabled(!canStartTimer)
             }
         }

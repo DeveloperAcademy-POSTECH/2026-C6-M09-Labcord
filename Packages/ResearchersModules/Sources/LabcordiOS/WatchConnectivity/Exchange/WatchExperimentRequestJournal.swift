@@ -2,33 +2,55 @@ import Foundation
 import LabcordShared
 
 struct WatchExperimentRequestJournal {
-    struct Entry: Codable {
+    struct Entry: Codable, Equatable {
         let command: WatchExperimentCommand
         var response: WatchExperimentResponse
     }
 
-    private let url: URL
+    static let entriesDirectoryName = "request-entries"
+    private let entriesDirectory: URL
     private(set) var entries: [UUID: Entry]
 
     init(url: URL) throws {
-        self.url = url
-        if FileManager.default.fileExists(atPath: url.path) {
+        let files = FileManager.default
+        entriesDirectory = url.deletingLastPathComponent()
+            .appending(path: Self.entriesDirectoryName, directoryHint: .isDirectory)
+        if files.fileExists(atPath: url.path) {
             entries = try JSONDecoder().decode([UUID: Entry].self, from: Data(contentsOf: url))
         } else {
             entries = [:]
+        }
+        try loadIndividualEntries()
+    }
+
+    private mutating func loadIndividualEntries() throws {
+        let files = FileManager.default
+        guard files.fileExists(atPath: entriesDirectory.path) else { return }
+        let decoder = JSONDecoder()
+        let urls = try files.contentsOfDirectory(
+            at: entriesDirectory, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]
+        )
+        for url in urls where url.pathExtension == "json" {
+            let entry = try decoder.decode(Entry.self, from: Data(contentsOf: url))
+            let id = entry.command.requestID
+            guard UUID(uuidString: url.deletingPathExtension().lastPathComponent) == id else {
+                throw WatchExperimentError.storageFailed
+            }
+            entries[id] = entry
         }
     }
 
     mutating func save(
         _ command: WatchExperimentCommand, response: WatchExperimentResponse
     ) throws {
-        var updated = entries
-        updated[command.requestID] = Entry(command: command, response: response)
-        let data = try JSONEncoder().encode(updated)
+        let id = command.requestID
+        let entry = Entry(command: command, response: response)
+        guard entries[id] != entry else { return }
         try FileManager.default.createDirectory(
-            at: url.deletingLastPathComponent(), withIntermediateDirectories: true
+            at: entriesDirectory, withIntermediateDirectories: true
         )
-        try data.write(to: url, options: [.atomic, .completeFileProtection])
-        entries = updated
+        let url = entriesDirectory.appending(path: "\(id.uuidString).json")
+        try JSONEncoder().encode(entry).write(to: url, options: [.atomic, .completeFileProtection])
+        entries[id] = entry
     }
 }

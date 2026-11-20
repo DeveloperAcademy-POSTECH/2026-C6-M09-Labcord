@@ -13,6 +13,7 @@ struct GesturePracticeView: View {
     @Dependency(\.cameraSessionClient) private var camera
     @Dependency(\.cameraPermissionClient) private var cameraPermission
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var connector: CameraPreviewConnector?
     @State private var cameraOwner: UUID?
     @State private var cameraMessage: String?
@@ -233,14 +234,16 @@ private extension GesturePracticeView {
         showCompletion(of: gesture, in: completed, for: .iPhone)
     }
 
-    /// 인식한 카드로 이동하고, 잠시 뒤 아직 완료하지 않은 다음 카드로 넘어갑니다.
     func showCompletion(
         of gesture: PracticeGesture, in completed: Set<PracticeGesture>,
         for practiceDevice: GestureDevice
     ) {
         advanceTask?.cancel()
-        withAnimation { page = gesture.rawValue }
-        guard let next = gesture.nextIncomplete(in: completed) else { return }
+        withAnimation(reduceMotion ? nil : LabcordMotion.layout.animation) {
+            page = gesture.rawValue
+        }
+        let next = gesture.nextIncomplete(in: completed)
+        guard next != nil || practiceDevice == .iPhone else { return }
         advanceTask = Task { @MainActor in
             do {
                 try await Task.sleep(for: .milliseconds(650))
@@ -248,8 +251,14 @@ private extension GesturePracticeView {
                       page == gesture.rawValue else {
                     return
                 }
-                withAnimation { page = next.rawValue }
                 advanceTask = nil
+                withAnimation(reduceMotion ? nil : LabcordMotion.layout.animation) {
+                    if let next {
+                        page = next.rawValue
+                    } else {
+                        device = .appleWatch
+                    }
+                }
             } catch {
                 return
             }

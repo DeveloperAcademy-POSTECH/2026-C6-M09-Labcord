@@ -7,6 +7,7 @@ extension PhoneWatchExperimentCoordinator {
         recordHandler = { [weak self] command in
             guard let self else { throw WatchExperimentError.phoneBusy }
             if let id = command.experimentID, let targetID = command.targetID,
+               command.recordKind == nil || command.recordKind == .audio,
                [.confirmRecord, .cancelRecord].contains(command.operation),
                try await PhoneWatchAudioService.shared.containsRecord(
                 experimentID: id, recordID: targetID
@@ -17,18 +18,46 @@ extension PhoneWatchExperimentCoordinator {
                 return
             }
             if try handleSavedRecord(command) { return }
-            if try cancelUnavailableMedia(command) { return }
+            if command.isCameraCommand {
+                if try recoverCameraRecord(command) { return }
+            }
             if [.startTimer, .pauseTimer, .resumeTimer, .deleteTimer].contains(command.operation),
                visibleExperimentID != command.experimentID {
                 try client.applyWatchTimer(command)
                 return
             }
-            guard let commandSubscriber else { throw WatchExperimentError.phoneBusy }
-            try await withCheckedThrowingContinuation { continuation in
-                self.completions[command.requestID] = continuation
-                commandSubscriber.yield(.command(command))
-            }
+            try await self.dispatchRecordCommand(command)
         }
+    }
+
+    private func dispatchRecordCommand(_ command: WatchExperimentCommand) async throws {
+        guard let commandSubscriber else { throw WatchExperimentError.phoneBusy }
+        try await withCheckedThrowingContinuation { continuation in
+            completions[command.requestID] = continuation
+            if command.isCameraCommand {
+                mediaDeadlines[command.requestID] = Task { [weak self] in
+                    try? await Task.sleep(for: .seconds(10))
+                    guard !Task.isCancelled else { return }
+                    self?.expireMediaCommand(command)
+                }
+            }
+            commandSubscriber.yield(.command(command))
+        }
+    }
+
+    private func recoverCameraRecord(_ command: WatchExperimentCommand) throws -> Bool {
+        if command.operation == .takePhoto || command.operation == .startVideo { return false }
+        try validateCameraTarget(command)
+        return try cancelUnavailableMedia(command) || recoverStoppedVideo(command)
+    }
+
+    public func isAwaitingCameraCommand(_ requestID: UUID) -> Bool {
+        mediaDeadlines[requestID] != nil
+    }
+
+    func expireMediaCommand(_ command: WatchExperimentCommand) {
+        commandSubscriber?.yield(.mediaCommandExpired(command))
+        finish(command.requestID, error: .resultUnknown)
     }
 
     public func finishRecord(_ response: WatchExperimentResponse, experimentID: UUID) {
@@ -70,7 +99,7 @@ extension PhoneWatchExperimentCoordinator {
     }
 
     func publishRecord(
-        _ record: WatchRecordSnapshot, experimentID: UUID
+        _ record: WatchRecordSnapshot, experimentID: UUID, restoringRecord: Bool = false
     ) throws -> WatchRecordSnapshot {
         guard record.experimentID == nil || record.experimentID == experimentID else {
             throw WatchExperimentError.duplicateConflict
@@ -85,20 +114,28 @@ extension PhoneWatchExperimentCoordinator {
                 return previous
             }
         }
-        let value = record.withContext(experimentID: experimentID, revision: nil)
+        let value = record.withContext(
+            experimentID: experimentID, revision: nil, epoch: stateEpoch
+        )
         if let previous = recordSnapshots[record.id],
            previous.withContext(experimentID: experimentID, revision: nil) == value {
             return previous
         }
         let identified = record.withContext(
-            experimentID: experimentID, revision: try record.revision ?? nextRevision()
+            experimentID: experimentID, revision: try record.revision ?? nextRevision(),
+            epoch: stateEpoch
         )
         if let previous = recordSnapshots[record.id],
            previous.experimentID != experimentID || previous.kind != identified.kind {
             throw WatchExperimentError.duplicateConflict
         }
+        let reconcilesKnownRecord = recordSnapshots[record.id] != nil
         recordSnapshots[record.id] = identified
-        connectivity.records.publish(identified, session: connectivity.session)
+        if restoringRecord && !reconcilesKnownRecord {
+            connectivity.records.restoreResult(identified)
+        } else {
+            connectivity.records.publish(identified, session: connectivity.session)
+        }
         recordDidChange(identified)
         return identified
     }

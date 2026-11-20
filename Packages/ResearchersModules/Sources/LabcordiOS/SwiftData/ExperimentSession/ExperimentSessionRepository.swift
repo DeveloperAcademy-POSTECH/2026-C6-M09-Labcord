@@ -126,6 +126,7 @@ final class ExperimentSessionRepository {
     }
 
     func leaveSession(id: UUID, entryID: UUID, at date: Date) throws {
+        try PhoneWatchAudioService.shared.requireSettledRecording(in: id)
         let context = try store.makeContext()
         guard let experiment = try store.find(id: id, in: context) else {
             throw ExperimentStore.StoreError.experimentNotFound
@@ -181,6 +182,7 @@ final class ExperimentSessionRepository {
     }
 
     func complete(id: UUID, at date: Date) throws {
+        try PhoneWatchAudioService.shared.requireSettledRecording(in: id)
         let context = try store.makeContext()
         guard let experiment = try store.find(id: id, in: context) else {
             throw ExperimentStore.StoreError.experimentNotFound

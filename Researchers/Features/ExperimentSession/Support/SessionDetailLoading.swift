@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import LabcordiOS
+import LabcordShared
 
 extension ExperimentSessionFeature {
     func loadDetail(state: inout State) -> Effect<Action> {
@@ -8,6 +9,21 @@ extension ExperimentSessionFeature {
         state.isLoadingDetail = true
         state.detailLoadFailed = false
         let experimentID = state.experimentID
+        if let requestID = state.watchOpenRequestID {
+            let coordinator = PhoneWatchExperimentCoordinator.shared
+            do {
+                let detail = try coordinator.commitOpenSession(
+                    requestID, experimentID: experimentID
+                )
+                state.watchOpenRequestID = nil
+                return .send(.detailLoaded(detail))
+            } catch {
+                coordinator.finishOpenSession(
+                    requestID, error: error as? WatchExperimentError ?? .storageFailed
+                )
+                return .none
+            }
+        }
         let preview = state.isRemotePreview
         return .run { send in
             if preview {

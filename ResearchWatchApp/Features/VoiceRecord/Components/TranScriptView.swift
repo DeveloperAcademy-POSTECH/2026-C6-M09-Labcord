@@ -62,7 +62,7 @@ struct TranScriptView: View {
                         )
                         .contentShape(Circle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressFeedbackButtonStyle())
             }
             .padding(.horizontal, 9.5)
         }

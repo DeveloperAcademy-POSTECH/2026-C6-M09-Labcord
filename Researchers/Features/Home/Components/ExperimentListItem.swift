@@ -48,6 +48,7 @@ struct ExperimentListItem: View {
             .padding(LayoutTokens.spacing8)
             .contentShape(Rectangle())
         }
+        .buttonStyle(PressFeedbackButtonStyle())
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(Color("General/Border/Default"))

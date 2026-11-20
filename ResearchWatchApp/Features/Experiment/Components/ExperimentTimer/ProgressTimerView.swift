@@ -5,6 +5,7 @@
 //  Created by 정홍섭 on 11/17/26.
 //
 
+import LabcordDesignSystem
 import LabcordShared
 import LabcordWatchOS
 import SwiftUI
@@ -17,6 +18,8 @@ struct ProgressTimerView: View {
 
     var showsTitle = true
 
+    @State private var revealedTimerID: UUID?
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if showsTitle {
@@ -27,19 +30,23 @@ struct ProgressTimerView: View {
             }
 
             TimelineView(.periodic(from: .now, by: 1)) { context in
+                let orderedTimers = sortedTimers(at: context.date)
                 VStack(spacing: 4) {
-                    ForEach(sortedTimers(at: context.date)) { timer in
+                    ForEach(orderedTimers) { timer in
                         RunningTimerView(
                             timer: timer,
                             isCommandPending: pendingTimerIDs.contains(timer.id),
                             isCreating: creatingTimerIDs.contains(timer.id),
                             onPause: { onTimerCommand(timer.id, .pauseTimer) },
                             onResume: { onTimerCommand(timer.id, .resumeTimer) },
-                            onDelete: { onTimerCommand(timer.id, .deleteTimer) }
+                            onDelete: { onTimerCommand(timer.id, .deleteTimer) },
+                            revealedTimerID: $revealedTimerID
                         )
                         .padding(.horizontal, WatchScreenMetrics.scaledWidth(0.5))
+                        .transition(.opacity)
                     }
                 }
+                .labcordMotion(.layout, value: orderedTimers.map(\.id))
             }
             .ignoresSafeArea()
         }
